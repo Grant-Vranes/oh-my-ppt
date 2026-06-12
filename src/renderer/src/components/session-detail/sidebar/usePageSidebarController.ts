@@ -25,6 +25,9 @@ export function usePageSidebarController(sessionId: string) {
   const sidebarCollapsed = useSessionDetailUiStore((state) => state.sidebarCollapsed)
   const toggleSidebarCollapsed = useSessionDetailUiStore((state) => state.toggleSidebarCollapsed)
   const setAddPageDialogOpen = useSessionDetailUiStore((state) => state.setAddPageDialogOpen)
+  const setMergeSessionPagesDialogOpen = useSessionDetailUiStore(
+    (state) => state.setMergeSessionPagesDialogOpen
+  )
   const openBlankPageDialog = useSessionDetailUiStore((state) => state.openBlankPageDialog)
   const openPageTitleEdit = useSessionDetailUiStore((state) => state.openPageTitleEdit)
   const setDeleteConfirmPageId = useSessionDetailUiStore((state) => state.setDeleteConfirmPageId)
@@ -115,6 +118,7 @@ export function usePageSidebarController(sessionId: string) {
     collapsed: sidebarCollapsed,
     onAddBlankPage: () => openBlankPageDialog(selectedPage?.id || pages[0]?.id || ''),
     onAddPage: () => setAddPageDialogOpen(true),
+    onMergeSessionPages: () => setMergeSessionPagesDialogOpen(true),
     onRetryFailedPage: (page: SessionPreviewPage) => void handleRetryFailedPage(page),
     onReorderPages: handleReorderPages,
     onDeletePage: (page: SessionPreviewPage) => setDeleteConfirmPageId(page.id),

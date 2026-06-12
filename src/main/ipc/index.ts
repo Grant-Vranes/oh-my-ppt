@@ -14,6 +14,7 @@ import { registerSettingsHandlers } from './config/settings-handlers'
 import { registerImageModelHandlers } from './config/image-model-handlers'
 import { registerPreviewHandlers } from './session/preview-handlers'
 import { registerPageManagementHandlers } from './session/page-management-handlers'
+import { registerPageMergeHandlers } from './session/page-merge-handlers'
 import { registerFileHandlers } from './io/file-handlers'
 import { registerEditorHandlers } from './editor'
 import { registerDocumentParseHandlers } from './io/document-parse-handlers'
@@ -39,6 +40,7 @@ export function setupIPC(
   registerSessionSaveAsNewHandler(context)
   registerSessionImportHandlers(context)
   registerPageManagementHandlers(context)
+  registerPageMergeHandlers(context)
   registerAssetHandlers(context)
   registerGenerationHandlers(context)
   registerExportHandlers(context)

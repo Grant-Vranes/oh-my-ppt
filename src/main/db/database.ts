@@ -191,6 +191,11 @@ export interface SessionPageInput {
   error?: string | null
 }
 
+export interface SessionWithPageCount {
+  session: Session
+  pageCount: number
+}
+
 export const sessionPageRecordToInput = (page: SessionPageRecord): SessionPageInput => ({
   id: page.id,
   sessionId: page.session_id,
@@ -468,6 +473,33 @@ export class PPTDatabase {
       .all()
 
     return results as unknown as Session[]
+  }
+
+  async listSessionsWithPageCounts(limit = 50, offset = 0): Promise<SessionWithPageCount[]> {
+    const rows = await this.db
+      .select({
+        session: schema.sessions,
+        pageCount: count(schema.sessionPages.id)
+      })
+      .from(schema.sessions)
+      .leftJoin(
+        schema.sessionPages,
+        and(
+          eq(schema.sessionPages.sessionId, schema.sessions.id),
+          isNull(schema.sessionPages.deletedAt)
+        )
+      )
+      .where(ne(schema.sessions.status, 'archived'))
+      .groupBy(schema.sessions.id)
+      .orderBy(desc(schema.sessions.updatedAt))
+      .limit(limit)
+      .offset(offset)
+      .all()
+
+    return rows.map((row) => ({
+      session: row.session as unknown as Session,
+      pageCount: Number(row.pageCount || 0)
+    }))
   }
 
   async deleteSession(sessionId: string): Promise<void> {
@@ -1026,6 +1058,19 @@ export class PPTDatabase {
       .run()
   }
 
+  async deleteSourcePageSkeletons(sessionId: string, pageNumbers: number[]): Promise<void> {
+    if (!Array.isArray(pageNumbers) || pageNumbers.length === 0) return
+    await this.db
+      .delete(schema.sourcePageSkeletons)
+      .where(
+        and(
+          eq(schema.sourcePageSkeletons.sessionId, sessionId),
+          inArray(schema.sourcePageSkeletons.pageNumber, pageNumbers)
+        )
+      )
+      .run()
+  }
+
   async listSourcePageSkeletons(sessionId: string): Promise<SourcePageSkeletonRecord[]> {
     const rows = await this.db
       .select()
@@ -1106,6 +1151,14 @@ export class PPTDatabase {
       .where(
         and(eq(schema.sessionPages.sessionId, sessionId), inArray(schema.sessionPages.id, ids))
       )
+      .run()
+  }
+
+  async hardDeleteSessionPages(sessionId: string, ids: string[]): Promise<void> {
+    if (!Array.isArray(ids) || ids.length === 0) return
+    await this.db
+      .delete(schema.sessionPages)
+      .where(and(eq(schema.sessionPages.sessionId, sessionId), inArray(schema.sessionPages.id, ids)))
       .run()
   }
 

@@ -52,6 +52,7 @@ interface SessionDetailUiStore {
   isUploadingAssets: boolean
   addPageDialogOpen: boolean
   blankPageDialogOpen: boolean
+  mergeSessionPagesDialogOpen: boolean
   blankPageSourceId: string
   historyDialogOpen: boolean
   pageTitleEditPageId: string | null
@@ -110,6 +111,7 @@ interface SessionDetailUiStore {
   bumpThumbnailVersion: (pageId: string) => void
   setAddPageDialogOpen: (open: boolean) => void
   setBlankPageDialogOpen: (open: boolean) => void
+  setMergeSessionPagesDialogOpen: (open: boolean) => void
   setBlankPageSourceId: (pageId: string) => void
   openBlankPageDialog: (sourcePageId: string) => void
   setHistoryDialogOpen: (open: boolean) => void
@@ -166,6 +168,7 @@ export const useSessionDetailUiStore = create<SessionDetailUiStore>((set) => ({
   isUploadingAssets: false,
   addPageDialogOpen: false,
   blankPageDialogOpen: false,
+  mergeSessionPagesDialogOpen: false,
   blankPageSourceId: '',
   historyDialogOpen: false,
   pageTitleEditPageId: null,
@@ -283,6 +286,8 @@ export const useSessionDetailUiStore = create<SessionDetailUiStore>((set) => ({
     })),
   setAddPageDialogOpen: (addPageDialogOpen) => set({ addPageDialogOpen }),
   setBlankPageDialogOpen: (blankPageDialogOpen) => set({ blankPageDialogOpen }),
+  setMergeSessionPagesDialogOpen: (mergeSessionPagesDialogOpen) =>
+    set({ mergeSessionPagesDialogOpen }),
   setBlankPageSourceId: (blankPageSourceId) => set({ blankPageSourceId }),
   openBlankPageDialog: (blankPageSourceId) =>
     set({
@@ -354,6 +359,7 @@ export const useSessionDetailUiStore = create<SessionDetailUiStore>((set) => ({
       thumbnailVersions: {},
       addPageDialogOpen: false,
       blankPageDialogOpen: false,
+      mergeSessionPagesDialogOpen: false,
       blankPageSourceId: '',
       historyDialogOpen: false,
       pageTitleEditPageId: null,

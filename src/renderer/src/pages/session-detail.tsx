@@ -27,6 +27,7 @@ import {
   DeleteElementDialog,
   DeletePageDialog,
   HistoryDialog,
+  MergeSessionPagesDialog,
   PageProgressOverlay,
   PageTitleEditDialog
 } from '../components/session-detail/modal'
@@ -1482,6 +1483,7 @@ export function SessionDetailPage(): React.JSX.Element {
         <HistoryDialog sessionId={id} />
         <AddBlankPageDialog sessionId={id} />
         <AddPageDialog sessionId={id} />
+        <MergeSessionPagesDialog sessionId={id} />
         <PageProgressOverlay />
         <PageTitleEditDialog sessionId={id} />
         <DeletePageDialog sessionId={id} />

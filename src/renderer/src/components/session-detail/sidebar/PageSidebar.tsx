@@ -1,9 +1,10 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Check,
   Copy,
   Download,
   FilePlus2,
+  Files,
   Image as ImageIcon,
   Move,
   PanelLeft,
@@ -42,10 +43,10 @@ import {
 import { PageThumbnail } from './PageThumbnail'
 import type { SessionPreviewPage } from '../shared/types'
 import { useT } from '@renderer/i18n'
+import { usePreviewWindow } from '../hooks/usePreviewWindow'
 import { usePageSidebarController } from './usePageSidebarController'
 
-const THUMBNAIL_PREVIEW_TARGET_SIZE = 14
-const THUMBNAIL_PREVIEW_CACHE_SIZE = 24
+const THUMBNAIL_PREVIEW_LIMIT = 8
 
 function SortablePageItem({
   id,
@@ -146,6 +147,7 @@ export const PageSidebar = memo(function PageSidebar({
     disabled,
     onAddBlankPage,
     onAddPage,
+    onMergeSessionPages,
     onRetryFailedPage,
     onReorderPages,
     onDeletePage,
@@ -163,97 +165,28 @@ export const PageSidebar = memo(function PageSidebar({
   const setSelectedPageId = useSessionDetailUiStore((state) => state.setSelectedPageId)
   const isAddingPage = useSessionDetailUiStore((state) => state.isAddingPage)
   const isExportingPptx = useSessionDetailUiStore((state) => state.isExportingPptx)
+  const mergeSessionPagesDialogOpen = useSessionDetailUiStore(
+    (state) => state.mergeSessionPagesDialogOpen
+  )
   const [activeView, setActiveView] = useState<'pages' | 'outline'>('pages')
   const [copiedOutlinePageId, setCopiedOutlinePageId] = useState<string | null>(null)
   const [editingOutlinePageId, setEditingOutlinePageId] = useState<string | null>(null)
   const [outlineDraft, setOutlineDraft] = useState('')
   const [savingOutlinePageId, setSavingOutlinePageId] = useState<string | null>(null)
-  const [thumbnailPreviewIds, setThumbnailPreviewIds] = useState<Set<string>>(() => new Set())
   const wasAddingRef = useRef(false)
-  const viewportRef = useRef<HTMLDivElement>(null)
   const copyResetTimerRef = useRef<number | null>(null)
-  const thumbnailWindowRafRef = useRef<number | null>(null)
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
   const sortableIds = useMemo(() => pages.map((p) => p.id), [pages])
-
-  const updateThumbnailPreviewWindow = useCallback((): void => {
-    if (collapsed || activeView !== 'pages' || pages.length === 0) {
-      setThumbnailPreviewIds((current) => (current.size === 0 ? current : new Set()))
-      return
-    }
-
-    const viewport = viewportRef.current
-    const pageIdSet = new Set(pages.map((page) => page.id))
-    if (!viewport) {
-      const selectedIndex = pages.findIndex((page) => page.id === selectedPageId)
-      const startIndex =
-        selectedIndex >= 0
-          ? Math.max(0, selectedIndex - Math.floor(THUMBNAIL_PREVIEW_TARGET_SIZE / 2))
-          : 0
-      const next = new Set(
-        pages.slice(startIndex, startIndex + THUMBNAIL_PREVIEW_TARGET_SIZE).map((page) => page.id)
-      )
-      setThumbnailPreviewIds(next)
-      return
-    }
-
-    const viewportRect = viewport.getBoundingClientRect()
-    const viewportCenter = viewportRect.top + viewportRect.height / 2
-    const distanceByPageId = new Map<string, number>()
-    const candidates = Array.from(viewport.querySelectorAll<HTMLElement>('[data-thumbnail-index]'))
-      .map((node) => {
-        const index = Number(node.dataset.thumbnailIndex)
-        const page = Number.isFinite(index) ? pages[index] : undefined
-        if (!page) return null
-        const rect = node.getBoundingClientRect()
-        const centerDistance =
-          page.id === selectedPageId ? -1 : Math.abs(rect.top + rect.height / 2 - viewportCenter)
-        distanceByPageId.set(page.id, centerDistance)
-        return { pageId: page.id, distance: centerDistance }
-      })
-      .filter((item): item is { pageId: string; distance: number } => Boolean(item))
-      .sort((a, b) => a.distance - b.distance)
-
-    const targetIds = new Set(
-      candidates.slice(0, THUMBNAIL_PREVIEW_TARGET_SIZE).map((item) => item.pageId)
-    )
-    if (selectedPageId && pageIdSet.has(selectedPageId)) targetIds.add(selectedPageId)
-
-    if (targetIds.size === 0) {
-      pages.slice(0, THUMBNAIL_PREVIEW_TARGET_SIZE).forEach((page) => targetIds.add(page.id))
-    }
-
-    setThumbnailPreviewIds((current) => {
-      const next = new Set(Array.from(current).filter((id) => pageIdSet.has(id)))
-      targetIds.forEach((id) => next.add(id))
-
-      if (next.size > THUMBNAIL_PREVIEW_CACHE_SIZE) {
-        const removable = Array.from(next)
-          .filter((id) => !targetIds.has(id))
-          .sort(
-            (a, b) => (distanceByPageId.get(b) ?? Infinity) - (distanceByPageId.get(a) ?? Infinity)
-          )
-
-        for (const id of removable) {
-          if (next.size <= THUMBNAIL_PREVIEW_CACHE_SIZE) break
-          next.delete(id)
-        }
-      }
-
-      if (current.size === next.size && Array.from(next).every((id) => current.has(id))) {
-        return current
-      }
-      return next
-    })
-  }, [activeView, collapsed, pages, selectedPageId])
-
-  const scheduleThumbnailPreviewWindowUpdate = useCallback((): void => {
-    if (thumbnailWindowRafRef.current !== null) return
-    thumbnailWindowRafRef.current = window.requestAnimationFrame(() => {
-      thumbnailWindowRafRef.current = null
-      updateThumbnailPreviewWindow()
-    })
-  }, [updateThumbnailPreviewWindow])
+  const {
+    activePreviewIds: thumbnailPreviewIds,
+    viewportRef,
+    schedulePreviewWindowUpdate: scheduleThumbnailPreviewWindowUpdate
+  } = usePreviewWindow({
+    enabled:
+      !collapsed && activeView === 'pages' && pages.length > 0 && !mergeSessionPagesDialogOpen,
+    itemIds: sortableIds,
+    limit: THUMBNAIL_PREVIEW_LIMIT
+  })
 
   // Keep selected thumbnail in view when add-page completes (isAddingPage: true -> false).
   // Fallback to bottom if selected thumbnail is not found yet.
@@ -278,16 +211,6 @@ export const PageSidebar = memo(function PageSidebar({
       if (copyResetTimerRef.current !== null) window.clearTimeout(copyResetTimerRef.current)
     }
   }, [])
-
-  useEffect(() => {
-    scheduleThumbnailPreviewWindowUpdate()
-    return () => {
-      if (thumbnailWindowRafRef.current !== null) {
-        window.cancelAnimationFrame(thumbnailWindowRafRef.current)
-        thumbnailWindowRafRef.current = null
-      }
-    }
-  }, [scheduleThumbnailPreviewWindowUpdate])
 
   const handleDragEnd = (event: DragEndEvent): void => {
     const { active, over } = event
@@ -405,6 +328,15 @@ export const PageSidebar = memo(function PageSidebar({
                   <DropdownMenuItem onSelect={onAddPage}>
                     <Sparkles className="h-3.5 w-3.5 shrink-0 text-[#7c6a4c]" />
                     <span className="whitespace-nowrap">{t('sessionDetail.addGeneratedPage')}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    disabled={pageManagementDisabled}
+                    onSelect={onMergeSessionPages}
+                  >
+                    <Files className="h-3.5 w-3.5 shrink-0 text-[#62758a]" />
+                    <span className="whitespace-nowrap">
+                      {t('sessionDetail.addPagesFromSession')}
+                    </span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -639,8 +571,8 @@ export const PageSidebar = memo(function PageSidebar({
                 >
                   <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
                     <div className="space-y-2.5">
-                      {pages.map((page, pageIndex) => (
-                        <div key={page.id} data-page-id={page.id} data-thumbnail-index={pageIndex}>
+                      {pages.map((page) => (
+                        <div key={page.id} data-page-id={page.id} data-preview-window-id={page.id}>
                           <SortablePageItem
                             id={page.id}
                             disabled={pageManagementDisabled || disabled}
@@ -812,6 +744,15 @@ export const PageSidebar = memo(function PageSidebar({
                   <DropdownMenuItem onSelect={onAddPage}>
                     <Sparkles className="h-3.5 w-3.5 shrink-0 text-[#7c6a4c]" />
                     <span className="whitespace-nowrap">{t('sessionDetail.addGeneratedPage')}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    disabled={pageManagementDisabled}
+                    onSelect={onMergeSessionPages}
+                  >
+                    <Files className="h-3.5 w-3.5 shrink-0 text-[#62758a]" />
+                    <span className="whitespace-nowrap">
+                      {t('sessionDetail.addPagesFromSession')}
+                    </span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

@@ -109,6 +109,55 @@ describe('source-grounded prompt rules', () => {
     expect(retrySinglePageFlow).not.toContain('sourceDocumentPaths: []')
   })
 
+  it('deck all-page edit selected page ids only match file slugs', () => {
+    const deckAllPageEditFlow = readSource('src/main/ipc/generation/edit-deck-allpage-flow.ts')
+
+    expect(deckAllPageEditFlow).toContain('requestedPageIdSet.has(ref.pageId)')
+    expect(deckAllPageEditFlow).not.toContain('requestedPageIdSet.has(ref.id)')
+  })
+
+  it('main-session page scope is visible and resets after a successful send', () => {
+    const chatPanel = readSource(
+      'src/renderer/src/components/session-detail/ai-panel/ChatPanel.tsx'
+    )
+    const chatController = readSource(
+      'src/renderer/src/components/session-detail/hooks/useChatPanelController.ts'
+    )
+
+    expect(chatPanel).toContain('mainPageScopeConflictWarning')
+    expect(chatPanel).toContain('if (started) setSelectedMainPageIds([])')
+    expect(chatController).toContain('mainPageScopeMessagePrefix')
+    expect(chatController).toContain('userMessage: scopedMessageContent')
+    expect(chatController).toContain('content: scopedMessageContent')
+  })
+
+  it('deck edit selected single-page scope still uses deck edit tools', () => {
+    const deckSystem = readSource('src/main/prompt/deck-system.ts')
+    const deckTools = readSource('src/main/tools/deck-tools.ts')
+
+    expect(deckSystem).toContain("context.mode !== 'edit'")
+    expect(deckTools).toContain('!isEditMode &&')
+  })
+
+  it('deck edit prompt applies UI-selected page ids only to deck scope', () => {
+    const editSystem = readSource('src/main/prompt/edit-system.ts')
+    const selectorPromptSource = editSystem.slice(
+      editSystem.indexOf('function buildSelectorEditPrompt('),
+      editSystem.indexOf('function buildSinglePageEditPrompt(')
+    )
+    const deckPromptSource = editSystem.slice(editSystem.indexOf('function buildDeckEditPrompt('))
+
+    expect(selectorPromptSource).not.toContain('explicitTargetInfo')
+    expect(selectorPromptSource).not.toContain('Selected page ids from UI (hard target)')
+    expect(deckPromptSource).toContain('const explicitTargetInfo =')
+    expect(deckPromptSource).toContain('context.selectPageIds?.length')
+    expect(deckPromptSource).toContain(
+      'Selected page ids from UI (hard target): ${context.selectPageIds.join'
+    )
+    expect(deckPromptSource).toContain("'Target pages: all relevant /<pageId>.html files'")
+    expect(deckPromptSource).toContain('    explicitTargetInfo,')
+  })
+
   it('edit prompt injects source document rules', () => {
     const editSystem = readSource('src/main/prompt/edit-system.ts')
 

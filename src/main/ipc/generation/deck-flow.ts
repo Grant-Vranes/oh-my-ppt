@@ -61,6 +61,7 @@ export async function resolveDeckContext(
     requestedType: input.requestedType,
     effectiveMode: 'generate',
     selectedPageId: undefined,
+    selectPageIds: [],
     htmlPath: undefined,
     selector: undefined,
     elementTag: undefined,

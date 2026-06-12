@@ -44,6 +44,7 @@ export interface SessionDeckGenerationContext {
   projectDir: string;
   indexPath: string;
   pageFileMap: Record<string, string>;
+  selectPageIds?: string[];
   allowedPageIds?: string[];
   topic: string;
   deckTitle: string;

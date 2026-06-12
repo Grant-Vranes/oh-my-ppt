@@ -709,6 +709,11 @@ Business presentations, product introductions, project summaries — formal but 
     selectorBadge: 'SELECTOR',
     clearSelector: 'Clear selector',
     mainDeckHint: 'Main session edits one or more pages from your instruction.',
+    mainPageScopeAll: 'All pages',
+    mainPageScopeCount: '{count} pages',
+    mainPageScopeMessagePrefix: 'Page scope: {pages}',
+    mainPageScopeConflictWarning:
+      'Specific pages are selected, so this run will only edit those pages. Switch back to All pages to edit the full deck.',
     mainDisabled:
       'Main-session sending is disabled. Switch Context to Current page before editing.',
     removeAsset: 'Remove asset',

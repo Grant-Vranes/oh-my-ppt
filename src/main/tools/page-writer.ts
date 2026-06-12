@@ -841,9 +841,15 @@ export function createPageWriteTools(args: {
   emitNormalizedToolStatus: EmitNormalizedToolStatus
 }): unknown[] {
   const { context, isEditMode, isContainerScopeEdit, emitNormalizedToolStatus } = args
+  const writablePageIds =
+    Array.isArray(context.selectPageIds) && context.selectPageIds.length > 0
+      ? context.selectPageIds.filter((pid) => Boolean(context.pageFileMap[pid]))
+      : Array.isArray(context.allowedPageIds) && context.allowedPageIds.length > 0
+        ? context.allowedPageIds.filter((pid) => Boolean(context.pageFileMap[pid]))
+        : []
   const scopedPageIdsForWrite = (
-    Array.isArray(context.allowedPageIds) && context.allowedPageIds.length > 0
-      ? context.allowedPageIds.filter((pid) => Boolean(context.pageFileMap[pid]))
+    writablePageIds.length > 0
+      ? writablePageIds
       : Object.keys(context.pageFileMap)
   ).sort((a, b) => {
     const an = Number(a.match(/^page-(\d+)$/i)?.[1] || 0)
@@ -857,8 +863,8 @@ export function createPageWriteTools(args: {
     if (context.selectedPageId && context.pageFileMap[context.selectedPageId]) {
       return context.selectedPageId
     }
-    if (Array.isArray(context.allowedPageIds) && context.allowedPageIds.length === 1) {
-      const only = context.allowedPageIds[0]
+    if (writablePageIds.length === 1) {
+      const only = writablePageIds[0]
       if (context.pageFileMap[only]) return only
     }
     return undefined
@@ -905,10 +911,10 @@ export function createPageWriteTools(args: {
     const { pageId, content, config, statusLabel } = writeArgs
     const { pageId: resolvedPageId, isAuto } = resolveWriteTargetPage(pageId)
     const agentName = getAgentNameFromToolConfig(config)
-    if (Array.isArray(context.allowedPageIds) && context.allowedPageIds.length > 0) {
-      if (!context.allowedPageIds.includes(resolvedPageId)) {
+    if (writablePageIds.length > 0) {
+      if (!writablePageIds.includes(resolvedPageId)) {
         throw new Error(
-          `当前任务仅允许修改: ${context.allowedPageIds.join(', ')}；收到: ${resolvedPageId}`
+          `当前任务仅允许修改: ${writablePageIds.join(', ')}；收到: ${resolvedPageId}`
         )
       }
     }
@@ -1029,7 +1035,8 @@ export function createPageWriteTools(args: {
       pageId: resolvedPageId,
       targetPath,
       agentName: agentName || 'unknown',
-      allowedPageIds: context.allowedPageIds || null
+      allowedPageIds: context.allowedPageIds || null,
+      selectPageIds: context.selectPageIds || null
     })
     return result
   }

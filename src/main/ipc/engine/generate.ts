@@ -1508,6 +1508,7 @@ type RunDeepAgentEditBaseArgs = {
   projectDir: string
   indexPath: string
   pageFileMap: Record<string, string>
+  selectPageIds?: string[]
   designContract?: DesignContract
   existingPageIds?: string[]
   agentManager: AgentManager
@@ -1562,6 +1563,7 @@ const runDeepAgentScopedEdit = async (args: RunDeepAgentScopedEditArgs): Promise
       outlineItems: args.outlineItems,
       sourceDocumentPaths: args.sourceDocumentPaths,
       pageFileMap: args.pageFileMap,
+      selectPageIds: args.selectPageIds,
       selectedPageId: args.selectedPageId,
       selectedPageNumber: args.selectedPageNumber,
       selectedSelector: args.selectedSelector,

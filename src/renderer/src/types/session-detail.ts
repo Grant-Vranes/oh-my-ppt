@@ -55,7 +55,7 @@ export interface ChatPanelController {
   error: string | null
   uploadFiles: (files: File[]) => Promise<void>
   chooseAssets: (assetType: 'image' | 'video') => Promise<void>
-  send: (modelConfigId: string) => Promise<void>
+  send: (modelConfigId: string, selectPageIds?: string[]) => Promise<boolean>
   cancel: () => Promise<void>
 }
 

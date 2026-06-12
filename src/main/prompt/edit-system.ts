@@ -322,6 +322,10 @@ function buildDeckEditPrompt(
   const existingInfo = context.existingPageIds?.length
     ? `Existing page IDs: ${context.existingPageIds.join(', ')}`
     : ''
+  const explicitTargetInfo =
+    context.selectPageIds?.length
+      ? `Selected page ids from UI (hard target): ${context.selectPageIds.join(', ')}`
+      : 'Target pages: all relevant /<pageId>.html files'
   const sourceDocumentInstructions = buildSourceDocumentEditInstructions(context)
 
   return [
@@ -375,7 +379,7 @@ function buildDeckEditPrompt(
     '## Current Task',
     `Topic: ${context.topic}`,
     `Deck title: ${context.deckTitle}`,
-    'Target pages: all relevant /<pageId>.html files',
+    explicitTargetInfo,
     existingInfo,
     'Full page outline:',
     pageList

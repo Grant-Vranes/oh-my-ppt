@@ -25,6 +25,15 @@ import {
   recordHistoryOperationStrict
 } from '../../history/git-history-service'
 
+export function filterPageRefsBySelectedPageIds<T extends { pageId: string }>(
+  pageRefs: T[],
+  selectPageIds: string[]
+): T[] {
+  if (selectPageIds.length === 0) return pageRefs
+  const requestedPageIdSet = new Set(selectPageIds)
+  return pageRefs.filter((ref) => requestedPageIdSet.has(ref.pageId))
+}
+
 export async function executeDeckAllPageEditGeneration(
   ctx: IpcContext,
   emitAssistant: EmitAssistantFn,
@@ -93,6 +102,13 @@ export async function executeDeckAllPageEditGeneration(
   }
 
   pageRefs.sort((a, b) => a.pageNumber - b.pageNumber)
+  const requestedPageIdSet = new Set(context.selectPageIds || [])
+  const selectedPageRefs = filterPageRefsBySelectedPageIds(pageRefs, context.selectPageIds || [])
+  if (requestedPageIdSet.size > 0 && selectedPageRefs.length === 0) {
+    throw new Error(
+      `Selected pages not found in session_pages: ${Array.from(requestedPageIdSet).join(', ')}`
+    )
+  }
   if (outlineTitles.length !== pageRefs.length) {
     outlineTitles = pageRefs.map((ref) => ref.title)
   }
@@ -112,7 +128,7 @@ export async function executeDeckAllPageEditGeneration(
     layoutIntent: layoutIntentByPageId.get(ref.pageId)
   }))
   const pageFileMap = Object.fromEntries(pageRefs.map((p) => [p.pageId, p.htmlPath]))
-  const allowedPageIds = pageRefs.map((p) => p.pageId)
+  const selectedPageIds = selectedPageRefs.map((p) => p.pageId)
   const beforeMap = new Map<string, string>()
   const existingPageIdsBeforeRun: string[] = []
   const beforeReads = await Promise.all(
@@ -137,6 +153,7 @@ export async function executeDeckAllPageEditGeneration(
     metadata: {
       editScope: 'deck',
       selectedPageId: null,
+      selectPageIds: selectedPageIds,
       selector: null,
       modelConfigId: context.modelConfigId,
       modelConfigName: context.modelConfigName,
@@ -161,8 +178,8 @@ export async function executeDeckAllPageEditGeneration(
     context,
     uiText(
       context.appLocale,
-      `我准备按主会话指令调整「${context.topic}」的页面内容；本次只会写入 /<pageId>.html，不会修改 index.html。`,
-      `I am ready to update page content for "${context.topic}" from the main-session instruction; this run only writes /<pageId>.html and will not modify index.html.`
+      `我准备按主会话指令调整「${context.topic}」的页面内容；本次只会写入 ${selectedPageIds.length === pageRefs.length ? '/<pageId>.html' : selectedPageIds.map((id) => `/${id}.html`).join('、')}，不会修改 index.html。`,
+      `I am ready to update page content for "${context.topic}" from the main-session instruction; this run only writes ${selectedPageIds.length === pageRefs.length ? '/<pageId>.html' : selectedPageIds.map((id) => `/${id}.html`).join(', ')} and will not modify index.html.`
     )
   )
 
@@ -191,6 +208,7 @@ export async function executeDeckAllPageEditGeneration(
     projectDir,
     indexPath,
     pageFileMap,
+    selectPageIds: selectedPageIds.length === pageRefs.length ? undefined : selectedPageIds,
     designContract: savedDesignContract,
     existingPageIds: existingPageIdsBeforeRun,
     agentManager,
@@ -572,7 +590,7 @@ export async function executeDeckAllPageEditGeneration(
       metadata: {
         runId: context.runId,
         changedPageIds: Array.from(changedPageIdSet),
-        allowedPageIds
+        selectPageIds: selectedPageIds
       }
     })
   }

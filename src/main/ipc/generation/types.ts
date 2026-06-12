@@ -31,6 +31,7 @@ export type GenerationContext = {
   requestedType?: 'deck' | 'page'
   effectiveMode: GenerateMode
   selectedPageId?: string
+  selectPageIds: string[]
   htmlPath?: string
   selector?: string
   elementTag?: string

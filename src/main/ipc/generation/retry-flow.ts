@@ -44,6 +44,7 @@ export async function resolveRetryContext(
     requestedType: 'deck',
     effectiveMode: 'retry',
     selectedPageId: undefined,
+    selectPageIds: [],
     htmlPath: undefined,
     selector: undefined,
     elementTag: undefined,

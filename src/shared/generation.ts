@@ -154,6 +154,7 @@ export interface GenerateStartPayload {
   type?: 'deck' | 'page'
   chatType?: 'main' | 'page'
   chatPageId?: string
+  selectPageIds?: string[]
   selectedPageId?: string
   htmlPath?: string
   selector?: string
@@ -162,6 +163,17 @@ export interface GenerateStartPayload {
   imagePaths?: string[]
   videoPaths?: string[]
   docPaths?: string[]
+}
+
+export const normalizeSelectPageIds = (value: unknown): string[] => {
+  if (!Array.isArray(value)) return []
+  return Array.from(
+    new Set(
+      value
+        .map((item) => String(item || '').trim())
+        .filter((item) => /^[a-z0-9_-]+$/i.test(item))
+    )
+  ).slice(0, 200)
 }
 
 export interface GenerateRetryFailedPayload {

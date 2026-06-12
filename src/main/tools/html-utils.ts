@@ -338,7 +338,6 @@ export const validatePersistedPageHtml = (
     errors.push(`data-block-id 重复：${duplicatedBlockIds.join(', ')}`)
   }
 
-
   $('video').each((index, node) => {
     const video = $(node)
     const missingAttrs = ['controls', 'playsinline'].filter(

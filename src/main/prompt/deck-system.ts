@@ -25,15 +25,19 @@ export function buildDeckAgentSystemPrompt(
 
   const targetInfo = context.selectedPageId
     ? `This run may only modify: ${context.selectedPageId}`
-    : 'This run may modify all pages.'
+    : context.selectPageIds?.length
+      ? `This run may only modify selected pages: ${context.selectPageIds.join(', ')}`
+      : 'This run may modify all pages.'
   const targetPagePath =
     context.selectedPageId && context.pageFileMap[context.selectedPageId]
       ? `/${context.selectedPageId}.html`
       : undefined
   const isSinglePageTask =
-    Boolean(context.selectedPageId) ||
-    (Array.isArray(context.allowedPageIds) && context.allowedPageIds.length === 1) ||
-    context.outlineTitles.length === 1
+    context.mode !== 'edit' &&
+    (Boolean(context.selectedPageId) ||
+      (Array.isArray(context.selectPageIds) && context.selectPageIds.length === 1) ||
+      (Array.isArray(context.allowedPageIds) && context.allowedPageIds.length === 1) ||
+      context.outlineTitles.length === 1)
   const isTemplateGeneration = context.templatePageReadRequired === true
   const singlePageWriteToolName = isTemplateGeneration
     ? 'update_template_page_file'

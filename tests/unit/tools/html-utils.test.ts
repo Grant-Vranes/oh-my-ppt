@@ -49,15 +49,12 @@ describe('validatePersistedPageHtml chart validation', () => {
     </html>
   `
 
-  it('accepts the chart fallback height class used by page writer', () => {
-    const result = validatePersistedPageHtml(pageWithChartFrame('h-[240px]'), 'page-1')
+  it.each(['h-[240px]', 'h-64'])(
+    'accepts supported Tailwind chart height class %s',
+    (frameClass) => {
+      const result = validatePersistedPageHtml(pageWithChartFrame(frameClass), 'page-1')
 
-    expect(result.valid).toBe(true)
-  })
-
-  it('rejects Tailwind scale height shortcuts after persistence validation', () => {
-    const result = validatePersistedPageHtml(pageWithChartFrame('h-64'), 'page-1')
-
-    expect(result.errors.join('\n')).toContain('h-[Npx]')
-  })
+      expect(result.valid).toBe(true)
+    }
+  )
 })

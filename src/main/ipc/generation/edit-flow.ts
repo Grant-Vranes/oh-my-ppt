@@ -77,6 +77,7 @@ export async function resolveEditContext(
     requestedType: 'page',
     effectiveMode: 'edit',
     selectedPageId: input.selectedPageId,
+    selectPageIds: input.chatType === 'main' ? input.selectPageIds : [],
     htmlPath: input.htmlPath,
     selector: input.selector,
     elementTag: input.elementTag,

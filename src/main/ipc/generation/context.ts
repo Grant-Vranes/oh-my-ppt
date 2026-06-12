@@ -2,7 +2,7 @@ import crypto from 'crypto'
 import fs from 'fs'
 import path from 'path'
 import type { FontSelection, GenerateStartPayload, SourceDocumentPlan } from '@shared/generation'
-import { normalizeFontSelection } from '@shared/generation'
+import { normalizeFontSelection, normalizeSelectPageIds } from '@shared/generation'
 import type { ModelTimeoutProfile } from '@shared/model-timeout'
 import type { IpcContext } from '../context'
 import type { GenerateChatType } from './types'
@@ -50,6 +50,7 @@ export type NormalizedGenerateInput = {
   rawDocPaths: string[]
   requestedType?: 'deck' | 'page'
   selectedPageId?: string
+  selectPageIds: string[]
   htmlPath?: string
   selector?: string
   elementTag?: string
@@ -90,6 +91,7 @@ export function normalizeGeneratePayload(payload: unknown): NormalizedGenerateIn
     typeof input?.selectedPageId === 'string' && input.selectedPageId.trim().length > 0
       ? input.selectedPageId.trim()
       : undefined
+  const selectPageIds = normalizeSelectPageIds(input?.selectPageIds)
   const htmlPath = typeof input?.htmlPath === 'string' ? input.htmlPath : undefined
   const selector =
     typeof input?.selector === 'string' && input.selector.trim().length > 0
@@ -118,6 +120,7 @@ export function normalizeGeneratePayload(payload: unknown): NormalizedGenerateIn
     rawDocPaths,
     requestedType,
     selectedPageId,
+    selectPageIds,
     htmlPath,
     selector,
     elementTag,

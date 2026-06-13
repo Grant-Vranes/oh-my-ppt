@@ -83,7 +83,7 @@ describe('source-grounded prompt rules', () => {
     expect(templateUseDialog).not.toContain('suggestionCardClass')
   })
 
-  it('edit, add-page, and retry-single-page flows resolve source documents', () => {
+  it('keeps source documents for edits and retries but excludes them from generated add-page', () => {
     const generationContext = readSource('src/main/ipc/generation/context.ts')
     const sourceDocuments = readSource('src/main/ipc/generation/source-documents.ts')
     const editFlow = readSource('src/main/ipc/generation/edit-flow.ts')
@@ -101,9 +101,9 @@ describe('source-grounded prompt rules', () => {
     expect(editFlow).toContain('resolveSourceDocuments')
     expect(editFlow).toContain('sourceDocumentPaths: context.sourceDocumentPaths')
     expect(deckAllPageEditFlow).toContain('sourceDocumentPaths: context.sourceDocumentPaths')
-    expect(addPageFlow).toContain('resolveSourceDocuments')
-    expect(addPageFlow).toContain('sourceDocumentPaths: context.sourceDocumentPaths')
-    expect(addPageFlow).not.toContain('sourceDocumentPaths: []')
+    expect(addPageFlow).not.toContain('resolveSourceDocuments')
+    expect(addPageFlow).not.toContain('context.sourceDocumentPaths')
+    expect(addPageFlow.match(/sourceDocumentPaths: \[\]/g)).toHaveLength(3)
     expect(retrySinglePageFlow).toContain('resolveSourceDocuments')
     expect(retrySinglePageFlow).toContain('sourceDocumentPaths: context.sourceDocumentPaths')
     expect(retrySinglePageFlow).not.toContain('sourceDocumentPaths: []')

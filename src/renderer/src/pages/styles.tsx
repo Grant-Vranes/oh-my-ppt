@@ -1,7 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle
+} from '../components/ui/AlertDialog'
 import {
   Popover,
   PopoverContent,
@@ -11,6 +19,11 @@ import { ipc } from '@renderer/lib/ipc'
 import { useStylePreviewStore, useToastStore } from '../store'
 import { Download, Eye, Loader2, PencilLine, Plus, Sparkles, Trash2, Upload } from 'lucide-react'
 import { useT } from '../i18n'
+import {
+  buildStyleCaseOptions,
+  filterByStyleCase,
+  parseStyleCases
+} from '@renderer/lib/style-case'
 
 type StyleSummary = {
   id: string
@@ -32,12 +45,28 @@ export function StylesPage(): React.JSX.Element {
   const [styles, setStyles] = useState<StyleSummary[]>([])
   const [importingZip, setImportingZip] = useState(false)
   const [exportingStyleId, setExportingStyleId] = useState('')
+  const [selectedStyleCase, setSelectedStyleCase] = useState('')
+  const [deleteTarget, setDeleteTarget] = useState<StyleSummary | null>(null)
+  const [deletingStyleId, setDeletingStyleId] = useState('')
   const stylePackageInputRef = useRef<HTMLInputElement | null>(null)
   const { error, info, success, warning } = useToastStore()
   const generatingPreviewStyleId = useStylePreviewStore((state) => state.generatingStyleId)
   const previewCompletionVersion = useStylePreviewStore((state) => state.completionVersion)
   const generatePreview = useStylePreviewStore((state) => state.generatePreview)
   const t = useT()
+
+  const styleCaseOptions = useMemo(() => buildStyleCaseOptions(styles), [styles])
+  const visibleStyleCaseOptions = useMemo(() => {
+    const popular = styleCaseOptions.filter((option) => option.count > 1)
+    const selected = styleCaseOptions.find((option) => option.label === selectedStyleCase)
+    return selected && !popular.some((option) => option.label === selected.label)
+      ? [...popular, selected]
+      : popular
+  }, [selectedStyleCase, styleCaseOptions])
+  const filteredStyles = useMemo(
+    () => filterByStyleCase(styles, selectedStyleCase),
+    [selectedStyleCase, styles]
+  )
 
   const loadStyles = useCallback(async (): Promise<void> => {
     try {
@@ -58,21 +87,27 @@ export function StylesPage(): React.JSX.Element {
     return () => window.clearTimeout(timer)
   }, [loadStyles, previewCompletionVersion])
 
-  const handleDelete = useCallback(async (style: StyleSummary): Promise<void> => {
+  const handleDelete = useCallback(async (): Promise<void> => {
+    if (!deleteTarget || deletingStyleId) return
+    const style = deleteTarget
+    setDeletingStyleId(style.id)
     try {
       const result = await ipc.deleteStyle(style.id)
       if (!result.deleted) {
-        warning(result.message || t('styles.cannotDelete'))
+        warning(t('styles.deleteFailed'), { description: t('common.retryLater') })
         return
       }
       info(t('styles.deleted'))
+      setDeleteTarget(null)
       await loadStyles()
     } catch (e) {
       error(t('styles.deleteFailed'), {
         description: e instanceof Error ? e.message : t('common.retryLater'),
       })
+    } finally {
+      setDeletingStyleId('')
     }
-  }, [error, info, warning, t, loadStyles])
+  }, [deleteTarget, deletingStyleId, error, info, warning, t, loadStyles])
 
   const handleImportPackageClick = useCallback((): void => {
     if (importingZip) return
@@ -176,8 +211,41 @@ export function StylesPage(): React.JSX.Element {
         <p className="mt-2 text-[12px] text-muted-foreground">{t('styles.description')}</p>
       </div>
 
+      {styleCaseOptions.length > 0 && (
+        <div className="mb-5 rounded-lg border border-[#d8ccb5]/75 bg-[#fff9ef]/76 p-3">
+          <p className="mb-2 text-xs font-medium text-[#3e4a32]">{t('styles.styleCaseFilter')}</p>
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              className={`rounded-md border px-2 py-1 text-xs font-medium transition-colors ${
+                selectedStyleCase === ''
+                  ? 'border-[#97aa7c] bg-[#dbe7ca] text-[#2f3b28]'
+                  : 'border-[#d6c08d]/80 bg-white/70 text-[#7c6a4c] hover:bg-[#fff3d8]'
+              }`}
+              onClick={() => setSelectedStyleCase('')}
+            >
+              {t('styles.allStyleCases')} · {styles.length}
+            </button>
+            {visibleStyleCaseOptions.map((option) => (
+              <button
+                key={option.label}
+                type="button"
+                className={`rounded-md border px-2 py-1 text-xs font-medium transition-colors ${
+                  selectedStyleCase === option.label
+                    ? 'border-[#97aa7c] bg-[#dbe7ca] text-[#2f3b28]'
+                    : 'border-[#d6c08d]/80 bg-white/70 text-[#7c6a4c] hover:bg-[#fff3d8]'
+                }`}
+                onClick={() => setSelectedStyleCase(option.label)}
+              >
+                {option.label} · {option.count}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        {styles.map((style) => (
+        {filteredStyles.map((style) => (
           <Popover key={style.id}>
             <Card className="group !rounded-lg transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(88,75,56,0.18)]">
               <CardHeader className="pb-2">
@@ -205,7 +273,7 @@ export function StylesPage(): React.JSX.Element {
                         onClick={() => void handleGeneratePreview(style)}
                       >
                         {generatingPreviewStyleId === style.id ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
+                          <Loader2 className="mr-0.5 h-3.5 w-3.5 shrink-0 animate-spin" />
                         ) : (
                           <Sparkles className="h-3 w-3" />
                         )}
@@ -237,7 +305,7 @@ export function StylesPage(): React.JSX.Element {
                       size="sm"
                       variant="outline"
                       className="h-7 gap-1 px-2 text-[11px] text-destructive/70 transition-all duration-200 hover:text-destructive group-hover:-translate-y-0.5"
-                      onClick={() => void handleDelete(style)}
+                      onClick={() => setDeleteTarget(style)}
                     >
                       <Trash2 className="h-3 w-3" />
                       {t('common.delete')}
@@ -247,9 +315,16 @@ export function StylesPage(): React.JSX.Element {
               </CardHeader>
               <CardContent>
                 {style.styleCase && (
-                  <span className="mb-2 inline-block rounded-md border border-[#d6c08d]/80 bg-[#fff7e8] px-1.5 py-0.5 text-xs font-medium text-[#7c6a4c]">
-                    {style.styleCase}
-                  </span>
+                  <div className="mb-2 flex flex-wrap gap-1">
+                    {parseStyleCases(style.styleCase).map((styleCase) => (
+                      <span
+                        key={styleCase}
+                        className="rounded-md border border-[#d6c08d]/80 bg-[#fff7e8] px-1.5 py-0.5 text-xs font-medium text-[#7c6a4c]"
+                      >
+                        {styleCase}
+                      </span>
+                    ))}
+                  </div>
                 )}
                 <p className="line-clamp-2 text-[11px] text-muted-foreground/60 transition-colors duration-200 group-hover:text-foreground/50">
                   {style.description || style.id}
@@ -279,6 +354,44 @@ export function StylesPage(): React.JSX.Element {
           </Popover>
         ))}
       </div>
+      {filteredStyles.length === 0 && (
+        <div className="rounded-lg border border-dashed border-[#d8ccb5] py-12 text-center text-sm text-muted-foreground">
+          {t('styles.noMatchingStyles')}
+        </div>
+      )}
+      <AlertDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => {
+          if (!open && !deletingStyleId) setDeleteTarget(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogTitle>{t('styles.deleteConfirmTitle')}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {t('styles.deleteConfirmDescription', { name: deleteTarget?.label || '' })}
+          </AlertDialogDescription>
+          <div className="flex justify-end gap-2">
+            <AlertDialogCancel disabled={Boolean(deletingStyleId)}>
+              {t('common.cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={Boolean(deletingStyleId)}
+              onClick={(event) => {
+                event.preventDefault()
+                void handleDelete()
+              }}
+              className="bg-[#8f3f31] text-white hover:bg-[#743126] disabled:cursor-not-allowed disabled:opacity-65"
+            >
+              {deletingStyleId ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="mr-2 h-4 w-4" />
+              )}
+              {t('common.delete')}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

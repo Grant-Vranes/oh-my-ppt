@@ -476,7 +476,11 @@ export const en = {
     sourceBuiltin: 'builtin',
     deleted: 'Style deleted',
     deleteFailed: 'Failed to delete style',
-    cannotDelete: 'This style cannot be deleted',
+    deleteConfirmTitle: 'Delete this style?',
+    deleteConfirmDescription: '“{name}” will be removed from the style list. This cannot be undone.',
+    styleCaseFilter: 'Filter by use case',
+    allStyleCases: 'All',
+    noMatchingStyles: 'No styles match this use case',
     pagesCount: 'Pages · {count}'
   },
   styleEditor: {
@@ -512,8 +516,6 @@ export const en = {
     fileTooLarge: 'A single style file must be under {maxSize}MB.',
     filePathFailedTitle: 'Cannot read file path',
     filePathFailed: 'Please choose a local style file again.',
-    cannotDelete: 'This style cannot be deleted',
-    builtinCannotDelete: 'Built-in styles should be edited and saved as an override',
     deleted: 'Style deleted',
     deleteFailed: 'Delete failed',
     name: 'Name',

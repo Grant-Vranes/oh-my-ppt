@@ -80,12 +80,6 @@ function getUserStyleDir(styleId: string): string {
   return path.join(root, 'user', styleId)
 }
 
-function getSystemStyleDir(styleKey: string): string {
-  const root = getInstalledStylesPath()
-  if (!root) throw new Error('Style runtime not initialized.')
-  return path.join(root, 'system', styleKey)
-}
-
 function getStylePackageDir(row: StyleRow): string {
   const root = getInstalledStylesPath()
   if (!root) throw new Error('Style runtime not initialized.')
@@ -514,7 +508,6 @@ export async function importStylePackageZip(filePath: string): Promise<{ id: str
         packageDir: 'user/' + id
       })
     }
-
     await writeStylePackage({
       dir: getUserStyleDir(id),
       json,
@@ -560,28 +553,6 @@ export async function deleteStyleSkill(styleId: string): Promise<{ deleted: bool
   const id = normalizeStyleId(styleId)
   const existing = db.getStyleRowSync(id)
   if (!existing) return { deleted: false }
-  if (existing.source === 'builtin') return { deleted: false }
-  if (existing.source === 'override') {
-    const systemDir = getSystemStyleDir(existing.style)
-    if (fs.existsSync(path.join(systemDir, 'style.json'))) {
-      const builtin = await readStylePackage(systemDir)
-      await db.updateStyleRow(id, {
-        styleName: builtin.json.name.zh || id,
-        styleNameZh: builtin.json.name.zh || id,
-        styleNameEn: builtin.json.name.en || '',
-        description: builtin.json.description || '',
-        category: builtin.json.category || '',
-        aliases: builtin.json.aliases || [],
-        source: 'builtin',
-        styleSkill: builtin.skillMarkdown || '',
-        version: builtin.json.version,
-        styleCase: builtin.json.styleCase || '',
-        packageDir: 'system/' + builtin.json.style
-      })
-      await fs.promises.rm(getUserStyleDir(id), { recursive: true, force: true })
-      return { deleted: true }
-    }
-  }
   await db.updateStyleRow(id, { active: false })
   return { deleted: true }
 }

@@ -452,7 +452,11 @@ export const zh = {
     sourceBuiltin: '内置',
     deleted: '风格已删除',
     deleteFailed: '删除风格失败',
-    cannotDelete: '该风格不可删除',
+    deleteConfirmTitle: '确认删除风格？',
+    deleteConfirmDescription: '“{name}”将从风格列表中移除，此操作无法撤销。',
+    styleCaseFilter: '按适用场景筛选',
+    allStyleCases: '全部',
+    noMatchingStyles: '没有符合该场景的风格',
     pagesCount: '页面 · {count}'
   },
   styleEditor: {
@@ -488,8 +492,6 @@ export const zh = {
     fileTooLarge: '单个风格文件不能超过 {maxSize}MB。',
     filePathFailedTitle: '无法读取文件路径',
     filePathFailed: '请重新选择本地风格文件。',
-    cannotDelete: '该风格不可删除',
-    builtinCannotDelete: '内置风格请直接编辑并保存为 override',
     deleted: '风格已删除',
     deleteFailed: '删除失败',
     name: '名称',

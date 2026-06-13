@@ -29,6 +29,7 @@ import { setStylesRuntime } from '../../../src/main/styles/style-runtime'
 import {
   backfillUserStylePackagesFromDatabase,
   createStyleSkill,
+  deleteStyleSkill,
   exportStylePackageZip,
   importStylePackageZip,
   saveGeneratedStylePreview,
@@ -254,6 +255,7 @@ describe('style packages', () => {
     const installedPackage = await readStylePackage(path.join(installed, 'user', 'imported-style'))
     expect(installedPackage.json.version).toBe('1.2.3')
     expect(installedPackage.skillMarkdown).toBe('imported skill\n')
+    expect(await readFile(installedPackage.previewPath || '', 'utf8')).toContain('preview')
 
     const outputZip = path.join(tmp, 'exported.zip')
     await exportStylePackageZip('imported-style', outputZip)
@@ -346,6 +348,22 @@ describe('style packages', () => {
     })
 
     expect(await readFile(previewPath, 'utf8')).toContain('keep preview')
+  })
+
+  it('soft deletes builtin and custom styles from the active catalog', async () => {
+    const fake = makeStyleDb()
+    fake.rows.push(
+      { id: 'builtin-style', style: 'builtin-style', source: 'builtin', active: true },
+      { id: 'custom-style', style: 'custom-style', source: 'custom', active: true }
+    )
+    setStyleDb(fake.db as never)
+
+    await expect(deleteStyleSkill('builtin-style')).resolves.toEqual({ deleted: true })
+    await expect(deleteStyleSkill('custom-style')).resolves.toEqual({ deleted: true })
+    expect(fake.rows).toEqual([
+      expect.objectContaining({ id: 'builtin-style', active: false }),
+      expect.objectContaining({ id: 'custom-style', active: false })
+    ])
   })
 
   it('persists a generated builtin preview as a user override package', async () => {

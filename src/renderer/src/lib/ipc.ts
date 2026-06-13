@@ -830,7 +830,6 @@ export const ipc = {
     getIpc().invoke('styles:delete', styleId) as Promise<{
       success: boolean
       deleted: boolean
-      message?: string
     }>,
   loadPreview: (htmlPath: string, sessionId?: string) =>
     getIpc().invoke('preview:load', { htmlPath, sessionId }) as Promise<string>,

@@ -306,14 +306,7 @@ export function registerStyleHandlers(ctx: IpcContext): void {
   ipcMain.handle('styles:delete', async (_event, styleId: string) => {
     const id = String(styleId || '').trim()
     if (!id) return { success: false, deleted: false }
-    if (!hasStyleSkill(id)) {
-      return { success: false, deleted: false, message: 'style 不存在' }
-    }
     const result = await deleteStyleSkill(id)
-    return {
-      success: true,
-      deleted: result.deleted,
-      message: result.deleted ? undefined : '内置风格不可删除'
-    }
+    return { success: result.deleted, deleted: result.deleted }
   })
 }

@@ -2333,8 +2333,7 @@ export class PPTDatabase {
             styleSkill: stylePackage.skillMarkdown,
             version: item.version,
             styleCase: item.styleCase,
-            packageDir,
-            active: true
+            packageDir
           })
         } catch (error) {
           console.warn('[db] failed to sync installed style package', {

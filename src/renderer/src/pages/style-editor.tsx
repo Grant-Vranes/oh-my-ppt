@@ -2,6 +2,15 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from '../components/ui/AlertDialog'
 import { Input, Textarea } from '../components/ui/Input'
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/Popover'
 import { ScrollArea } from '../components/ui/ScrollArea'
@@ -13,6 +22,7 @@ import {
   CircleHelp,
   Eye,
   Import,
+  Loader2,
   Pencil,
   Save,
   Trash2
@@ -52,6 +62,7 @@ export function StyleEditorPage(): React.JSX.Element {
   const [descriptionInput, setDescriptionInput] = useState('')
   const [markdownInput, setMarkdownInput] = useState('')
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [loading, setLoading] = useState(false)
   const [importing, setImporting] = useState(false)
   const [mode, setMode] = useState<'edit' | 'preview'>('edit')
@@ -298,14 +309,12 @@ export function StyleEditorPage(): React.JSX.Element {
   }
 
   const handleDelete = async (): Promise<void> => {
-    if (!draft) return
-    setSaving(true)
+    if (!draft || deleting) return
+    setDeleting(true)
     try {
       const result = await ipc.deleteStyle(draft.id)
       if (!result.deleted) {
-        warning(t('styleEditor.cannotDelete'), {
-          description: result.message || t('styleEditor.builtinCannotDelete'),
-        })
+        warning(t('styleEditor.deleteFailed'), { description: t('common.retryLater') })
         return
       }
       info(t('styleEditor.deleted'))
@@ -315,7 +324,7 @@ export function StyleEditorPage(): React.JSX.Element {
         description: e instanceof Error ? e.message : t('common.retryLater'),
       })
     } finally {
-      setSaving(false)
+      setDeleting(false)
     }
   }
 
@@ -512,21 +521,53 @@ export function StyleEditorPage(): React.JSX.Element {
             )}
 
             <div className="flex flex-wrap items-center justify-end gap-2">
-              <Button size="sm" className="h-8 px-3 text-xs" onClick={handleSave} disabled={saving}>
+              <Button
+                size="sm"
+                className="h-8 px-3 text-xs"
+                onClick={handleSave}
+                disabled={saving || deleting}
+              >
                 <Save className="mr-1.5 h-3.5 w-3.5" />
                 {saving ? t('common.saving') : t('styleEditor.saveStyle')}
               </Button>
               {!isNew && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8 px-3 text-xs"
-                  onClick={handleDelete}
-                  disabled={saving}
-                >
-                  <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                  {t('common.delete')}
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 px-3 text-xs"
+                      disabled={saving || deleting}
+                    >
+                      <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                      {t('common.delete')}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogTitle>{t('styles.deleteConfirmTitle')}</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {t('styles.deleteConfirmDescription', { name: draft.label })}
+                    </AlertDialogDescription>
+                    <div className="flex justify-end gap-2">
+                      <AlertDialogCancel disabled={deleting}>{t('common.cancel')}</AlertDialogCancel>
+                      <AlertDialogAction
+                        disabled={deleting}
+                        onClick={(event) => {
+                          event.preventDefault()
+                          void handleDelete()
+                        }}
+                        className="bg-[#8f3f31] text-white hover:bg-[#743126] disabled:cursor-not-allowed disabled:opacity-65"
+                      >
+                        {deleting ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="mr-2 h-4 w-4" />
+                        )}
+                        {t('common.delete')}
+                      </AlertDialogAction>
+                    </div>
+                  </AlertDialogContent>
+                </AlertDialog>
               )}
             </div>
 

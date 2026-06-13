@@ -175,34 +175,6 @@ export async function atomicCopyDirectory(sourceDir: string, destinationDir: str
   }
 }
 
-export function buildDefaultPreviewHtml(style: StylePackageJson): string {
-  const title = escapeHtml(style.name.zh || style.name.en || style.style)
-  const description = escapeHtml(style.description || style.styleCase || style.style)
-  return [
-    '<!doctype html>',
-    '<html>',
-    '<head>',
-    '  <meta charset="utf-8">',
-    '  <meta name="viewport" content="width=device-width, initial-scale=1">',
-    '  <title>' + title + '</title>',
-    '  <style>',
-    "    body { margin: 0; min-height: 100vh; display: grid; place-items: center; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; color: #0f172a; }",
-    '    main { width: min(860px, 86vw); border: 1px solid rgba(15, 23, 42, 0.12); border-radius: 28px; padding: 56px; background: rgba(255, 255, 255, 0.9); box-shadow: 0 24px 80px rgba(15, 23, 42, 0.12); }',
-    '    h1 { margin: 0 0 18px; font-size: 48px; }',
-    '    p { margin: 0; font-size: 20px; line-height: 1.7; color: #475569; }',
-    '  </style>',
-    '</head>',
-    '<body>',
-    '  <main>',
-    '    <h1>' + title + '</h1>',
-    '    <p>' + description + '</p>',
-    '  </main>',
-    '</body>',
-    '</html>',
-    ''
-  ].join('\n')
-}
-
 function validateStylePackageJson(json: StylePackageJson, filePath: string): void {
   if (!/^[a-z0-9-]{3,40}$/.test(json.style)) throw new Error('Invalid style key at ' + filePath)
   if (!json.name || typeof json.name !== 'object') throw new Error('name is required at ' + filePath)
@@ -283,13 +255,4 @@ function parseAliases(value: string): string[] {
   } catch {
     return []
   }
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
 }

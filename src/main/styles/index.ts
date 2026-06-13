@@ -3,7 +3,6 @@ export { resolveBundledStylesSourcePath, resolveInstalledStylesPath, ensureInsta
 export { getInstalledStylesPath, setStylesRuntime, waitForStylesReady } from './style-runtime'
 export {
   atomicCopyDirectory,
-  buildDefaultPreviewHtml,
   compareStyleVersion,
   listStylePackageDirectories,
   normalizeStyleVersion,

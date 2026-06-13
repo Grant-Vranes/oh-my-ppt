@@ -4,7 +4,7 @@ import path from 'path'
 import os from 'os'
 import { unzipSync, zipSync } from 'fflate'
 import {
-  buildDefaultPreviewHtml,
+  atomicCopyDirectory,
   getInstalledStylesPath,
   readStylePackage,
   styleRowToPackageJson,
@@ -93,9 +93,74 @@ function getStylePackageDir(row: StyleRow): string {
   return row.source === 'builtin' ? path.join(root, 'system', row.style) : path.join(root, 'user', row.id)
 }
 
+export function getStylePackageDirectory(styleId: string): string {
+  const db = getDb()
+  const id = normalizeStyleId(styleId)
+  const row = db.getStyleRowSync(id)
+  if (!row) throw new Error('style 不存在：' + styleId)
+  return getStylePackageDir(row)
+}
+
+export async function saveGeneratedStylePreview(
+  styleId: string,
+  previewHtml: string
+): Promise<{ previewPath: string }> {
+  const db = getDb()
+  const id = normalizeStyleId(styleId)
+  const row = db.getStyleRowSync(id)
+  if (!row) throw new Error('style 不存在：' + styleId)
+
+  const sourceDir = getStylePackageDir(row)
+  const sourcePackage = await readStylePackage(sourceDir)
+  if (sourcePackage.previewPath) {
+    throw new Error('该风格已有预览，无需重复生成。')
+  }
+
+  if (row.source === 'builtin') {
+    const targetDir = getUserStyleDir(id)
+    const tempRoot = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'ohmyppt-style-preview-save-'))
+    const tempDir = path.join(tempRoot, id)
+    try {
+      await writeStylePackage({
+        dir: tempDir,
+        json: { ...sourcePackage.json, source: 'override' },
+        skillMarkdown: sourcePackage.skillMarkdown,
+        previewHtml
+      })
+      await atomicCopyDirectory(tempDir, targetDir)
+      await db.updateStyleRow(id, {
+        source: 'override',
+        packageDir: 'user/' + id
+      })
+      return { previewPath: path.join(targetDir, 'preview.html') }
+    } finally {
+      await fs.promises.rm(tempRoot, { recursive: true, force: true }).catch(() => undefined)
+    }
+  }
+
+  const tempRoot = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'ohmyppt-style-preview-save-'))
+  const tempDir = path.join(tempRoot, id)
+  const pendingPreviewPath = path.join(sourceDir, `.preview-${path.basename(tempRoot)}.tmp`)
+  const previewPath = path.join(sourceDir, 'preview.html')
+  try {
+    await writeStylePackage({
+      dir: tempDir,
+      json: sourcePackage.json,
+      skillMarkdown: sourcePackage.skillMarkdown,
+      previewHtml
+    })
+    await fs.promises.copyFile(path.join(tempDir, 'preview.html'), pendingPreviewPath)
+    await fs.promises.rename(pendingPreviewPath, previewPath)
+    return { previewPath }
+  } finally {
+    await fs.promises.rm(pendingPreviewPath, { force: true }).catch(() => undefined)
+    await fs.promises.rm(tempRoot, { recursive: true, force: true }).catch(() => undefined)
+  }
+}
+
 async function writeUserStylePackage(
   row: StyleRow,
-  options: { rootPath?: string; includePreview?: boolean } = {}
+  options: { rootPath?: string } = {}
 ): Promise<void> {
   const skillMarkdown = String(row.styleSkill || '').trim()
   if (!skillMarkdown) {
@@ -127,8 +192,7 @@ async function writeUserStylePackage(
   await writeStylePackage({
     dir,
     json,
-    skillMarkdown,
-    previewHtml: options.includePreview ? buildDefaultPreviewHtml(json) : undefined
+    skillMarkdown
   })
 }
 
@@ -159,7 +223,7 @@ export async function backfillUserStylePackagesFromDatabase(installedRootPath: s
       if (hasPackage) {
         skipped += 1
       } else {
-        await writeUserStylePackage(row, { rootPath: installedRootPath, includePreview: false })
+        await writeUserStylePackage(row, { rootPath: installedRootPath })
         created += 1
       }
       if (row.packageDir !== 'user/' + row.id) {
@@ -345,7 +409,7 @@ export async function upsertStyleSkill(input: {
 
   const saved = db.getStyleRowSync(id)
   if (saved && saved.source !== 'builtin') {
-    await writeUserStylePackage(saved, { includePreview: true })
+    await writeUserStylePackage(saved)
   }
   return { id, source: nextSource }
 }

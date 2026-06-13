@@ -28,9 +28,12 @@ import { initializeStyles } from '../../../src/main/styles/style-initializer'
 import { setStylesRuntime } from '../../../src/main/styles/style-runtime'
 import {
   backfillUserStylePackagesFromDatabase,
+  createStyleSkill,
   exportStylePackageZip,
   importStylePackageZip,
-  setStyleDb
+  saveGeneratedStylePreview,
+  setStyleDb,
+  updateStyleSkill
 } from '../../../src/main/utils/style-skills'
 
 async function makeStyle(
@@ -303,6 +306,105 @@ describe('style packages', () => {
       'style-bgnyzgo0pd66/SKILL.md',
       'style-bgnyzgo0pd66/style.json'
     ])
+  })
+
+  it('creates styles without a preview and preserves an existing preview on update', async () => {
+    const tmp = await mkdtemp(path.join(os.tmpdir(), 'ohmyppt-style-create-no-preview-'))
+    const installed = path.join(tmp, 'installed')
+    setStylesRuntime({ installedStylesPath: installed, ready: Promise.resolve() })
+    const fake = makeStyleDb()
+    setStyleDb(fake.db as never)
+
+    await createStyleSkill({
+      id: 'parsed-style',
+      label: '解析风格',
+      description: 'Parsed style',
+      category: '自定义',
+      aliases: [],
+      prompt: '# Parsed Style\n',
+      styleCase: '产品介绍'
+    })
+
+    const packageDir = path.join(installed, 'user', 'parsed-style')
+    const createdPackage = await readStylePackage(packageDir)
+    expect(createdPackage.previewPath).toBeUndefined()
+
+    const previewPath = path.join(packageDir, 'preview.html')
+    await writeFile(
+      previewPath,
+      '<!doctype html><html><body>keep preview</body></html>',
+      'utf8'
+    )
+    await updateStyleSkill({
+      id: 'parsed-style',
+      label: '更新后的解析风格',
+      description: 'Updated style',
+      category: '自定义',
+      aliases: [],
+      prompt: '# Updated Parsed Style\n',
+      styleCase: '产品介绍'
+    })
+
+    expect(await readFile(previewPath, 'utf8')).toContain('keep preview')
+  })
+
+  it('persists a generated builtin preview as a user override package', async () => {
+    const tmp = await mkdtemp(path.join(os.tmpdir(), 'ohmyppt-style-preview-override-'))
+    const installed = path.join(tmp, 'installed')
+    const systemDir = path.join(installed, 'system', 'minimal-white')
+    setStylesRuntime({ installedStylesPath: installed, ready: Promise.resolve() })
+    await writeStylePackage({
+      dir: systemDir,
+      json: {
+        style: 'minimal-white',
+        name: { zh: '极简白', en: 'Minimal White' },
+        description: 'Test style',
+        category: '测试',
+        aliases: [],
+        styleCase: 'Unit test',
+        version: '1.0.0',
+        source: 'builtin'
+      },
+      skillMarkdown: '# Minimal White\n'
+    })
+    const fake = makeStyleDb()
+    fake.rows.push({
+      id: 'minimal-white',
+      style: 'minimal-white',
+      styleName: '极简白',
+      styleNameZh: '极简白',
+      styleNameEn: 'Minimal White',
+      description: 'Test style',
+      category: '测试',
+      aliases: '[]',
+      source: 'builtin',
+      styleSkill: '# Minimal White\n',
+      version: '1.0.0',
+      styleCase: 'Unit test',
+      packageDir: 'system/minimal-white',
+      active: true,
+      createdAt: 1,
+      updatedAt: 1
+    })
+    setStyleDb(fake.db as never)
+
+    const result = await saveGeneratedStylePreview(
+      'minimal-white',
+      '<!doctype html><html><body>generated preview</body></html>'
+    )
+
+    expect(result.previewPath).toBe(
+      path.join(installed, 'user', 'minimal-white', 'preview.html')
+    )
+    const overridePackage = await readStylePackage(path.join(installed, 'user', 'minimal-white'))
+    expect(overridePackage.json.source).toBe('override')
+    expect(await readFile(overridePackage.previewPath || '', 'utf8')).toContain('generated preview')
+    expect(fake.rows[0]).toMatchObject({
+      source: 'override',
+      packageDir: 'user/minimal-white'
+    })
+    const systemPackage = await readStylePackage(systemDir)
+    expect(systemPackage.previewPath).toBeUndefined()
   })
 
   it('does not backfill user packages with empty style skills', async () => {

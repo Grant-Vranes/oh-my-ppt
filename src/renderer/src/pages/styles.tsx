@@ -8,8 +8,8 @@ import {
   PopoverTrigger
 } from '../components/ui/Popover'
 import { ipc } from '@renderer/lib/ipc'
-import { useToastStore } from '../store'
-import { Download, Eye, PencilLine, Plus, Trash2, Upload } from 'lucide-react'
+import { useStylePreviewStore, useToastStore } from '../store'
+import { Download, Eye, Loader2, PencilLine, Plus, Sparkles, Trash2, Upload } from 'lucide-react'
 import { useT } from '../i18n'
 
 type StyleSummary = {
@@ -34,6 +34,9 @@ export function StylesPage(): React.JSX.Element {
   const [exportingStyleId, setExportingStyleId] = useState('')
   const stylePackageInputRef = useRef<HTMLInputElement | null>(null)
   const { error, info, success, warning } = useToastStore()
+  const generatingPreviewStyleId = useStylePreviewStore((state) => state.generatingStyleId)
+  const previewCompletionVersion = useStylePreviewStore((state) => state.completionVersion)
+  const generatePreview = useStylePreviewStore((state) => state.generatePreview)
   const t = useT()
 
   const loadStyles = useCallback(async (): Promise<void> => {
@@ -53,7 +56,7 @@ export function StylesPage(): React.JSX.Element {
       void loadStyles()
     }, 0)
     return () => window.clearTimeout(timer)
-  }, [loadStyles])
+  }, [loadStyles, previewCompletionVersion])
 
   const handleDelete = useCallback(async (style: StyleSummary): Promise<void> => {
     try {
@@ -124,6 +127,20 @@ export function StylesPage(): React.JSX.Element {
     }
   }, [error, exportingStyleId, success, t])
 
+  const handleGeneratePreview = useCallback(async (style: StyleSummary): Promise<void> => {
+    try {
+      const started = await generatePreview(style.id)
+      if (!started) return
+      success(t('styles.previewGenerated'), {
+        description: style.label
+      })
+    } catch (e) {
+      error(t('styles.previewGenerationFailed'), {
+        description: e instanceof Error ? e.message : t('common.retryLater')
+      })
+    }
+  }, [error, generatePreview, success, t])
+
   return (
     <div className="mx-auto w-full max-w-6xl p-6">
       <div className="mb-6">
@@ -178,6 +195,24 @@ export function StylesPage(): React.JSX.Element {
                           {t('common.preview')}
                         </Button>
                       </PopoverTrigger>
+                    )}
+                    {!style.previewPath && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 gap-1 px-2 text-[11px] transition-all duration-200 group-hover:-translate-y-0.5"
+                        disabled={Boolean(generatingPreviewStyleId)}
+                        onClick={() => void handleGeneratePreview(style)}
+                      >
+                        {generatingPreviewStyleId === style.id ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-3 w-3" />
+                        )}
+                        {generatingPreviewStyleId === style.id
+                          ? t('styles.generatingPreview')
+                          : t('styles.generatePreview')}
+                      </Button>
                     )}
                     <Button
                       size="sm"

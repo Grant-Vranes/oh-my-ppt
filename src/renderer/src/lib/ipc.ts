@@ -776,6 +776,11 @@ export const ipc = {
   getStyleDetail: (styleId: string) =>
     getIpc().invoke('styles:getDetail', styleId) as Promise<StyleDetail>,
   listStyles: () => getIpc().invoke('styles:list') as Promise<{ items: StyleListItem[] }>,
+  generateStylePreview: (payload: { styleId: string; modelConfigId?: string }) =>
+    getIpc().invoke('styles:generatePreview', payload) as Promise<{
+      success: boolean
+      previewPath: string
+    }>,
   parseStyleFile: (payload: { filePath: string; modelConfigId?: string }) =>
     getIpc().invoke('styles:parseFile', payload) as Promise<StyleParseResult>,
   parseStylePptx: (payload: { filePath: string; modelConfigId?: string }) =>

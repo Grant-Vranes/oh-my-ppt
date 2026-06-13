@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>彩虹渐变 · Rainbow Gradient</title>
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#0f1117}
+body{display:grid;place-items:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+.slide{position:relative;width:min(100vw,calc(100vh*16/9));aspect-ratio:16/9;overflow:hidden;background:#ffffff;border-radius:8px}
+.rainbow{position:absolute;left:0;right:0;bottom:0;height:45%;background:linear-gradient(135deg,#f43f5e 0%,#f97316 14%,#eab308 28%,#22c55e 42%,#06b6d4 57%,#3b82f6 71%,#8b5cf6 85%,#d946ef 100%);opacity:.92}
+.rainbow::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,1) 0%,rgba(255,255,255,.6) 30%,transparent 60%)}
+.wave{position:absolute;left:-5%;right:-5%;bottom:38%;height:18%;background:#fff;border-radius:50% 50% 0 0}
+.stripe{position:absolute;left:8%;right:8%;top:20%;height:6px;border-radius:6px;background:linear-gradient(90deg,#f43f5e,#f97316,#eab308,#22c55e,#06b6d4,#3b82f6,#8b5cf6)}
+.content{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-start;align-items:center;text-align:center;z-index:2;padding:8%}
+h1{font-size:clamp(36px,7vw,80px);font-weight:900;color:#1e3a5f;letter-spacing:.02em}
+.desc{margin-top:3%;font-size:clamp(11px,1.5vw,17px);color:#374151;max-width:65%;line-height:1.6}
+.palette{display:flex;gap:clamp(6px,1vw,12px);margin-top:4%}
+.palette i{display:block;width:clamp(18px,2.8vw,32px);height:clamp(18px,2.8vw,32px);border-radius:50%;background:var(--c);border:2px solid rgba(0,0,0,.08);box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.label{margin-top:4%;font-size:clamp(8px,1vw,13px);font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#8b5cf6}
+@media(max-aspect-ratio:16/9){.slide{width:min(100vw,calc(100vh*16/9));height:auto}}
+@media(min-aspect-ratio:16/9){.slide{height:min(100vh,calc(100vw*9/16));width:auto}}
+</style>
+</head>
+<body>
+<div class="slide" aria-label="彩虹渐变 style preview">
+  <div class="rainbow"></div>
+  <div class="wave"></div>
+  <div class="stripe"></div>
+  <div class="content">
+    <h1>彩虹渐变</h1>
+    <p class="desc">彩虹在白底流动，每一帧都是庆祝的理由</p>
+    <div class="palette">
+      <i style="--c:#1e3a5f"></i>
+      <i style="--c:#374151"></i>
+      <i style="--c:#f43f5e"></i>
+      <i style="--c:#8b5cf6"></i>
+      <i style="--c:#fecaca"></i>
+    </div>
+    <div class="label">rainbow-gradient</div>
+  </div>
+</div>
+</body>
+</html>

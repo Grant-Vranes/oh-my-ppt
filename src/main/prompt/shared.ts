@@ -1,4 +1,3 @@
-import { loadStyleSkill } from '../utils/style-skills'
 import { formatLayoutIntentPrompt } from '@shared/layout-intent'
 import type { DesignContract, SessionDeckGenerationContext } from '../tools/types'
 import {
@@ -120,16 +119,21 @@ export const CONTENT_WRITING_RULES = [
   '- 默认禁止 emoji/贴纸装饰；单区最多 3 列；留白优先，不要塞满。'
 ].join('\n')
 
-export function resolveStylePrompt(styleId: string | null | undefined): {
+export function resolveContextStylePrompt(context: SessionDeckGenerationContext): {
   presetLabel: string
   presetId: string
   stylePrompt: string
 } {
-  const { preset, prompt } = loadStyleSkill(styleId)
+  const presetLabel = context.styleName?.trim() || context.styleKey?.trim() || context.styleId || 'Session style'
+  const presetId = context.styleKey?.trim() || context.styleId || 'session-style'
+  const stylePrompt = context.styleSkillPrompt?.trim()
+  if (!stylePrompt) {
+    throw new Error('Session style snapshot is missing styleSkillPrompt.')
+  }
   return {
-    presetLabel: preset.label,
-    presetId: preset.id,
-    stylePrompt: prompt
+    presetLabel,
+    presetId,
+    stylePrompt
   }
 }
 

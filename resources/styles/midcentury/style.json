@@ -1,0 +1,17 @@
+{
+  "style": "midcentury",
+  "name": {
+    "zh": "世纪中叶",
+    "en": "Midcentury"
+  },
+  "description": "芥末黄遇上焦橙与青，世纪中叶的客厅永远舒适",
+  "category": "大胆 · 杂志",
+  "aliases": [
+    "midcentury",
+    "复古",
+    "家居"
+  ],
+  "styleCase": "设计史叙事、家居美学展示、复古品牌故事、生活方式分享",
+  "version": "2.0.0",
+  "source": "builtin"
+}

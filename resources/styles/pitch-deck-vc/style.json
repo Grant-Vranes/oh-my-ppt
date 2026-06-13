@@ -1,0 +1,18 @@
+{
+  "style": "pitch-deck-vc",
+  "name": {
+    "zh": "融资路演",
+    "en": "Pitch Deck Vc"
+  },
+  "description": "蓝紫渐变在白底绽放，每一个数字都在说服投资人",
+  "category": "浅色 · 专业",
+  "aliases": [
+    "pitch",
+    "vc",
+    "融资",
+    "路演"
+  ],
+  "styleCase": "融资路演、种子轮 Pitch、VC Meeting、创业大赛",
+  "version": "2.0.0",
+  "source": "builtin"
+}

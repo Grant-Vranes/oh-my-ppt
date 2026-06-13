@@ -1,0 +1,20 @@
+{
+  "style": "editorial-serif",
+  "name": {
+    "zh": "杂志衬线",
+    "en": "Editorial Serif"
+  },
+  "description": "奶油纸上衬线娓娓道来，故事感从标题开始流淌",
+  "category": "浅色 · 沉静",
+  "aliases": [
+    "editorial",
+    "serif",
+    "magazine",
+    "杂志",
+    "编排",
+    "衬线"
+  ],
+  "styleCase": "品牌故事、文字密度大的长文演讲、叙事性内容、人物传记",
+  "version": "2.0.0",
+  "source": "builtin"
+}

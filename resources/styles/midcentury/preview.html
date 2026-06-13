@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>世纪中叶 / Midcentury</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden}
+html{display:grid;place-items:center;background:#0f1117}
+body{display:grid;place-items:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:#0f1117}
+.slide{position:relative;width:min(100vw,calc(100vh*16/9));aspect-ratio:16/9;overflow:hidden;background:#fef3c7;border-radius:6px;box-shadow:0 0 0 1px rgba(255,255,255,.08)}
+.shape-kidney{position:absolute;top:10%;right:6%;width:clamp(120px,24vw,300px);height:clamp(72px,14vw,180px);background:#ca8a04;border-radius:clamp(50px,10vw,140px) clamp(50px,10vw,140px) clamp(36px,7vw,100px) clamp(36px,7vw,100px);opacity:.22}
+.shape-boomerang{position:absolute;bottom:14%;right:14%;width:clamp(40px,8vw,110px);height:clamp(40px,8vw,110px);border-right:clamp(10px,2.5vw,32px) solid #0d9488;border-bottom:clamp(10px,2.5vw,32px) solid #0d9488;border-radius:0 0 100% 0;opacity:.45;transform:rotate(-20deg)}
+.shape-circle{position:absolute;top:48%;right:24%;width:clamp(32px,6.5vw,90px);height:clamp(32px,6.5vw,90px);background:#92400e;border-radius:50%;opacity:.18}
+.shape-dot{position:absolute;top:20%;left:16%;width:clamp(6px,1.2vw,16px);height:clamp(6px,1.2vw,16px);background:#0d9488;border-radius:50%;opacity:.55}
+.shape-bar{position:absolute;bottom:28%;left:8%;width:clamp(36px,6vw,80px);height:3px;background:#ca8a04;border-radius:2px;opacity:.6}
+.content{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:7% 8%;z-index:1}
+.tag{font-family:"SFMono-Regular",Consolas,monospace;font-size:clamp(7px,.95vw,10px);color:#0d9488;letter-spacing:2.5px;text-transform:uppercase;margin-bottom:clamp(6px,1vw,12px)}
+.title{font-family:Georgia,"Songti SC",serif;font-size:clamp(32px,6vw,72px);color:#78350f;font-weight:bold;line-height:1.15;margin-bottom:clamp(6px,1vw,12px)}
+.desc{font-size:clamp(10px,1.4vw,16px);color:#92400e;line-height:1.65;max-width:clamp(180px,34vw,420px)}
+.palette{display:flex;gap:clamp(4px,.6vw,7px);margin-top:auto}
+.sw{width:clamp(12px,1.8vw,20px);height:clamp(12px,1.8vw,20px);border-radius:50%;background:var(--c);border:1px solid rgba(0,0,0,.08)}
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="shape-kidney"></div>
+  <div class="shape-boomerang"></div>
+  <div class="shape-circle"></div>
+  <div class="shape-dot"></div>
+  <div class="shape-bar"></div>
+  <div class="content">
+    <div class="tag">Mid-Century Modern</div>
+    <div class="title">世纪中叶</div>
+    <div class="desc">芥末黄遇上焦橙与青，世纪中叶的客厅永远舒适</div>
+    <div class="palette">
+      <i class="sw" style="--c:#78350f"></i>
+      <i class="sw" style="--c:#92400e"></i>
+      <i class="sw" style="--c:#ca8a04"></i>
+      <i class="sw" style="--c:#0d9488"></i>
+      <i class="sw" style="--c:#fef3c7"></i>
+    </div>
+  </div>
+</div>
+</body>
+</html>

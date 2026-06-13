@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>东京夜 · tokyo-night</title>
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:100%;height:100%;overflow:hidden}
+html{display:grid;place-items:center;background:#0f1117}
+body{display:grid;place-items:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;color:#e2e8f0;background:#0f1117}
+
+.slide {
+  position: relative;
+  width: min(100vw, calc(100vh * 16 / 9));
+  aspect-ratio: 16/9;
+  overflow: hidden;
+  background: linear-gradient(160deg, #020617 0%, #0f172a 35%, #1e293b 70%, #0f172a 100%);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.06), 0 0 80px rgba(34,211,238,.06);
+}
+
+.slide::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #22d3ee, #3b82f6, #22d3ee, transparent);
+  box-shadow: 0 0 20px #22d3ee, 0 0 60px rgba(34,211,238,.3);
+}
+
+.slide::after {
+  content: "";
+  position: absolute;
+  width: 40%; height: 60%;
+  top: -10%; right: -5%;
+  background: radial-gradient(circle, rgba(34,211,238,.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.content {
+  position: absolute;
+  inset: 8% 7%;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1.1fr .9fr;
+  gap: 6%;
+  align-items: stretch;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.eyebrow {
+  font-size: clamp(7px, .95vw, 11px);
+  font-weight: 700;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: #22d3ee;
+  margin-bottom: 3%;
+}
+
+h1 {
+  font-size: clamp(32px, 5.5vw, 68px);
+  line-height: .92;
+  font-weight: 900;
+  color: #e2e8f0;
+  text-shadow: 0 0 40px rgba(34,211,238,.15), 0 0 80px rgba(34,211,238,.08);
+  letter-spacing: -.02em;
+}
+
+.desc {
+  margin-top: 4%;
+  font-size: clamp(10px, 1.35vw, 15px);
+  line-height: 1.7;
+  color: rgba(226,232,240,.7);
+  max-width: 92%;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 5%;
+}
+.tags span {
+  border: 1px solid rgba(34,211,238,.2);
+  background: rgba(34,211,238,.06);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: clamp(7px, .85vw, 10px);
+  font-weight: 600;
+  color: rgba(226,232,240,.8);
+}
+
+.story {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3%;
+  margin-top: 5%;
+}
+.story p {
+  border-left: 2px solid #22d3ee;
+  padding-left: 8px;
+  font-size: clamp(8px, .95vw, 11px);
+  line-height: 1.5;
+  color: rgba(226,232,240,.6);
+}
+
+.chips {
+  display: flex;
+  gap: 10px;
+  margin-top: 4%;
+}
+.chips span {
+  font-size: clamp(7px, .85vw, 10px);
+  color: rgba(226,232,240,.5);
+  border-bottom: 1px solid rgba(34,211,238,.15);
+  padding-bottom: 2px;
+}
+
+.panel {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(34,211,238,.12);
+  border-radius: 10px;
+  background: rgba(2,6,23,.6);
+  backdrop-filter: blur(12px);
+  padding: 6%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 5%;
+}
+.panel::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #22d3ee, #3b82f6);
+}
+
+.kicker {
+  font-size: clamp(8px, 1vw, 11px);
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #22d3ee;
+}
+
+.layout {
+  font-size: clamp(9px, 1.05vw, 13px);
+  line-height: 1.6;
+  color: rgba(226,232,240,.6);
+}
+
+.visual {
+  position: relative;
+  min-height: 0;
+  border: 1px solid rgba(34,211,238,.1);
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(0,0,0,.35);
+}
+
+.terminal {
+  position: absolute;
+  inset: 8%;
+  padding: 8%;
+  color: #22d3ee;
+  font-family: "SFMono-Regular", "Consolas", "Menlo", monospace;
+}
+.dots b {
+  display: inline-block;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  margin-right: 5px;
+}
+.dots b:nth-child(1) { background: #ff5f57 }
+.dots b:nth-child(2) { background: #febc2e }
+.dots b:nth-child(3) { background: #28c840 }
+.terminal pre {
+  font-size: clamp(7px, 1vw, 12px);
+  line-height: 1.9;
+  white-space: pre-wrap;
+  margin-top: 6px;
+}
+.terminal .prompt { color: #3b82f6 }
+.terminal .output { color: rgba(226,232,240,.7) }
+.terminal .highlight { color: #e2e8f0 }
+
+.palette {
+  display: flex;
+  gap: 7px;
+}
+.palette i {
+  display: block;
+  width: clamp(14px, 2vw, 22px);
+  height: clamp(14px, 2vw, 22px);
+  border-radius: 50%;
+  background: var(--c);
+  border: 1px solid rgba(255,255,255,.1);
+  box-shadow: 0 0 8px var(--c);
+}
+
+.footer {
+  position: absolute;
+  left: 7%; right: 7%;
+  bottom: 4.5%;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: clamp(7px, .85vw, 10px);
+  font-weight: 700;
+  color: rgba(226,232,240,.45);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.footer b { color: rgba(226,232,240,.8) }
+
+@media(max-aspect-ratio:16/9){.slide{width:min(100vw,calc(100vh*16/9));height:auto}}
+@media(min-aspect-ratio:16/9){.slide{height:min(100vh,calc(100vw*9/16));width:auto}}
+</style>
+</head>
+<body>
+  <main class="slide" aria-label="东京夜 style preview">
+    <section class="content">
+      <div class="hero">
+        <div>
+          <div class="eyebrow">冷色 · 深色 · tokyo-night</div>
+          <h1>东京夜</h1>
+          <p class="desc">深蓝底幕上浮起青色光晕，属于深夜程序员的视觉独白</p>
+          <div class="tags">
+            <span>技术分享</span>
+            <span>基础设施演讲</span>
+            <span>开发者社区 Meetup</span>
+          </div>
+          <div class="story">
+            <p>标题 #e2e8f0 冷白、正文 #cbd5e1 灰白，强调色 #22d3ee 亮青与 #3b82f6 蓝色是深夜屏幕上的两种光。</p>
+            <p>等宽或现代无衬线字体，带一点技术感。适合深夜编码场景。</p>
+          </div>
+        </div>
+        <div class="chips">
+          <span>fade-up</span>
+          <span>stagger-list</span>
+          <span>glow-pulse</span>
+        </div>
+      </div>
+      <aside class="panel">
+        <div>
+          <div class="kicker">Style DNA</div>
+          <div class="layout">东京夜是深夜两点屏幕前的视觉独白——深邃的蓝黑底幕上，青色光晕从角落浮起，如同东京深夜便利店的灯光。</div>
+        </div>
+        <div class="visual">
+          <div class="terminal">
+            <div class="dots"><b></b><b></b><b></b></div>
+            <pre><span class="prompt">$</span> style inspect tokyo-night
+<span class="output">&gt; palette locked</span>
+<span class="output">&gt; motion fade-up</span>
+<span class="highlight">render 1600x900</span></pre>
+          </div>
+        </div>
+        <div class="palette">
+          <i style="--c:#e2e8f0"></i>
+          <i style="--c:#cbd5e1"></i>
+          <i style="--c:#22d3ee"></i>
+          <i style="--c:#3b82f6"></i>
+          <i style="--c:#1e293b"></i>
+        </div>
+      </aside>
+    </section>
+    <div class="footer">
+      <span><b>Layout</b> 暗色卡片浮在更暗的背景上，层级靠微妙的亮度差和青色边框区分。</span>
+      <span>16:9 preview</span>
+    </div>
+  </main>
+</body>
+</html>

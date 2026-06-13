@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dracula 紫 · dracula</title>
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:100%;height:100%;overflow:hidden}
+html{display:grid;place-items:center;background:#0f1117}
+body{display:grid;place-items:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;color:#f8f8f2;background:#0f1117}
+
+.slide {
+  position: relative;
+  width: min(100vw, calc(100vh * 16 / 9));
+  aspect-ratio: 16/9;
+  overflow: hidden;
+  background: #282a36;
+  box-shadow: 0 0 0 1px rgba(189,147,249,.1), 0 0 80px rgba(255,121,198,.06);
+}
+
+/* Purple glow from top-right */
+.slide::before {
+  content: "";
+  position: absolute;
+  top: -15%; right: -10%;
+  width: 50%; height: 60%;
+  background: radial-gradient(circle, rgba(189,147,249,.1) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+/* Pink glow from bottom-left */
+.slide::after {
+  content: "";
+  position: absolute;
+  bottom: -15%; left: -5%;
+  width: 45%; height: 50%;
+  background: radial-gradient(circle, rgba(255,121,198,.06) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+.content {
+  position: absolute;
+  inset: 8% 7%;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1.1fr .9fr;
+  gap: 6%;
+  align-items: stretch;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.eyebrow {
+  font-size: clamp(7px, .95vw, 11px);
+  font-weight: 700;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: #ff79c6;
+  margin-bottom: 3%;
+}
+
+h1 {
+  font-size: clamp(32px, 5.5vw, 68px);
+  line-height: .92;
+  font-weight: 900;
+  color: #f8f8f2;
+  text-shadow: 0 0 30px rgba(255,121,198,.12), 0 0 60px rgba(189,147,249,.08);
+  letter-spacing: -.02em;
+}
+
+.desc {
+  margin-top: 4%;
+  font-size: clamp(10px, 1.35vw, 15px);
+  line-height: 1.7;
+  color: rgba(248,248,242,.65);
+  max-width: 92%;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 5%;
+}
+.tags span {
+  border: 1px solid rgba(255,121,198,.2);
+  background: rgba(255,121,198,.06);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: clamp(7px, .85vw, 10px);
+  font-weight: 600;
+  color: rgba(248,248,242,.8);
+}
+
+.story {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3%;
+  margin-top: 5%;
+}
+.story p {
+  border-left: 2px solid #bd93f9;
+  padding-left: 8px;
+  font-size: clamp(8px, .95vw, 11px);
+  line-height: 1.5;
+  color: rgba(248,248,242,.55);
+}
+
+.chips {
+  display: flex;
+  gap: 10px;
+  margin-top: 4%;
+}
+.chips span {
+  font-size: clamp(7px, .85vw, 10px);
+  color: rgba(248,248,242,.45);
+  border-bottom: 1px solid rgba(189,147,249,.15);
+  padding-bottom: 2px;
+}
+
+/* Right panel - code editor card */
+.panel {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(189,147,249,.12);
+  border-radius: 10px;
+  background: rgba(40,42,54,.6);
+  backdrop-filter: blur(12px);
+  padding: 6%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 5%;
+}
+.panel::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #ff79c6, #bd93f9);
+}
+
+.kicker {
+  font-size: clamp(8px, 1vw, 11px);
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #bd93f9;
+}
+
+.layout {
+  font-size: clamp(9px, 1.05vw, 13px);
+  line-height: 1.6;
+  color: rgba(248,248,242,.6);
+}
+
+/* Code block with syntax-colored dots */
+.visual {
+  position: relative;
+  min-height: 0;
+  border: 1px solid rgba(189,147,249,.1);
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(0,0,0,.3);
+}
+
+.code-block {
+  position: absolute;
+  inset: 6%;
+  padding: 8%;
+  font-family: "SFMono-Regular", "Consolas", "Menlo", monospace;
+}
+.syntax-dots {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 6%;
+}
+.syntax-dots i {
+  display: block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+}
+.syntax-dots i:nth-child(1) { background: #ff5555 }
+.syntax-dots i:nth-child(2) { background: #f1fa8c }
+.syntax-dots i:nth-child(3) { background: #50fa7b }
+
+.code-block pre {
+  font-size: clamp(7px, .95vw, 12px);
+  line-height: 1.85;
+  white-space: pre-wrap;
+  color: #b3b8c3;
+}
+.code-block .kw { color: #ff79c6 }
+.code-block .fn { color: #50fa7b }
+.code-block .str { color: #f1fa8c }
+.code-block .cm { color: #6272a4 }
+.code-block .var { color: #bd93f9 }
+.code-block .op { color: #ff79c6 }
+
+.palette {
+  display: flex;
+  gap: 7px;
+}
+.palette i {
+  display: block;
+  width: clamp(14px, 2vw, 22px);
+  height: clamp(14px, 2vw, 22px);
+  border-radius: 50%;
+  background: var(--c);
+  border: 1px solid rgba(255,255,255,.08);
+  box-shadow: 0 0 8px var(--c);
+}
+
+.footer {
+  position: absolute;
+  left: 7%; right: 7%;
+  bottom: 4.5%;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: clamp(7px, .85vw, 10px);
+  font-weight: 700;
+  color: rgba(248,248,242,.35);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.footer b { color: rgba(248,248,242,.7) }
+
+@media(max-aspect-ratio:16/9){.slide{width:min(100vw,calc(100vh*16/9));height:auto}}
+@media(min-aspect-ratio:16/9){.slide{height:min(100vh,calc(100vw*9/16));width:auto}}
+</style>
+</head>
+<body>
+  <main class="slide" aria-label="Dracula 紫 style preview">
+    <section class="content">
+      <div class="hero">
+        <div>
+          <div class="eyebrow">冷色 · 深色 · dracula</div>
+          <h1>Dracula 紫</h1>
+          <p class="desc">紫夜笼罩屏幕，每一行代码都在荧光中呼吸</p>
+          <div class="tags">
+            <span>代码密集的技术分享</span>
+            <span>开源项目演示</span>
+            <span>编程教学</span>
+            <span>黑客马拉松</span>
+          </div>
+          <div class="story">
+            <p>标题 #f8f8f2 冷白、正文 #b3b8c3 银灰，强调色 #ff79c6 荧光粉与 #bd93f9 薰衣草紫是 Dracula 的灵魂双色。</p>
+            <p>等宽字体是第一选择，代码友好。深邃而富有表现力。</p>
+          </div>
+        </div>
+        <div class="chips">
+          <span>fade-up</span>
+          <span>stagger-list</span>
+          <span>neon-glow</span>
+        </div>
+      </div>
+      <aside class="panel">
+        <div>
+          <div class="kicker">Style DNA</div>
+          <div class="layout">Dracula 是代码美学的经典之选——深邃的紫黑底色如夜晚的斗篷，荧光粉和薰衣草紫在其中呼吸。</div>
+        </div>
+        <div class="visual">
+          <div class="code-block">
+            <div class="syntax-dots"><i></i><i></i><i></i></div>
+<pre><span class="kw">function</span> <span class="fn">dracula</span>() {
+  <span class="kw">const</span> <span class="var">palette</span> <span class="op">=</span> {
+    pink: <span class="str">"#ff79c6"</span>,
+    purple: <span class="str">"#bd93f9"</span>
+  }; <span class="cm">// forever</span>
+}</pre>
+          </div>
+        </div>
+        <div class="palette">
+          <i style="--c:#f8f8f2"></i>
+          <i style="--c:#b3b8c3"></i>
+          <i style="--c:#ff79c6"></i>
+          <i style="--c:#bd93f9"></i>
+          <i style="--c:#282a36"></i>
+        </div>
+      </aside>
+    </section>
+    <div class="footer">
+      <span><b>Layout</b> 暗色背景上的代码卡片是视觉中心，终端风格的内容展示是常态。</span>
+      <span>16:9 preview</span>
+    </div>
+  </main>
+</body>
+</html>

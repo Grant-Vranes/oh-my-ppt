@@ -1,0 +1,18 @@
+{
+  "style": "terminal-green",
+  "name": {
+    "zh": "终端绿",
+    "en": "Terminal Green"
+  },
+  "description": "绿屏荧光在黑暗中闪烁，终端美学最原始的浪漫",
+  "category": "效果 · 重",
+  "aliases": [
+    "terminal",
+    "green",
+    "终端",
+    "绿屏"
+  ],
+  "styleCase": "CLI 工具展示、黑客马拉松、安全演讲、复古计算文化",
+  "version": "2.0.0",
+  "source": "builtin"
+}

@@ -8,6 +8,13 @@ import { is } from '@electron-toolkit/utils'
 import fs from 'fs'
 import crypto from 'crypto'
 import { runDatabasePatches } from './patch'
+import {
+  compareStyleVersion,
+  listStylePackageDirectories,
+  normalizeStyleVersion,
+  readStylePackage,
+  styleRowToPackageJson
+} from '../styles'
 
 type SessionStatus = 'active' | 'completed' | 'failed' | 'archived'
 type MessageRole = 'user' | 'assistant' | 'system' | 'tool'
@@ -212,16 +219,38 @@ export interface StyleRow {
   id: string
   style: string
   styleName: string
+  styleNameZh: string
+  styleNameEn: string
   description: string
   category: string
   aliases: string // JSON array
   source: StyleSource
   styleSkill: string // plain markdown
-  version: number
+  version: string
   styleCase: string
+  packageDir: string
   active: boolean
   createdAt: number
   updatedAt: number
+}
+
+export interface SessionStyleSnapshotRow {
+  id: string
+  sessionId: string
+  styleId: string
+  styleKey: string
+  styleName: string
+  styleNameZh: string
+  styleNameEn: string
+  description: string
+  category: string
+  aliases: string
+  source: StyleSource
+  version: string
+  styleCase: string
+  packageDir: string
+  styleSkill: string
+  createdAt: number
 }
 
 export interface ModelConfigRow {
@@ -329,7 +358,7 @@ export class PPTDatabase {
       resolveStoragePath: async () =>
         (await this.getSetting<string>('storage_path').catch(() => '')) || ''
     })
-    await this.seedStylesFromResources()
+    await this._refreshStylesCache()
     this._initialized = true
   }
 
@@ -382,6 +411,10 @@ export class PPTDatabase {
         metadata: null
       })
       .run()
+
+    if (this._stylesCache.length > 0) {
+      await this.createSessionStyleSnapshot(id, data.styleId)
+    }
 
     return id
   }
@@ -449,6 +482,9 @@ export class PPTDatabase {
       .set({ styleId, updatedAt: now })
       .where(eq(schema.sessions.id, sessionId))
       .run()
+    if (this._stylesCache.length > 0) {
+      await this.replaceSessionStyleSnapshot(sessionId, styleId)
+    }
   }
 
   async updateSessionDesignContract(sessionId: string, designContract: unknown): Promise<void> {
@@ -2224,120 +2260,93 @@ export class PPTDatabase {
     return result?.count ?? 0
   }
 
-  async seedStylesFromResources(): Promise<void> {
-    const stylesPath = is.dev
-      ? path.join(process.cwd(), 'resources', 'styles.json')
-      : path.join(process.resourcesPath, 'app.asar.unpacked', 'resources', 'styles.json')
-
-    if (!fs.existsSync(stylesPath)) {
-      console.warn('[db] styles.json not found at', stylesPath)
-      await this._refreshStylesCache()
-      return
-    }
-
-    const raw = fs.readFileSync(stylesPath, 'utf-8')
-    const items: Array<{
-      style: string
-      styleName: string
-      description?: string
-      category?: string
-      aliases?: string[]
-      source?: string
-      styleSkill?: string
-      version?: number
-      styleCase?: string
-    }> = JSON.parse(raw)
-
-    const rowCount = await this.countStyles()
-
-    if (rowCount === 0) {
-      // Fresh install: seed all
-      const now = Math.floor(Date.now() / 1000)
-      for (const item of items) {
-        await this.db
-          .insert(schema.styles)
-          .values({
-            id: crypto.randomUUID(),
-            style: item.style,
-            styleName: item.styleName,
-            description: item.description || '',
-            category: item.category || '',
-            aliases: JSON.stringify(item.aliases || []),
-            source: (item.source as StyleSource) || 'builtin',
-            styleSkill: item.styleSkill || '',
-            version: item.version || 1,
-            styleCase: item.styleCase || '',
-            createdAt: now,
-            updatedAt: now
-          })
-          .run()
-      }
-      await this._refreshStylesCache()
-      return
-    }
-
-    // Table non-empty: incremental upgrade
+  async syncInstalledStylesToDatabase(installedRootPath: string): Promise<void> {
+    const systemPath = path.join(installedRootPath, 'system')
+    const userPath = path.join(installedRootPath, 'user')
     await this._refreshStylesCache()
-    const now = Math.floor(Date.now() / 1000)
 
-    for (const item of items) {
-      const seedVersion = item.version || 1
-      const existing = this._stylesCache.find((r) => r.style === item.style)
+    const syncDirectory = async (root: string, scope: 'system' | 'user'): Promise<void> => {
+      if (!fs.existsSync(root)) return
+      const packageNames = await listStylePackageDirectories(root)
+      for (const packageName of packageNames) {
+        try {
+          const stylePackage = await readStylePackage(path.join(root, packageName))
+          const item = stylePackage.json
+          const existing = this._stylesCache.find((row) => row.style === item.style)
+          const source: StyleSource =
+            scope === 'system' ? 'builtin' : item.source === 'override' ? 'override' : 'custom'
+          const packageDir = path.posix.join(scope, packageName)
 
-      if (!existing) {
-        // New style: insert
-        await this.db
-          .insert(schema.styles)
-          .values({
-            id: crypto.randomUUID(),
-            style: item.style,
-            styleName: item.styleName,
-            description: item.description || '',
-            category: item.category || '',
-            aliases: JSON.stringify(item.aliases || []),
-            source: (item.source as StyleSource) || 'builtin',
-            styleSkill: item.styleSkill || '',
-            version: seedVersion,
-            styleCase: item.styleCase || '',
-            createdAt: now,
-            updatedAt: now
+          if (!existing) {
+            await this.createStyleRow({
+              id: scope === 'user' ? packageName : undefined,
+              style: item.style,
+              styleName: item.name.zh,
+              styleNameZh: item.name.zh,
+              styleNameEn: item.name.en,
+              description: item.description,
+              category: item.category,
+              aliases: item.aliases,
+              source,
+              styleSkill: stylePackage.skillMarkdown,
+              version: item.version,
+              styleCase: item.styleCase,
+              packageDir
+            })
+            continue
+          }
+
+          if (scope === 'system') {
+            if (
+              existing.source === 'builtin'
+            ) {
+              await this.updateStyleRow(existing.id, {
+                styleName: item.name.zh,
+                styleNameZh: item.name.zh,
+                styleNameEn: item.name.en,
+                description: item.description,
+                category: item.category,
+                aliases: item.aliases,
+                styleSkill: stylePackage.skillMarkdown,
+                version: item.version,
+                styleCase: item.styleCase,
+                packageDir
+              })
+              continue
+            }
+            if (
+              existing.source === 'override' &&
+              compareStyleVersion(item.version, existing.version) > 0
+            ) {
+              await this.updateStyleRow(existing.id, { version: item.version })
+            }
+            continue
+          }
+          await this.updateStyleRow(existing.id, {
+            styleName: item.name.zh,
+            styleNameZh: item.name.zh,
+            styleNameEn: item.name.en,
+            description: item.description,
+            category: item.category,
+            aliases: item.aliases,
+            source,
+            styleSkill: stylePackage.skillMarkdown,
+            version: item.version,
+            styleCase: item.styleCase,
+            packageDir,
+            active: true
           })
-          .run()
-        continue
-      }
-
-      if (existing.source === 'builtin' && existing.version < seedVersion) {
-        // Builtin style: full upgrade
-        await this.db
-          .update(schema.styles)
-          .set({
-            styleName: item.styleName,
-            description: item.description || '',
-            category: item.category || '',
-            aliases: JSON.stringify(item.aliases || []),
-            styleSkill: item.styleSkill || '',
-            version: seedVersion,
-            styleCase: item.styleCase || '',
-            updatedAt: now
+        } catch (error) {
+          console.warn('[db] failed to sync installed style package', {
+            path: path.join(root, packageName),
+            message: error instanceof Error ? error.message : String(error)
           })
-          .where(eq(schema.styles.style, item.style))
-          .run()
-        continue
+        }
       }
-
-      if (existing.source === 'override' && existing.version < seedVersion) {
-        // Override: only bump version, don't touch user content
-        await this.db
-          .update(schema.styles)
-          .set({ version: seedVersion, updatedAt: now })
-          .where(eq(schema.styles.style, item.style))
-          .run()
-        continue
-      }
-
-      // custom or already up-to-date: skip
     }
 
+    await syncDirectory(systemPath, 'system')
+    await syncDirectory(userPath, 'user')
     await this._refreshStylesCache()
   }
 
@@ -2347,7 +2356,10 @@ export class PPTDatabase {
       .from(schema.styles)
       .orderBy(asc(schema.styles.style))
       .all()
-    this._stylesCache = results as unknown as StyleRow[]
+    this._stylesCache = (results as unknown as StyleRow[]).map((row) => ({
+      ...row,
+      version: normalizeStyleVersion(row.version)
+    }))
   }
 
   /** Synchronous read from in-memory cache. Used by prompt builders. */
@@ -2371,7 +2383,10 @@ export class PPTDatabase {
       .from(schema.styles)
       .orderBy(asc(schema.styles.style))
       .all()
-    return results as unknown as StyleRow[]
+    return (results as unknown as StyleRow[]).map((row) => ({
+      ...row,
+      version: normalizeStyleVersion(row.version)
+    }))
   }
 
   async getStyleRow(styleId: string): Promise<StyleRow | undefined> {
@@ -2380,20 +2395,42 @@ export class PPTDatabase {
       .from(schema.styles)
       .where(eq(schema.styles.id, styleId))
       .get()
-    return result as unknown as StyleRow | undefined
+    return result
+      ? ({
+          ...(result as unknown as StyleRow),
+          version: normalizeStyleVersion((result as unknown as StyleRow).version)
+        } as StyleRow)
+      : undefined
+  }
+
+  async getStyleRowByStyle(style: string): Promise<StyleRow | undefined> {
+    const result = await this.db
+      .select()
+      .from(schema.styles)
+      .where(eq(schema.styles.style, style))
+      .get()
+    return result
+      ? ({
+          ...(result as unknown as StyleRow),
+          version: normalizeStyleVersion((result as unknown as StyleRow).version)
+        } as StyleRow)
+      : undefined
   }
 
   async createStyleRow(data: {
     id?: string
     style: string
     styleName: string
+    styleNameZh?: string
+    styleNameEn?: string
     description?: string
     category?: string
     aliases?: string[]
     source?: StyleSource
     styleSkill?: string
-    version?: number
+    version?: string | number
     styleCase?: string
+    packageDir?: string
   }): Promise<string> {
     const id = data.id || crypto.randomUUID()
     const now = Math.floor(Date.now() / 1000)
@@ -2403,13 +2440,16 @@ export class PPTDatabase {
         id,
         style: data.style,
         styleName: data.styleName,
+        styleNameZh: data.styleNameZh || data.styleName,
+        styleNameEn: data.styleNameEn || '',
         description: data.description || '',
         category: data.category || '',
         aliases: JSON.stringify(data.aliases || []),
         source: data.source || 'custom',
         styleSkill: data.styleSkill || '',
-        version: data.version || 1,
+        version: normalizeStyleVersion(data.version),
         styleCase: data.styleCase || '',
+        packageDir: data.packageDir || '',
         createdAt: now,
         updatedAt: now
       })
@@ -2422,26 +2462,32 @@ export class PPTDatabase {
     styleId: string,
     data: {
       styleName?: string
+      styleNameZh?: string
+      styleNameEn?: string
       description?: string
       category?: string
       aliases?: string[]
       source?: StyleSource
       styleSkill?: string
-      version?: number
+      version?: string | number
       styleCase?: string
+      packageDir?: string
       active?: boolean
     }
   ): Promise<void> {
     const now = Math.floor(Date.now() / 1000)
     const set: Record<string, unknown> = { updatedAt: now }
     if (data.styleName !== undefined) set.styleName = data.styleName
+    if (data.styleNameZh !== undefined) set.styleNameZh = data.styleNameZh
+    if (data.styleNameEn !== undefined) set.styleNameEn = data.styleNameEn
     if (data.description !== undefined) set.description = data.description
     if (data.category !== undefined) set.category = data.category
     if (data.aliases !== undefined) set.aliases = JSON.stringify(data.aliases)
     if (data.source !== undefined) set.source = data.source
     if (data.styleSkill !== undefined) set.styleSkill = data.styleSkill
-    if (data.version !== undefined) set.version = data.version
+    if (data.version !== undefined) set.version = normalizeStyleVersion(data.version)
     if (data.styleCase !== undefined) set.styleCase = data.styleCase
+    if (data.packageDir !== undefined) set.packageDir = data.packageDir
     if (data.active !== undefined) set.active = data.active
     await this.db.update(schema.styles).set(set).where(eq(schema.styles.id, styleId)).run()
     await this._refreshStylesCache()
@@ -2453,5 +2499,168 @@ export class PPTDatabase {
     await this.db.delete(schema.styles).where(eq(schema.styles.id, styleId)).run()
     await this._refreshStylesCache()
     return true
+  }
+
+  async getSessionStyleSnapshot(sessionId: string): Promise<SessionStyleSnapshotRow | undefined> {
+    const row = await this.db
+      .select()
+      .from(schema.sessionStyleSnapshots)
+      .where(eq(schema.sessionStyleSnapshots.sessionId, sessionId))
+      .get()
+    return row as unknown as SessionStyleSnapshotRow | undefined
+  }
+
+  async createSessionStyleSnapshot(
+    sessionId: string,
+    styleId?: string | null
+  ): Promise<SessionStyleSnapshotRow> {
+    const style = this.resolveSnapshotStyleRow(styleId)
+    const now = Math.floor(Date.now() / 1000)
+    await this.db
+      .insert(schema.sessionStyleSnapshots)
+      .values({
+        id: crypto.randomUUID(),
+        sessionId,
+        styleId: style.id,
+        styleKey: style.style,
+        styleName: style.styleName,
+        styleNameZh: style.styleNameZh || style.styleName,
+        styleNameEn: style.styleNameEn || '',
+        description: style.description,
+        category: style.category,
+        aliases: style.aliases || '[]',
+        source: style.source,
+        version: normalizeStyleVersion(style.version),
+        styleCase: style.styleCase,
+        packageDir: style.packageDir || '',
+        styleSkill: style.styleSkill,
+        createdAt: now
+      })
+      .onConflictDoNothing({ target: schema.sessionStyleSnapshots.sessionId })
+      .run()
+    const existing = await this.getSessionStyleSnapshot(sessionId)
+    if (!existing) throw new Error('Session style snapshot was not created')
+    return existing
+  }
+
+  async replaceSessionStyleSnapshot(
+    sessionId: string,
+    styleId?: string | null
+  ): Promise<SessionStyleSnapshotRow> {
+    await this.db
+      .delete(schema.sessionStyleSnapshots)
+      .where(eq(schema.sessionStyleSnapshots.sessionId, sessionId))
+      .run()
+    return this.createSessionStyleSnapshot(sessionId, styleId)
+  }
+
+  async getOrCreateSessionStyleSnapshot(sessionId: string): Promise<SessionStyleSnapshotRow> {
+    const existing = await this.getSessionStyleSnapshot(sessionId)
+    if (existing) return existing
+    const session = await this.getSession(sessionId)
+    return this.createSessionStyleSnapshot(sessionId, session?.styleId)
+  }
+
+  async copySessionStyleSnapshot(sourceSessionId: string, targetSessionId: string): Promise<void> {
+    const source = await this.getOrCreateSessionStyleSnapshot(sourceSessionId)
+    await this.db
+      .delete(schema.sessionStyleSnapshots)
+      .where(eq(schema.sessionStyleSnapshots.sessionId, targetSessionId))
+      .run()
+    await this.db
+      .insert(schema.sessionStyleSnapshots)
+      .values({
+        id: crypto.randomUUID(),
+        sessionId: targetSessionId,
+        styleId: source.styleId,
+        styleKey: source.styleKey,
+        styleName: source.styleName,
+        styleNameZh: source.styleNameZh || source.styleName,
+        styleNameEn: source.styleNameEn || '',
+        description: source.description,
+        category: source.category,
+        aliases: source.aliases,
+        source: source.source,
+        version: normalizeStyleVersion(source.version),
+        styleCase: source.styleCase,
+        packageDir: source.packageDir || '',
+        styleSkill: source.styleSkill,
+        createdAt: Math.floor(Date.now() / 1000)
+      })
+      .onConflictDoNothing({ target: schema.sessionStyleSnapshots.sessionId })
+      .run()
+  }
+
+  async backfillSessionStyleSnapshots(): Promise<{
+    scanned: number
+    created: number
+    fallback: number
+    failed: number
+  }> {
+    const rows = await this.db
+      .select({ session: schema.sessions })
+      .from(schema.sessions)
+      .leftJoin(
+        schema.sessionStyleSnapshots,
+        eq(schema.sessionStyleSnapshots.sessionId, schema.sessions.id)
+      )
+      .where(isNull(schema.sessionStyleSnapshots.id))
+      .all()
+
+    let created = 0
+    let fallback = 0
+    let failed = 0
+    for (const row of rows) {
+      const session = row.session as unknown as Session
+      try {
+        const snapshot = await this.createSessionStyleSnapshot(session.id, session.styleId)
+        if (!session.styleId || session.styleId !== snapshot.styleId) {
+          fallback += 1
+          await this.updateSessionStyleId(session.id, snapshot.styleId)
+        }
+        created += 1
+      } catch (error) {
+        failed += 1
+        console.warn('[db] failed to backfill session style snapshot', {
+          sessionId: session.id,
+          message: error instanceof Error ? error.message : String(error)
+        })
+      }
+    }
+    return { scanned: rows.length, created, fallback, failed }
+  }
+
+  styleRowToPackageJson(styleId: string): ReturnType<typeof styleRowToPackageJson> {
+    const row = this.getStyleRowSync(styleId)
+    if (!row) throw new Error('style 不存在：' + styleId)
+    return styleRowToPackageJson({
+      style: row.style,
+      styleName: row.styleName,
+      styleNameZh: row.styleNameZh || row.styleName,
+      styleNameEn: row.styleNameEn || '',
+      description: row.description,
+      category: row.category,
+      aliases: row.aliases,
+      source: row.source,
+      version: row.version,
+      styleCase: row.styleCase
+    })
+  }
+
+  private resolveSnapshotStyleRow(styleId?: string | null): StyleRow {
+    if (styleId) {
+      const byId = this._stylesCache.find((row) => row.id === styleId)
+      if (byId) return byId
+      const byStyle = this._stylesCache.find((row) => row.style === styleId)
+      if (byStyle) return byStyle
+    }
+    const activeRows = this._stylesCache.filter((row) => row.active !== false)
+    const fallback =
+      activeRows.find((row) => row.style === 'minimal-white') ||
+      this._stylesCache.find((row) => row.style === 'minimal-white') ||
+      activeRows[0] ||
+      this._stylesCache[0]
+    if (!fallback) throw new Error('No style rows available for session snapshot')
+    return fallback
   }
 }

@@ -1,16 +1,17 @@
-import { ipcMain } from 'electron'
+import { BrowserWindow, dialog, ipcMain } from 'electron'
 import fs from 'fs'
 import path from 'path'
 import log from 'electron-log/main.js'
 import { customAlphabet } from 'nanoid'
-import { is } from '@electron-toolkit/utils'
 import {
   listStyleCatalog,
   getStyleDetail,
   createStyleSkill,
   updateStyleSkill,
   hasStyleSkill,
-  deleteStyleSkill
+  deleteStyleSkill,
+  exportStylePackageZip,
+  importStylePackageZip
 } from '../../utils/style-skills'
 import type { IpcContext } from '../context'
 import { resolveGlobalModelTimeouts, resolveModelConfigForTask } from './model-config-utils'
@@ -18,18 +19,25 @@ import { parseStyleFile } from '../../utils/style-import'
 import { parseStyleImage } from '../../utils/style-image-import'
 import { parseStylePptx } from '../../utils/style-pptx-import'
 import { isSupportedImageMimeType, normalizeImageMimeType } from '@shared/image-mime'
+import { getInstalledStylesPath } from '../../styles'
 
 const nanoidLower = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 12)
 const MAX_STYLE_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
 
-function resolvePreviewHtmlPath(styleKey: string): string {
-  return is.dev
-    ? path.join(process.cwd(), 'resources', 'styleHtml', `${styleKey}.html`)
-    : path.join(process.resourcesPath, 'app.asar.unpacked', 'resources', 'styleHtml', `${styleKey}.html`)
-}
-
-function resolvePreviewPath(styleKey: string): string | null {
-  const htmlPath = resolvePreviewHtmlPath(styleKey)
+function resolvePreviewPath(row: {
+  id: string
+  style: string
+  source: string
+  packageDir?: string | null
+}): string | null {
+  const installedRoot = getInstalledStylesPath()
+  if (!installedRoot) return null
+  const dir = row.packageDir
+    ? path.join(installedRoot, row.packageDir)
+    : row.source === 'builtin'
+      ? path.join(installedRoot, 'system', row.style)
+      : path.join(installedRoot, 'user', row.id)
+  const htmlPath = path.join(dir, 'preview.html')
   return fs.existsSync(htmlPath) ? htmlPath : null
 }
 
@@ -92,6 +100,10 @@ export function registerStyleHandlers(ctx: IpcContext): void {
         id: row.id,
         styleKey: row.style,
         label: row.styleName,
+        name: {
+          zh: row.styleNameZh || row.styleName,
+          en: row.styleNameEn || ''
+        },
         description: row.description,
         aliases: JSON.parse(row.aliases || '[]'),
         category: row.category || (row.source === 'builtin' ? '内置' : '自定义'),
@@ -99,7 +111,8 @@ export function registerStyleHandlers(ctx: IpcContext): void {
         editable: row.source !== 'builtin',
         version: row.version,
         styleCase: row.styleCase,
-        previewPath: resolvePreviewPath(row.style),
+        packageDir: row.packageDir || '',
+        previewPath: resolvePreviewPath(row),
         createdAt: row.createdAt,
         updatedAt: row.updatedAt
       }))
@@ -235,6 +248,40 @@ export function registerStyleHandlers(ctx: IpcContext): void {
       maxTokens: activeModel.maxTokens,
       modelTimeoutMs: modelTimeouts.document
     })
+  })
+
+  ipcMain.handle('styles:importPackageZip', async (_event, payload) => {
+    const filePath = typeof payload?.filePath === 'string' ? payload.filePath.trim() : ''
+    if (!filePath) throw new Error('文件路径为空')
+    const result = await importStylePackageZip(filePath)
+    return { success: true, ...result }
+  })
+
+  ipcMain.handle('styles:exportPackageZip', async (event, payload) => {
+    const styleId = typeof payload?.styleId === 'string' ? payload.styleId.trim() : ''
+    if (!styleId) throw new Error('styleId 为空')
+    const detail = getStyleDetail(styleId)
+    const safeName = (detail.styleKey || detail.id).replace(/[^a-z0-9-]/gi, '-').toLowerCase()
+    const ownerWindow = BrowserWindow.fromWebContents(event.sender)
+    const saveResult = ownerWindow
+      ? await dialog.showSaveDialog(ownerWindow, {
+          title: '导出风格包',
+          defaultPath: safeName + '.zip',
+          filters: [{ name: 'Style ZIP', extensions: ['zip'] }]
+        })
+      : await dialog.showSaveDialog({
+          title: '导出风格包',
+          defaultPath: safeName + '.zip',
+          filters: [{ name: 'Style ZIP', extensions: ['zip'] }]
+        })
+    if (saveResult.canceled || !saveResult.filePath) {
+      return { success: false, canceled: true }
+    }
+    const outputPath = saveResult.filePath.toLowerCase().endsWith('.zip')
+      ? saveResult.filePath
+      : saveResult.filePath + '.zip'
+    const result = await exportStylePackageZip(styleId, outputPath)
+    return { success: true, canceled: false, ...result }
   })
 
   ipcMain.handle('styles:create', async (_event, payload) => {

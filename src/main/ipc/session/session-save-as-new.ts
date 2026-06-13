@@ -264,6 +264,7 @@ export function registerSessionSaveAsNewHandler(ctx: IpcContext): void {
         provider: sourceProvider,
         model: sourceModel
       })
+      await db.copySessionStyleSnapshot(sourceSessionId, newSessionId)
 
       const designContract = parseOptionalJson(sourceSession.designContract)
       if (designContract) {

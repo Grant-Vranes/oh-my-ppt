@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>锐利黑白 · Sharp Mono</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #0f1117; display: grid; place-items: center; }
+body { font-family: "SFMono-Regular", "Consolas", "Menlo", monospace; }
+
+.slide {
+  position: relative;
+  width: min(100vw, calc(100vh * 16 / 9));
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.08);
+}
+
+/* Split: left black, right white */
+.split-left {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 42%;
+  height: 100%;
+  background: #000000;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(16px, 3vw, 42px);
+  clip-path: polygon(0 0, 100% 0, 90% 100%, 0 100%);
+}
+.split-right {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 62%;
+  height: 100%;
+  background: #ffffff;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(16px, 3vw, 42px) clamp(16px, 3vw, 42px) clamp(16px, 3vw, 42px) clamp(40px, 7vw, 100px);
+}
+
+/* Diagonal divider line */
+.divider {
+  position: absolute;
+  left: 38%;
+  top: -5%;
+  width: 4px;
+  height: 120%;
+  background: #666666;
+  transform: rotate(4deg);
+  z-index: 2;
+}
+
+.eyebrow {
+  font-size: clamp(6px, 0.7vw, 9px);
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #666666;
+  margin-bottom: clamp(6px, 1vw, 14px);
+}
+.eyebrow-light {
+  color: #666666;
+}
+h1 {
+  font-size: clamp(30px, 5.5vw, 64px);
+  line-height: 0.9;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  color: #000000;
+}
+h1-white {
+  font-size: clamp(30px, 5.5vw, 64px);
+  line-height: 0.9;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  color: #ffffff;
+  display: block;
+}
+
+.left-desc {
+  font-size: clamp(8px, 1vw, 13px);
+  line-height: 1.6;
+  color: #666666;
+  margin-top: clamp(8px, 1.2vw, 16px);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+.right-desc {
+  font-size: clamp(8px, 1vw, 13px);
+  line-height: 1.6;
+  color: #333333;
+  margin-top: clamp(8px, 1.2vw, 16px);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+/* Monospace code block style */
+.mono-block {
+  margin-top: clamp(8px, 1.2vw, 16px);
+  padding: clamp(6px, 0.8vw, 12px) clamp(8px, 1vw, 14px);
+  border: 2px solid #000000;
+  font-size: clamp(7px, 0.8vw, 10px);
+  line-height: 1.7;
+  color: #333333;
+}
+.mono-block-dark {
+  border-color: #333333;
+  color: #666666;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(3px, 0.4vw, 6px);
+  margin-top: clamp(6px, 1vw, 14px);
+}
+.tags span {
+  font-size: clamp(6px, 0.7vw, 9px);
+  font-weight: 700;
+  padding: clamp(2px, 0.3vw, 4px) clamp(5px, 0.6vw, 8px);
+  border: 2px solid currentColor;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+.palette {
+  display: flex;
+  gap: clamp(3px, 0.4vw, 6px);
+  margin-top: clamp(6px, 1vw, 14px);
+}
+.palette i {
+  display: block;
+  width: clamp(12px, 1.6vw, 22px);
+  height: clamp(12px, 1.6vw, 22px);
+  background: var(--c);
+  border: 2px solid #000000;
+}
+
+.label {
+  font-size: clamp(6px, 0.65vw, 8px);
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #999999;
+  margin-top: clamp(6px, 1vw, 14px);
+}
+.label-dark {
+  color: #666666;
+}
+
+@media (max-aspect-ratio: 16/9) { .slide { width: min(100vw, calc(100vh * 16 / 9)); height: auto; } }
+@media (min-aspect-ratio: 16/9) { .slide { height: min(100vh, calc(100vw * 9 / 16)); width: auto; } }
+</style>
+</head>
+<body>
+  <main class="slide" aria-label="锐利黑白 style preview">
+    <div class="split-left">
+      <div class="eyebrow eyebrow-light">大胆 · 宣言</div>
+      <h1-white>锐利</h1-white>
+      <h1-white>黑白</h1-white>
+      <p class="left-desc">黑白利刃切开视觉噪音，硬朗到骨子里</p>
+      <div class="mono-block mono-block-dark">
+        Layout: 大胆的对角线切割、<br>
+        大面积黑色色块与白色空间<br>
+        的极端对比。排版即武器。
+      </div>
+      <div class="palette">
+        <i style="--c:#000000"></i>
+        <i style="--c:#333333"></i>
+        <i style="--c:#666666"></i>
+        <i style="--c:#ffffff"></i>
+        <i style="--c:#f5f5f5"></i>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="split-right">
+      <div class="eyebrow">sharp-mono · 16:9 preview</div>
+      <h1>SHARP<br>MONO</h1>
+      <p class="right-desc">极致的高对比美学——没有灰色地带，只有黑与白的正面交锋。Archivo Black 或粗黑体，字重拉到最重，标题字号可以大到填满半个屏幕。</p>
+      <div class="tags">
+        <span style="color:#000">宣言式演讲</span>
+        <span style="color:#000">品牌态度声明</span>
+        <span style="color:#000">创意比稿</span>
+        <span style="color:#000">反叛精神展示</span>
+      </div>
+      <div class="label">drop-in / zoom-pop / card-flip-3d</div>
+    </div>
+  </main>
+</body>
+</html>

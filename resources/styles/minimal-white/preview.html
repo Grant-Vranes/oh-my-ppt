@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>极简白 · minimal-white</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: #0f1117;
+    display: flex; align-items: center; justify-content: center;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+  }
+  .slide {
+    width: min(100vw, calc(100vh * 16 / 9));
+    aspect-ratio: 16 / 9;
+    background: #ffffff;
+    position: relative;
+    overflow: hidden;
+  }
+  .top-bar {
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+    background: #3b82f6;
+    opacity: 0.15;
+  }
+  .content {
+    position: absolute;
+    top: 18%; left: 10%; right: 10%; bottom: 20%;
+    display: flex; flex-direction: column;
+    justify-content: center;
+  }
+  .category {
+    font-size: clamp(8px, 0.9vw, 11px);
+    font-weight: 400;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #94a3b8;
+    margin-bottom: 3%;
+  }
+  h1 {
+    font-size: clamp(36px, 6vw, 72px);
+    font-weight: 200;
+    color: #0f172a;
+    line-height: 1.1;
+    letter-spacing: 0.05em;
+  }
+  .desc {
+    font-size: clamp(10px, 1.3vw, 15px);
+    color: #94a3b8;
+    margin-top: 3%;
+    line-height: 1.6;
+    max-width: 50%;
+    font-weight: 300;
+  }
+  .kuhaku {
+    position: absolute;
+    top: 50%; right: 12%;
+    transform: translateY(-50%);
+    font-size: clamp(60px, 10vw, 120px);
+    font-weight: 100;
+    color: #f1f5f9;
+    letter-spacing: 0.15em;
+    user-select: none;
+  }
+  .accent-line {
+    position: absolute;
+    bottom: 28%; left: 10%;
+    width: 40px; height: 1px;
+    background: #3b82f6;
+  }
+  .palette {
+    position: absolute;
+    bottom: 8%; left: 10%;
+    display: flex; gap: 10px; align-items: center;
+  }
+  .palette-dot {
+    width: clamp(12px, 1.5vw, 18px);
+    height: clamp(12px, 1.5vw, 18px);
+    border-radius: 50%;
+    background: var(--c);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .meta {
+    position: absolute;
+    bottom: 8%; right: 10%;
+    font-size: clamp(7px, 0.8vw, 10px);
+    color: #cbd5e1;
+    text-align: right;
+    line-height: 1.8;
+    font-weight: 300;
+  }
+  .tags {
+    position: absolute;
+    top: 8%; left: 10%;
+    display: flex; gap: 12px;
+  }
+  .tags span {
+    font-size: clamp(7px, 0.75vw, 9px);
+    color: #94a3b8;
+    border: 1px solid #e2e8f0;
+    border-radius: 100px;
+    padding: 3px 10px;
+    font-weight: 400;
+  }
+  .bottom-stripe {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 50%, transparent 100%);
+    opacity: 0.6;
+  }
+  @media (max-aspect-ratio: 16/9) {
+    .slide { width: min(100vw, calc(100vh * 16 / 9)); height: auto; }
+  }
+  @media (min-aspect-ratio: 16/9) {
+    .slide { height: min(100vh, calc(100vw * 9 / 16)); width: auto; }
+  }
+</style>
+</head>
+<body>
+  <main class="slide" aria-label="极简白 style preview">
+    <div class="top-bar"></div>
+    <div class="tags">
+      <span>内部汇报</span>
+      <span>技术评审</span>
+      <span>严肃话题</span>
+    </div>
+    <div class="content">
+      <div class="category">浅色 · 沉静 / Minimal White</div>
+      <h1>极简白</h1>
+      <p class="desc">克制到极致的高级感，留白是最有力的表达</p>
+    </div>
+    <div class="kuhaku">留白</div>
+    <div class="accent-line"></div>
+    <div class="palette">
+      <div class="palette-dot" style="--c:#0f172a"></div>
+      <div class="palette-dot" style="--c:#475569"></div>
+      <div class="palette-dot" style="--c:#3b82f6"></div>
+      <div class="palette-dot" style="--c:#60a5fa"></div>
+      <div class="palette-dot" style="--c:#ffffff; border: 1px solid #e2e8f0"></div>
+    </div>
+    <div class="meta">
+      minimal-white<br />
+      极简 · 留白 · 克制
+    </div>
+    <div class="bottom-stripe"></div>
+  </main>
+</body>
+</html>

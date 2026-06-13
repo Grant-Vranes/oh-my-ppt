@@ -1,0 +1,18 @@
+{
+  "style": "catppuccin-latte",
+  "name": {
+    "zh": "Catppuccin 拿铁",
+    "en": "Catppuccin Latte"
+  },
+  "description": "拿铁浅底映粉彩，开发者的午后该有这样的温柔",
+  "category": "浅色 · 沉静",
+  "aliases": [
+    "catppuccin",
+    "latte",
+    "拿铁",
+    "开发者"
+  ],
+  "styleCase": "开发者友好的技术分享、开源项目介绍、团队内部技术 Review",
+  "version": "2.0.0",
+  "source": "builtin"
+}

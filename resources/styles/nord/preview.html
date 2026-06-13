@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>北欧 · nord</title>
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:100%;height:100%;overflow:hidden}
+html{display:grid;place-items:center;background:#0f1117}
+body{display:grid;place-items:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;color:#eceff4;background:#0f1117}
+
+.slide {
+  position: relative;
+  width: min(100vw, calc(100vh * 16 / 9));
+  aspect-ratio: 16/9;
+  overflow: hidden;
+  background: linear-gradient(135deg, #2e3440 0%, #3b4252 40%, #434c5e 70%, #3b4252 100%);
+  box-shadow: 0 0 0 1px rgba(136,192,208,.08);
+}
+
+/* Frosted border effect */
+.slide::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(136,192,208,.1);
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Subtle ice blue aurora */
+.slide::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 40%;
+  background: linear-gradient(180deg, rgba(136,192,208,.06) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+.content {
+  position: absolute;
+  inset: 8% 7%;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1.1fr .9fr;
+  gap: 6%;
+  align-items: stretch;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.eyebrow {
+  font-size: clamp(7px, .95vw, 11px);
+  font-weight: 700;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: #88c0d0;
+  margin-bottom: 3%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.eyebrow::before {
+  content: "";
+  display: inline-block;
+  width: 20px; height: 1px;
+  background: #88c0d0;
+}
+
+h1 {
+  font-size: clamp(32px, 5.5vw, 68px);
+  line-height: .92;
+  font-weight: 900;
+  color: #eceff4;
+  letter-spacing: -.02em;
+}
+
+.desc {
+  margin-top: 4%;
+  font-size: clamp(10px, 1.35vw, 15px);
+  line-height: 1.7;
+  color: rgba(236,239,244,.6);
+  max-width: 92%;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 5%;
+}
+.tags span {
+  border: 1px solid rgba(136,192,208,.15);
+  background: rgba(136,192,208,.05);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: clamp(7px, .85vw, 10px);
+  font-weight: 600;
+  color: rgba(236,239,244,.75);
+}
+
+.story {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3%;
+  margin-top: 5%;
+}
+.story p {
+  border-left: 2px solid #88c0d0;
+  padding-left: 8px;
+  font-size: clamp(8px, .95vw, 11px);
+  line-height: 1.5;
+  color: rgba(236,239,244,.5);
+}
+
+.chips {
+  display: flex;
+  gap: 10px;
+  margin-top: 4%;
+}
+.chips span {
+  font-size: clamp(7px, .85vw, 10px);
+  color: rgba(236,239,244,.4);
+  border-bottom: 1px solid rgba(136,192,208,.1);
+  padding-bottom: 2px;
+}
+
+/* Right panel - frosted glass card */
+.panel {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(136,192,208,.12);
+  border-radius: 12px;
+  background: rgba(46,52,64,.5);
+  backdrop-filter: blur(16px);
+  padding: 7%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 5%;
+}
+.panel::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #88c0d0, #81a1c1, #88c0d0);
+}
+
+.kicker {
+  font-size: clamp(8px, 1vw, 11px);
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #88c0d0;
+}
+
+.layout {
+  font-size: clamp(9px, 1.05vw, 13px);
+  line-height: 1.6;
+  color: rgba(236,239,244,.55);
+}
+
+/* Serene soft shapes */
+.visual {
+  position: relative;
+  min-height: 0;
+  border: 1px solid rgba(136,192,208,.08);
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(0,0,0,.15);
+}
+
+.frost {
+  position: absolute;
+  border-radius: 48% 52% 46% 54%;
+  opacity: .35;
+}
+.f1 {
+  width: 55%; height: 60%;
+  left: -8%; top: 5%;
+  background: radial-gradient(circle, rgba(136,192,208,.2) 0%, transparent 70%);
+}
+.f2 {
+  width: 45%; height: 50%;
+  right: -5%; bottom: 5%;
+  background: radial-gradient(circle, rgba(129,161,193,.2) 0%, transparent 70%);
+}
+
+.frost-text {
+  position: absolute;
+  left: 12%; right: 12%;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: Georgia, "Songti SC", serif;
+  font-size: clamp(11px, 1.8vw, 20px);
+  line-height: 1.4;
+  color: rgba(236,239,244,.7);
+  text-align: center;
+}
+
+.palette {
+  display: flex;
+  gap: 7px;
+}
+.palette i {
+  display: block;
+  width: clamp(14px, 2vw, 22px);
+  height: clamp(14px, 2vw, 22px);
+  border-radius: 50%;
+  background: var(--c);
+  border: 1px solid rgba(255,255,255,.08);
+}
+
+.footer {
+  position: absolute;
+  left: 7%; right: 7%;
+  bottom: 4.5%;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: clamp(7px, .85vw, 10px);
+  font-weight: 700;
+  color: rgba(236,239,244,.3);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.footer b { color: rgba(236,239,244,.65) }
+
+@media(max-aspect-ratio:16/9){.slide{width:min(100vw,calc(100vh*16/9));height:auto}}
+@media(min-aspect-ratio:16/9){.slide{height:min(100vh,calc(100vw*9/16));width:auto}}
+</style>
+</head>
+<body>
+  <main class="slide" aria-label="北欧 style preview">
+    <section class="content">
+      <div class="hero">
+        <div>
+          <div class="eyebrow">冷色 · 深色 · nord</div>
+          <h1>北欧</h1>
+          <p class="desc">极夜蓝底映冰蓝微光，安静到只听得见思考的声音</p>
+          <div class="tags">
+            <span>基础设施介绍</span>
+            <span>云产品发布</span>
+            <span>技术架构分享</span>
+          </div>
+          <div class="story">
+            <p>标题 #eceff4 极浅灰白、正文 #d8dee9 浅灰，强调色 #88c0d0 冰蓝与 #81a1c1 钢蓝是极夜中仅有的光。</p>
+            <p>冷静的无衬线字体，字重偏轻到中等。极简而克制。</p>
+          </div>
+        </div>
+        <div class="chips">
+          <span>fade-up</span>
+          <span>stagger-list</span>
+          <span>path-draw</span>
+        </div>
+      </div>
+      <aside class="panel">
+        <div>
+          <div class="kicker">Style DNA</div>
+          <div class="layout">北欧风格是极夜中的宁静——深灰蓝的底色如挪威冬夜的天空，冰蓝的微光如极地星辉。</div>
+        </div>
+        <div class="visual">
+          <div class="frost f1"></div>
+          <div class="frost f2"></div>
+          <div class="frost-text">极夜蓝底映冰蓝微光，安静到只听得见思考的声音</div>
+        </div>
+        <div class="palette">
+          <i style="--c:#eceff4"></i>
+          <i style="--c:#d8dee9"></i>
+          <i style="--c:#88c0d0"></i>
+          <i style="--c:#81a1c1"></i>
+          <i style="--c:#2e3440"></i>
+        </div>
+      </aside>
+    </section>
+    <div class="footer">
+      <span><b>Layout</b> 极简布局，每个页面只承载一个核心信息。</span>
+      <span>16:9 preview</span>
+    </div>
+  </main>
+</body>
+</html>

@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real, index } from 'drizzle-orm/sqlite-core'
+import { sqliteTable, text, integer, real, index, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
 export const sessions = sqliteTable('sessions', {
   id: text('id').primaryKey(),
@@ -245,17 +245,49 @@ export const styles = sqliteTable('styles', {
   id: text('id').primaryKey(),
   style: text('style').notNull().unique(),
   styleName: text('style_name').notNull(),
+  styleNameZh: text('style_name_zh').notNull().default(''),
+  styleNameEn: text('style_name_en').notNull().default(''),
   description: text('description').notNull().default(''),
   category: text('category').notNull().default(''),
   aliases: text('aliases').notNull().default('[]'),
   source: text('source').notNull().default('custom'),
   styleSkill: text('style_skill').notNull().default(''),
-  version: integer('version').notNull().default(1),
+  version: text('version').notNull().default('1.0.0'),
   styleCase: text('style_case').notNull().default(''),
+  packageDir: text('package_dir').notNull().default(''),
   active: integer('active', { mode: 'boolean' }).notNull().default(true),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull()
 })
+
+export const sessionStyleSnapshots = sqliteTable(
+  'session_style_snapshots',
+  {
+    id: text('id').primaryKey(),
+    sessionId: text('session_id')
+      .notNull()
+      .references(() => sessions.id, { onDelete: 'cascade' }),
+    styleId: text('style_id').notNull(),
+    styleKey: text('style_key').notNull(),
+    styleName: text('style_name').notNull(),
+    styleNameZh: text('style_name_zh').notNull().default(''),
+    styleNameEn: text('style_name_en').notNull().default(''),
+    description: text('description').notNull().default(''),
+    category: text('category').notNull().default(''),
+    aliases: text('aliases').notNull().default('[]'),
+    source: text('source').notNull(),
+    version: text('version').notNull().default('1.0.0'),
+    styleCase: text('style_case').notNull().default(''),
+    packageDir: text('package_dir').notNull().default(''),
+    styleSkill: text('style_skill').notNull().default(''),
+    createdAt: integer('created_at').notNull()
+  },
+  (table) => ({
+    sessionIdUniqueIdx: uniqueIndex('session_style_snapshots_session_id_unique').on(
+      table.sessionId
+    )
+  })
+)
 
 export const sessionOperations = sqliteTable('session_operations', {
   id: text('id').primaryKey(),

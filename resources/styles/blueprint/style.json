@@ -1,0 +1,17 @@
+{
+  "style": "blueprint",
+  "name": {
+    "zh": "蓝图",
+    "en": "Blueprint"
+  },
+  "description": "深蓝底上浅蓝线条织就网格，建筑师的梦想画布",
+  "category": "效果 · 重",
+  "aliases": [
+    "blueprint",
+    "工程",
+    "架构"
+  ],
+  "styleCase": "系统架构展示、工程蓝图讲解、技术方案设计、基础设施规划",
+  "version": "2.0.0",
+  "source": "builtin"
+}

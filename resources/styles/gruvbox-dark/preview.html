@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Gruvbox 暗 · gruvbox-dark</title>
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:100%;height:100%;overflow:hidden}
+html{display:grid;place-items:center;background:#0f1117}
+body{display:grid;place-items:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;color:#ebdbb2;background:#0f1117}
+
+.slide {
+  position: relative;
+  width: min(100vw, calc(100vh * 16 / 9));
+  aspect-ratio: 16/9;
+  overflow: hidden;
+  background: #282828;
+  box-shadow: 0 0 0 1px rgba(254,128,25,.1), 0 0 60px rgba(254,128,25,.04);
+}
+
+/* Warm amber glow top-right */
+.slide::before {
+  content: "";
+  position: absolute;
+  top: -10%; right: -5%;
+  width: 45%; height: 55%;
+  background: radial-gradient(circle, rgba(254,128,25,.08) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+/* Green glow bottom-left */
+.slide::after {
+  content: "";
+  position: absolute;
+  bottom: -10%; left: -5%;
+  width: 40%; height: 45%;
+  background: radial-gradient(circle, rgba(184,187,38,.06) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+.content {
+  position: absolute;
+  inset: 8% 7%;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1.1fr .9fr;
+  gap: 6%;
+  align-items: stretch;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.eyebrow {
+  font-size: clamp(7px, .95vw, 11px);
+  font-weight: 700;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: #fe8019;
+  margin-bottom: 3%;
+}
+
+h1 {
+  font-size: clamp(32px, 5.5vw, 68px);
+  line-height: .92;
+  font-weight: 900;
+  color: #ebdbb2;
+  text-shadow: 0 0 30px rgba(254,128,25,.1);
+  letter-spacing: -.02em;
+}
+
+.desc {
+  margin-top: 4%;
+  font-size: clamp(10px, 1.35vw, 15px);
+  line-height: 1.7;
+  color: rgba(235,219,178,.65);
+  max-width: 92%;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 5%;
+}
+.tags span {
+  border: 1px solid rgba(254,128,25,.2);
+  background: rgba(254,128,25,.06);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: clamp(7px, .85vw, 10px);
+  font-weight: 600;
+  color: rgba(235,219,178,.8);
+}
+
+.story {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3%;
+  margin-top: 5%;
+}
+.story p {
+  border-left: 2px solid #fe8019;
+  padding-left: 8px;
+  font-size: clamp(8px, .95vw, 11px);
+  line-height: 1.5;
+  color: rgba(235,219,178,.55);
+}
+
+.chips {
+  display: flex;
+  gap: 10px;
+  margin-top: 4%;
+}
+.chips span {
+  font-size: clamp(7px, .85vw, 10px);
+  color: rgba(235,219,178,.45);
+  border-bottom: 1px solid rgba(254,128,25,.15);
+  padding-bottom: 2px;
+}
+
+/* Right panel - terminal vim style */
+.panel {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(254,128,25,.12);
+  border-radius: 10px;
+  background: rgba(40,40,40,.65);
+  backdrop-filter: blur(12px);
+  padding: 6%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 5%;
+}
+.panel::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #fe8019, #b8bb26);
+}
+
+.kicker {
+  font-size: clamp(8px, 1vw, 11px);
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #fe8019;
+}
+
+.layout {
+  font-size: clamp(9px, 1.05vw, 13px);
+  line-height: 1.6;
+  color: rgba(235,219,178,.6);
+}
+
+/* Vim status bar decoration */
+.visual {
+  position: relative;
+  min-height: 0;
+  border: 1px solid rgba(254,128,25,.1);
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(0,0,0,.3);
+}
+
+.vim-content {
+  position: absolute;
+  inset: 8%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-family: "SFMono-Regular", "Consolas", "Menlo", monospace;
+}
+.vim-lines {
+  font-size: clamp(7px, .95vw, 12px);
+  line-height: 1.8;
+  color: rgba(235,219,178,.6);
+}
+.vim-lines .line-num { color: rgba(235,219,178,.3); display: inline-block; width: 15% }
+.vim-lines .keyword { color: #fe8019 }
+.vim-lines .string { color: #b8bb26 }
+.vim-lines .comment { color: rgba(235,219,178,.35) }
+
+.vim-status {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 22%;
+  background: #fe8019;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 5%;
+  font-size: clamp(7px, .85vw, 10px);
+  font-weight: 700;
+  color: #282828;
+}
+
+.palette {
+  display: flex;
+  gap: 7px;
+}
+.palette i {
+  display: block;
+  width: clamp(14px, 2vw, 22px);
+  height: clamp(14px, 2vw, 22px);
+  border-radius: 50%;
+  background: var(--c);
+  border: 1px solid rgba(255,255,255,.08);
+  box-shadow: 0 0 8px var(--c);
+}
+
+.footer {
+  position: absolute;
+  left: 7%; right: 7%;
+  bottom: 4.5%;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: clamp(7px, .85vw, 10px);
+  font-weight: 700;
+  color: rgba(235,219,178,.35);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.footer b { color: rgba(235,219,178,.7) }
+
+@media(max-aspect-ratio:16/9){.slide{width:min(100vw,calc(100vh*16/9));height:auto}}
+@media(min-aspect-ratio:16/9){.slide{height:min(100vh,calc(100vw*9/16));width:auto}}
+</style>
+</head>
+<body>
+  <main class="slide" aria-label="Gruvbox 暗 style preview">
+    <section class="content">
+      <div class="hero">
+        <div>
+          <div class="eyebrow">冷色 · 深色 · gruvbox-dark</div>
+          <h1>Gruvbox 暗</h1>
+          <p class="desc">琥珀与苔绿在暖灰中燃烧，终端美学从未如此温暖</p>
+          <div class="tags">
+            <span>Terminal/vim 社群分享</span>
+            <span>DevOps 技术演讲</span>
+            <span>命令行工具展示</span>
+          </div>
+          <div class="story">
+            <p>标题 #ebdbb2 暖白、正文 #d5c4a1 暖灰，强调色 #fe8019 琥珀橙与 #b8bb26 苔绿是暖色中的两种生命力。</p>
+            <p>等宽字体，终端感是核心美学。温暖的复古质感。</p>
+          </div>
+        </div>
+        <div class="chips">
+          <span>fade-up</span>
+          <span>stagger-list</span>
+          <span>typewriter</span>
+        </div>
+      </div>
+      <aside class="panel">
+        <div>
+          <div class="kicker">Style DNA</div>
+          <div class="layout">Gruvbox 暗色是终端美学的温暖版本——暖灰的底色不是冰冷的金属感，而是像一台老式收音机的木纹外壳。</div>
+        </div>
+        <div class="visual">
+          <div class="vim-content">
+            <div class="vim-lines">
+              <div><span class="line-num">1</span> <span class="keyword">set</span> background=dark</div>
+              <div><span class="line-num">2</span> <span class="keyword">colorscheme</span> gruvbox</div>
+              <div><span class="line-num">3</span> <span class="comment">" warm &amp; retro</span></div>
+              <div><span class="line-num">4</span> <span class="keyword">let</span> g:gruvbox_italic = <span class="string">1</span></div>
+            </div>
+          </div>
+          <div class="vim-status">
+            <span>gruvbox-dark</span>
+            <span>utf-8</span>
+            <span>4:1</span>
+          </div>
+        </div>
+        <div class="palette">
+          <i style="--c:#ebdbb2"></i>
+          <i style="--c:#d5c4a1"></i>
+          <i style="--c:#fe8019"></i>
+          <i style="--c:#b8bb26"></i>
+          <i style="--c:#282828"></i>
+        </div>
+      </aside>
+    </section>
+    <div class="footer">
+      <span><b>Layout</b> 暗色卡片浮在更暗的背景上，模拟终端的多面板布局。</span>
+      <span>16:9 preview</span>
+    </div>
+  </main>
+</body>
+</html>

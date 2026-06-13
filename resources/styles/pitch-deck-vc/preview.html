@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>融资路演 · Pitch Deck VC</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#0f1117}
+body{display:grid;place-items:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+.slide{position:relative;width:min(100vw,calc(100vh*16/9));aspect-ratio:16/9;overflow:hidden;background:#fff;display:flex;box-shadow:0 0 0 1px rgba(255,255,255,.08)}
+.accent{width:36%;height:100%;background:linear-gradient(135deg,#1e1b4b 0%,#4338ca 40%,#7c3aed 100%);display:flex;flex-direction:column;justify-content:center;padding:clamp(14px,3vw,40px);position:relative;overflow:hidden}
+.accent::after{content:'';position:absolute;top:clamp(-12px,-2vw,-24px);right:clamp(-12px,-2vw,-24px);width:clamp(48px,10vw,130px);height:clamp(48px,10vw,130px);border:2px solid rgba(255,255,255,.07);border-radius:50%}
+.logo-row{display:flex;align-items:center;gap:clamp(6px,1vw,12px);margin-bottom:clamp(14px,2.6vw,34px)}
+.logo-mark{width:clamp(18px,3vw,36px);height:clamp(18px,3vw,36px);background:#fff;border-radius:clamp(4px,.6vw,8px);display:grid;place-items:center}
+.logo-mark::before{content:'';width:60%;height:60%;background:linear-gradient(135deg,#7c3aed,#6366f1);border-radius:clamp(2px,.4vw,5px)}
+.logo-name{font-size:clamp(12px,2vw,24px);font-weight:800;color:#fff}
+.round-tag{display:inline-block;font-family:"SFMono-Regular",Consolas,monospace;font-size:clamp(7px,.9vw,11px);color:rgba(255,255,255,.6);letter-spacing:.15em;text-transform:uppercase;border:1px solid rgba(255,255,255,.2);padding:clamp(2px,.3vw,4px) clamp(6px,1vw,12px);border-radius:clamp(2px,.3vw,4px);margin-bottom:clamp(8px,1.4vw,18px);width:fit-content}
+.pitch-title{font-size:clamp(16px,2.8vw,34px);color:#fff;font-weight:800;line-height:1.15;margin-bottom:clamp(4px,.8vw,10px)}
+.pitch-sub{font-size:clamp(8px,1.1vw,13px);color:rgba(255,255,255,.55);line-height:1.6}
+.pitch-sub strong{color:rgba(255,255,255,.85);font-weight:600}
+.main{flex:1;display:flex;flex-direction:column;padding:clamp(16px,3vw,40px) clamp(18px,4vw,48px)}
+.section{font-family:"SFMono-Regular",Consolas,monospace;font-size:clamp(7px,.85vw,10px);color:#6366f1;letter-spacing:.15em;text-transform:uppercase;margin-bottom:clamp(8px,1.4vw,18px)}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(8px,1.6vw,22px);margin-bottom:clamp(12px,2vw,28px)}
+.metric{border-left:2px solid #7c3aed;padding-left:clamp(6px,1vw,12px)}
+.metric-val{font-size:clamp(16px,2.8vw,34px);font-weight:800;color:#1e1b4b;line-height:1}
+.metric-label{font-size:clamp(6px,.7vw,8px);color:#64748b;margin-top:clamp(2px,.3vw,5px);letter-spacing:.05em}
+.chart{display:flex;align-items:flex-end;gap:clamp(3px,.6vw,8px);height:clamp(32px,5.5vw,70px);margin-bottom:clamp(4px,.6vw,8px)}
+.bar{flex:1;border-radius:clamp(2px,.3vw,4px) clamp(2px,.3vw,4px) 0 0;background:linear-gradient(180deg,#7c3aed,#6366f1);position:relative}
+.bar.dim{background:linear-gradient(180deg,#c7d2fe,#a5b4fc)}
+.x-labels{display:flex;gap:clamp(3px,.6vw,8px);margin-bottom:clamp(8px,1.4vw,18px)}
+.x-labels span{flex:1;text-align:center;font-family:"SFMono-Regular",Consolas,monospace;font-size:clamp(5px,.6vw,7px);color:#94a3b8}
+.narrative{font-size:clamp(8px,1vw,12px);color:#404040;line-height:1.7}
+.narrative strong{color:#1e1b4b}
+.palette{display:flex;gap:clamp(3px,.4vw,5px);margin-top:auto;align-items:center}
+.palette-label{font-family:"SFMono-Regular",Consolas,monospace;font-size:clamp(6px,.7vw,8px);color:#94a3b8;margin-right:clamp(4px,.6vw,8px)}
+.sw{width:clamp(9px,1.2vw,14px);height:clamp(9px,1.2vw,14px);border-radius:2px;background:var(--c);border:1px solid rgba(0,0,0,.06)}
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="accent">
+    <div class="logo-row">
+      <div class="logo-mark"></div>
+      <div class="logo-name">Nebula AI</div>
+    </div>
+    <div class="round-tag">Series B · 2026</div>
+    <div class="pitch-title">下一代<br>企业级AI搜索</div>
+    <div class="pitch-sub">让企业内部知识检索效率提升<strong>10倍</strong>。本轮计划融资<strong>$30M</strong>，估值<strong>$180M</strong>。</div>
+  </div>
+  <div class="main">
+    <div class="section">Traction · 核心增长指标</div>
+    <div class="metrics">
+      <div class="metric"><div class="metric-val">$8.2M</div><div class="metric-label">ARR</div></div>
+      <div class="metric"><div class="metric-val">312%</div><div class="metric-label">同比增长</div></div>
+      <div class="metric"><div class="metric-val">148</div><div class="metric-label">付费企业客户</div></div>
+    </div>
+    <div class="section">月度营收增长 · Q1–Q3 2026</div>
+    <div class="chart">
+      <div class="bar dim" style="height:22%"></div>
+      <div class="bar dim" style="height:30%"></div>
+      <div class="bar dim" style="height:38%"></div>
+      <div class="bar dim" style="height:48%"></div>
+      <div class="bar dim" style="height:60%"></div>
+      <div class="bar" style="height:75%"></div>
+      <div class="bar" style="height:90%"></div>
+      <div class="bar" style="height:100%"></div>
+    </div>
+    <div class="x-labels">
+      <span>1月</span><span>2月</span><span>3月</span><span>4月</span><span>5月</span><span>6月</span><span>7月</span><span>8月</span>
+    </div>
+    <div class="narrative"><strong>净留存率 134%</strong>，头部客户年均合同金额突破 <strong>$120K</strong>。标杆客户包括三家世界500强企业，产品上线18个月已实现正向现金流。</div>
+    <div class="palette">
+      <span class="palette-label">PALETTE</span>
+      <i class="sw" style="--c:#1e1b4b"></i>
+      <i class="sw" style="--c:#4338ca"></i>
+      <i class="sw" style="--c:#7c3aed"></i>
+      <i class="sw" style="--c:#6366f1"></i>
+      <i class="sw" style="--c:#ffffff"></i>
+    </div>
+  </div>
+</div>
+</body>
+</html>

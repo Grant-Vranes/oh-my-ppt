@@ -44,6 +44,9 @@ export type RetrySinglePageContext = {
   abortSignal: AbortSignal
   styleId: string
   styleSkillPrompt: string
+  styleKey: string
+  styleName: string
+  styleVersion: string
   topic: string
   deckTitle: string
   appLocale: 'zh' | 'en'
@@ -231,6 +234,9 @@ export async function executeRetrySinglePageGeneration(
       temperature: PAGE_GENERATION_TEMPERATURE,
       styleId: context.styleId,
       styleSkillPrompt: context.styleSkillPrompt,
+      styleKey: context.styleKey,
+      styleName: context.styleName,
+      styleVersion: context.styleVersion,
       appLocale: context.appLocale,
       topic: context.topic,
       deckTitle: context.deckTitle,

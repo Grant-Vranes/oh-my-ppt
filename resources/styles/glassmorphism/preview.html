@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>磨砂玻璃 · Glassmorphism</title>
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#0f1117}
+body{display:grid;place-items:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+.slide{position:relative;width:min(100vw,calc(100vh*16/9));aspect-ratio:16/9;overflow:hidden;background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 25%,#06b6d4 50%,#818cf8 75%,#a78bfa 100%);border-radius:8px}
+.blob{position:absolute;border-radius:50%;filter:blur(40px)}
+.bl1{width:45%;height:50%;left:5%;top:-5%;background:rgba(129,140,248,.8)}
+.bl2{width:40%;height:45%;right:0;bottom:5%;background:rgba(6,182,212,.7)}
+.bl3{width:35%;height:35%;left:35%;top:40%;background:rgba(199,210,254,.5)}
+.glass{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:70%;padding:6% 8%;background:rgba(255,255,255,.18);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:24px;border:1px solid rgba(255,255,255,.3);box-shadow:0 8px 32px rgba(0,0,0,.12),inset 0 0 0 1px rgba(255,255,255,.1);display:flex;flex-direction:column;align-items:center;text-align:center;z-index:2}
+h1{font-size:clamp(32px,6vw,68px);font-weight:900;color:#fff;letter-spacing:.02em;text-shadow:0 2px 10px rgba(0,0,0,.15)}
+.desc{margin-top:3%;font-size:clamp(10px,1.4vw,16px);color:rgba(255,255,255,.9);max-width:80%;line-height:1.6}
+.divider{width:50px;height:3px;margin:4% 0;background:rgba(255,255,255,.4);border-radius:3px}
+.palette{display:flex;gap:clamp(6px,1vw,12px)}
+.palette i{display:block;width:clamp(18px,2.8vw,32px);height:clamp(18px,2.8vw,32px);border-radius:50%;background:var(--c);border:2px solid rgba(255,255,255,.2);box-shadow:0 4px 15px rgba(0,0,0,.2)}
+.label{margin-top:4%;font-size:clamp(8px,1vw,13px);font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.6)}
+@media(max-aspect-ratio:16/9){.slide{width:min(100vw,calc(100vh*16/9));height:auto}}
+@media(min-aspect-ratio:16/9){.slide{height:min(100vh,calc(100vw*9/16));width:auto}}
+</style>
+</head>
+<body>
+<div class="slide" aria-label="磨砂玻璃 style preview">
+  <div class="blob bl1"></div>
+  <div class="blob bl2"></div>
+  <div class="blob bl3"></div>
+  <div class="glass">
+    <h1>磨砂玻璃</h1>
+    <div class="divider"></div>
+    <p class="desc">磨砂玻璃后光斑流转，Apple 发布会的光影魔术</p>
+    <div class="palette">
+      <i style="--c:#0f172a"></i>
+      <i style="--c:#334155"></i>
+      <i style="--c:#818cf8"></i>
+      <i style="--c:#06b6d4"></i>
+      <i style="--c:#c7d2fe"></i>
+    </div>
+    <div class="label">glassmorphism</div>
+  </div>
+</div>
+</body>
+</html>

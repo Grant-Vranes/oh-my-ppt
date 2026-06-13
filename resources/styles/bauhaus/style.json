@@ -1,0 +1,18 @@
+{
+  "style": "bauhaus",
+  "name": {
+    "zh": "包豪斯",
+    "en": "Bauhaus"
+  },
+  "description": "原色碰撞的几何宣言，每一页都是蒙德里安式的视觉震动",
+  "category": "大胆 · 宣言",
+  "aliases": [
+    "bauhaus",
+    "包豪斯",
+    "几何",
+    "原色"
+  ],
+  "styleCase": "设计宣言、艺术史叙事、产品美学发布、品牌视觉系统展示",
+  "version": "2.0.0",
+  "source": "builtin"
+}

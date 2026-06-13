@@ -8,13 +8,19 @@ import dayjs from 'dayjs'
 import { PPTDatabase } from './db/database'
 import { AgentManager } from './agent'
 import { setupIPC, registerLocalAssetProtocol } from './ipc'
-import { setStyleDb } from './utils/style-skills'
+import { backfillUserStylePackagesFromDatabase, setStyleDb } from './utils/style-skills'
 import {
   initializeSkills,
   resolveBuiltinSkillsSourcePath,
   resolveInstalledSkillsPath,
   setSkillsRuntime,
 } from './skills'
+import {
+  initializeStyles,
+  resolveBundledStylesSourcePath,
+  resolveInstalledStylesPath,
+  setStylesRuntime
+} from './styles'
 import { applyProxy } from './utils/proxy'
 import { createTray, destroyTray, showTrayHideBalloon } from './tray'
 import type { UpdateAvailablePayload } from '@shared/app-update'
@@ -296,6 +302,38 @@ if (gotSingleInstanceLock) {
       env: is.dev ? 'dev' : 'prod',
       dbPath: dbPath || 'userData/ohmyppt.db',
     })
+
+    const installedStylesPath = resolveInstalledStylesPath()
+    const stylesReadyPromise = initializeStyles({
+      bundledSourcePath: resolveBundledStylesSourcePath(),
+      installedRootPath: installedStylesPath,
+      logger: log
+    })
+      .then(async (result) => {
+        await db?.syncInstalledStylesToDatabase(installedStylesPath)
+        const userPackageBackfill = await backfillUserStylePackagesFromDatabase(installedStylesPath)
+        const backfill = await db?.backfillSessionStyleSnapshots()
+        log.info('[styles] initialized', {
+          installedStylesPath,
+          bundledCount: result.bundledCount,
+          copiedCount: result.copiedCount,
+          failedCount: result.failedCount,
+          userPackageBackfill,
+          snapshotBackfill: backfill
+        })
+        return result
+      })
+      .catch((error) => {
+        log.warn('[styles] initialize failed', {
+          message: error instanceof Error ? error.message : String(error)
+        })
+        throw error
+      })
+    setStylesRuntime({
+      installedStylesPath,
+      ready: stylesReadyPromise
+    })
+    await stylesReadyPromise
 
     const installedSkillsPath = resolveInstalledSkillsPath()
     const skillsReadyPromise = initializeSkills({

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Catppuccin 拿铁 · catppuccin-latte</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: #0f1117;
+    display: flex; align-items: center; justify-content: center;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+  }
+  .slide {
+    width: min(100vw, calc(100vh * 16 / 9));
+    aspect-ratio: 16 / 9;
+    background: #eff1f5;
+    position: relative;
+    overflow: hidden;
+  }
+  .bg-circle {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.12;
+  }
+  .bg-c1 {
+    width: 40%; height: 70%;
+    background: #1e66f5;
+    right: -10%; top: -15%;
+    border-radius: 40% 60% 55% 45%;
+  }
+  .bg-c2 {
+    width: 30%; height: 50%;
+    background: #179299;
+    left: -5%; bottom: -10%;
+    border-radius: 55% 45% 50% 50%;
+  }
+  .header {
+    position: absolute;
+    top: 7%; left: 7%; right: 7%;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .category {
+    font-size: clamp(7px, 0.75vw, 10px);
+    color: #5c5f77;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    font-weight: 600;
+    background: rgba(255,255,255,0.6);
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+  .code-deco {
+    background: rgba(255,255,255,0.7);
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-family: "SF Mono", "Consolas", monospace;
+    font-size: clamp(7px, 0.75vw, 10px);
+    color: #1e66f5;
+    line-height: 1.6;
+  }
+  .code-deco .kw { color: #179299; }
+  .code-deco .str { color: #4c4f69; }
+  .center-content {
+    position: absolute;
+    top: 50%; left: 7%;
+    transform: translateY(-50%);
+  }
+  h1 {
+    font-size: clamp(30px, 5vw, 60px);
+    font-weight: 700;
+    color: #4c4f69;
+    line-height: 1.1;
+  }
+  .en-name {
+    font-size: clamp(10px, 1.2vw, 15px);
+    color: #5c5f77;
+    font-weight: 400;
+    margin-top: 2%;
+  }
+  .desc {
+    font-size: clamp(9px, 1vw, 13px);
+    color: #5c5f77;
+    line-height: 1.7;
+    margin-top: 4%;
+    max-width: 55%;
+  }
+  .tags {
+    display: flex; gap: 8px; margin-top: 5%;
+    flex-wrap: wrap;
+  }
+  .tags span {
+    font-size: clamp(7px, 0.7vw, 9px);
+    color: #4c4f69;
+    background: rgba(255,255,255,0.6);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+  .palette {
+    position: absolute;
+    bottom: 7%; left: 7%;
+    display: flex; gap: 8px; align-items: center;
+  }
+  .palette span {
+    width: clamp(12px, 1.4vw, 20px);
+    height: clamp(12px, 1.4vw, 20px);
+    border-radius: 8px;
+    background: var(--c);
+    box-shadow: 0 2px 8px rgba(76,79,105,0.15);
+  }
+  .footer-label {
+    position: absolute;
+    bottom: 7%; right: 7%;
+    font-size: clamp(7px, 0.7vw, 9px);
+    color: #5c5f77;
+    opacity: 0.5;
+    letter-spacing: 0.1em;
+  }
+  .card-preview {
+    position: absolute;
+    right: 7%;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28%;
+    background: rgba(255,255,255,0.75);
+    border-radius: 16px;
+    padding: 8%;
+    box-shadow: 0 8px 32px rgba(76,79,105,0.1);
+  }
+  .card-bar {
+    height: 4px;
+    border-radius: 2px;
+    margin-bottom: 10px;
+  }
+  .card-bar.b1 { background: #1e66f5; width: 70%; }
+  .card-bar.b2 { background: #179299; width: 50%; }
+  .card-bar.b3 { background: #5c5f77; width: 85%; opacity: 0.3; }
+  .card-bar.b4 { background: #1e66f5; width: 40%; opacity: 0.2; }
+  .card-dots {
+    display: flex; gap: 5px; margin-bottom: 10px;
+  }
+  .card-dots span {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--c);
+  }
+  @media (max-aspect-ratio: 16/9) {
+    .slide { width: min(100vw, calc(100vh * 16 / 9)); height: auto; }
+  }
+  @media (min-aspect-ratio: 16/9) {
+    .slide { height: min(100vh, calc(100vw * 9 / 16)); width: auto; }
+  }
+</style>
+</head>
+<body>
+  <main class="slide" aria-label="Catppuccin 拿铁 style preview">
+    <div class="bg-circle bg-c1"></div>
+    <div class="bg-circle bg-c2"></div>
+    <div class="header">
+      <div class="category">浅色 · 沉静</div>
+      <div class="code-deco">
+        <span class="kw">const</span> theme = <span class="str">'latte'</span><br />
+        <span class="kw">import</span> { <span class="str">warmth</span> }
+      </div>
+    </div>
+    <div class="center-content">
+      <h1>Catppuccin 拿铁</h1>
+      <div class="en-name">拿铁浅底映粉彩，开发者的午后该有这样的温柔</div>
+      <p class="desc">温暖柔和的开发者主题，适合长时间的技术分享与团队交流</p>
+      <div class="tags">
+        <span>技术分享</span>
+        <span>开源项目</span>
+        <span>团队 Review</span>
+      </div>
+    </div>
+    <div class="card-preview">
+      <div class="card-dots">
+        <span style="--c:#1e66f5"></span>
+        <span style="--c:#179299"></span>
+        <span style="--c:#4c4f69"></span>
+      </div>
+      <div class="card-bar b1"></div>
+      <div class="card-bar b2"></div>
+      <div class="card-bar b3"></div>
+      <div class="card-bar b4"></div>
+    </div>
+    <div class="palette">
+      <span style="--c:#4c4f69"></span>
+      <span style="--c:#5c5f77"></span>
+      <span style="--c:#1e66f5"></span>
+      <span style="--c:#179299"></span>
+      <span style="--c:#eff1f5; border: 1px solid #ccd0da"></span>
+    </div>
+    <div class="footer-label">catppuccin-latte</div>
+  </main>
+</body>
+</html>

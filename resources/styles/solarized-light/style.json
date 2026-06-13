@@ -1,0 +1,17 @@
+{
+  "style": "solarized-light",
+  "name": {
+    "zh": "日光浅",
+    "en": "Solarized Light"
+  },
+  "description": "低眩光暖黄抚平视觉疲劳，八小时会议也不刺眼",
+  "category": "浅色 · 沉静",
+  "aliases": [
+    "solarized",
+    "日光",
+    "低眩光"
+  ],
+  "styleCase": "长时间工作坊、教学培训、技术教学、学术讨论",
+  "version": "2.0.0",
+  "source": "builtin"
+}

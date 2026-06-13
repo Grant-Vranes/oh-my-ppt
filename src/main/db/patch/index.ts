@@ -235,18 +235,42 @@ CREATE TABLE IF NOT EXISTS styles (
   id TEXT PRIMARY KEY,
   style TEXT UNIQUE NOT NULL,
   style_name TEXT NOT NULL,
+  style_name_zh TEXT NOT NULL DEFAULT '',
+  style_name_en TEXT NOT NULL DEFAULT '',
   description TEXT NOT NULL DEFAULT '',
   category TEXT NOT NULL DEFAULT '',
   aliases TEXT NOT NULL DEFAULT '[]',
   source TEXT NOT NULL DEFAULT 'custom',
   style_skill TEXT NOT NULL DEFAULT '',
-  version INTEGER NOT NULL DEFAULT 1,
+  version TEXT NOT NULL DEFAULT '1.0.0',
   style_case TEXT NOT NULL DEFAULT '',
+  package_dir TEXT NOT NULL DEFAULT '',
   active INTEGER NOT NULL DEFAULT 1,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_styles_style ON styles(style);
+
+CREATE TABLE IF NOT EXISTS session_style_snapshots (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+  style_id TEXT NOT NULL,
+  style_key TEXT NOT NULL,
+  style_name TEXT NOT NULL,
+  style_name_zh TEXT NOT NULL DEFAULT '',
+  style_name_en TEXT NOT NULL DEFAULT '',
+  description TEXT NOT NULL DEFAULT '',
+  category TEXT NOT NULL DEFAULT '',
+  aliases TEXT NOT NULL DEFAULT '[]',
+  source TEXT NOT NULL,
+  version TEXT NOT NULL DEFAULT '1.0.0',
+  style_case TEXT NOT NULL DEFAULT '',
+  package_dir TEXT NOT NULL DEFAULT '',
+  style_skill TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS session_style_snapshots_session_id_unique
+  ON session_style_snapshots(session_id);
 
 CREATE TABLE IF NOT EXISTS session_operations (
   id TEXT PRIMARY KEY,

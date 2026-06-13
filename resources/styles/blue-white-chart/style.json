@@ -1,0 +1,18 @@
+{
+  "style": "blue-white-chart",
+  "name": {
+    "zh": "蓝白商务图表",
+    "en": "Blue White Chart"
+  },
+  "description": "冷静专业的数据汇报风",
+  "category": "浅色 · 沉静",
+  "aliases": [
+    "蓝色商务",
+    "企业数据汇报",
+    "咨询图表风",
+    "蓝白逻辑图"
+  ],
+  "styleCase": "经营分析汇报、营销运营复盘、销售数据看板、企业战略规划、财务季度报告、项目阶段复盘",
+  "version": "1.0.0",
+  "source": "builtin"
+}

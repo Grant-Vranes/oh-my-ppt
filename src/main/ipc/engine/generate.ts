@@ -623,6 +623,9 @@ export const buildDesignContractWithLLM = async (args: {
   maxTokens?: number
   styleId: string | null | undefined
   styleSkillPrompt: string
+  styleKey?: string
+  styleName?: string
+  styleVersion?: string
   appLocale?: AppLocale
   modelTimeoutMs?: number
   totalPages: number
@@ -843,6 +846,9 @@ export const runDeepAgentDeckGeneration = async (args: {
   maxTokens?: number
   styleId: string | null | undefined
   styleSkillPrompt: string
+  styleKey?: string
+  styleName?: string
+  styleVersion?: string
   appLocale?: AppLocale
   modelTimeoutMs?: number
   topic: string
@@ -1130,6 +1136,9 @@ export const runDeepAgentDeckGeneration = async (args: {
         deckTitle: args.deckTitle,
         styleId: args.styleId,
         styleSkillPrompt: args.styleSkillPrompt,
+        styleKey: args.styleKey,
+        styleName: args.styleName,
+        styleVersion: args.styleVersion,
         appLocale: args.appLocale,
         designContract: args.designContract,
         templatePageReadRequired: args.requireTemplatePageRead,
@@ -1506,6 +1515,9 @@ type RunDeepAgentEditBaseArgs = {
   maxTokens?: number
   styleId: string | null | undefined
   styleSkillPrompt: string
+  styleKey?: string
+  styleName?: string
+  styleVersion?: string
   appLocale?: AppLocale
   modelTimeoutMs?: number
   topic: string
@@ -1565,6 +1577,9 @@ const runDeepAgentScopedEdit = async (args: RunDeepAgentScopedEditArgs): Promise
       deckTitle: args.deckTitle,
       styleId: args.styleId,
       styleSkillPrompt: args.styleSkillPrompt,
+      styleKey: args.styleKey,
+      styleName: args.styleName,
+      styleVersion: args.styleVersion,
       appLocale: args.appLocale,
       designContract: args.designContract,
       userMessage: args.userMessage,

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
@@ -9,7 +9,7 @@ import {
 } from '../components/ui/Popover'
 import { ipc } from '@renderer/lib/ipc'
 import { useToastStore } from '../store'
-import { Plus, PencilLine, Eye, Trash2 } from 'lucide-react'
+import { Download, Eye, PencilLine, Plus, Trash2, Upload } from 'lucide-react'
 import { useT } from '../i18n'
 
 type StyleSummary = {
@@ -30,7 +30,10 @@ const localAssetUrl = (filePath: string): string => `local-asset://${encodeURICo
 export function StylesPage(): React.JSX.Element {
   const navigate = useNavigate()
   const [styles, setStyles] = useState<StyleSummary[]>([])
-  const { error, info, warning } = useToastStore()
+  const [importingZip, setImportingZip] = useState(false)
+  const [exportingStyleId, setExportingStyleId] = useState('')
+  const stylePackageInputRef = useRef<HTMLInputElement | null>(null)
+  const { error, info, success, warning } = useToastStore()
   const t = useT()
 
   const loadStyles = useCallback(async (): Promise<void> => {
@@ -68,6 +71,59 @@ export function StylesPage(): React.JSX.Element {
     }
   }, [error, info, warning, t, loadStyles])
 
+  const handleImportPackageClick = useCallback((): void => {
+    if (importingZip) return
+    stylePackageInputRef.current?.click()
+  }, [importingZip])
+
+  const handlePackageFileSelected = useCallback(async (files: FileList | null): Promise<void> => {
+    const file = files?.[0]
+    if (stylePackageInputRef.current) stylePackageInputRef.current.value = ''
+    if (!file) return
+    if (!file.name.toLowerCase().endsWith('.zip')) {
+      warning(t('styles.packageZipRequired'))
+      return
+    }
+    const filePath = window.electron?.getPathForFile?.(file) || ''
+    if (!filePath) {
+      error(t('styleEditor.filePathFailed'))
+      return
+    }
+    setImportingZip(true)
+    try {
+      const result = await ipc.importStylePackageZip({ filePath })
+      success(t('styles.packageImported'), {
+        description:
+          result.source === 'override' ? t('styleEditor.savedOverride') : t('styleEditor.savedCustom')
+      })
+      await loadStyles()
+    } catch (e) {
+      error(t('styles.packageImportFailed'), {
+        description: e instanceof Error ? e.message : t('common.retryLater')
+      })
+    } finally {
+      setImportingZip(false)
+    }
+  }, [error, loadStyles, success, t, warning])
+
+  const handleExportPackage = useCallback(async (style: StyleSummary): Promise<void> => {
+    if (exportingStyleId) return
+    setExportingStyleId(style.id)
+    try {
+      const result = await ipc.exportStylePackageZip({ styleId: style.id })
+      if (result.canceled) return
+      success(t('styles.packageExported'), {
+        description: result.filePath || style.label
+      })
+    } catch (e) {
+      error(t('styles.packageExportFailed'), {
+        description: e instanceof Error ? e.message : t('common.retryLater')
+      })
+    } finally {
+      setExportingStyleId('')
+    }
+  }, [error, exportingStyleId, success, t])
+
   return (
     <div className="mx-auto w-full max-w-6xl p-6">
       <div className="mb-6">
@@ -77,6 +133,23 @@ export function StylesPage(): React.JSX.Element {
             <h1 className="organic-serif text-[32px] font-semibold leading-none text-[#3e4a32]">{t('styles.title')}</h1>
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
+            <input
+              ref={stylePackageInputRef}
+              type="file"
+              accept=".zip,application/zip,application/x-zip-compressed"
+              className="hidden"
+              onChange={(event) => void handlePackageFileSelected(event.target.files)}
+            />
+            <Button
+              size="sm"
+              variant="secondary"
+              className="min-w-[112px]"
+              disabled={importingZip}
+              onClick={handleImportPackageClick}
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              {importingZip ? t('styles.importingPackage') : t('styles.importPackage')}
+            </Button>
             <Button size="sm" className="min-w-[112px]" onClick={() => navigate('/styles/new')}>
               <Plus className="mr-2 h-4 w-4" />
               {t('styles.newStyle')}
@@ -114,6 +187,16 @@ export function StylesPage(): React.JSX.Element {
                     >
                       <PencilLine className="h-3 w-3" />
                       {t('common.edit')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 gap-1 px-2 text-[11px] transition-all duration-200 group-hover:-translate-y-0.5"
+                      disabled={exportingStyleId === style.id}
+                      onClick={() => void handleExportPackage(style)}
+                    >
+                      <Download className="h-3 w-3" />
+                      {t('styles.exportPackage')}
                     </Button>
                     <Button
                       size="sm"

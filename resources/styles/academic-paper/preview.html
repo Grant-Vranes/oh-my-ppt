@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>学术论文 · Academic Paper</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#0f1117}
+body{display:grid;place-items:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+.slide{position:relative;width:min(100vw,calc(100vh*16/9));aspect-ratio:16/9;overflow:hidden;background:linear-gradient(145deg,#fafafa 0%,#f5f5f5 60%,#ececec 100%);box-shadow:0 0 0 1px rgba(255,255,255,.06)}
+.bar{position:absolute;top:0;left:0;right:0;height:clamp(3px,.4vw,5px);background:linear-gradient(90deg,#1e40af,#2563eb)}
+.wrap{position:absolute;inset:clamp(3px,.4vw,5px) 0 0 0;display:flex;flex-direction:column;padding:clamp(14px,2.6vw,34px) clamp(20px,4vw,52px) clamp(10px,1.8vw,24px)}
+.journal{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:clamp(4px,.8vw,10px);border-bottom:1px solid #d4d4d4}
+.j-name{font-family:Georgia,"Songti SC",serif;font-size:clamp(8px,1.1vw,13px);color:#171717;font-style:italic;font-weight:600}
+.j-meta{font-family:"SFMono-Regular",Consolas,monospace;font-size:clamp(6px,.7vw,8px);color:#737373}
+.title-area{text-align:center;padding:clamp(8px,1.6vw,20px) clamp(20px,4vw,52px) clamp(4px,.8vw,10px)}
+.title{font-family:Georgia,"Songti SC",serif;font-size:clamp(13px,2.4vw,30px);color:#171717;font-weight:bold;line-height:1.3}
+.authors{font-family:Georgia,"Songti SC",serif;font-size:clamp(8px,1vw,12px);color:#525252;margin-top:clamp(4px,.8vw,10px)}
+.authors sup{font-size:.75em;color:#2563eb}
+.affil{font-family:Georgia,"Songti SC",serif;font-size:clamp(6px,.75vw,9px);color:#737373;margin-top:clamp(2px,.4vw,5px)}
+.abs-box{background:rgba(255,255,255,.7);border:1px solid #e0e0e0;border-radius:2px;padding:clamp(8px,1.4vw,18px) clamp(10px,1.8vw,24px);margin:0 auto;max-width:clamp(200px,42vw,560px)}
+.abs-label{font-family:"SFMono-Regular",Consolas,monospace;font-size:clamp(6px,.7vw,8px);color:#2563eb;font-weight:bold;letter-spacing:.12em;margin-bottom:clamp(3px,.5vw,6px)}
+.abs-text{font-family:Georgia,"Songti SC",serif;font-size:clamp(7px,.9vw,11px);color:#404040;line-height:1.8;text-align:justify}
+.abs-text em{color:#2563eb;font-style:normal}
+.cols{display:flex;gap:0;flex:1;margin-top:clamp(8px,1.6vw,20px)}
+.col{flex:1;padding:0 clamp(8px,1.6vw,22px)}
+.col:first-child{padding-left:0;border-right:1px solid #e0e0e0}
+.col:last-child{padding-right:0;padding-left:clamp(8px,1.6vw,22px)}
+.col-title{font-family:Georgia,"Songti SC",serif;font-size:clamp(8px,1vw,12px);font-weight:bold;color:#171717;font-style:italic;margin-bottom:clamp(4px,.8vw,10px)}
+.col-text{font-family:Georgia,"Songti SC",serif;font-size:clamp(7px,.85vw,10px);color:#404040;line-height:1.85;text-align:justify}
+.col-text a{color:#2563eb;text-decoration:none}
+.eq{text-align:center;font-family:Georgia,"Songti SC",serif;font-size:clamp(8px,1vw,12px);color:#171717;margin:clamp(6px,1vw,14px) 0;padding:clamp(4px,.8vw,10px);background:rgba(37,99,235,.03);border-radius:2px}
+.eq span{color:#2563eb}
+.chart{margin-top:clamp(8px,1.4vw,18px);display:flex;align-items:flex-end;justify-content:center;gap:clamp(6px,1.2vw,16px);height:clamp(40px,7vw,90px)}
+.bar-grp{display:flex;flex-direction:column;align-items:center;gap:clamp(2px,.4vw,5px)}
+.bar-rect{width:clamp(14px,2.4vw,30px);border-radius:1px 1px 0 0}
+.bar-label{font-family:"SFMono-Regular",Consolas,monospace;font-size:clamp(5px,.6vw,7px);color:#737373}
+.fig-cap{font-family:Georgia,"Songti SC",serif;font-size:clamp(6px,.7vw,8px);color:#737373;text-align:center;margin-top:clamp(4px,.6vw,8px)}
+.fig-cap b{color:#171717}
+.footer{display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:clamp(4px,.8vw,10px);border-top:1px solid #d4d4d4}
+.refs{font-family:"SFMono-Regular",Consolas,monospace;font-size:clamp(5px,.6vw,7px);color:#a3a3a3}
+.palette{display:flex;gap:clamp(3px,.4vw,5px)}
+.sw{width:clamp(9px,1.2vw,14px);height:clamp(9px,1.2vw,14px);border-radius:1px;background:var(--c);border:1px solid rgba(0,0,0,.08)}
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="bar"></div>
+  <div class="wrap">
+    <div class="journal">
+      <span class="j-name">Journal of Applied Research</span>
+      <span class="j-meta">Vol. 12 · No. 4 · 2026 · pp. 1–14</span>
+    </div>
+    <div class="title-area">
+      <div class="title">深度学习驱动的多模态信息抽取：方法与实证</div>
+      <div class="authors">张明<sup>a</sup>　李华<sup>b</sup>　王强<sup>a</sup></div>
+      <div class="affil"><sup>a</sup>清华大学计算机系　<sup>b</sup>北京大学信息科学学院</div>
+    </div>
+    <div class="abs-box">
+      <div class="abs-label">Abstract</div>
+      <div class="abs-text">本文提出一种基于<em>Transformer</em>架构的多模态信息抽取框架，通过跨模态注意力机制实现文本与图像特征的深层融合。实验表明，在三个公开数据集上F1值平均提升<em>4.7%</em>，显著优于现有基线方法。</div>
+    </div>
+    <div class="cols">
+      <div class="col">
+        <div class="col-title">1. Introduction</div>
+        <div class="col-text">信息抽取是自然语言处理的核心任务之一。预训练语言模型的发展为这一领域带来了突破性进展<a>[1]</a>。然而多模态场景仍面临挑战：如何有效融合视觉与文本特征<a>[2,3]</a>。核心贡献包括跨模态注意力融合模块与大规模评测基准。</div>
+        <div class="eq">Y = argmax<sub>θ</sub> P(<span>θ</span> | X<sub>text</sub>, X<sub>img</sub>)</div>
+      </div>
+      <div class="col">
+        <div class="col-title">2. Results</div>
+        <div class="chart">
+          <div class="bar-grp"><div class="bar-rect" style="height:45%;background:rgba(37,99,235,.35);border:1px solid #2563eb"></div><div class="bar-label">BERT</div></div>
+          <div class="bar-grp"><div class="bar-rect" style="height:58%;background:rgba(37,99,235,.35);border:1px solid #2563eb"></div><div class="bar-label">RoBERTa</div></div>
+          <div class="bar-grp"><div class="bar-rect" style="height:82%;background:rgba(37,99,235,.55);border:1px solid #2563eb"></div><div class="bar-label">Ours</div></div>
+          <div class="bar-grp"><div class="bar-rect" style="height:70%;background:rgba(147,197,253,.5);border:1px solid #3b82f6"></div><div class="bar-label">-attn</div></div>
+          <div class="bar-grp"><div class="bar-rect" style="height:55%;background:rgba(147,197,253,.5);border:1px solid #3b82f6"></div><div class="bar-label">-fuse</div></div>
+          <div class="bar-grp"><div class="bar-rect" style="height:38%;background:rgba(147,197,253,.5);border:1px solid #3b82f6"></div><div class="bar-label">base</div></div>
+        </div>
+        <div class="fig-cap"><b>Fig. 1</b>　各方法 F1 score 对比（深蓝为完整模型）</div>
+      </div>
+    </div>
+    <div class="footer">
+      <span class="refs">[1] Devlin et al. 2019　[2] Lu et al. 2022　[3] Chen et al. 2023</span>
+      <div class="palette">
+        <i class="sw" style="--c:#171717"></i>
+        <i class="sw" style="--c:#404040"></i>
+        <i class="sw" style="--c:#2563eb"></i>
+        <i class="sw" style="--c:#3b82f6"></i>
+        <i class="sw" style="--c:#93c5fd"></i>
+        <i class="sw" style="--c:#fafafa"></i>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

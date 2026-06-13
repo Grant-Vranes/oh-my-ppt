@@ -13,7 +13,7 @@ import {
   STABLE_HTML_FRAGMENT_PROTOCOL,
   buildOutlinePageList,
   formatDesignContract,
-  resolveStylePrompt
+  resolveContextStylePrompt
 } from './shared'
 
 /**
@@ -64,8 +64,8 @@ function buildContainerEditPrompt(
   styleId: string | null | undefined,
   context: SessionDeckGenerationContext
 ): string {
-  const { presetLabel, presetId, stylePrompt: resolvedStylePrompt } = resolveStylePrompt(styleId)
-  const stylePrompt = context.styleSkillPrompt?.trim() || resolvedStylePrompt
+  void styleId
+  const { presetLabel, presetId, stylePrompt } = resolveContextStylePrompt(context)
   const pageList = buildOutlinePageList(context)
   const statusLanguage = context.appLocale === 'en' ? 'English' : 'Simplified Chinese'
   const analyzingEditRequestLabel = progressText(context.appLocale, 'understanding')
@@ -133,8 +133,8 @@ function buildSelectorEditPrompt(
   styleId: string | null | undefined,
   context: SessionDeckGenerationContext
 ): string {
-  const { presetLabel, presetId, stylePrompt: resolvedStylePrompt } = resolveStylePrompt(styleId)
-  const stylePrompt = context.styleSkillPrompt?.trim() || resolvedStylePrompt
+  void styleId
+  const { presetLabel, presetId, stylePrompt } = resolveContextStylePrompt(context)
   const pageList = buildOutlinePageList(context)
   const statusLanguage = context.appLocale === 'en' ? 'English' : 'Simplified Chinese'
   const analyzingEditRequestLabel = progressText(context.appLocale, 'understanding')
@@ -229,8 +229,8 @@ function buildSinglePageEditPrompt(
   styleId: string | null | undefined,
   context: SessionDeckGenerationContext
 ): string {
-  const { presetLabel, presetId, stylePrompt: resolvedStylePrompt } = resolveStylePrompt(styleId)
-  const stylePrompt = context.styleSkillPrompt?.trim() || resolvedStylePrompt
+  void styleId
+  const { presetLabel, presetId, stylePrompt } = resolveContextStylePrompt(context)
   const pageList = buildOutlinePageList(context)
   const statusLanguage = context.appLocale === 'en' ? 'English' : 'Simplified Chinese'
   const analyzingEditRequestLabel = progressText(context.appLocale, 'understanding')
@@ -313,8 +313,8 @@ function buildDeckEditPrompt(
   styleId: string | null | undefined,
   context: SessionDeckGenerationContext
 ): string {
-  const { presetLabel, presetId, stylePrompt: resolvedStylePrompt } = resolveStylePrompt(styleId)
-  const stylePrompt = context.styleSkillPrompt?.trim() || resolvedStylePrompt
+  void styleId
+  const { presetLabel, presetId, stylePrompt } = resolveContextStylePrompt(context)
   const pageList = buildOutlinePageList(context)
   const statusLanguage = context.appLocale === 'en' ? 'English' : 'Simplified Chinese'
   const analyzingEditRequestLabel = progressText(context.appLocale, 'understanding')

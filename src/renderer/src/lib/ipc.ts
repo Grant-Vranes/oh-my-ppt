@@ -68,25 +68,37 @@ export interface StyleDetail {
   id: string
   styleKey?: string
   label: string
+  name?: {
+    zh: string
+    en: string
+  }
   description: string
   aliases: string[]
   styleSkill: string
   source?: 'builtin' | 'custom' | 'override'
   editable?: boolean
   category?: string
+  version?: string
   styleCase?: string
+  packageDir?: string
 }
 
 export interface StyleListItem {
   id: string
   styleKey?: string
   label: string
+  name?: {
+    zh: string
+    en: string
+  }
   description: string
   aliases?: string[]
   category: string
   source?: 'builtin' | 'custom' | 'override'
   editable?: boolean
+  version?: string
   styleCase?: string
+  packageDir?: string
   previewPath?: string | null
   createdAt?: number
   updatedAt?: number
@@ -770,6 +782,18 @@ export const ipc = {
     getIpc().invoke('styles:parsePptx', payload) as Promise<StyleParseResult>,
   parseStyleImage: (payload: { imageBase64: string; mimeType: string; modelConfigId?: string }) =>
     getIpc().invoke('styles:parseImage', payload) as Promise<StyleParseResult>,
+  importStylePackageZip: (payload: { filePath: string }) =>
+    getIpc().invoke('styles:importPackageZip', payload) as Promise<{
+      success: boolean
+      id: string
+      source: 'custom' | 'override'
+    }>,
+  exportStylePackageZip: (payload: { styleId: string }) =>
+    getIpc().invoke('styles:exportPackageZip', payload) as Promise<{
+      success: boolean
+      canceled?: boolean
+      filePath?: string
+    }>,
   createStyle: (payload: {
     label: string
     description: string

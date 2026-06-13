@@ -51,6 +51,9 @@ export interface SessionDeckGenerationContext {
   styleId: string | null | undefined;
   /** Snapshot of the database styleSkill markdown for this run. */
   styleSkillPrompt?: string;
+  styleKey?: string;
+  styleName?: string;
+  styleVersion?: string;
   appLocale?: "zh" | "en";
   userMessage: string;
   outlineTitles: string[];

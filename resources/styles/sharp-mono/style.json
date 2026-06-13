@@ -1,0 +1,18 @@
+{
+  "style": "sharp-mono",
+  "name": {
+    "zh": "锐利黑白",
+    "en": "Sharp Mono"
+  },
+  "description": "黑白利刃切开视觉噪音，硬朗到骨子里",
+  "category": "大胆 · 宣言",
+  "aliases": [
+    "sharp",
+    "mono",
+    "黑白",
+    "纯黑白"
+  ],
+  "styleCase": "宣言式演讲、品牌态度声明、创意比稿、反叛精神展示",
+  "version": "2.0.0",
+  "source": "builtin"
+}

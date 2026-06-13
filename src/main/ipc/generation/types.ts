@@ -4,7 +4,7 @@ import type { ModelTimeoutProfile } from '@shared/model-timeout'
 import type { FontSelection } from '@shared/generation'
 import type { SourceDocumentPlan } from '@shared/generation'
 import type { DesignContract } from '../../tools/types'
-import { loadStyleSkill } from '../../utils/style-skills'
+import type { CommonGenerationContext } from './context'
 
 export type GenerateMode = 'generate' | 'edit' | 'retry' | 'addPage' | 'retrySinglePage'
 export type GenerateChatType = 'main' | 'page'
@@ -42,7 +42,10 @@ export type GenerationContext = {
   entry: ReturnType<AgentManager['beginRun']> extends infer T ? NonNullable<T> : never
   runId: string
   styleId: string
-  styleSkill: ReturnType<typeof loadStyleSkill>
+  styleSkill: CommonGenerationContext['styleSkill']
+  styleKey: string
+  styleName: string
+  styleVersion: string
   userProvidedOutlineTitles: string[]
   totalPages: number
   provider: string

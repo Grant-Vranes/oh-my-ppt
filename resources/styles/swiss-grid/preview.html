@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>瑞士网格 · Swiss Grid</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #0f1117; display: grid; place-items: center; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif; }
+
+.slide {
+  position: relative;
+  width: min(100vw, calc(100vh * 16 / 9));
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.08);
+}
+
+/* Visible grid overlay */
+.grid-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    repeating-linear-gradient(90deg,
+      transparent,
+      transparent calc(100%/12 - 0.5px),
+      #e2e8f0 calc(100%/12 - 0.5px),
+      #e2e8f0 calc(100%/12 + 0.5px),
+      transparent calc(100%/12 + 0.5px)
+    ),
+    repeating-linear-gradient(0deg,
+      transparent,
+      transparent calc(100%/8 - 0.5px),
+      #e2e8f0 calc(100%/8 - 0.5px),
+      #e2e8f0 calc(100%/8 + 0.5px),
+      transparent calc(100%/8 + 0.5px)
+    );
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* Content strictly on grid */
+.content {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  padding: clamp(14px, 2.5vw, 36px);
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  gap: clamp(4px, 0.5vw, 8px);
+}
+
+/* Top-left: red square + eyebrow */
+.red-square {
+  grid-column: 1 / 3;
+  grid-row: 1 / 3;
+  background: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.red-square span {
+  font-size: clamp(5px, 0.6vw, 8px);
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+/* Title area */
+.title-area {
+  grid-column: 3 / 9;
+  grid-row: 1 / 4;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding-bottom: clamp(4px, 0.6vw, 8px);
+}
+.eyebrow {
+  font-size: clamp(6px, 0.75vw, 10px);
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #ef4444;
+  margin-bottom: clamp(3px, 0.4vw, 6px);
+}
+h1 {
+  font-size: clamp(24px, 4.2vw, 50px);
+  line-height: 0.95;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+/* Right side info block */
+.info-block {
+  grid-column: 9 / 13;
+  grid-row: 1 / 5;
+  background: #111827;
+  padding: clamp(8px, 1.2vw, 18px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.info-label {
+  font-size: clamp(6px, 0.7vw, 9px);
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #ef4444;
+  margin-bottom: clamp(3px, 0.4vw, 6px);
+}
+.info-text {
+  font-size: clamp(7px, 0.85vw, 11px);
+  line-height: 1.55;
+  color: #ffffff;
+  opacity: 0.75;
+}
+.palette {
+  display: flex;
+  gap: clamp(3px, 0.4vw, 6px);
+  margin-top: clamp(6px, 1vw, 14px);
+}
+.palette i {
+  display: block;
+  width: clamp(10px, 1.4vw, 18px);
+  height: clamp(10px, 1.4vw, 18px);
+  background: var(--c);
+}
+
+/* Description */
+.desc-area {
+  grid-column: 1 / 9;
+  grid-row: 4 / 6;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-top: clamp(4px, 0.6vw, 8px);
+}
+.desc {
+  font-size: clamp(8px, 1.1vw, 14px);
+  line-height: 1.6;
+  color: #334155;
+  max-width: 85%;
+}
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(3px, 0.4vw, 6px);
+  margin-top: clamp(4px, 0.6vw, 10px);
+}
+.tags span {
+  font-size: clamp(6px, 0.7vw, 9px);
+  font-weight: 700;
+  padding: clamp(2px, 0.25vw, 4px) clamp(4px, 0.5vw, 7px);
+  border: 1.5px solid #0f172a;
+  color: #0f172a;
+}
+
+/* Bottom horizontal red bar */
+.red-bar {
+  grid-column: 1 / 13;
+  grid-row: 7 / 9;
+  background: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 clamp(8px, 1.2vw, 18px);
+}
+.red-bar span {
+  font-size: clamp(6px, 0.7vw, 9px);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+/* Thin red accent line */
+.accent-line {
+  grid-column: 3 / 9;
+  grid-row: 3;
+  height: 3px;
+  background: #ef4444;
+  align-self: end;
+  margin-bottom: clamp(2px, 0.3vw, 4px);
+}
+
+/* Transition note */
+.transition-area {
+  grid-column: 9 / 13;
+  grid-row: 6 / 7;
+  display: flex;
+  align-items: center;
+}
+.transition-note {
+  font-size: clamp(6px, 0.7vw, 9px);
+  color: #334155;
+  opacity: 0.55;
+  letter-spacing: 0.05em;
+}
+
+@media (max-aspect-ratio: 16/9) { .slide { width: min(100vw, calc(100vh * 16 / 9)); height: auto; } }
+@media (min-aspect-ratio: 16/9) { .slide { height: min(100vh, calc(100vw * 9 / 16)); width: auto; } }
+</style>
+</head>
+<body>
+  <main class="slide" aria-label="瑞士网格 style preview">
+    <div class="grid-overlay"></div>
+    <section class="content">
+      <div class="red-square"><span>Swiss</span></div>
+      <div class="title-area">
+        <div class="eyebrow">大胆 · 宣言 · swiss-grid</div>
+        <h1>瑞士网格</h1>
+      </div>
+      <div class="accent-line"></div>
+      <div class="info-block">
+        <div class="info-label">Style DNA</div>
+        <p class="info-text">瑞士国际主义风格是设计史上最优雅的理性主义。12栏网格是神圣不可侵犯的法则，Helvetica 或无衬线字体是唯一选择。</p>
+        <div class="palette">
+          <i style="--c:#0f172a"></i>
+          <i style="--c:#334155"></i>
+          <i style="--c:#111827"></i>
+          <i style="--c:#ef4444"></i>
+          <i style="--c:#ffffff"></i>
+        </div>
+      </div>
+      <div class="desc-area">
+        <p class="desc">严谨到像素的网格信仰，理性本身就是一种浪漫。红色是唯一的色彩出口，其余皆由黑白灰承担秩序的重任。</p>
+        <div class="tags"><span>设计行业分享</span><span>品牌规范发布</span><span>严肃的排版展示</span><span>建筑设计叙事</span></div>
+      </div>
+      <div class="transition-area">
+        <span class="transition-note">fade-up / stagger-list / path-draw</span>
+      </div>
+      <div class="red-bar">
+        <span>Layout: 12栏网格是神圣不可侵犯的法则</span>
+        <span>16:9 preview</span>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>新野兽派 · Neo Brutalism</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #0f1117; display: grid; place-items: center; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; }
+
+.slide {
+  position: relative;
+  width: min(100vw, calc(100vh * 16 / 9));
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #fff7ed;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.08);
+}
+
+/* Large tilted background shape */
+.bg-shape {
+  position: absolute;
+  border: 4px solid #0f172a;
+  z-index: 1;
+}
+.bg-rect-1 {
+  top: -5%;
+  right: -5%;
+  width: 55%;
+  height: 65%;
+  background: #f97316;
+  transform: rotate(-6deg);
+  box-shadow: 8px 8px 0 #0f172a;
+}
+.bg-rect-2 {
+  bottom: -5%;
+  left: 10%;
+  width: 40%;
+  height: 35%;
+  background: #ef4444;
+  transform: rotate(4deg);
+  box-shadow: 6px 6px 0 #0f172a;
+}
+
+.content {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(16px, 3vw, 42px);
+}
+
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: clamp(8px, 1.2vw, 16px);
+}
+.eyebrow {
+  font-size: clamp(7px, 0.9vw, 11px);
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #0f172a;
+}
+.badge {
+  font-size: clamp(7px, 0.8vw, 10px);
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: clamp(3px, 0.4vw, 6px) clamp(8px, 1vw, 14px);
+  background: #0f172a;
+  color: #f97316;
+  border: 3px solid #0f172a;
+  box-shadow: 4px 4px 0 #ef4444;
+}
+
+.title-block {
+  display: inline-block;
+  margin-bottom: clamp(8px, 1.2vw, 18px);
+}
+h1 {
+  font-size: clamp(32px, 5.8vw, 68px);
+  line-height: 0.92;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: -0.03em;
+  display: inline;
+  background: #fff7ed;
+  padding: clamp(4px, 0.5vw, 8px) clamp(8px, 1vw, 14px);
+  border: 4px solid #0f172a;
+  box-shadow: 6px 6px 0 #f97316;
+}
+
+.desc {
+  font-size: clamp(9px, 1.2vw, 15px);
+  line-height: 1.65;
+  color: #1e293b;
+  max-width: 65%;
+  margin-bottom: clamp(8px, 1.2vw, 16px);
+  font-weight: 500;
+}
+
+.bottom-row {
+  display: flex;
+  gap: clamp(8px, 1.2vw, 16px);
+  align-items: flex-end;
+}
+.tag-card {
+  padding: clamp(6px, 0.9vw, 12px) clamp(8px, 1.2vw, 16px);
+  background: #fff7ed;
+  border: 3px solid #0f172a;
+  box-shadow: 4px 4px 0 #0f172a;
+  font-size: clamp(7px, 0.85vw, 11px);
+  font-weight: 700;
+  color: #0f172a;
+  transform: rotate(-1deg);
+}
+.tag-card:nth-child(2) { transform: rotate(1.5deg); box-shadow: 4px 4px 0 #ef4444; }
+.tag-card:nth-child(3) { transform: rotate(-0.5deg); }
+.tag-card:nth-child(4) { transform: rotate(2deg); box-shadow: 4px 4px 0 #f97316; }
+
+.palette-row {
+  display: flex;
+  gap: clamp(4px, 0.5vw, 8px);
+  margin-left: auto;
+}
+.palette-row i {
+  display: block;
+  width: clamp(16px, 2.2vw, 28px);
+  height: clamp(16px, 2.2vw, 28px);
+  background: var(--c);
+  border: 3px solid #0f172a;
+  transform: rotate(var(--r, 0deg));
+}
+
+.info-strip {
+  margin-top: clamp(6px, 1vw, 14px);
+  padding: clamp(5px, 0.7vw, 10px) clamp(8px, 1.2vw, 16px);
+  background: #0f172a;
+  color: #fff7ed;
+  font-size: clamp(6px, 0.75vw, 10px);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 3px solid #0f172a;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.info-strip span { opacity: 0.6; }
+
+@media (max-aspect-ratio: 16/9) { .slide { width: min(100vw, calc(100vh * 16 / 9)); height: auto; } }
+@media (min-aspect-ratio: 16/9) { .slide { height: min(100vh, calc(100vw * 9 / 16)); width: auto; } }
+</style>
+</head>
+<body>
+  <main class="slide" aria-label="新野兽派 style preview">
+    <div class="bg-shape bg-rect-1"></div>
+    <div class="bg-shape bg-rect-2"></div>
+    <section class="content">
+      <div class="top-bar">
+        <div class="eyebrow">大胆 · 宣言 · neo-brutalism</div>
+        <div class="badge">Style DNA</div>
+      </div>
+      <div class="title-block">
+        <h1>新野兽派</h1>
+      </div>
+      <p class="desc">粗线条硬阴影，用不妥协的姿态说出你的观点。新野兽派是设计界的朋克摇滚——厚重的黑色描边、棱角分明的硬阴影、暖色画布上毫不妥协的姿态。</p>
+      <div class="bottom-row">
+        <div class="tag-card">创业路演</div>
+        <div class="tag-card">创意比稿</div>
+        <div class="tag-card">反叛精神演讲</div>
+        <div class="tag-card">年轻品牌发声</div>
+        <div class="palette-row">
+          <i style="--c:#0f172a; --r:3deg"></i>
+          <i style="--c:#1e293b; --r:-2deg"></i>
+          <i style="--c:#f97316; --r:1deg"></i>
+          <i style="--c:#ef4444; --r:-4deg"></i>
+          <i style="--c:#fff7ed; --r:2deg"></i>
+        </div>
+      </div>
+      <div class="info-strip">
+        <span>Layout: 卡片排列大胆且不规则，允许重叠和偏移</span>
+        <span>glitch-in / drop-in / card-flip-3d</span>
+        <span>16:9 preview</span>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

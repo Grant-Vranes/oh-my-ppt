@@ -165,15 +165,19 @@ export interface GenerateStartPayload {
   docPaths?: string[]
 }
 
+export const MAX_SELECTED_PAGES = 50
+
 export const normalizeSelectPageIds = (value: unknown): string[] => {
   if (!Array.isArray(value)) return []
-  return Array.from(
+  const normalized = Array.from(
     new Set(
-      value
-        .map((item) => String(item || '').trim())
-        .filter((item) => /^[a-z0-9_-]+$/i.test(item))
+      value.map((item) => String(item || '').trim()).filter((item) => /^[a-z0-9_-]+$/i.test(item))
     )
-  ).slice(0, 200)
+  )
+  if (normalized.length > MAX_SELECTED_PAGES) {
+    throw new Error(`一次最多选择 ${MAX_SELECTED_PAGES} 页`)
+  }
+  return normalized
 }
 
 export interface GenerateRetryFailedPayload {
@@ -197,6 +201,7 @@ export interface GenerateRetrySinglePagePayload {
 
 export interface GeneratedPagePayload {
   id?: string
+  focusPage?: boolean
   pageNumber: number
   title: string
   contentOutline?: string | null

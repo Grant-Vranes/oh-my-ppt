@@ -4,20 +4,25 @@ import log from 'electron-log/main.js'
 import { nanoid } from 'nanoid'
 import { progressText } from '@shared/progress'
 import { normalizeLayoutIntent } from '@shared/layout-intent'
-import type { GeneratedPagePayload } from '@shared/generation'
+import { MAX_SELECTED_PAGES, type GeneratedPagePayload } from '@shared/generation'
 import type { IpcContext } from '../context'
 import type { EditContext, EmitAssistantFn } from './types'
 import {
   buildEditNoChangeRetryMessage,
   buildEditToolSchemaRetryMessage,
   buildEditValidationRetryMessage,
-  type EditedPageDescriptor,
   isEditToolSchemaRetryableError,
   isEditValidationRetryableError,
   resolvePageHtmlPath,
   uiText,
   validateChangedPages
 } from './generation-utils'
+import {
+  executeDeckEditBatchFlow,
+  type DeckEditBatchResult,
+  type DeckEditCompletedBatch,
+  type DeckEditFailedBatch
+} from './edit-deck-batch-flow'
 import type { DesignContract } from '../../tools/types'
 import { runDeepAgentDeckAllPageEdit } from '../engine/generate'
 import {
@@ -32,6 +37,11 @@ export function filterPageRefsBySelectedPageIds<T extends { pageId: string }>(
   if (selectPageIds.length === 0) return pageRefs
   const requestedPageIdSet = new Set(selectPageIds)
   return pageRefs.filter((ref) => requestedPageIdSet.has(ref.pageId))
+}
+
+export const isDeckEditRateLimitRetryableError = (error: unknown): boolean => {
+  const message = error instanceof Error ? error.message : String(error || '')
+  return /\b429\b|too many requests|rate.?limit|resource exhausted/i.test(message)
 }
 
 export async function executeDeckAllPageEditGeneration(
@@ -57,7 +67,13 @@ export async function executeDeckAllPageEditGeneration(
   const projectDir = context.entry.projectDir
   const indexPath = path.join(projectDir, 'index.html')
   let outlineTitles: string[] = context.userProvidedOutlineTitles
-  let pageRefs: Array<{ id: string; pageNumber: number; title: string; pageId: string; htmlPath: string }> = []
+  let pageRefs: Array<{
+    id: string
+    pageNumber: number
+    title: string
+    pageId: string
+    htmlPath: string
+  }> = []
   let savedDesignContract: DesignContract | undefined
 
   const sessionPages = await db.listSessionPages(context.sessionId)
@@ -109,6 +125,15 @@ export async function executeDeckAllPageEditGeneration(
       `Selected pages not found in session_pages: ${Array.from(requestedPageIdSet).join(', ')}`
     )
   }
+  if (selectedPageRefs.length > MAX_SELECTED_PAGES) {
+    throw new Error(
+      uiText(
+        context.appLocale,
+        `一次最多编辑 ${MAX_SELECTED_PAGES} 页，请先选择更小的页面范围。`,
+        `You can edit at most ${MAX_SELECTED_PAGES} pages at a time. Select a smaller page range.`
+      )
+    )
+  }
   if (outlineTitles.length !== pageRefs.length) {
     outlineTitles = pageRefs.map((ref) => ref.title)
   }
@@ -129,7 +154,6 @@ export async function executeDeckAllPageEditGeneration(
   }))
   const pageFileMap = Object.fromEntries(pageRefs.map((p) => [p.pageId, p.htmlPath]))
   const selectedPageIds = selectedPageRefs.map((p) => p.pageId)
-  const beforeMap = new Map<string, string>()
   const existingPageIdsBeforeRun: string[] = []
   const beforeReads = await Promise.all(
     pageRefs.map(async (ref) => {
@@ -141,14 +165,13 @@ export async function executeDeckAllPageEditGeneration(
   for (const item of beforeReads) {
     if (!item) continue
     existingPageIdsBeforeRun.push(item.pageId)
-    beforeMap.set(item.pageId, item.html)
   }
 
   await db.createGenerationRun({
     id: context.runId,
     sessionId: context.sessionId,
     mode: 'edit',
-    totalPages: pageRefs.length,
+    totalPages: selectedPageRefs.length,
     modelConfigId: context.modelConfigId,
     metadata: {
       editScope: 'deck',
@@ -168,23 +191,12 @@ export async function executeDeckAllPageEditGeneration(
     payload: {
       runId: context.runId,
       stage: 'editing',
-      label: progressText(context.appLocale, 'understanding'),
+      label: uiText(context.appLocale, '正在准备批量编辑', 'Preparing batch edit'),
       progress: 10,
-      totalPages: outlineTitles.length
+      totalPages: selectedPageRefs.length
     }
   })
 
-  await emitAssistant(
-    context,
-    uiText(
-      context.appLocale,
-      `我准备按主会话指令调整「${context.topic}」的页面内容；本次只会写入 ${selectedPageIds.length === pageRefs.length ? '/<pageId>.html' : selectedPageIds.map((id) => `/${id}.html`).join('、')}，不会修改 index.html。`,
-      `I am ready to update page content for "${context.topic}" from the main-session instruction; this run only writes ${selectedPageIds.length === pageRefs.length ? '/<pageId>.html' : selectedPageIds.map((id) => `/${id}.html`).join(', ')} and will not modify index.html.`
-    )
-  )
-
-  const beforeIndexExists = fs.existsSync(indexPath)
-  const beforeIndexHtml = beforeIndexExists ? await fs.promises.readFile(indexPath, 'utf-8') : ''
   await ensureHistoryBaselineSafe(db, context.sessionId, projectDir)
 
   const editRunArgs = {
@@ -208,340 +220,286 @@ export async function executeDeckAllPageEditGeneration(
     projectDir,
     indexPath,
     pageFileMap,
-    selectPageIds: selectedPageIds.length === pageRefs.length ? undefined : selectedPageIds,
     designContract: savedDesignContract,
     existingPageIds: existingPageIdsBeforeRun,
     agentManager,
-    emit: (chunk) => emitEditChunk(chunk),
     runId: context.runId,
     signal: context.entry.abortController.signal
-  } satisfies Parameters<typeof runDeepAgentDeckAllPageEdit>[0]
-  const runEditAttempt = async (userMessage: string, retryDetail?: string): Promise<string> => {
-    if (retryDetail) {
-      emitEditChunk({
-        type: 'llm_status',
-        payload: {
-          runId: context.runId,
-          stage: 'editing',
-          label: progressText(context.appLocale, 'retrying'),
-          progress: 55,
-          totalPages: pageRefs.length,
-          detail: retryDetail
-        }
-      })
-    }
-    return runDeepAgentDeckAllPageEdit({ ...editRunArgs, userMessage })
-  }
-  let editSummaryFromEngine = ''
-  let editToolSchemaRetryUsed = false
-  let editValidationRetryUsed = false
-  const failWithUserMessage = async (userMessage: string): Promise<never> => {
-    await db.updateGenerationRunStatus(context.runId, 'failed', userMessage)
-    throw new Error(userMessage)
-  }
-  const runRetryAttempt = async (
-    userMessage: string,
-    retryDetail: string,
-    failureMessage: string,
-    logLabel: string
-  ): Promise<string> => {
-    try {
-      return await runEditAttempt(userMessage, retryDetail)
-    } catch (retryError) {
-      log.error(logLabel, {
-        sessionId: context.sessionId,
-        runId: context.runId,
-        detail: retryError instanceof Error ? retryError.message : String(retryError)
-      })
-      return failWithUserMessage(failureMessage)
-    }
-  }
+  } satisfies Omit<Parameters<typeof runDeepAgentDeckAllPageEdit>[0], 'selectPageIds' | 'emit'>
+
+  const outlineItemByPageId = new Map(
+    pageRefs.map((page, index) => [page.pageId, outlineItems[index]])
+  )
+  const existingSessionPages = await db.listSessionPages(context.sessionId, {
+    includeDeleted: true
+  })
+  const existingBySlug = new Map(existingSessionPages.map((sp) => [sp.file_slug, sp]))
+  let emittedPageSummaryCount = 0
+
+  let batchResults: DeckEditBatchResult[]
   try {
-    editSummaryFromEngine = await runEditAttempt(context.userMessage)
-  } catch (error) {
-    const canRetryByValidation = isEditValidationRetryableError(error)
-    const canRetryBySchema = isEditToolSchemaRetryableError(error)
-    if (!canRetryByValidation && !canRetryBySchema) throw error
-    if (canRetryBySchema) {
-      editToolSchemaRetryUsed = true
-    } else {
-      editValidationRetryUsed = true
-    }
-    const detail = error instanceof Error ? error.message : String(error)
-    log.warn('[generate:start] deck all-page edit validation/tool retry scheduled', {
-      sessionId: context.sessionId,
+    batchResults = await executeDeckEditBatchFlow({
+      pageRefs: selectedPageRefs,
+      indexPath,
+      originalUserMessage: context.userMessage,
       runId: context.runId,
-      detail,
-      kind: canRetryBySchema ? 'tool_schema' : 'validation'
-    })
-    const retryMessage = canRetryBySchema
-      ? buildEditToolSchemaRetryMessage({
-          originalMessage: context.userMessage,
-          detail,
-          allowedTool: 'update_page_file',
-          selectedPageId: null
+      appLocale: context.appLocale,
+      signal: context.entry.abortController.signal,
+      emit: emitEditChunk,
+      validateChangedPages,
+      buildRetryMessage: ({ baseMessage, error, kind }) => {
+        const detail = error instanceof Error ? error.message : String(error || '')
+        if (kind === 'no_change') {
+          return buildEditNoChangeRetryMessage({
+            originalMessage: baseMessage,
+            allowedTool: 'update_page_file',
+            selectedPageId: null
+          })
+        }
+        if (kind === 'validation' || isEditValidationRetryableError(error)) {
+          return buildEditValidationRetryMessage(baseMessage, detail)
+        }
+        if (isEditToolSchemaRetryableError(error)) {
+          return buildEditToolSchemaRetryMessage({
+            originalMessage: baseMessage,
+            detail,
+            allowedTool: 'update_page_file',
+            selectedPageId: null
+          })
+        }
+        if (isDeckEditRateLimitRetryableError(error)) {
+          return [
+            baseMessage,
+            '',
+            'Retry requirement:',
+            `- The previous page request was rate limited: ${detail}`,
+            '- Retry this page once after the configured stagger delay.',
+            '- Edit only the current page and do not modify index.html.'
+          ].join('\n')
+        }
+        return null
+      },
+      runPageAttempt: async ({ pageId, userMessage, isRetry, emit }) => {
+        if (isRetry) {
+          const retryPage = selectedPageRefs.find((page) => page.pageId === pageId)
+          const currentPage = Math.max(
+            1,
+            selectedPageRefs.findIndex((page) => page.pageId === pageId) + 1
+          )
+          emit({
+            type: 'llm_status',
+            payload: {
+              runId: context.runId,
+              stage: 'editing',
+              label: uiText(
+                context.appLocale,
+                `正在重试 P${retryPage?.pageNumber ?? currentPage}`,
+                `Retrying P${retryPage?.pageNumber ?? currentPage}`
+              ),
+              progress: 0,
+              currentPage,
+              totalPages: selectedPageRefs.length,
+              detail: uiText(
+                context.appLocale,
+                `正在重试页面：${pageId}`,
+                `Retrying page: ${pageId}`
+              )
+            }
+          })
+        }
+        return runDeepAgentDeckAllPageEdit({
+          ...editRunArgs,
+          userMessage,
+          selectPageIds: [pageId],
+          emit
         })
-      : buildEditValidationRetryMessage(context.userMessage, detail)
-    editSummaryFromEngine = await runRetryAttempt(
-      retryMessage,
-      uiText(
-        context.appLocale,
-        canRetryBySchema
-          ? '工具调用参数不完整，正在自动重试一次。'
-          : '页面校验失败，正在自动重试一次。',
-        canRetryBySchema
-          ? 'Tool call schema invalid; retrying once.'
-          : 'Page validation failed; retrying once.'
-      ),
-      uiText(
-        context.appLocale,
-        '页面编辑重试失败，请重新描述要修改的内容。',
-        'Page edit retry failed. Please describe the desired change again.'
-      ),
-      '[generate:start] deck all-page edit retry failed'
-    )
-  }
-
-  const afterIndexHtml = fs.existsSync(indexPath)
-    ? await fs.promises.readFile(indexPath, 'utf-8')
-    : ''
-  if (beforeIndexHtml !== afterIndexHtml) {
-    let restored = false
-    try {
-      if (beforeIndexExists) {
-        await fs.promises.writeFile(indexPath, beforeIndexHtml, 'utf-8')
+      },
+      onPageCompleted: async (result) => {
+        const pageRef = selectedPageRefs.find((p) => p.pageId === result.pageId)
+        if (!pageRef) return
+        const outlineItem = outlineItemByPageId.get(result.pageId)
+        await db.upsertGenerationPage({
+          runId: context.runId,
+          sessionId: context.sessionId,
+          pageId: result.pageId,
+          pageNumber: pageRef.pageNumber,
+          title: pageRef.title,
+          contentOutline: outlineItem?.contentOutline || '',
+          layoutIntent: outlineItem?.layoutIntent,
+          htmlPath: pageRef.htmlPath,
+          status: 'completed',
+          retryCount: result.retryCount
+        })
+        const existing = existingBySlug.get(result.pageId)
+        await db.upsertSessionPage({
+          id: existing?.id || nanoid(),
+          sessionId: context.sessionId,
+          legacyPageId:
+            existing?.legacy_page_id || (result.pageId.match(/^page-\d+$/) ? result.pageId : null),
+          fileSlug: result.pageId,
+          pageNumber: pageRef.pageNumber,
+          title: pageRef.title,
+          htmlPath: pageRef.htmlPath,
+          status: 'completed',
+          error: null
+        })
+        for (const page of result.changedPages) {
+          const isExisting = existingPageIdsBeforeRun.includes(page.pageId)
+          const payload: GeneratedPagePayload = {
+            id: page.id,
+            focusPage: false,
+            pageNumber: page.pageNumber,
+            title: page.title,
+            html: page.html,
+            pageId: page.pageId,
+            htmlPath: page.htmlPath,
+            sourceUrl: getPageSourceUrl(page.htmlPath)
+          }
+          emitEditChunk({
+            type: isExisting ? 'page_updated' : 'page_generated',
+            payload: {
+              runId: context.runId,
+              stage: 'editing',
+              label: progressText(context.appLocale, 'completed'),
+              progress: 90,
+              currentPage: page.pageNumber,
+              totalPages: selectedPageRefs.length,
+              ...payload
+            }
+          })
+        }
+        const summary = result.summary.trim()
+        if (summary.length >= 2) {
+          await emitAssistant(context, `P${pageRef.pageNumber}：${summary}`)
+          emittedPageSummaryCount += 1
+        }
+      },
+      onPageFailed: async (result) => {
+        const pageRef = selectedPageRefs.find((p) => p.pageId === result.pageId)
+        if (!pageRef) return
+        const outlineItem = outlineItemByPageId.get(result.pageId)
+        await db.upsertGenerationPage({
+          runId: context.runId,
+          sessionId: context.sessionId,
+          pageId: result.pageId,
+          pageNumber: pageRef.pageNumber,
+          title: pageRef.title,
+          contentOutline: outlineItem?.contentOutline || '',
+          layoutIntent: outlineItem?.layoutIntent,
+          htmlPath: pageRef.htmlPath,
+          status: 'failed',
+          error: result.reason,
+          retryCount: result.retryCount
+        })
+        const existing = existingBySlug.get(result.pageId)
+        await db.upsertSessionPage({
+          id: existing?.id || pageRef.id || nanoid(),
+          sessionId: context.sessionId,
+          legacyPageId:
+            existing?.legacy_page_id || (result.pageId.match(/^page-\d+$/) ? result.pageId : null),
+          fileSlug: result.pageId,
+          pageNumber: pageRef.pageNumber,
+          title: pageRef.title,
+          htmlPath: pageRef.htmlPath,
+          status: existing?.status || 'failed',
+          error: existing?.error || null
+        })
+        emitEditChunk({
+          type: 'page_failed',
+          payload: {
+            runId: context.runId,
+            stage: 'editing',
+            label: progressText(context.appLocale, 'failed'),
+            progress: 90,
+            currentPage: pageRef.pageNumber,
+            totalPages: selectedPageRefs.length,
+            pageNumber: pageRef.pageNumber,
+            pageId: pageRef.pageId,
+            title: pageRef.title,
+            htmlPath: pageRef.htmlPath,
+            error: result.reason
+          }
+        })
       }
-      restored = true
-    } catch (error) {
-      log.error('[generate:start] failed to restore index.html after deck edit', {
-        sessionId: context.sessionId,
-        indexPath,
-        message: error instanceof Error ? error.message : String(error)
-      })
-    }
-    const message = restored
-      ? '主会话 deck 编辑不允许修改 index.html，本次检测到壳层变更并已恢复。请重新描述只针对页面内容的修改。'
-      : '主会话 deck 编辑不允许修改 index.html，本次检测到壳层变更且自动恢复失败，请手动检查项目文件。'
+    })
+  } catch (error) {
+    const message =
+      error instanceof Error && error.message.length > 0 ? error.message : 'Deck edit failed'
+    log.error('[generate:start] deck edit batch flow aborted', {
+      sessionId: context.sessionId,
+      runId: context.runId,
+      message
+    })
     await db.updateGenerationRunStatus(context.runId, 'failed', message)
-    throw new Error(message)
-  }
-
-  let pageDescriptors: EditedPageDescriptor[] = []
-  let changedPageDescriptors: EditedPageDescriptor[] = []
-  const readEditedPages = async (): Promise<{
-    pageDescriptors: typeof pageDescriptors
-    changedPageDescriptors: typeof changedPageDescriptors
-  }> => {
-    const nextPageDescriptors: typeof pageDescriptors = []
-    const nextChangedPageDescriptors: typeof changedPageDescriptors = []
-    const editedPageReads = await Promise.all(
-      pageRefs.map(async (ref) => {
-        if (!fs.existsSync(ref.htmlPath)) return null
-        const html = await fs.promises.readFile(ref.htmlPath, 'utf-8')
-        return { ref, html }
-      })
-    )
-    for (const item of editedPageReads) {
-      if (!item) continue
-      const { ref, html } = item
-      nextPageDescriptors.push({
-        id: ref.id,
-        pageNumber: ref.pageNumber,
-        title: ref.title,
-        pageId: ref.pageId,
-        html,
-        htmlPath: ref.htmlPath
-      })
-      const isExisting = existingPageIdsBeforeRun.includes(ref.pageId)
-      const changed = beforeMap.get(ref.pageId) !== html
-      if (!changed && isExisting) continue
-      nextChangedPageDescriptors.push({
-        id: ref.id,
-        pageNumber: ref.pageNumber,
-        title: ref.title,
-        pageId: ref.pageId,
-        html,
-        htmlPath: ref.htmlPath
-      })
-    }
-    return {
-      pageDescriptors: nextPageDescriptors,
-      changedPageDescriptors: nextChangedPageDescriptors
-    }
-  }
-  ;({ pageDescriptors, changedPageDescriptors } = await readEditedPages())
-
-  if (changedPageDescriptors.length === 0) {
-    const detail = uiText(
-      context.appLocale,
-      '本次 deck 编辑没有检测到任何页面落盘变化。',
-      'The deck edit completed without any detected page changes.'
-    )
-    log.warn('[generate:start] deck all-page edit no-change retry scheduled', {
-      sessionId: context.sessionId,
-      runId: context.runId,
-      detail,
-      schemaRetryUsed: editToolSchemaRetryUsed
-    })
-    editSummaryFromEngine = await runRetryAttempt(
-      buildEditNoChangeRetryMessage({
-        originalMessage: context.userMessage,
-        allowedTool: 'update_page_file',
-        selectedPageId: null
-      }),
-      uiText(
-        context.appLocale,
-        '没有检测到页面变化，正在自动重试一次。',
-        'No page changes detected; retrying once.'
-      ),
-      uiText(
-        context.appLocale,
-        '页面编辑重试后仍未产生变化，请重新描述要修改的内容。',
-        'The page edit still did not produce changes after retry. Please describe the desired change again.'
-      ),
-      '[generate:start] deck all-page edit no-change retry failed'
-    )
-    ;({ pageDescriptors, changedPageDescriptors } = await readEditedPages())
-    if (changedPageDescriptors.length === 0) {
-      const message = uiText(
-        context.appLocale,
-        'deck 编辑没有产生任何落盘页面变化，请重新描述要修改的页面内容。',
-        'The deck edit did not produce any persisted page changes. Please describe the desired page content change again.'
-      )
-      await db.updateGenerationRunStatus(context.runId, 'failed', message)
-      throw new Error(message)
-    }
-  }
-
-  const invalidChangedPages = validateChangedPages(changedPageDescriptors)
-  if (invalidChangedPages.length > 0) {
-    const details = invalidChangedPages
-      .map((item) => `${item.page.pageId}（${item.page.title}）：${item.reason}`)
-      .join('；')
-    if (editValidationRetryUsed) {
-      log.error('[generate:start] deck all-page edit result validation failed after retry', {
-        sessionId: context.sessionId,
-        runId: context.runId,
-        details
-      })
-      await failWithUserMessage(
-        uiText(
-          context.appLocale,
-          '页面编辑结果校验失败，请重新描述要修改的内容。',
-          'Page edit validation failed. Please describe the desired change again.'
-        )
-      )
-    }
-    editValidationRetryUsed = true
-    log.warn('[generate:start] deck all-page edit result validation retry scheduled', {
-      sessionId: context.sessionId,
-      runId: context.runId,
-      details
-    })
-    editSummaryFromEngine = await runRetryAttempt(
-      buildEditValidationRetryMessage(context.userMessage, `页面编辑结果验证失败：${details}`),
-      uiText(
-        context.appLocale,
-        '页面校验失败，正在自动重试一次。',
-        'Page validation failed; retrying once.'
-      ),
-      uiText(
-        context.appLocale,
-        '页面编辑重试失败，请重新描述要修改的内容。',
-        'Page edit retry failed. Please describe the desired change again.'
-      ),
-      '[generate:start] deck all-page edit validation retry failed'
-    )
-    ;({ pageDescriptors, changedPageDescriptors } = await readEditedPages())
-    const retryInvalidChangedPages = validateChangedPages(changedPageDescriptors)
-    if (retryInvalidChangedPages.length > 0) {
-      const retryDetails = retryInvalidChangedPages
-        .map((item) => `${item.page.pageId}（${item.page.title}）：${item.reason}`)
-        .join('；')
-      log.error('[generate:start] deck all-page edit result validation failed after retry', {
-        sessionId: context.sessionId,
-        runId: context.runId,
-        details: retryDetails
-      })
-      await failWithUserMessage(
-        uiText(
-          context.appLocale,
-          '页面编辑结果校验失败，请重新描述要修改的内容。',
-          'Page edit validation failed. Please describe the desired change again.'
-        )
-      )
-    }
-  }
-
-  for (const page of changedPageDescriptors) {
-    const isExisting = existingPageIdsBeforeRun.includes(page.pageId)
-    const payload: GeneratedPagePayload = {
-      id: page.id,
-      pageNumber: page.pageNumber,
-      title: page.title,
-      html: page.html,
-      pageId: page.pageId,
-      htmlPath: page.htmlPath,
-      sourceUrl: getPageSourceUrl(page.htmlPath)
-    }
     emitEditChunk({
-      type: isExisting ? 'page_updated' : 'page_generated',
+      type: 'run_error',
       payload: {
         runId: context.runId,
-        stage: 'editing',
-        label: progressText(context.appLocale, 'completed'),
-        progress: 90,
-        currentPage: page.pageNumber,
-        totalPages: pageRefs.length,
-        ...payload
+        message
       }
     })
+    throw error
   }
 
-  const changedPageIdSet = new Set(changedPageDescriptors.map((page) => page.pageId))
-  for (const page of changedPageDescriptors) {
-    const outlineItem = outlineItems.find((_item, index) => pageRefs[index]?.pageId === page.pageId)
-    await db.upsertGenerationPage({
-      runId: context.runId,
-      sessionId: context.sessionId,
-      pageId: page.pageId,
-      pageNumber: page.pageNumber,
-      title: page.title,
-      contentOutline: outlineItem?.contentOutline || '',
-      layoutIntent: outlineItem?.layoutIntent,
-      htmlPath: page.htmlPath,
-      status: 'completed'
-    })
-  }
+  const completedBatchResults = batchResults.filter(
+    (result): result is DeckEditCompletedBatch => result.status === 'completed'
+  )
+  const failedBatchResults = batchResults.filter(
+    (result): result is DeckEditFailedBatch => result.status === 'failed'
+  )
+  const changedPageIdSet = new Set(
+    completedBatchResults.flatMap((r) => r.changedPages.map((p) => p.pageId))
+  )
 
   const remainingFailedPageInfoById = new Map(failedPageInfoById)
   for (const pageId of changedPageIdSet) {
     remainingFailedPageInfoById.delete(pageId)
   }
-  const generatedPagesForMetadata = pageDescriptors.filter(
-    (page) => !remainingFailedPageInfoById.has(page.pageId)
-  )
-  const remainingFailedPages = Array.from(remainingFailedPageInfoById.entries()).map(
-    ([pageId, info]) => ({
-      pageId,
-      title: info.title || pageRefs.find((ref) => ref.pageId === pageId)?.title || pageId,
-      reason: info.reason || '页面仍需修复'
-    })
-  )
-
-  const changedPages = changedPageDescriptors
+  const changedPagesText = completedBatchResults
+    .flatMap((r) => r.changedPages)
     .map((p) => uiText(context.appLocale, `第${p.pageNumber}页`, `page ${p.pageNumber}`))
     .join(uiText(context.appLocale, '、', ', '))
-  const editSummary =
-    changedPageDescriptors.length > 0
-      ? uiText(context.appLocale, `修改完成：${changedPages}。`, `Edit completed: ${changedPages}.`)
-      : editSummaryFromEngine.trim() ||
-        uiText(
+  const failedPagesText = failedBatchResults
+    .map((item) => {
+      const page = pageRefs.find((ref) => ref.pageId === item.pageId)
+      return uiText(
+        context.appLocale,
+        `第${page?.pageNumber || item.pageId}页`,
+        page?.pageNumber ? `page ${page.pageNumber}` : item.pageId
+      )
+    })
+    .join(uiText(context.appLocale, '、', ', '))
+
+  const fallbackSummary =
+    completedBatchResults.length > 0 && failedBatchResults.length > 0
+      ? uiText(
           context.appLocale,
-          '我已经检查过了，这次没有检测到需要落盘的页面变化。',
-          'I checked the session and did not detect page changes that needed to be written this time.'
+          `部分修改完成：成功 ${changedPagesText}；失败 ${failedPagesText}。`,
+          `Partial edit completed: succeeded on ${changedPagesText}; failed on ${failedPagesText}.`
         )
-  await emitAssistant(context, editSummary)
+      : completedBatchResults.length > 0
+        ? uiText(
+            context.appLocale,
+            `修改完成：${changedPagesText}。`,
+            `Edit completed: ${changedPagesText}.`
+          )
+        : uiText(
+            context.appLocale,
+            `页面编辑失败：${failedPagesText}。`,
+            `Page edit failed: ${failedPagesText}.`
+          )
+  if (emittedPageSummaryCount === 0) {
+    await emitAssistant(context, fallbackSummary)
+  } else if (failedBatchResults.length > 0) {
+    await emitAssistant(
+      context,
+      uiText(
+        context.appLocale,
+        `未完成：${failedPagesText}。`,
+        `Not completed: ${failedPagesText}.`
+      )
+    )
+  }
 
   await db.updateSessionMetadata(context.sessionId, {
     lastRunId: context.runId,
@@ -549,38 +507,26 @@ export async function executeDeckAllPageEditGeneration(
     indexPath,
     projectId: context.projectId
   })
-  const existingSessionPages = await db.listSessionPages(context.sessionId, { includeDeleted: true })
-  const existingBySlug = new Map(existingSessionPages.map((sp) => [sp.file_slug, sp]))
-  for (const page of generatedPagesForMetadata) {
-    const existing = existingBySlug.get(page.pageId)
-    await db.upsertSessionPage({
-      id: existing?.id || nanoid(),
-      sessionId: context.sessionId,
-      legacyPageId:
-        existing?.legacy_page_id || (page.pageId.match(/^page-\d+$/) ? page.pageId : null),
-      fileSlug: page.pageId,
-      pageNumber: page.pageNumber,
-      title: page.title,
-      htmlPath: page.htmlPath,
-      status: 'completed',
-      error: null
-    })
-  }
   await db.updateProjectStatus(context.projectId, 'draft')
   await db.updateSessionStatus(
     context.sessionId,
-    remainingFailedPages.length > 0 ? 'failed' : 'completed'
+    remainingFailedPageInfoById.size > 0 ? 'failed' : 'completed'
   )
+  const runStatus =
+    failedBatchResults.length === 0
+      ? 'completed'
+      : completedBatchResults.length > 0
+        ? 'partial'
+        : 'failed'
+  const failedDetails = failedBatchResults
+    .map((page) => `${page.pageId}：${page.reason}`)
+    .join('；')
   await db.updateGenerationRunStatus(
     context.runId,
-    remainingFailedPages.length > 0 ? 'partial' : 'completed',
-    remainingFailedPages.length > 0
-      ? remainingFailedPages
-          .map((page) => `${page.pageId}（${page.title}）：${page.reason}`)
-          .join('；')
-      : null
+    runStatus,
+    failedBatchResults.length > 0 ? failedDetails : null
   )
-  if (remainingFailedPages.length === 0) {
+  if (changedPageIdSet.size > 0) {
     await recordHistoryOperationStrict(db, {
       sessionId: context.sessionId,
       projectDir,
@@ -590,7 +536,11 @@ export async function executeDeckAllPageEditGeneration(
       metadata: {
         runId: context.runId,
         changedPageIds: Array.from(changedPageIdSet),
-        selectPageIds: selectedPageIds
+        selectPageIds: selectedPageIds,
+        failedPageIds: failedBatchResults.map((page) => page.pageId),
+        failedPageReasons: Object.fromEntries(
+          failedBatchResults.map((page) => [page.pageId, page.reason])
+        )
       }
     })
   }
@@ -598,13 +548,29 @@ export async function executeDeckAllPageEditGeneration(
     sessionId: context.sessionId,
     styleId: context.styleId,
     changedPages: Array.from(changedPageIdSet),
-    remainingFailedPages: remainingFailedPages.map((page) => page.pageId)
+    failedPages: failedBatchResults.map((page) => page.pageId),
+    remainingFailedPages: Array.from(remainingFailedPageInfoById.keys()),
+    batchCount: batchResults.length
   })
-  emitEditChunk({
-    type: 'run_completed',
-    payload: {
-      runId: context.runId,
-      totalPages: pageRefs.length
-    }
-  })
+  if (runStatus === 'failed') {
+    emitEditChunk({
+      type: 'run_error',
+      payload: {
+        runId: context.runId,
+        message: failedDetails || fallbackSummary,
+        completedPageCount: 0,
+        failedPageCount: failedBatchResults.length
+      }
+    })
+  } else {
+    emitEditChunk({
+      type: 'run_completed',
+      payload: {
+        runId: context.runId,
+        totalPages: selectedPageRefs.length,
+        completedPageCount: changedPageIdSet.size,
+        failedPageCount: failedBatchResults.length
+      }
+    })
+  }
 }

@@ -705,7 +705,14 @@ Business presentations, product introductions, project summaries — formal but 
     mainDisabledPlaceholder:
       'Main-session sending is disabled. Switch Context to Current page first.',
     emptyMessages: 'No creative messages yet',
-    modelProcessing: 'Model processing...',
+    activityTitle: 'Edit progress',
+    activityDescription: 'Follow page edits, retries, and completion in real time.',
+    activityProcessing: 'Processing edit task',
+    activityCompleted: 'Edit completed',
+    activityStatusRunning: 'Running',
+    activityStatusCompleted: 'Completed',
+    activityStatusCancelled: 'Cancelled',
+    activityStatusFailed: 'Failed',
     selectorBadge: 'SELECTOR',
     clearSelector: 'Clear selector',
     mainDeckHint: 'Main session edits one or more pages from your instruction.',
@@ -714,6 +721,9 @@ Business presentations, product introductions, project summaries — formal but 
     mainPageScopeMessagePrefix: 'Page scope: {pages}',
     mainPageScopeConflictWarning:
       'Specific pages are selected, so this run will only edit those pages. Switch back to All pages to edit the full deck.',
+    mainPageScopeLimitReached: 'You can select at most {count} pages at a time.',
+    mainPageScopeAllLimitReached:
+      'This deck has {count} pages. Select at most {limit} specific pages before editing.',
     mainDisabled:
       'Main-session sending is disabled. Switch Context to Current page before editing.',
     removeAsset: 'Remove asset',
@@ -852,7 +862,6 @@ Business presentations, product introductions, project summaries — formal but 
       'This page failed last time and is showing a recoverable file. Keep the Current page context and describe how to fix or regenerate it.',
     clickToSelect: 'Click an element to select it',
     emptyPreviewTitle: 'Waiting for your creative draft',
-    preparingPreview: 'Preparing the first preview...',
     briefHint: 'Enter a brief in the message panel and the preview will appear here.',
     imageOnly: 'Only image assets are supported for now',
     imagePathFailed: 'Cannot read image path',

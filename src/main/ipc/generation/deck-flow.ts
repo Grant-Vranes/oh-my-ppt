@@ -9,7 +9,11 @@ import log from 'electron-log/main.js'
 import { type LayoutIntent } from '@shared/layout-intent'
 import { isPlaceholderPageHtml, validatePersistedPageHtml } from '../../tools/html-utils'
 import { buildProjectIndexHtml, type DeckPageFile } from '../engine/template'
-import { buildDesignContractWithLLM, planDeckWithLLM, runDeepAgentDeckGeneration } from '../engine/generate'
+import {
+  buildDesignContractWithLLM,
+  planDeckWithLLM,
+  runDeepAgentDeckGeneration
+} from '../engine/generate'
 import type { GeneratedPagePayload } from '@shared/generation'
 import { sleep } from '../utils'
 import { customAlphabet, nanoid } from 'nanoid'
@@ -210,26 +214,27 @@ export async function executeDeckGeneration(
     totalPages: pageRefs.length,
     userMessage: context.userMessage
   })
-  const plannerPromise = shouldUseSourcePlan && context.sourcePlan
-    ? Promise.resolve(mapSourcePlanToOutlineItems(context.sourcePlan))
-    : planDeckWithLLM({
-        provider: context.provider,
-        apiKey: context.apiKey,
-        model: context.model,
-        baseUrl: context.providerBaseUrl,
-        maxTokens: context.maxTokens,
-        modelTimeoutMs: context.modelTimeouts.planning,
-        temperature: PLANNER_TEMPERATURE,
-        styleId: context.styleId,
-        totalPages: pageRefs.length,
-        appLocale: context.appLocale,
-        topic: context.topic,
-        userMessage: context.userMessage,
-        sourceDocumentPaths: context.sourceDocumentPaths,
-        emit: (chunk) => emitDeckChunk(chunk),
-        runId: context.runId,
-        signal: context.entry.abortController.signal
-      })
+  const plannerPromise =
+    shouldUseSourcePlan && context.sourcePlan
+      ? Promise.resolve(mapSourcePlanToOutlineItems(context.sourcePlan))
+      : planDeckWithLLM({
+          provider: context.provider,
+          apiKey: context.apiKey,
+          model: context.model,
+          baseUrl: context.providerBaseUrl,
+          maxTokens: context.maxTokens,
+          modelTimeoutMs: context.modelTimeouts.planning,
+          temperature: PLANNER_TEMPERATURE,
+          styleId: context.styleId,
+          totalPages: pageRefs.length,
+          appLocale: context.appLocale,
+          topic: context.topic,
+          userMessage: context.userMessage,
+          sourceDocumentPaths: context.sourceDocumentPaths,
+          emit: (chunk) => emitDeckChunk(chunk),
+          runId: context.runId,
+          signal: context.entry.abortController.signal
+        })
   if (shouldUseSourcePlan) {
     log.info('[generate:deck] using source page skeleton as outline plan', {
       sessionId: context.sessionId,
@@ -335,14 +340,6 @@ export async function executeDeckGeneration(
     }
   })
 
-  await emitAssistant(
-    context,
-    uiText(
-      context.appLocale,
-      `已为「${context.topic}」规划 ${outlineItems.length} 页内容，风格为「${context.styleSkill.preset.label}」。接下来我会逐页完善并实时同步进度。`,
-      `Planned ${outlineItems.length} slides for "${context.topic}" in the "${context.styleSkill.preset.label}" style. I will refine each page and stream progress in real time.`
-    )
-  )
   await sleep(120, context.entry.abortController.signal)
 
   const beforePageMap = new Map<string, string>()
@@ -466,7 +463,7 @@ export async function executeDeckGeneration(
     await persistGenerationSnapshotMetadata()
   }
 
-  const { failedPages } = await runDeepAgentDeckGeneration({
+  const { summary: agentSummary, failedPages } = await runDeepAgentDeckGeneration({
     sessionId: context.sessionId,
     provider: context.provider,
     apiKey: context.apiKey,
@@ -717,7 +714,9 @@ export async function executeDeckGeneration(
         error: failedPage.reason
       })
     }
-    const existingSessionPages = await db.listSessionPages(context.sessionId, { includeDeleted: true })
+    const existingSessionPages = await db.listSessionPages(context.sessionId, {
+      includeDeleted: true
+    })
     const existingBySlug = new Map(existingSessionPages.map((sp) => [sp.file_slug, sp]))
     for (const failedPage of failedPages) {
       const pageRef = pageRefs.find((page) => page.pageId === failedPage.pageId)
@@ -741,7 +740,8 @@ export async function executeDeckGeneration(
       await db.upsertSessionPage({
         id: existing?.id || page.id,
         sessionId: context.sessionId,
-        legacyPageId: existing?.legacy_page_id || (page.pageId.match(/^page-\d+$/) ? page.pageId : null),
+        legacyPageId:
+          existing?.legacy_page_id || (page.pageId.match(/^page-\d+$/) ? page.pageId : null),
         fileSlug: page.pageId,
         pageNumber: page.pageNumber,
         title: page.title,
@@ -785,7 +785,7 @@ export async function executeDeckGeneration(
     )
   }
 
-  const completionSummary =
+  const fallbackCompletionSummary =
     placeholderPages.length > 0
       ? uiText(
           context.appLocale,
@@ -797,7 +797,7 @@ export async function executeDeckGeneration(
           `演示已生成完成。共 ${pageDescriptors.length} 页，主题「${context.topic}」。`,
           `The presentation has been generated. It has ${pageDescriptors.length} pages for "${context.topic}".`
         )
-  await emitAssistant(context, completionSummary)
+  await emitAssistant(context, agentSummary.trim() || fallbackCompletionSummary)
 
   await db.updateGenerationRunStatus(context.runId, 'completed', null)
   await finalizeGenerationSuccess(ctx, {

@@ -704,7 +704,10 @@ export const buildDesignContractWithLLM = async (args: {
     }
     const contract = normalizeDesignContract(parsed)
     if (requestedFontPair) {
-      if (contract.titleFont !== requestedFontPair.titleFont || contract.bodyFont !== requestedFontPair.bodyFont) {
+      if (
+        contract.titleFont !== requestedFontPair.titleFont ||
+        contract.bodyFont !== requestedFontPair.bodyFont
+      ) {
         throw new Error(
           uiText(
             args.appLocale,
@@ -852,6 +855,7 @@ export const runDeepAgentDeckGeneration = async (args: {
   singlePagePromptAddendum?: string
   requireTemplatePageRead?: boolean
   generationMode?: 'generate' | 'retry'
+  renderingLabel?: string
   pageTasks?: Array<{
     pageNumber: number
     pageId: string
@@ -996,8 +1000,10 @@ export const runDeepAgentDeckGeneration = async (args: {
     })
   }
 
+  const renderingLabel = args.renderingLabel || progressText(args.appLocale, 'generating')
+
   emitRenderingStatus({
-    label: progressText(args.appLocale, 'generating'),
+    label: renderingLabel,
     progress: 12,
     detail: uiText(args.appLocale, `共 ${totalPages} 页`, `${totalPages} pages`)
   })
@@ -1050,7 +1056,7 @@ export const runDeepAgentDeckGeneration = async (args: {
 
     emitPageStatus({
       pageId: page.pageId,
-      label: progressText(args.appLocale, 'generating'),
+      label: renderingLabel,
       detail: `${page.pageId} · ${page.title}`,
       pageProgress: 5
     })
@@ -1059,7 +1065,7 @@ export const runDeepAgentDeckGeneration = async (args: {
       payload: {
         runId: args.runId || '',
         stage: 'rendering',
-        label: progressText(args.appLocale, 'generating'),
+        label: renderingLabel,
         progress: getOverallRenderProgress(),
         currentPage: page.pageNumber,
         totalPages,
@@ -1178,7 +1184,9 @@ export const runDeepAgentDeckGeneration = async (args: {
                   designContract: args.designContract,
                   retryContext
                 })
-              ].filter(Boolean).join('\n\n')
+              ]
+                .filter(Boolean)
+                .join('\n\n')
             }
           ]
         },
@@ -1223,7 +1231,10 @@ export const runDeepAgentDeckGeneration = async (args: {
           }
           emitPageStatus({
             pageId: page.pageId,
-            label: normalizedLabel,
+            label:
+              normalizedLabel === progressText(args.appLocale, 'generating')
+                ? renderingLabel
+                : normalizedLabel,
             detail: normalizedDetail,
             pageProgress: mappedPageProgress
           })
@@ -1232,7 +1243,7 @@ export const runDeepAgentDeckGeneration = async (args: {
           const mappedPageProgress = Math.max(12, Math.min(96, defaultProgress))
           emitPageStatus({
             pageId: page.pageId,
-            label: progressText(args.appLocale, 'generating'),
+            label: renderingLabel,
             detail: page.title,
             pageProgress: mappedPageProgress
           })
@@ -1331,9 +1342,7 @@ export const runDeepAgentDeckGeneration = async (args: {
         lastError = error
         const reason = error instanceof Error ? error.message : String(error)
         // Write/validation errors that are truly non-retryable
-        const isWriteError = /落盘校验|禁止的 CDN|远程资源|未知页面|不允许写入/i.test(
-          reason
-        )
+        const isWriteError = /落盘校验|禁止的 CDN|远程资源|未知页面|不允许写入/i.test(reason)
         if (isWriteError || attempt >= MAX_PAGE_RETRIES) break
         const retryAttempt = attempt + 1
         const retryDelayMs = RETRY_DELAY_BASE_MS * retryAttempt
@@ -1372,7 +1381,7 @@ export const runDeepAgentDeckGeneration = async (args: {
   const PAGE_GENERATION_STAGGER_MS = 500
   if (useDualWorkerQueue) {
     emitRenderingStatus({
-      label: progressText(args.appLocale, 'generating'),
+      label: renderingLabel,
       progress: 14,
       detail: uiText(args.appLocale, '创意即将正式生成..', 'Generation is about to begin.')
     })
@@ -1578,14 +1587,28 @@ const runDeepAgentScopedEdit = async (args: RunDeepAgentScopedEditArgs): Promise
             : undefined
     }
   })
-  args.agentManager.setAgent(args.sessionId, editAgent)
+  const concurrentDeckPageId =
+    args.editScope === 'deck' && args.selectPageIds?.length === 1
+      ? args.selectPageIds[0]
+      : undefined
+  if (concurrentDeckPageId) {
+    args.agentManager.setPageAgent(args.sessionId, concurrentDeckPageId, editAgent)
+  } else {
+    args.agentManager.setAgent(args.sessionId, editAgent)
+  }
 
   args.emit?.({
     type: 'llm_status',
     payload: {
       runId: args.runId || '',
       stage: 'editing',
-      label: progressText(args.appLocale, 'generating'),
+      label: concurrentDeckPageId
+        ? uiText(
+            args.appLocale,
+            `正在启动页面 ${concurrentDeckPageId} 的编辑`,
+            `Starting edit for page ${concurrentDeckPageId}`
+          )
+        : progressText(args.appLocale, 'generating'),
       progress: 40,
       totalPages: args.outlineTitles.length,
       provider: args.provider,
@@ -1628,9 +1651,21 @@ const runDeepAgentScopedEdit = async (args: RunDeepAgentScopedEditArgs): Promise
   })
 
   let finalAssistantText = ''
-  const totalPages = args.outlineTitles.length
+  const scopedEditPageIds =
+    args.selectPageIds && args.selectPageIds.length > 0
+      ? args.selectPageIds
+      : args.selectedPageId
+        ? [args.selectedPageId]
+        : Object.keys(args.pageFileMap)
+  const editPageNumberById = new Map(scopedEditPageIds.map((pageId, index) => [pageId, index + 1]))
+  const totalPages = Math.max(1, scopedEditPageIds.length)
   let editProgress = 40
-  const emitEditStatus = (payload: { label: string; detail?: string; progress?: number }): void => {
+  const emitEditStatus = (payload: {
+    label: string
+    detail?: string
+    progress?: number
+    currentPage?: number
+  }): void => {
     const bounded = Math.max(0, Math.min(100, Math.round(payload.progress ?? editProgress)))
     editProgress = Math.max(editProgress, bounded)
     args.emit?.({
@@ -1641,6 +1676,7 @@ const runDeepAgentScopedEdit = async (args: RunDeepAgentScopedEditArgs): Promise
         label: payload.label,
         detail: payload.detail,
         progress: editProgress,
+        currentPage: payload.currentPage,
         totalPages,
         provider: args.provider,
         model: args.model
@@ -1687,17 +1723,30 @@ const runDeepAgentScopedEdit = async (args: RunDeepAgentScopedEditArgs): Promise
         emitEditStatus({
           label: progressLabel(args.appLocale, custom.label),
           detail: custom.detail,
-          progress: custom.progress ?? 50
+          progress: custom.progress ?? 50,
+          currentPage: custom.pageId ? editPageNumberById.get(custom.pageId) : undefined
         })
       },
       onModelThinking: (defaultProgress) => {
         emitEditStatus({
-          label: progressText(args.appLocale, 'understanding'),
-          detail: uiText(
-            args.appLocale,
-            '正在规划最小改动路径',
-            'Planning the smallest safe edit path'
-          ),
+          label: concurrentDeckPageId
+            ? uiText(
+                args.appLocale,
+                `正在编辑页面 ${concurrentDeckPageId}`,
+                `Editing page ${concurrentDeckPageId}`
+              )
+            : progressText(args.appLocale, 'understanding'),
+          detail: concurrentDeckPageId
+            ? uiText(
+                args.appLocale,
+                '正在生成并校验当前页面',
+                'Generating and validating the current page'
+              )
+            : uiText(
+                args.appLocale,
+                '正在规划最小改动路径',
+                'Planning the smallest safe edit path'
+              ),
           progress: defaultProgress
         })
       },
@@ -1706,7 +1755,11 @@ const runDeepAgentScopedEdit = async (args: RunDeepAgentScopedEditArgs): Promise
       }
     })
   } finally {
-    args.agentManager.clearAgent(args.sessionId)
+    if (concurrentDeckPageId) {
+      args.agentManager.removePageAgent(args.sessionId, concurrentDeckPageId)
+    } else {
+      args.agentManager.clearAgent(args.sessionId)
+    }
   }
 
   log.info('[deepagent] edit agent completed', {

@@ -128,7 +128,9 @@ export async function executeRetryFailedPages(
       error: page.error
     }
   })
-  const completedSessionPageCount = sessionPages.filter((page) => page.status === 'completed').length
+  const completedSessionPageCount = sessionPages.filter(
+    (page) => page.status === 'completed'
+  ).length
   if (retryRecords.length === 0) {
     throw new Error('当前会话没有可继续生成的页面。')
   }
@@ -172,9 +174,7 @@ export async function executeRetryFailedPages(
     pageId: page.page_id,
     title: page.title || page.page_id,
     contentOutline: page.content_outline || '',
-    layoutIntent: page.layout_intent
-      ? normalizeLayoutIntent(page.layout_intent)
-      : undefined,
+    layoutIntent: page.layout_intent ? normalizeLayoutIntent(page.layout_intent) : undefined,
     htmlPath: resolvePageHtmlPath({
       projectDir: context.entry.projectDir,
       fileSlug: page.page_id,
@@ -183,8 +183,12 @@ export async function executeRetryFailedPages(
     retryCount: page.retry_count + 1
   }))
   const pageFileMap = Object.fromEntries(retryPages.map((page) => [page.pageId, page.htmlPath]))
-  const existingSessionPages = await db.listSessionPages(context.sessionId, { includeDeleted: true })
-  const existingSessionPageBySlug = new Map(existingSessionPages.map((page) => [page.file_slug, page]))
+  const existingSessionPages = await db.listSessionPages(context.sessionId, {
+    includeDeleted: true
+  })
+  const existingSessionPageBySlug = new Map(
+    existingSessionPages.map((page) => [page.file_slug, page])
+  )
   const upsertRetrySessionPage = async (
     page: {
       pageNumber: number
@@ -200,7 +204,8 @@ export async function executeRetryFailedPages(
     await db.upsertSessionPage({
       id,
       sessionId: context.sessionId,
-      legacyPageId: existing?.legacy_page_id || (page.pageId.match(/^page-\d+$/) ? page.pageId : null),
+      legacyPageId:
+        existing?.legacy_page_id || (page.pageId.match(/^page-\d+$/) ? page.pageId : null),
       fileSlug: page.pageId,
       pageNumber: page.pageNumber,
       title: page.title,
@@ -211,7 +216,8 @@ export async function executeRetryFailedPages(
     existingSessionPageBySlug.set(page.pageId, {
       id,
       session_id: context.sessionId,
-      legacy_page_id: existing?.legacy_page_id || (page.pageId.match(/^page-\d+$/) ? page.pageId : null),
+      legacy_page_id:
+        existing?.legacy_page_id || (page.pageId.match(/^page-\d+$/) ? page.pageId : null),
       file_slug: page.pageId,
       page_number: page.pageNumber,
       title: page.title,
@@ -260,20 +266,15 @@ export async function executeRetryFailedPages(
     payload: {
       runId: context.runId,
       stage: 'rendering',
-      label: progressText(context.appLocale, 'retrying'),
+      label: uiText(
+        context.appLocale,
+        `正在重新生成 ${retryPages.length} 个失败页面`,
+        `Regenerating ${retryPages.length} failed pages`
+      ),
       progress: 8,
       totalPages: retryPages.length
     }
   })
-  await emitAssistant(
-    context,
-    uiText(
-      context.appLocale,
-      `继续生成 ${retryPages.length} 个未完成页面：${retryPages.map((page) => page.pageId).join('、')}。`,
-      `Continuing ${retryPages.length} unfinished pages: ${retryPages.map((page) => page.pageId).join(', ')}.`
-    )
-  )
-
   const persistedRetryCompletedPageIds = new Set<string>()
   const persistedRetryFailedPageIds = new Set<string>()
 
@@ -360,7 +361,12 @@ export async function executeRetryFailedPages(
     persistedRetryFailedPageIds.add(page.pageId)
   }
 
-  const { failedPages } = await runDeepAgentDeckGeneration({
+  const { summary: agentSummary, failedPages } = await runDeepAgentDeckGeneration({
+    renderingLabel: uiText(
+      context.appLocale,
+      `正在重新生成 ${retryPages.length} 个失败页面`,
+      `Regenerating ${retryPages.length} failed pages`
+    ),
     sessionId: context.sessionId,
     provider: context.provider,
     apiKey: context.apiKey,
@@ -527,9 +533,7 @@ export async function executeRetryFailedPages(
           fileSlug: page.file_slug,
           candidates: [page.html_path]
         })
-        const html = fs.existsSync(htmlPath)
-          ? await fs.promises.readFile(htmlPath, 'utf-8')
-          : ''
+        const html = fs.existsSync(htmlPath) ? await fs.promises.readFile(htmlPath, 'utf-8') : ''
         if (!html.trim()) return null
         return {
           pageNumber: page.page_number,
@@ -612,14 +616,12 @@ export async function executeRetryFailedPages(
     throw new Error(message)
   }
 
-  await emitAssistant(
-    context,
-    uiText(
-      context.appLocale,
-      `失败页面已经重试完成，本次修复 ${retrySuccessPages.length} 页。`,
-      `Failed pages were retried. ${retrySuccessPages.length} pages were fixed.`
-    )
+  const fallbackCompletionSummary = uiText(
+    context.appLocale,
+    `失败页面已经重试完成，本次修复 ${retrySuccessPages.length} 页。`,
+    `Failed pages were retried. ${retrySuccessPages.length} pages were fixed.`
   )
+  await emitAssistant(context, agentSummary.trim() || fallbackCompletionSummary)
   await db.updateGenerationRunStatus(context.runId, 'completed', null)
   await finalizeGenerationSuccess(ctx, {
     context,

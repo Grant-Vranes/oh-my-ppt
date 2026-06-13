@@ -28,7 +28,6 @@ import {
   DropdownMenuTrigger
 } from '../../ui/DropdownMenu'
 import { Textarea } from '../../ui/Input'
-import { Progress } from '../../ui/Progress'
 import { ScrollArea } from '../../ui/ScrollArea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/Select'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/Tooltip'
@@ -36,6 +35,7 @@ import { MessageBubble } from './MessageBubble'
 import { useT } from '@renderer/i18n'
 import { useChatPanelController } from '../hooks/useChatPanelController'
 import { normalizePagesForSelection } from '../shared/pageUtils'
+import { MAX_SELECTED_PAGES } from '@shared/generation'
 
 export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Element {
   const t = useT()
@@ -45,7 +45,6 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
     selectedPageExists,
     selectedPageNumber,
     isGenerating,
-    progress,
     error,
     uploadFiles,
     chooseAssets,
@@ -80,7 +79,7 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, isGenerating, progress?.progress])
+  }, [messages, isGenerating])
 
   useEffect(() => {
     if (effectiveMainPageIds.length !== selectedMainPageIds.length) {
@@ -127,6 +126,19 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
     try {
       if (
         chatType === 'main' &&
+        effectiveMainPageIds.length === 0 &&
+        pageIds.length > MAX_SELECTED_PAGES
+      ) {
+        toastWarning(
+          t('sessionDetail.mainPageScopeAllLimitReached', {
+            count: pageIds.length,
+            limit: MAX_SELECTED_PAGES
+          })
+        )
+        return
+      }
+      if (
+        chatType === 'main' &&
         effectiveMainPageIds.length > 0 &&
         /\b(all|every|entire)\b|全部|所有|整套|全套|每一页|每页/i.test(input)
       ) {
@@ -142,6 +154,13 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
   }
 
   const toggleMainPage = (pageId: string): void => {
+    if (
+      !selectedMainPageIds.includes(pageId) &&
+      effectiveMainPageIds.length >= MAX_SELECTED_PAGES
+    ) {
+      toastWarning(t('sessionDetail.mainPageScopeLimitReached', { count: MAX_SELECTED_PAGES }))
+      return
+    }
     setSelectedMainPageIds((current) =>
       current.includes(pageId) ? current.filter((id) => id !== pageId) : [...current, pageId]
     )
@@ -202,15 +221,6 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
             {messages.map((msg) => (
               <MessageBubble key={msg.id} message={msg} />
             ))}
-
-            {isGenerating && progress && (
-              <div className="rounded-[1.15rem] border border-[#ded2bd]/72 bg-[#fffaf1]/82 px-3 py-2 shadow-[0_6px_14px_rgba(74,59,42,0.08)]">
-                <p className="mb-2 text-sm text-[#655843]">
-                  {progress.label || t('sessionDetail.modelProcessing')}
-                </p>
-                <Progress value={progress.progress} />
-              </div>
-            )}
 
             {error && (
               <div className="rounded-[1.15rem] bg-[rgba(217,124,139,0.12)] px-3 py-2 text-sm text-destructive">
@@ -310,6 +320,7 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
                 </DropdownMenuItem>
                 {pages.map((page) => {
                   const checked = effectiveMainPageIds.includes(page.pageId)
+                  const limitReached = !checked && effectiveMainPageIds.length >= MAX_SELECTED_PAGES
                   return (
                     <DropdownMenuItem
                       key={page.pageId}
@@ -317,7 +328,7 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
                         event.preventDefault()
                         toggleMainPage(page.pageId)
                       }}
-                      className="text-xs"
+                      className={cn('text-xs', limitReached && 'opacity-55')}
                       title={`/${page.pageId}.html`}
                     >
                       <Check className={cn('h-3.5 w-3.5', checked ? 'opacity-100' : 'opacity-0')} />

@@ -8,7 +8,8 @@ import { validatePersistedPageHtml } from '../../tools/html-utils'
 import {
   createGenerationPageCallbacks,
   generatePagesWithRetry,
-  resolvePageHtmlPath
+  resolvePageHtmlPath,
+  uiText
 } from './generation-utils'
 import { resolveCommonContext, resolveSourceDocuments } from './context'
 import type { DesignContract } from '../../tools/types'
@@ -166,7 +167,11 @@ export async function executeRetrySinglePageGeneration(
     payload: {
       runId: context.runId,
       stage: 'rendering',
-      label: progressText(context.appLocale, 'generating'),
+      label: uiText(
+        context.appLocale,
+        `正在重新生成第 ${context.pageNumber} 页`,
+        `Regenerating page ${context.pageNumber}`
+      ),
       progress: 10,
       totalPages: 1
     }
@@ -215,7 +220,7 @@ export async function executeRetrySinglePageGeneration(
     runId: context.runId,
     sessionId: context.sessionId
   })
-  await generatePagesWithRetry({
+  const generationResult = await generatePagesWithRetry({
     runArgs: {
       sessionId: context.sessionId,
       provider: context.provider,
@@ -231,20 +236,29 @@ export async function executeRetrySinglePageGeneration(
       deckTitle: context.deckTitle,
       userMessage: `重新生成第 ${context.pageNumber} 页「${context.title}」`,
       outlineTitles: [context.title],
-      outlineItems: [{
-        title: context.title,
-        contentOutline: context.contentOutline,
-        layoutIntent: context.layoutIntent
-      }],
+      outlineItems: [
+        {
+          title: context.title,
+          contentOutline: context.contentOutline,
+          layoutIntent: context.layoutIntent
+        }
+      ],
       sourceDocumentPaths: context.sourceDocumentPaths,
       generationMode: 'generate',
-      pageTasks: [{
-        pageNumber: context.pageNumber,
-        pageId: context.pageId,
-        title: context.title,
-        contentOutline: context.contentOutline,
-        layoutIntent: context.layoutIntent
-      }],
+      renderingLabel: uiText(
+        context.appLocale,
+        `正在重新生成第 ${context.pageNumber} 页`,
+        `Regenerating page ${context.pageNumber}`
+      ),
+      pageTasks: [
+        {
+          pageNumber: context.pageNumber,
+          pageId: context.pageId,
+          title: context.title,
+          contentOutline: context.contentOutline,
+          layoutIntent: context.layoutIntent
+        }
+      ],
       designContract,
       projectDir: context.projectDir,
       indexPath,
@@ -288,7 +302,9 @@ export async function executeRetrySinglePageGeneration(
   const runPages = await db.listGenerationPages(context.runId)
   const latestPageRecord = runPages.find((p) => p.page_id === context.pageId)
   const actualTitle = latestPageRecord?.title || context.title
-  const existingSessionPages = await db.listSessionPages(context.sessionId, { includeDeleted: true })
+  const existingSessionPages = await db.listSessionPages(context.sessionId, {
+    includeDeleted: true
+  })
   const existingBySlug = new Map(existingSessionPages.map((sp) => [sp.file_slug, sp]))
   const currentSessionPage = existingBySlug.get(context.pageId)
   await db.upsertSessionPage({
@@ -336,6 +352,32 @@ export async function executeRetrySinglePageGeneration(
       htmlPath: context.htmlPath,
       html: newHtml,
       sourceUrl: getPageSourceUrl(context.htmlPath)
+    }
+  })
+
+  const assistantContent =
+    generationResult.summary.trim() ||
+    uiText(
+      context.appLocale,
+      `第 ${context.pageNumber} 页已重新生成。`,
+      `Page ${context.pageNumber} has been regenerated.`
+    )
+  const assistantMessageId = await db.addMessage(context.sessionId, {
+    role: 'assistant',
+    content: assistantContent,
+    type: 'text',
+    chat_scope: context.messageScope,
+    page_id: context.messagePageId,
+    run_model: context.runModel
+  })
+  emitChunk({
+    type: 'assistant_message',
+    payload: {
+      id: assistantMessageId,
+      runId: context.runId,
+      content: assistantContent,
+      chatType: context.messageScope,
+      pageId: context.messagePageId
     }
   })
 

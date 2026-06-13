@@ -145,7 +145,13 @@ export async function executeEditGeneration(
   const selectedSelector = context.selector
 
   let outlineTitles: string[] = context.userProvidedOutlineTitles
-  let pageRefs: Array<{ id: string; pageNumber: number; title: string; pageId: string; htmlPath: string }> = []
+  let pageRefs: Array<{
+    id: string
+    pageNumber: number
+    title: string
+    pageId: string
+    htmlPath: string
+  }> = []
   let savedDesignContract: DesignContract | undefined
   const sessionPages = await db.listSessionPages(context.sessionId)
   if (sessionPages.length === 0) {
@@ -202,8 +208,7 @@ export async function executeEditGeneration(
     resolvedSelectedPageId = pageRefs[0].pageId
   }
   const resolvedSelectedPageNumber =
-    pageRefs.find((ref) => ref.pageId === resolvedSelectedPageId)?.pageNumber ||
-    undefined
+    pageRefs.find((ref) => ref.pageId === resolvedSelectedPageId)?.pageNumber || undefined
   if (outlineTitles.length !== pageRefs.length) {
     outlineTitles = pageRefs.map((ref) => ref.title)
   }
@@ -261,20 +266,18 @@ export async function executeEditGeneration(
     payload: {
       runId: context.runId,
       stage: 'editing',
-      label: progressText(context.appLocale, 'understanding'),
+      label: resolvedSelectedPageNumber
+        ? uiText(
+            context.appLocale,
+            `正在准备编辑第 ${resolvedSelectedPageNumber} 页`,
+            `Preparing to edit page ${resolvedSelectedPageNumber}`
+          )
+        : uiText(context.appLocale, '正在定位需要编辑的页面', 'Locating pages to edit'),
       progress: 10,
       totalPages: outlineTitles.length
     }
   })
 
-  await emitAssistant(
-    context,
-    uiText(
-      context.appLocale,
-      `我准备开始调整「${context.topic}」了。目标：${resolvedSelectedPageId ? `第 ${resolvedSelectedPageNumber ?? '?'} 页` : '按你的指令智能定位'}${selectedSelector ? `（选择器：${selectedSelector}）` : ''}。`,
-      `I am ready to adjust "${context.topic}". Target: ${resolvedSelectedPageId ? `page ${resolvedSelectedPageNumber ?? '?'}` : 'infer from your instruction'}${selectedSelector ? ` (selector: ${selectedSelector})` : ''}.`
-    )
-  )
   const editTemperature = selectedSelector
     ? PAGE_EDIT_WITH_SELECTOR_TEMPERATURE
     : PAGE_EDIT_DEFAULT_TEMPERATURE
@@ -325,7 +328,13 @@ export async function executeEditGeneration(
         payload: {
           runId: context.runId,
           stage: 'editing',
-          label: progressText(context.appLocale, 'retrying'),
+          label: resolvedSelectedPageNumber
+            ? uiText(
+                context.appLocale,
+                `正在重试第 ${resolvedSelectedPageNumber} 页的编辑`,
+                `Retrying the edit for page ${resolvedSelectedPageNumber}`
+              )
+            : uiText(context.appLocale, '正在重试页面编辑', 'Retrying the page edit'),
           progress: 55,
           totalPages: pageRefs.length,
           detail: retryDetail
@@ -634,18 +643,14 @@ export async function executeEditGeneration(
     .map((p) => uiText(context.appLocale, `第${p.pageNumber}页`, `page ${p.pageNumber}`))
     .join(uiText(context.appLocale, '、', ', '))
   const editSummary =
-    changedPageDescriptors.length > 0
-      ? uiText(
+    editSummaryFromEngine.trim() ||
+    (changedPageDescriptors.length > 0
+      ? uiText(context.appLocale, `修改完成：${changedPages}。`, `Edit completed: ${changedPages}.`)
+      : uiText(
           context.appLocale,
-          `修改完成：${changedPages}${selectedSelector ? `（目标选择器：${selectedSelector}）` : ''}。`,
-          `Edit completed: ${changedPages}${selectedSelector ? ` (target selector: ${selectedSelector})` : ''}.`
-        )
-      : editSummaryFromEngine.trim() ||
-        uiText(
-          context.appLocale,
-          '我已经检查过了，这次没有检测到需要落盘的页面变化。',
-          'I checked the session and did not detect page changes that needed to be written this time.'
-        )
+          '这次没有检测到需要保存的页面变化。',
+          'No page changes needed to be saved this time.'
+        ))
   await emitAssistant(context, editSummary)
 
   await db.updateSessionMetadata(context.sessionId, {
@@ -654,14 +659,17 @@ export async function executeEditGeneration(
     indexPath,
     projectId: context.projectId
   })
-  const existingSessionPages = await db.listSessionPages(context.sessionId, { includeDeleted: true })
+  const existingSessionPages = await db.listSessionPages(context.sessionId, {
+    includeDeleted: true
+  })
   const existingBySlug = new Map(existingSessionPages.map((sp) => [sp.file_slug, sp]))
   for (const page of generatedPagesForMetadata) {
     const existing = existingBySlug.get(page.pageId)
     await db.upsertSessionPage({
       id: existing?.id || nanoid(),
       sessionId: context.sessionId,
-      legacyPageId: existing?.legacy_page_id || (page.pageId.match(/^page-\d+$/) ? page.pageId : null),
+      legacyPageId:
+        existing?.legacy_page_id || (page.pageId.match(/^page-\d+$/) ? page.pageId : null),
       fileSlug: page.pageId,
       pageNumber: page.pageNumber,
       title: page.title,

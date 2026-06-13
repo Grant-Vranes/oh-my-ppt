@@ -1,5 +1,5 @@
 import { useCallback, useEffect, forwardRef, useRef } from 'react'
-import { Loader2, Sparkles } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import { useSessionDetailUiStore } from '@renderer/store'
 import { PreviewIframe, type PreviewIframeHandle } from '../../preview/PreviewIframe'
 import type { EditModeMovePayload, EditSelectionPayload } from '../../preview/edit-mode-script'
@@ -11,8 +11,6 @@ export const PreviewStage = forwardRef<
   {
     selectedPage: SessionPreviewPage | null
     sessionTitle?: string | null
-    isGenerating: boolean
-    progressLabel?: string
     previewRefreshKey?: number
     onElementMoved: (payload: EditModeMovePayload) => void
     onElementSelected: (payload: EditSelectionPayload) => void
@@ -26,8 +24,6 @@ export const PreviewStage = forwardRef<
 >(function PreviewStage(
   {
     selectedPage,
-    isGenerating,
-    progressLabel,
     previewRefreshKey = 0,
     onElementMoved,
     onElementSelected,
@@ -68,29 +64,26 @@ export const PreviewStage = forwardRef<
     [ref]
   )
 
-  const restoreEditSelection = useCallback(
-    (selector: string): void => {
-      if (restoreTimerRef.current !== null) {
-        window.clearTimeout(restoreTimerRef.current)
-        restoreTimerRef.current = null
-      }
+  const restoreEditSelection = useCallback((selector: string): void => {
+    if (restoreTimerRef.current !== null) {
+      window.clearTimeout(restoreTimerRef.current)
+      restoreTimerRef.current = null
+    }
 
-      let attempts = 0
-      const tryRestore = (): void => {
-        attempts += 1
-        window.requestAnimationFrame(() => {
-          const restorePromise = previewIframeRef.current?.restoreEditModeSelection(selector)
-          void restorePromise?.then((restored) => {
-            if (restored || attempts >= 3) return
-            restoreTimerRef.current = window.setTimeout(tryRestore, 50)
-          })
+    let attempts = 0
+    const tryRestore = (): void => {
+      attempts += 1
+      window.requestAnimationFrame(() => {
+        const restorePromise = previewIframeRef.current?.restoreEditModeSelection(selector)
+        void restorePromise?.then((restored) => {
+          if (restored || attempts >= 3) return
+          restoreTimerRef.current = window.setTimeout(tryRestore, 50)
         })
-      }
+      })
+    }
 
-      restoreTimerRef.current = window.setTimeout(tryRestore, 0)
-    },
-    []
-  )
+    restoreTimerRef.current = window.setTimeout(tryRestore, 0)
+  }, [])
 
   useEffect(() => {
     return () => {
@@ -214,29 +207,15 @@ export const PreviewStage = forwardRef<
                 {t('sessionDetail.failedPageHint')}
               </div>
             )}
-            {isGenerating && (
-              <div className="absolute inset-0 flex items-center justify-center rounded-[1.55rem] bg-[#f5f1e8]/68 backdrop-blur-sm transition-opacity">
-                <div className="flex flex-col items-center gap-3 rounded-[1.5rem] bg-[#e8e0d0]/88 px-8 py-5 shadow-[0_14px_30px_rgba(74,59,42,0.12)]">
-                  <Loader2 className="h-6 w-6 animate-spin text-[#6f8159]" />
-                  {progressLabel ? <p className="text-sm text-[#5a674b]">{progressLabel}</p> : null}
-                </div>
-              </div>
-            )}
           </div>
         ) : (
           <div className="relative flex h-full min-h-[420px] flex-col items-center justify-center gap-4 rounded-[1.55rem] bg-[#f5f1e8]/84 text-center text-[#5d6b4d] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.32)]">
-            {isGenerating ? (
-              <Loader2 className="h-7 w-7 animate-spin text-[#5d6b4d]" />
-            ) : (
-              <Sparkles className="h-7 w-7 text-[#8fbc8f]" />
-            )}
+            <Sparkles className="h-7 w-7 text-[#8fbc8f]" />
             <div className="space-y-1">
               <p className="text-base font-medium text-[#3e4a32]">
                 {t('sessionDetail.emptyPreviewTitle')}
               </p>
-              <p className="text-sm">
-                {isGenerating ? t('sessionDetail.preparingPreview') : t('sessionDetail.briefHint')}
-              </p>
+              <p className="text-sm">{t('sessionDetail.briefHint')}</p>
             </div>
           </div>
         )}

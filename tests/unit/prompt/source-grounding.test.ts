@@ -124,8 +124,11 @@ describe('source-grounded prompt rules', () => {
     )
 
     expect(sharedGeneration).toContain('export const MAX_SELECTED_PAGES = 50')
+    expect(sharedGeneration).toContain('export const MAX_STYLE_SWITCH_PAGES = 500')
     expect(sharedGeneration).not.toContain('.slice(0, 200)')
-    expect(deckAllPageEditFlow).toContain('selectedPageRefs.length > MAX_SELECTED_PAGES')
+    expect(deckAllPageEditFlow).toContain(
+      'context.resetVisualStyle ? MAX_STYLE_SWITCH_PAGES : MAX_SELECTED_PAGES'
+    )
     expect(chatPanel).toContain('effectiveMainPageIds.length >= MAX_SELECTED_PAGES')
     expect(chatPanel).toContain('pageIds.length > MAX_SELECTED_PAGES')
   })
@@ -178,8 +181,10 @@ describe('source-grounded prompt rules', () => {
     expect(activityDialog).toContain("showClose={status !== 'running'}")
     expect(activityDialog).toContain("if (!nextOpen && status === 'running') return")
     expect(activityDialog).not.toContain('useGenerateStore')
-    expect(activityDialog).not.toContain('@renderer/store')
+    expect(activityDialog).toContain('useGenerationActivityStore')
+    expect(activityDialog).toContain('useSessionStore')
     expect(sessionDetail).toContain('<GenerationActivityDialog sessionId={id} />')
+    expect(sessionDetail).not.toContain('onStyleSwitchCompleted')
     expect(sessionDetail).not.toContain('<PageProgressOverlay')
   })
 
@@ -256,7 +261,7 @@ describe('source-grounded prompt rules', () => {
     )
     expect(batchEditFlow).toContain("status: existing?.status || 'failed'")
     expect(batchEditFlow).toContain('error: existing?.error || null')
-    expect(batchEditFlow).not.toContain('remainingFailedPageInfoById.set(failed.pageId')
+    expect(batchEditFlow).toContain('resolveRemainingFailedPageInfo({')
   })
 
   it('main-session page scope is visible and resets after a successful send', () => {

@@ -1,11 +1,13 @@
 import fs from 'fs'
 import pLimit from 'p-limit'
+import log from 'electron-log/main.js'
 import type { GenerateChunkEvent } from '@shared/generation'
 import type { EditedPageDescriptor, InvalidEditedPage } from './generation-utils'
 import { isCancellationMessage } from './status-utils'
 
-export const BATCH_EDIT_CHUNK_SIZE = 3
+export const BATCH_EDIT_CHUNK_SIZE = 2
 export const BATCH_EDIT_LAUNCH_STAGGER_MS = 100
+export const BATCH_EDIT_HEARTBEAT_INTERVAL_MS = 15_000
 
 export type DeckEditBatchPageRef = {
   id: string
@@ -84,6 +86,7 @@ export type ExecuteDeckEditBatchFlowArgs = {
   appLocale: 'zh' | 'en'
   signal?: AbortSignal
   launchStaggerMs?: number
+  heartbeatIntervalMs?: number
   emit: (chunk: GenerateChunkEvent) => void
   runPageAttempt: (args: RunPageAttemptArgs) => Promise<string>
   validateChangedPages: (pages: EditedPageDescriptor[]) => InvalidEditedPage[]
@@ -251,12 +254,18 @@ const remapChunk = (
     computeGlobalProgress(args.totalPages, args.pageProgress)
   )
   args.lastProgress.value = progress
+  const reportsCompletedStep =
+    chunk.type === 'llm_status' && /完成|complete|done/i.test(chunk.payload.label)
   return {
     ...chunk,
     payload: {
       ...chunk.payload,
       label:
-        chunk.type === 'llm_status' &&
+        reportsCompletedStep
+          ? args.appLocale === 'en'
+            ? `P${args.pageNumber} step completed, validating page`
+            : `P${args.pageNumber} 当前步骤完成，正在校验页面`
+          : chunk.type === 'llm_status' &&
         /理解|分析|规划|准备|启动|生成|编辑|完成|understand|analyz|plan|prepar|start|generat|edit|complet/i.test(
           chunk.payload.label
         )
@@ -274,22 +283,72 @@ const remapChunk = (
 export async function executeDeckEditBatchFlow(
   args: ExecuteDeckEditBatchFlowArgs
 ): Promise<DeckEditBatchResult[]> {
+  const batchStartedAt = Date.now()
   const totalPages = args.pageRefs.length
   const launchStaggerMs = Math.max(
     0,
     Math.floor(args.launchStaggerMs ?? BATCH_EDIT_LAUNCH_STAGGER_MS)
+  )
+  const heartbeatIntervalMs = Math.max(
+    0,
+    Math.floor(args.heartbeatIntervalMs ?? BATCH_EDIT_HEARTBEAT_INTERVAL_MS)
   )
   const operationSnapshot = await captureSnapshot(args.pageRefs, args.indexPath)
   const results: DeckEditBatchResult[] = []
   const lastProgress = { value: 10 }
   const pageProgress = new Map<string, number>()
   const limit = pLimit(BATCH_EDIT_CHUNK_SIZE)
+  const queuedAtByPageId = new Map(args.pageRefs.map((page) => [page.pageId, Date.now()]))
   let fatalError: unknown = null
+
+  log.info('[deck-edit:batch] started', {
+    runId: args.runId,
+    totalPages,
+    concurrency: BATCH_EDIT_CHUNK_SIZE,
+    launchStaggerMs,
+    heartbeatIntervalMs
+  })
+  for (const page of args.pageRefs) {
+    log.info('[deck-edit:page] queued', {
+      runId: args.runId,
+      pageId: page.pageId,
+      pageNumber: page.pageNumber,
+      title: page.title
+    })
+  }
+
+  const emitPageProgress = (
+    page: DeckEditBatchPageRef,
+    label: string,
+    detail?: string
+  ): void => {
+    const progress = Math.max(lastProgress.value, computeGlobalProgress(totalPages, pageProgress))
+    lastProgress.value = progress
+    args.emit({
+      type: 'llm_status',
+      payload: {
+        runId: args.runId,
+        stage: 'editing',
+        label,
+        detail,
+        progress,
+        currentPage: page.pageNumber,
+        totalPages
+      }
+    })
+  }
 
   const runPageWorker = async (
     page: DeckEditBatchPageRef,
     pageIndex: number
   ): Promise<DeckEditBatchResult> => {
+    const workerStartedAt = Date.now()
+    log.info('[deck-edit:page] worker started', {
+      runId: args.runId,
+      pageId: page.pageId,
+      pageNumber: page.pageNumber,
+      queueWaitMs: workerStartedAt - (queuedAtByPageId.get(page.pageId) || workerStartedAt)
+    })
     if (fatalError) throw fatalError
     if (args.signal?.aborted) throw new Error('生成已取消')
     const queueStaggerIndex = pageIndex % BATCH_EDIT_CHUNK_SIZE
@@ -308,28 +367,104 @@ export async function executeDeckEditBatchFlow(
     let retryUsed = false
 
     if (queueStaggerIndex > 0 && launchStaggerMs > 0) {
+      log.info('[deck-edit:page] launch stagger', {
+        runId: args.runId,
+        pageId: page.pageId,
+        pageNumber: page.pageNumber,
+        delayMs: queueStaggerIndex * launchStaggerMs
+      })
       await sleep(queueStaggerIndex * launchStaggerMs, args.signal)
     }
 
     while (true) {
       if (fatalError) throw fatalError
       try {
-        const summary = await args.runPageAttempt({
+        const attemptStartedAt = Date.now()
+        let lastActivityAt = attemptStartedAt
+        let activityCount = 0
+        let silenceReported = false
+        const attempt = retryUsed ? 2 : 1
+        log.info('[deck-edit:page] attempt started', {
+          runId: args.runId,
           pageId: page.pageId,
           pageNumber: page.pageNumber,
-          userMessage: attemptMessage,
-          isRetry: retryUsed,
-          emit: (chunk) =>
-            args.emit(
-              remapChunk(chunk, {
-                totalPages,
-                pageNumber: page.pageNumber,
-                pageId: page.pageId,
-                appLocale: args.appLocale,
-                pageProgress,
-                lastProgress
-              })
-            )
+          attempt,
+          isRetry: retryUsed
+        })
+        const heartbeat =
+          heartbeatIntervalMs > 0
+            ? setInterval(() => {
+                const now = Date.now()
+                if (now - lastActivityAt < heartbeatIntervalMs) return
+                const silentForMs = now - lastActivityAt
+                silenceReported = true
+                log.warn('[deck-edit:page] model response silent', {
+                  runId: args.runId,
+                  pageId: page.pageId,
+                  pageNumber: page.pageNumber,
+                  attempt,
+                  elapsedMs: now - attemptStartedAt,
+                  silentForMs,
+                  activityCount
+                })
+                lastActivityAt = now
+              }, heartbeatIntervalMs)
+            : undefined
+        let summary: string
+        try {
+          summary = await args.runPageAttempt({
+            pageId: page.pageId,
+            pageNumber: page.pageNumber,
+            userMessage: attemptMessage,
+            isRetry: retryUsed,
+            emit: (chunk) => {
+              const now = Date.now()
+              activityCount += 1
+              if (activityCount === 1) {
+                log.info('[deck-edit:page] first agent activity', {
+                  runId: args.runId,
+                  pageId: page.pageId,
+                  pageNumber: page.pageNumber,
+                  attempt,
+                  elapsedMs: now - attemptStartedAt,
+                  eventType: chunk.type
+                })
+              } else if (silenceReported) {
+                log.info('[deck-edit:page] agent activity resumed', {
+                  runId: args.runId,
+                  pageId: page.pageId,
+                  pageNumber: page.pageNumber,
+                  attempt,
+                  elapsedMs: now - attemptStartedAt,
+                  silentForMs: now - lastActivityAt,
+                  eventType: chunk.type
+                })
+                silenceReported = false
+              }
+              lastActivityAt = now
+              args.emit(
+                remapChunk(chunk, {
+                  totalPages,
+                  pageNumber: page.pageNumber,
+                  pageId: page.pageId,
+                  appLocale: args.appLocale,
+                  pageProgress,
+                  lastProgress
+                })
+              )
+            }
+          })
+        } finally {
+          if (heartbeat) clearInterval(heartbeat)
+        }
+        log.info('[deck-edit:page] agent attempt returned', {
+          runId: args.runId,
+          pageId: page.pageId,
+          pageNumber: page.pageNumber,
+          attempt,
+          elapsedMs: Date.now() - attemptStartedAt,
+          activityCount,
+          summaryLength: summary.length
         })
         if (args.signal?.aborted) throw new Error('生成已取消')
         if (await hasIndexChanged(operationSnapshot)) throw new DeckEditIndexMutationError()
@@ -338,6 +473,24 @@ export async function executeDeckEditBatchFlow(
         const invalidPages = args.validateChangedPages(changedPages)
         if (invalidPages.length > 0) throw new DeckEditPageValidationError(invalidPages)
         pageProgress.set(page.pageId, 100)
+        log.info('[deck-edit:page] completed', {
+          runId: args.runId,
+          pageId: page.pageId,
+          pageNumber: page.pageNumber,
+          attempt,
+          workerElapsedMs: Date.now() - workerStartedAt,
+          changedPageCount: changedPages.length
+        })
+        emitPageProgress(
+          page,
+          retryUsed
+            ? args.appLocale === 'en'
+              ? `P${page.pageNumber} retry succeeded`
+              : `P${page.pageNumber} 重试成功`
+            : args.appLocale === 'en'
+              ? `P${page.pageNumber} editing completed`
+              : `P${page.pageNumber} 编辑完成`
+        )
         return {
           status: 'completed',
           pageId: page.pageId,
@@ -346,10 +499,20 @@ export async function executeDeckEditBatchFlow(
           retryCount: retryUsed ? 1 : 0
         }
       } catch (error) {
+        const reason = errorMessage(error)
+        const errorName = error instanceof Error ? error.name : 'UnknownError'
         if (
           isCancellationError(error, args.signal) ||
           error instanceof DeckEditIndexMutationError
         ) {
+          log.warn('[deck-edit:page] fatal attempt error', {
+            runId: args.runId,
+            pageId: page.pageId,
+            pageNumber: page.pageNumber,
+            attempt: retryUsed ? 2 : 1,
+            errorName,
+            reason
+          })
           fatalError = error
           throw error
         }
@@ -372,6 +535,21 @@ export async function executeDeckEditBatchFlow(
             })
           : null
         if (retryMessage) {
+          log.warn('[deck-edit:page] attempt failed; retry scheduled', {
+            runId: args.runId,
+            pageId: page.pageId,
+            pageNumber: page.pageNumber,
+            attempt: 1,
+            errorName,
+            reason
+          })
+          emitPageProgress(
+            page,
+            args.appLocale === 'en'
+              ? `P${page.pageNumber} first attempt failed, preparing to retry`
+              : `P${page.pageNumber} 首次处理失败，准备重试`,
+            errorMessage(error)
+          )
           retryUsed = true
           attemptMessage = retryMessage
           if (launchStaggerMs > 0) {
@@ -382,9 +560,27 @@ export async function executeDeckEditBatchFlow(
         const failResult: DeckEditFailedBatch = {
           status: 'failed',
           pageId: page.pageId,
-          reason: errorMessage(error),
+          reason,
           retryCount: retryUsed ? 1 : 0
         }
+        log.error('[deck-edit:page] failed', {
+          runId: args.runId,
+          pageId: page.pageId,
+          pageNumber: page.pageNumber,
+          attempt: retryUsed ? 2 : 1,
+          workerElapsedMs: Date.now() - workerStartedAt,
+          errorName,
+          reason,
+          stack: error instanceof Error ? error.stack : undefined
+        })
+        pageProgress.set(page.pageId, 100)
+        emitPageProgress(
+          page,
+          args.appLocale === 'en'
+            ? `P${page.pageNumber} editing failed`
+            : `P${page.pageNumber} 编辑失败`,
+          failResult.reason
+        )
         return failResult
       }
     }
@@ -401,7 +597,19 @@ export async function executeDeckEditBatchFlow(
     for (const item of settled) {
       results.push((item as PromiseFulfilledResult<DeckEditBatchResult>).value)
     }
+    log.info('[deck-edit:batch] workers settled', {
+      runId: args.runId,
+      elapsedMs: Date.now() - batchStartedAt,
+      completedPageCount: results.filter((item) => item.status === 'completed').length,
+      failedPageCount: results.filter((item) => item.status === 'failed').length
+    })
   } catch (error) {
+    log.error('[deck-edit:batch] aborted; restoring snapshot', {
+      runId: args.runId,
+      elapsedMs: Date.now() - batchStartedAt,
+      reason: errorMessage(error),
+      stack: error instanceof Error ? error.stack : undefined
+    })
     await restoreSnapshot(operationSnapshot, args.pageRefs)
     throw error
   }
@@ -415,6 +623,13 @@ export async function executeDeckEditBatchFlow(
       await args.onPageFailed?.(result)
     }
   }
+
+  log.info('[deck-edit:batch] completed', {
+    runId: args.runId,
+    elapsedMs: Date.now() - batchStartedAt,
+    completedPageCount: results.filter((item) => item.status === 'completed').length,
+    failedPageCount: results.filter((item) => item.status === 'failed').length
+  })
 
   return results
 }

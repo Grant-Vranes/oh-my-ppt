@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { MAX_SELECTED_PAGES, normalizeSelectPageIds } from '../../../src/shared/generation'
+import {
+  MAX_SELECTED_PAGES,
+  MAX_STYLE_SWITCH_PAGES,
+  normalizeSelectPageIds
+} from '../../../src/shared/generation'
 
 describe('normalizeSelectPageIds', () => {
   it('normalizes explicit main-session selected page ids', () => {
@@ -21,5 +25,16 @@ describe('normalizeSelectPageIds', () => {
     const pageIds = Array.from({ length: MAX_SELECTED_PAGES }, (_, index) => `page-${index + 1}`)
 
     expect(normalizeSelectPageIds(pageIds)).toHaveLength(MAX_SELECTED_PAGES)
+  })
+
+  it('supports the larger explicit limit used by style-switch retries', () => {
+    const pageIds = Array.from(
+      { length: MAX_STYLE_SWITCH_PAGES },
+      (_, index) => `page-${index + 1}`
+    )
+
+    expect(normalizeSelectPageIds(pageIds, MAX_STYLE_SWITCH_PAGES)).toHaveLength(
+      MAX_STYLE_SWITCH_PAGES
+    )
   })
 })

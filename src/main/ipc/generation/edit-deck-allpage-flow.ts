@@ -4,7 +4,11 @@ import log from 'electron-log/main.js'
 import { nanoid } from 'nanoid'
 import { progressText } from '@shared/progress'
 import { normalizeLayoutIntent } from '@shared/layout-intent'
-import { MAX_SELECTED_PAGES, type GeneratedPagePayload } from '@shared/generation'
+import {
+  MAX_SELECTED_PAGES,
+  MAX_STYLE_SWITCH_PAGES,
+  type GeneratedPagePayload
+} from '@shared/generation'
 import type { IpcContext } from '../context'
 import type { EditContext, EmitAssistantFn } from './types'
 import {
@@ -29,6 +33,7 @@ import {
   ensureHistoryBaselineSafe,
   recordHistoryOperationStrict
 } from '../../history/git-history-service'
+import { resolveRemainingFailedPageInfo } from './edit-deck-failure-state'
 
 export function filterPageRefsBySelectedPageIds<T extends { pageId: string }>(
   pageRefs: T[],
@@ -74,7 +79,7 @@ export async function executeDeckAllPageEditGeneration(
     pageId: string
     htmlPath: string
   }> = []
-  let savedDesignContract: DesignContract | undefined
+  let savedDesignContract: DesignContract | undefined = context.designContract
 
   const sessionPages = await db.listSessionPages(context.sessionId)
   if (sessionPages.length === 0) {
@@ -107,6 +112,8 @@ export async function executeDeckAllPageEditGeneration(
 
   const sessionRecord = (context.session || {}) as Record<string, unknown>
   if (
+    !savedDesignContract &&
+    !context.resetVisualStyle &&
     typeof sessionRecord.designContract === 'string' &&
     sessionRecord.designContract.trim().length > 0
   ) {
@@ -125,12 +132,13 @@ export async function executeDeckAllPageEditGeneration(
       `Selected pages not found in session_pages: ${Array.from(requestedPageIdSet).join(', ')}`
     )
   }
-  if (selectedPageRefs.length > MAX_SELECTED_PAGES) {
+  const pageLimit = context.resetVisualStyle ? MAX_STYLE_SWITCH_PAGES : MAX_SELECTED_PAGES
+  if (selectedPageRefs.length > pageLimit) {
     throw new Error(
       uiText(
         context.appLocale,
-        `一次最多编辑 ${MAX_SELECTED_PAGES} 页，请先选择更小的页面范围。`,
-        `You can edit at most ${MAX_SELECTED_PAGES} pages at a time. Select a smaller page range.`
+        `一次最多编辑 ${pageLimit} 页，请先选择更小的页面范围。`,
+        `You can edit at most ${pageLimit} pages at a time. Select a smaller page range.`
       )
     )
   }
@@ -144,7 +152,9 @@ export async function executeDeckAllPageEditGeneration(
   const layoutIntentByPageId = new Map(
     latestPageSnapshot.map((page) => [
       page.page_id,
-      page.layout_intent ? normalizeLayoutIntent(page.layout_intent) : undefined
+      !context.resetVisualStyle && page.layout_intent
+        ? normalizeLayoutIntent(page.layout_intent)
+        : undefined
     ])
   )
   const outlineItems = pageRefs.map((ref) => ({
@@ -241,6 +251,7 @@ export async function executeDeckAllPageEditGeneration(
 
   let batchResults: DeckEditBatchResult[]
   try {
+    context.onDeckEditStarted?.()
     batchResults = await executeDeckEditBatchFlow({
       pageRefs: selectedPageRefs,
       indexPath,
@@ -363,7 +374,11 @@ export async function executeDeckAllPageEditGeneration(
             payload: {
               runId: context.runId,
               stage: 'editing',
-              label: progressText(context.appLocale, 'completed'),
+              label: uiText(
+                context.appLocale,
+                `P${page.pageNumber} 修改结果已保存`,
+                `P${page.pageNumber} edit saved`
+              ),
               progress: 90,
               currentPage: page.pageNumber,
               totalPages: selectedPageRefs.length,
@@ -454,10 +469,12 @@ export async function executeDeckAllPageEditGeneration(
     completedBatchResults.flatMap((r) => r.changedPages.map((p) => p.pageId))
   )
 
-  const remainingFailedPageInfoById = new Map(failedPageInfoById)
-  for (const pageId of changedPageIdSet) {
-    remainingFailedPageInfoById.delete(pageId)
-  }
+  const remainingFailedPageInfoById = resolveRemainingFailedPageInfo({
+    previousFailures: failedPageInfoById,
+    failedResults: failedBatchResults,
+    completedPageIds: changedPageIdSet,
+    pageRefs
+  })
   const changedPagesText = completedBatchResults
     .flatMap((r) => r.changedPages)
     .map((p) => uiText(context.appLocale, `第${p.pageNumber}页`, `page ${p.pageNumber}`))

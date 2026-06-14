@@ -487,6 +487,47 @@ export class PPTDatabase {
     }
   }
 
+  async restoreSessionStyleState(
+    sessionId: string,
+    styleId: string | null,
+    snapshot?: SessionStyleSnapshotRow
+  ): Promise<void> {
+    const now = Math.floor(Date.now() / 1000)
+    await this.db.transaction(async (tx) => {
+      await tx
+        .update(schema.sessions)
+        .set({ styleId, updatedAt: now })
+        .where(eq(schema.sessions.id, sessionId))
+        .run()
+      await tx
+        .delete(schema.sessionStyleSnapshots)
+        .where(eq(schema.sessionStyleSnapshots.sessionId, sessionId))
+        .run()
+      if (!snapshot) return
+      await tx
+        .insert(schema.sessionStyleSnapshots)
+        .values({
+          id: snapshot.id,
+          sessionId,
+          styleId: snapshot.styleId,
+          styleKey: snapshot.styleKey,
+          styleName: snapshot.styleName,
+          styleNameZh: snapshot.styleNameZh,
+          styleNameEn: snapshot.styleNameEn,
+          description: snapshot.description,
+          category: snapshot.category,
+          aliases: snapshot.aliases,
+          source: snapshot.source,
+          version: snapshot.version,
+          styleCase: snapshot.styleCase,
+          packageDir: snapshot.packageDir,
+          styleSkill: snapshot.styleSkill,
+          createdAt: snapshot.createdAt
+        })
+        .run()
+    })
+  }
+
   async updateSessionDesignContract(sessionId: string, designContract: unknown): Promise<void> {
     await this.db
       .update(schema.sessions)
@@ -1184,9 +1225,7 @@ export class PPTDatabase {
         deletedAt: now,
         updatedAt: now
       })
-      .where(
-        and(eq(schema.sessionPages.sessionId, sessionId), inArray(schema.sessionPages.id, ids))
-      )
+      .where(and(eq(schema.sessionPages.sessionId, sessionId), inArray(schema.sessionPages.id, ids)))
       .run()
   }
 
@@ -1194,7 +1233,9 @@ export class PPTDatabase {
     if (!Array.isArray(ids) || ids.length === 0) return
     await this.db
       .delete(schema.sessionPages)
-      .where(and(eq(schema.sessionPages.sessionId, sessionId), inArray(schema.sessionPages.id, ids)))
+      .where(
+        and(eq(schema.sessionPages.sessionId, sessionId), inArray(schema.sessionPages.id, ids))
+      )
       .run()
   }
 
@@ -1326,6 +1367,17 @@ export class PPTDatabase {
         completedAt: Math.floor(Date.now() / 1000)
       })
       .where(eq(schema.sessionOperations.id, data.id))
+      .run()
+  }
+
+  async updateSessionOperationMetadata(
+    operationId: string,
+    metadata: Record<string, unknown>
+  ): Promise<void> {
+    await this.db
+      .update(schema.sessionOperations)
+      .set({ metadataJson: JSON.stringify(metadata) })
+      .where(eq(schema.sessionOperations.id, operationId))
       .run()
   }
 

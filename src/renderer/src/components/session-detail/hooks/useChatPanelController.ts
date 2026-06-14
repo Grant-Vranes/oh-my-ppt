@@ -7,6 +7,7 @@ import {
   useSessionStore,
   useToastStore
 } from '@renderer/store'
+import { useGenerationActivityStore } from '@renderer/store/generationActivityStore'
 import type { GenerateStartPayload } from '@shared/generation.js'
 import type { ChatPanelController } from '@renderer/types/session-detail'
 import { normalizePagesForSelection } from '../shared/pageUtils'
@@ -158,6 +159,9 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
     sendingMessageRef.current = true
     try {
       useGenerateStore.setState({ isGenerating: true, error: null, status: 'running' })
+      if (pages.length > 0) {
+        useGenerationActivityStore.getState().startEdit(generatePayload)
+      }
       addMessage({
         id: crypto.randomUUID(),
         session_id: sessionId,
@@ -182,6 +186,7 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
     } catch (sendError) {
       const message = sendError instanceof Error ? sendError.message : t('generating.failed')
       useGenerateStore.getState().setError(message)
+      useGenerationActivityStore.getState().reset()
       toastError(message)
       return false
     } finally {

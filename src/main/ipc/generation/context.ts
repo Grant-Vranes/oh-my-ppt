@@ -2,7 +2,12 @@ import crypto from 'crypto'
 import fs from 'fs'
 import path from 'path'
 import type { FontSelection, GenerateStartPayload, SourceDocumentPlan } from '@shared/generation'
-import { normalizeFontSelection, normalizeSelectPageIds } from '@shared/generation'
+import {
+  MAX_SELECTED_PAGES,
+  MAX_STYLE_SWITCH_PAGES,
+  normalizeFontSelection,
+  normalizeSelectPageIds
+} from '@shared/generation'
 import type { ModelTimeoutProfile } from '@shared/model-timeout'
 import type { IpcContext } from '../context'
 import type { GenerateChatType } from './types'
@@ -62,6 +67,8 @@ export type NormalizedGenerateInput = {
   rawVideoPaths: string[]
   rawDocPaths: string[]
   requestedType?: 'deck' | 'page'
+  resetVisualStyle: boolean
+  persistUserMessage: boolean
   selectedPageId?: string
   selectPageIds: string[]
   htmlPath?: string
@@ -100,11 +107,16 @@ export function normalizeGeneratePayload(payload: unknown): NormalizedGenerateIn
     : []
   const requestedType =
     input?.type === 'page' ? 'page' : input?.type === 'deck' ? 'deck' : undefined
+  const resetVisualStyle = input?.resetVisualStyle === true
+  const persistUserMessage = input?.persistUserMessage !== false
   const selectedPageId =
     typeof input?.selectedPageId === 'string' && input.selectedPageId.trim().length > 0
       ? input.selectedPageId.trim()
       : undefined
-  const selectPageIds = normalizeSelectPageIds(input?.selectPageIds)
+  const selectPageIds = normalizeSelectPageIds(
+    input?.selectPageIds,
+    resetVisualStyle ? MAX_STYLE_SWITCH_PAGES : MAX_SELECTED_PAGES
+  )
   const htmlPath = typeof input?.htmlPath === 'string' ? input.htmlPath : undefined
   const selector =
     typeof input?.selector === 'string' && input.selector.trim().length > 0
@@ -132,6 +144,8 @@ export function normalizeGeneratePayload(payload: unknown): NormalizedGenerateIn
     rawVideoPaths,
     rawDocPaths,
     requestedType,
+    resetVisualStyle,
+    persistUserMessage,
     selectedPageId,
     selectPageIds,
     htmlPath,

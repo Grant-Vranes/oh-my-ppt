@@ -70,7 +70,7 @@ interface SessionStore {
     fontSelection?: FontSelection
     sourcePlan?: SourceDocumentPlan
   }) => Promise<string>
-  loadSession: (sessionId: string) => Promise<void>
+  loadSession: (sessionId: string, guard?: () => boolean) => Promise<void>
   loadMessages: (payload: {
     sessionId: string
     chatType: 'main' | 'page'
@@ -148,10 +148,13 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     return sessionId
   },
 
-  loadSession: async (sessionId) => {
+  loadSession: async (sessionId, guard) => {
     set({ loading: true })
     try {
       const { session, generatedPages } = await ipc.getSession(sessionId)
+      if (guard && !guard()) {
+        return
+      }
       set({
         currentSession: (session as unknown as Session | null | undefined) ?? null,
         // 消息由页面上下文独立管理。刷新会话/页面数据时不能清空正在显示的对话。
@@ -159,6 +162,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         loading: false
       })
     } catch {
+      if (guard && !guard()) return
       set({ error: 'Failed to load session', loading: false })
     }
   },

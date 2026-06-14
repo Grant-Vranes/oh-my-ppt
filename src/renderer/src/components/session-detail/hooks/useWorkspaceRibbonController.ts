@@ -84,8 +84,12 @@ export function useWorkspaceRibbonController(isSavingEdits: boolean): {
 
   const activateTab = useCallback(
     (tab: SessionWorkspaceTab): void => {
-      if (tab === 'browse' && hasAnyPendingEdits) {
-        toastWarning(t('sessionDetail.browseRequiresSavedEdits'))
+      if ((tab === 'browse' || tab === 'style') && hasAnyPendingEdits) {
+        toastWarning(
+          tab === 'style'
+            ? t('sessionDetail.styleRequiresSavedEdits')
+            : t('sessionDetail.browseRequiresSavedEdits')
+        )
         return
       }
       setActiveTab(tab)
@@ -94,7 +98,7 @@ export function useWorkspaceRibbonController(isSavingEdits: boolean): {
         setSpeechScriptDialogOpen(false)
         return
       }
-      if (tab === 'browse') {
+      if (tab === 'browse' || tab === 'style') {
         setInteractionMode('preview')
         setSpeechScriptDialogOpen(false)
         return

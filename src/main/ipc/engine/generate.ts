@@ -17,6 +17,7 @@ import type { FontSelection, GenerateChunkEvent } from '@shared/generation'
 import { normalizeLayoutIntent, type LayoutIntent } from '@shared/layout-intent'
 import { resolveModelTimeoutMs, type ModelTimeoutProfile } from '@shared/model-timeout'
 import { progressLabel, progressText } from '@shared/progress'
+import { stripInternalEditConfirmations } from '@shared/edit-output'
 import type { DeckEditScope, DesignContract, OutlineItem } from '../../tools/types'
 import { isPlaceholderPageHtml } from '../../tools/html-utils'
 import {
@@ -1638,8 +1639,8 @@ const runDeepAgentScopedEdit = async (args: RunDeepAgentScopedEditArgs): Promise
           : args.editScope === 'deck'
             ? uiText(
                 args.appLocale,
-                '正在按主会话指令修改一个或多个 page 页面，index.html 不会被修改',
-                'Editing one or more page files from the main-session instruction; index.html will not be modified'
+                '正在按主会话指令修改页面',
+                'Editing pages from the main-session instruction'
               )
             : uiText(
                 args.appLocale,
@@ -1660,6 +1661,7 @@ const runDeepAgentScopedEdit = async (args: RunDeepAgentScopedEditArgs): Promise
     editScope: args.editScope,
     selectedPageId: args.selectedPageId,
     selectedPageNumber: args.selectedPageNumber,
+    concurrentDeckPageId,
     selectedSelector: args.selectedSelector || '',
     elementTag: args.elementTag || '',
     elementText: args.elementText || ''
@@ -1734,6 +1736,7 @@ const runDeepAgentScopedEdit = async (args: RunDeepAgentScopedEditArgs): Promise
       provider: args.provider,
       model: args.model,
       sessionId: args.sessionId,
+      workerLabel: concurrentDeckPageId,
       onCustom: (custom) => {
         emitEditStatus({
           label: progressLabel(args.appLocale, custom.label),
@@ -1780,10 +1783,11 @@ const runDeepAgentScopedEdit = async (args: RunDeepAgentScopedEditArgs): Promise
   log.info('[deepagent] edit agent completed', {
     sessionId: args.sessionId,
     styleId: args.styleId || '',
+    concurrentDeckPageId,
     finalAssistantPreview: finalAssistantText.slice(0, 200)
   })
 
-  return finalAssistantText
+  return stripInternalEditConfirmations(finalAssistantText)
 }
 
 export const runDeepAgentEdit = async (args: RunDeepAgentPageEditArgs): Promise<string> =>

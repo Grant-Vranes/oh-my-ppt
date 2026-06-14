@@ -353,6 +353,7 @@ export function createSessionEditAgent(args: {
     projectDir: context.projectDir,
     indexPath: context.indexPath,
     selectedPageId: context.selectedPageId,
+    selectPageIds: context.selectPageIds,
     disableNativeEditFile,
     disableNativeWriteFile,
     promptMode,

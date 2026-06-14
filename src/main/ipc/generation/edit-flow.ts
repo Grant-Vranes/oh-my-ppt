@@ -58,17 +58,19 @@ export async function resolveEditContext(
     throw new Error('chatType=page requires chatPageId or selectedPageId')
   }
 
-  await db.addMessage(input.sessionId, {
-    role: 'user',
-    content: input.rawUserMessage,
-    type: 'text',
-    chat_scope: chatType,
-    page_id: chatType === 'page' ? chatPageId : undefined,
-    selector: chatType === 'page' ? input.selector : undefined,
-    image_paths: imagePaths,
-    video_paths: videoPaths,
-    run_model: common.runModel
-  })
+  if (input.persistUserMessage) {
+    await db.addMessage(input.sessionId, {
+      role: 'user',
+      content: input.rawUserMessage,
+      type: 'text',
+      chat_scope: chatType,
+      page_id: chatType === 'page' ? chatPageId : undefined,
+      selector: chatType === 'page' ? input.selector : undefined,
+      image_paths: imagePaths,
+      video_paths: videoPaths,
+      run_model: common.runModel
+    })
+  }
   await db.updateSessionStatus(input.sessionId, 'active')
 
   return {
@@ -76,6 +78,7 @@ export async function resolveEditContext(
     userMessage,
     requestedType: 'page',
     effectiveMode: 'edit',
+    resetVisualStyle: input.resetVisualStyle,
     selectedPageId: input.selectedPageId,
     selectPageIds: input.chatType === 'main' ? input.selectPageIds : [],
     htmlPath: input.htmlPath,

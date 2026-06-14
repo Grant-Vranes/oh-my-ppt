@@ -54,6 +54,15 @@ type StylePayload = StyleBasePayload & {
   id: string
 }
 
+function parseAliases(value: string): string[] {
+  try {
+    const parsed = JSON.parse(value || '[]')
+    return Array.isArray(parsed) ? parsed.map((item) => String(item)) : []
+  } catch {
+    return []
+  }
+}
+
 export function registerStyleHandlers(ctx: IpcContext): void {
   const { db } = ctx
 
@@ -92,30 +101,63 @@ export function registerStyleHandlers(ctx: IpcContext): void {
     return getStyleDetail(styleId)
   })
 
-  ipcMain.handle('styles:list', async () => {
+  ipcMain.handle('styles:list', async (_event, payload?: { sessionId?: string }) => {
+    const sessionId = typeof payload?.sessionId === 'string' ? payload.sessionId.trim() : ''
     const rows = (await db.listStyleRows()).filter((row) => row.active !== false)
     rows.sort((a, b) => b.updatedAt - a.updatedAt || b.createdAt - a.createdAt)
+    const items = rows.map((row) => ({
+      id: row.id,
+      styleKey: row.style,
+      label: row.styleName,
+      name: {
+        zh: row.styleNameZh || row.styleName,
+        en: row.styleNameEn || ''
+      },
+      description: row.description,
+      aliases: parseAliases(row.aliases),
+      category: row.category || (row.source === 'builtin' ? '内置' : '自定义'),
+      source: row.source,
+      editable: row.source !== 'builtin',
+      version: row.version,
+      styleCase: row.styleCase,
+      packageDir: row.packageDir || '',
+      previewPath: resolvePreviewPath(row),
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt
+    }))
+
+    if (sessionId) {
+      const snapshot = await db.getSessionStyleSnapshot(sessionId)
+      if (snapshot && !items.some((item) => item.id === snapshot.styleId)) {
+        items.unshift({
+          id: snapshot.styleId,
+          styleKey: snapshot.styleKey,
+          label: snapshot.styleName,
+          name: {
+            zh: snapshot.styleNameZh || snapshot.styleName,
+            en: snapshot.styleNameEn || ''
+          },
+          description: snapshot.description,
+          aliases: parseAliases(snapshot.aliases),
+          category: snapshot.category || (snapshot.source === 'builtin' ? '内置' : '自定义'),
+          source: snapshot.source,
+          editable: false,
+          version: snapshot.version,
+          styleCase: snapshot.styleCase,
+          packageDir: snapshot.packageDir || '',
+          previewPath: resolvePreviewPath({
+            id: snapshot.styleId,
+            style: snapshot.styleKey,
+            source: snapshot.source,
+            packageDir: snapshot.packageDir
+          }),
+          createdAt: snapshot.createdAt,
+          updatedAt: snapshot.createdAt
+        })
+      }
+    }
     return {
-      items: rows.map((row) => ({
-        id: row.id,
-        styleKey: row.style,
-        label: row.styleName,
-        name: {
-          zh: row.styleNameZh || row.styleName,
-          en: row.styleNameEn || ''
-        },
-        description: row.description,
-        aliases: JSON.parse(row.aliases || '[]'),
-        category: row.category || (row.source === 'builtin' ? '内置' : '自定义'),
-        source: row.source,
-        editable: row.source !== 'builtin',
-        version: row.version,
-        styleCase: row.styleCase,
-        packageDir: row.packageDir || '',
-        previewPath: resolvePreviewPath(row),
-        createdAt: row.createdAt,
-        updatedAt: row.updatedAt
-      }))
+      items
     }
   })
 

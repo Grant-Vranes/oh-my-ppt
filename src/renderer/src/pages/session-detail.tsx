@@ -11,6 +11,7 @@ import { TooltipProvider } from '../components/ui/Tooltip'
 import { PageSidebar } from '../components/session-detail/sidebar'
 import { PreviewStage } from '../components/session-detail/preview'
 import { BrowseView } from '../components/session-detail/browse/BrowseView'
+import { StyleView } from '../components/session-detail/style/StyleView'
 import {
   ElementInspectorPanel,
   type ElementEditDraft
@@ -49,6 +50,7 @@ import {
   editTargetMatchesDeletedSelector,
   useEditHistoryStore,
   useGenerateStore,
+  useGenerationActivityStore,
   useSessionDetailRuntimeStore,
   useSessionDetailUiStore,
   useSessionStore,
@@ -195,6 +197,7 @@ export function SessionDetailPage(): React.JSX.Element {
     let cancelled = false
     setMessages([])
     useGenerateStore.getState().setPages([])
+    useGenerationActivityStore.getState().reset()
     resetForSessionChange()
     void (async () => {
       try {
@@ -203,13 +206,14 @@ export function SessionDetailPage(): React.JSX.Element {
         console.warn('[session] migrate page outlines failed', err)
       }
       if (!cancelled) {
-        await loadSession(id)
+        await loadSession(id, () => !cancelled)
       }
     })()
     // Cleanup on unmount (leaving session-detail)
     return () => {
       cancelled = true
       useGenerateStore.getState().reset()
+      useGenerationActivityStore.getState().reset()
       useSessionDetailUiStore.getState().resetForSessionChange()
       useEditHistoryStore.getState().clear()
     }
@@ -1434,6 +1438,8 @@ export function SessionDetailPage(): React.JSX.Element {
 
           {workspaceTab === 'browse' ? (
             <BrowseView sessionId={id} />
+          ) : workspaceTab === 'style' ? (
+            <StyleView sessionId={id} />
           ) : (
             <div className="flex min-h-0 flex-1">
               <PageSidebar sessionId={id} />

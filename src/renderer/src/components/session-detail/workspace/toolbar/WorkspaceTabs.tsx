@@ -1,4 +1,4 @@
-import { Eye, LayoutGrid, Pencil, ScrollText, Sparkles, WandSparkles } from 'lucide-react'
+import { Eye, LayoutGrid, Palette, Pencil, ScrollText, Sparkles, WandSparkles } from 'lucide-react'
 import { cn } from '@renderer/lib/utils'
 import { useT } from '@renderer/i18n'
 import type { SessionWorkspaceTab } from '@renderer/store'
@@ -17,6 +17,7 @@ export function WorkspaceTabs({
     { id: 'preview', label: t('sessionDetail.previewMode'), icon: <Eye className="h-3 w-3" /> },
     { id: 'edit', label: t('sessionDetail.editMode'), icon: <Pencil className="h-3 w-3" /> },
     { id: 'browse', label: t('sessionDetail.browseMode'), icon: <LayoutGrid className="h-3 w-3" /> },
+    { id: 'style', label: t('sessionDetail.styleMode'), icon: <Palette className="h-3 w-3" /> },
     { id: 'animation', label: t('sessionDetail.animationTab'), icon: <WandSparkles className="h-3 w-3" /> },
     { id: 'speech', label: t('sessionDetail.speechScript'), icon: <ScrollText className="h-3 w-3" /> },
     { id: 'ai', label: t('sessionDetail.aiMode'), icon: <Sparkles className="h-3 w-3" /> }

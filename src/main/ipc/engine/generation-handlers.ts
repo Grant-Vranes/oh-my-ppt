@@ -9,12 +9,19 @@ import {
 } from '../generation/template-deck-flow'
 import { executeEditGeneration, resolveEditContext } from '../generation/edit-flow'
 import { executeDeckAllPageEditGeneration } from '../generation/edit-deck-allpage-flow'
+import { DeckEditIndexMutationError } from '../generation/edit-deck-batch-flow'
 import { executeRetryFailedPages, resolveRetryContext } from '../generation/retry-flow'
 import type { DeckContext, EditContext, RetryContext } from '../generation/types'
 import { resolveAddPageContext, executeAddPageGeneration, type AddPageContext } from '../generation/add-page-flow'
 import { resolveRetrySinglePageContext, executeRetrySinglePageGeneration, type RetrySinglePageContext } from '../generation/retry-single-page-flow'
 import { finalizeGenerationFailure } from '../generation/finalization'
 import { GenerateJobManager } from '../generation/job-manager'
+import {
+  buildStyleSwitchUserMessage,
+  collectFailedStyleSwitchPageIds
+} from '../generation/style-switch'
+import { buildDesignContractWithLLM } from './generate'
+import { GitHistoryService } from '../../history/git-history-service'
 
 export function registerGenerationHandlers(ctx: IpcContext): void {
   const {
@@ -51,6 +58,18 @@ export function registerGenerationHandlers(ctx: IpcContext): void {
         .map((page) => page.file_slug || page.legacy_page_id || page.id)
         .filter((pageKey) => pageKey.length > 0)
     }
+  }
+
+  const listFailedGenerationPagesForRetry = async (
+    sessionId: string,
+    failedRunId?: string
+  ) => {
+    if (!failedRunId) return db.listLatestFailedGenerationPages(sessionId)
+    const run = await db.getGenerationRun(failedRunId)
+    if (!run || run.session_id !== sessionId) {
+      throw new Error('重试失败：原失败任务不存在或不属于当前 Session')
+    }
+    return (await db.listGenerationPages(failedRunId)).filter((page) => page.status === 'failed')
   }
 
   ipcMain.handle('generate:state', async (_event, rawSessionId: unknown) => {
@@ -213,6 +232,7 @@ export function registerGenerationHandlers(ctx: IpcContext): void {
           sessionId: context.sessionId,
           runId: context.runId,
           mode: context.effectiveMode,
+          activityKind: 'edit',
           totalPages: context.totalPages,
           previousSessionStatus: context.previousSessionStatus
         })
@@ -222,6 +242,7 @@ export function registerGenerationHandlers(ctx: IpcContext): void {
           sessionId: context.sessionId,
           runId: context.runId,
           mode: context.effectiveMode,
+          activityKind: 'edit',
           totalPages: context.totalPages,
           previousSessionStatus: context.previousSessionStatus
         })
@@ -253,6 +274,317 @@ export function registerGenerationHandlers(ctx: IpcContext): void {
       if (context && !handedToBackground) {
         agentManager.removeSession(context.sessionId)
       }
+    }
+  })
+
+  ipcMain.handle('generate:switchStyle', async (event, payload) => {
+    await interruptedJobsReady
+    pruneFinishedSessionRunStates()
+    const record =
+      payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {}
+    const sessionId = typeof record.sessionId === 'string' ? record.sessionId.trim() : ''
+    const styleId = typeof record.styleId === 'string' ? record.styleId.trim() : ''
+    const modelConfigId =
+      typeof record.modelConfigId === 'string' ? record.modelConfigId.trim() : undefined
+    if (!sessionId) throw new Error('sessionId 不能为空')
+    if (!styleId) throw new Error('styleId 不能为空')
+
+    const reservation = jobManager.reserve('generate:switchStyle', sessionId)
+    if (reservation.alreadyRunning) {
+      return { success: true, runId: reservation.runId, alreadyRunning: true, styleId }
+    }
+
+    const reserved = reservation.reservation
+    let context: EditContext | null = null
+    let previousStyleId: string | null = null
+    let previousStyleSnapshot: Awaited<ReturnType<typeof db.getSessionStyleSnapshot>>
+    let previousDesignContract: unknown = null
+    let styleChangeStarted = false
+    let styleStateCommitted = false
+    let stylePageEditingStarted = false
+    let designContractCleared = false
+    try {
+      const style = db.getStyleRowSync(styleId)
+      if (!style || style.active === false) throw new Error('选择的风格不存在或已停用')
+      const session = await db.getSession(sessionId)
+      if (!session) throw new Error('Session not found')
+      previousStyleId = session.styleId
+      previousStyleSnapshot = await db.getSessionStyleSnapshot(sessionId)
+      if (typeof session.designContract === 'string' && session.designContract.trim()) {
+        try {
+          previousDesignContract = JSON.parse(session.designContract)
+        } catch {
+          previousDesignContract = null
+        }
+      }
+      if (session.styleId === style.id) {
+        return { success: true, styleId: style.id, unchanged: true }
+      }
+
+      jobManager.assertNotCancelled(reserved)
+      await new GitHistoryService(db).captureCurrentVersionStyleState(sessionId)
+      styleChangeStarted = true
+      await db.updateSessionStyleId(sessionId, style.id)
+      const updatedStyleSnapshot = await db.getSessionStyleSnapshot(sessionId)
+      if (updatedStyleSnapshot?.styleId !== style.id) {
+        throw new Error('切换风格失败：Session style snapshot 尚未更新完成')
+      }
+      await db.updateSessionDesignContract(sessionId, null)
+      designContractCleared = true
+      context = await resolveEditContext(ctx, event, {
+        sessionId,
+        modelConfigId,
+        userMessage: buildStyleSwitchUserMessage(style.styleName),
+        type: 'page',
+        chatType: 'main',
+        resetVisualStyle: true,
+        persistUserMessage: false
+      })
+      jobManager.assertNotCancelled(reserved)
+      beginSessionRunState({
+        sessionId: context.sessionId,
+        runId: context.runId,
+        mode: context.effectiveMode,
+        activityKind: 'style-switch',
+        totalPages: context.totalPages,
+        previousSessionStatus: context.previousSessionStatus
+      })
+      const emitStyleSwitchChunk = ctx.createDeckProgressEmitter(
+        context.sessionId,
+        context.appLocale
+      )
+      const designContract = await buildDesignContractWithLLM({
+        provider: context.provider,
+        apiKey: context.apiKey,
+        model: context.model,
+        baseUrl: context.providerBaseUrl,
+        maxTokens: context.maxTokens,
+        modelTimeoutMs: context.modelTimeouts.design,
+        temperature: ctx.DESIGN_CONTRACT_TEMPERATURE,
+        styleId: context.styleId,
+        styleSkillPrompt: context.styleSkill.prompt,
+        styleKey: context.styleKey,
+        styleName: context.styleName,
+        styleVersion: context.styleVersion,
+        appLocale: context.appLocale,
+        totalPages: context.totalPages,
+        topic: context.topic,
+        userMessage: context.userMessage,
+        fontSelection: context.fontSelection,
+        emit: emitStyleSwitchChunk,
+        runId: context.runId,
+        signal: context.entry.abortController.signal
+      })
+      await db.updateSessionDesignContract(sessionId, designContract)
+      context.designContract = designContract
+      context.onDeckEditStarted = () => {
+        stylePageEditingStarted = true
+      }
+      styleStateCommitted = true
+      await executeDeckAllPageEditGeneration(ctx, emitAssistant, context)
+      const failedPageCount = collectFailedStyleSwitchPageIds(
+        await db.listLatestFailedGenerationPages(sessionId)
+      ).length
+      return { success: true, runId: context.runId, styleId: style.id, failedPageCount }
+    } catch (error) {
+      const shouldRestoreStyleState =
+        !styleStateCommitted ||
+        !stylePageEditingStarted ||
+        reserved.controller.signal.aborted ||
+        error instanceof DeckEditIndexMutationError
+      if (styleChangeStarted && shouldRestoreStyleState) {
+        await db
+          .restoreSessionStyleState(sessionId, previousStyleId, previousStyleSnapshot)
+          .catch((rollbackError) => {
+            log.error('[generate:switchStyle] failed to restore previous style snapshot', {
+              sessionId,
+              previousStyleId,
+              message:
+                rollbackError instanceof Error ? rollbackError.message : String(rollbackError)
+            })
+          })
+      }
+      if (designContractCleared && shouldRestoreStyleState) {
+        await db
+          .updateSessionDesignContract(sessionId, previousDesignContract)
+          .catch((rollbackError) => {
+            log.error('[generate:switchStyle] failed to restore previous design contract', {
+              sessionId,
+              message:
+                rollbackError instanceof Error ? rollbackError.message : String(rollbackError)
+            })
+          })
+      }
+      if (context) {
+        await finalizeGenerationFailure(ctx, context, error)
+      } else {
+        logPreContextFailure('generate:switchStyle', sessionId, error)
+      }
+      throw error
+    } finally {
+      jobManager.release(reserved)
+      if (context) agentManager.removeSession(context.sessionId)
+    }
+  })
+
+  ipcMain.handle('generate:retryStyleSwitch', async (event, payload) => {
+    await interruptedJobsReady
+    pruneFinishedSessionRunStates()
+    const record =
+      payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {}
+    const sessionId = typeof record.sessionId === 'string' ? record.sessionId.trim() : ''
+    const styleId = typeof record.styleId === 'string' ? record.styleId.trim() : ''
+    const modelConfigId =
+      typeof record.modelConfigId === 'string' ? record.modelConfigId.trim() : undefined
+    const failedRunId =
+      typeof record.failedRunId === 'string' ? record.failedRunId.trim() || undefined : undefined
+    if (!sessionId) throw new Error('sessionId 不能为空')
+    if (!styleId) throw new Error('styleId 不能为空')
+
+    const reservation = jobManager.reserve('generate:retryStyleSwitch', sessionId)
+    if (reservation.alreadyRunning) {
+      return {
+        success: true,
+        runId: reservation.runId,
+        alreadyRunning: true,
+        styleId,
+        failedPageCount: 0
+      }
+    }
+
+    const reserved = reservation.reservation
+    let context: EditContext | null = null
+    try {
+      const session = await db.getSession(sessionId)
+      if (!session) throw new Error('Session not found')
+      const styleSnapshot = await db.getSessionStyleSnapshot(sessionId)
+      if (session.styleId !== styleId || styleSnapshot?.styleId !== styleId) {
+        throw new Error('重试风格切换失败：当前 Session 风格与目标风格不一致')
+      }
+
+      const failedPageIds = collectFailedStyleSwitchPageIds(
+        await listFailedGenerationPagesForRetry(sessionId, failedRunId)
+      )
+      if (failedPageIds.length === 0) {
+        return { success: true, styleId, failedPageCount: 0 }
+      }
+
+      jobManager.assertNotCancelled(reserved)
+      context = await resolveEditContext(ctx, event, {
+        sessionId,
+        modelConfigId,
+        userMessage: buildStyleSwitchUserMessage(styleSnapshot.styleName),
+        type: 'page',
+        chatType: 'main',
+        selectPageIds: failedPageIds,
+        resetVisualStyle: true,
+        persistUserMessage: false
+      })
+      context.selectPageIds = failedPageIds
+      if (typeof session.designContract === 'string' && session.designContract.trim()) {
+        try {
+          context.designContract = JSON.parse(session.designContract)
+        } catch {
+          throw new Error('重试风格切换失败：新风格 design contract 无效')
+        }
+      } else {
+        throw new Error('重试风格切换失败：缺少新风格 design contract')
+      }
+      jobManager.assertNotCancelled(reserved)
+      beginSessionRunState({
+        sessionId: context.sessionId,
+        runId: context.runId,
+        mode: context.effectiveMode,
+        activityKind: 'style-switch',
+        totalPages: failedPageIds.length,
+        previousSessionStatus: context.previousSessionStatus
+      })
+      await executeDeckAllPageEditGeneration(ctx, emitAssistant, context)
+      const failedPageCount = collectFailedStyleSwitchPageIds(
+        await db.listLatestFailedGenerationPages(sessionId)
+      ).length
+      return {
+        success: true,
+        runId: context.runId,
+        styleId,
+        failedPageCount
+      }
+    } catch (error) {
+      if (context) {
+        await finalizeGenerationFailure(ctx, context, error)
+      } else {
+        logPreContextFailure('generate:retryStyleSwitch', sessionId, error)
+      }
+      throw error
+    } finally {
+      jobManager.release(reserved)
+      if (context) agentManager.removeSession(context.sessionId)
+    }
+  })
+
+  ipcMain.handle('generate:retryDeckEdit', async (event, payload) => {
+    await interruptedJobsReady
+    pruneFinishedSessionRunStates()
+    const record =
+      payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {}
+    const sessionId = typeof record.sessionId === 'string' ? record.sessionId.trim() : ''
+    const modelConfigId =
+      typeof record.modelConfigId === 'string' ? record.modelConfigId.trim() : undefined
+    const failedRunId =
+      typeof record.failedRunId === 'string' ? record.failedRunId.trim() || undefined : undefined
+    const userMessage = typeof record.userMessage === 'string' ? record.userMessage.trim() : ''
+    if (!sessionId) throw new Error('sessionId 不能为空')
+    if (!userMessage) throw new Error('重试编辑失败：缺少原始编辑指令')
+
+    const reservation = jobManager.reserve('generate:retryDeckEdit', sessionId)
+    if (reservation.alreadyRunning) {
+      return { success: true, runId: reservation.runId, alreadyRunning: true, failedPageCount: 0 }
+    }
+
+    const reserved = reservation.reservation
+    let context: EditContext | null = null
+    try {
+      const failedPageIds = collectFailedStyleSwitchPageIds(
+        await listFailedGenerationPagesForRetry(sessionId, failedRunId)
+      )
+      if (failedPageIds.length === 0) {
+        return { success: true, failedPageCount: 0 }
+      }
+
+      jobManager.assertNotCancelled(reserved)
+      context = await resolveEditContext(ctx, event, {
+        ...record,
+        sessionId,
+        modelConfigId,
+        userMessage,
+        type: 'page',
+        chatType: 'main',
+        selectPageIds: failedPageIds,
+        persistUserMessage: false
+      })
+      beginSessionRunState({
+        sessionId: context.sessionId,
+        runId: context.runId,
+        mode: context.effectiveMode,
+        activityKind: 'edit',
+        totalPages: failedPageIds.length,
+        previousSessionStatus: context.previousSessionStatus
+      })
+      await executeDeckAllPageEditGeneration(ctx, emitAssistant, context)
+      const failedPageCount = collectFailedStyleSwitchPageIds(
+        await db.listLatestFailedGenerationPages(sessionId)
+      ).length
+      return { success: true, runId: context.runId, failedPageCount }
+    } catch (error) {
+      if (context) {
+        await finalizeGenerationFailure(ctx, context, error)
+      } else {
+        logPreContextFailure('generate:retryDeckEdit', sessionId, error)
+      }
+      throw error
+    } finally {
+      jobManager.release(reserved)
+      if (context) agentManager.removeSession(context.sessionId)
     }
   })
 

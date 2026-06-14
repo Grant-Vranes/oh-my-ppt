@@ -6,7 +6,14 @@ import type { ArtTextTemplateId } from '@renderer/lib/artTextTemplates'
 export type SessionDetailChatType = 'main' | 'page'
 export type SessionDetailAiPanelMode = 'chat' | 'image'
 export type InteractionMode = 'preview' | 'ai-inspect' | 'edit'
-export type SessionWorkspaceTab = 'preview' | 'browse' | 'edit' | 'animation' | 'speech' | 'ai'
+export type SessionWorkspaceTab =
+  | 'preview'
+  | 'browse'
+  | 'style'
+  | 'edit'
+  | 'animation'
+  | 'speech'
+  | 'ai'
 export type ChatType = SessionDetailChatType
 export type InsertAssetType = 'image' | 'video'
 

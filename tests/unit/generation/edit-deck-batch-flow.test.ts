@@ -3,6 +3,14 @@ import os from 'os'
 import path from 'path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+const logMocks = vi.hoisted(() => ({
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn()
+}))
+
+vi.mock('electron-log/main.js', () => ({ default: logMocks }))
+
 import {
   BATCH_EDIT_CHUNK_SIZE,
   DeckEditIndexMutationError,
@@ -51,6 +59,7 @@ const createFixture = async (
 }
 
 afterEach(async () => {
+  vi.clearAllMocks()
   await Promise.all(
     tempDirs.splice(0).map((dir) => fs.promises.rm(dir, { recursive: true, force: true }))
   )
@@ -94,9 +103,14 @@ describe('deck edit batch flow', () => {
     await vi.waitFor(() => {
       expect(startedPages).toHaveLength(BATCH_EDIT_CHUNK_SIZE)
     })
-    expect(startedPages).toEqual(['page-1', 'page-2', 'page-3'])
+    expect(startedPages).toEqual(['page-1', 'page-2'])
     expect(maxActiveWorkers).toBe(BATCH_EDIT_CHUNK_SIZE)
 
+    releaseWorkers.splice(0, BATCH_EDIT_CHUNK_SIZE).forEach((release) => release())
+    await vi.waitFor(() => {
+      expect(startedPages).toHaveLength(4)
+    })
+    expect(startedPages).toEqual(['page-1', 'page-2', 'page-3', 'page-4'])
     releaseWorkers.splice(0, BATCH_EDIT_CHUNK_SIZE).forEach((release) => release())
     await vi.waitFor(() => {
       expect(startedPages).toHaveLength(6)
@@ -146,6 +160,121 @@ describe('deck edit batch flow', () => {
     expect(attempts).toBe(2)
     expect(results).toHaveLength(1)
     expect(results[0].status).toBe('completed')
+  })
+
+  it('reports the page failure reason before retrying and advances progress after recovery', async () => {
+    const fixture = await createFixture(1)
+    const emitted: Array<{ label?: string; detail?: string; progress?: number }> = []
+    let attempts = 0
+    const results = await executeDeckEditBatchFlow({
+      pageRefs: fixture.pageRefs,
+      indexPath: fixture.indexPath,
+      originalUserMessage: '修改第一页',
+      runId: 'run-retry-reason',
+      appLocale: 'zh',
+      launchStaggerMs: 0,
+      emit: (chunk) => {
+        if (chunk.type !== 'llm_status') return
+        emitted.push(chunk.payload)
+      },
+      validateChangedPages: () => [],
+      buildRetryMessage: ({ baseMessage, kind }) =>
+        kind === 'agent' ? `${baseMessage}\nretry` : null,
+      runPageAttempt: async ({ pageId, isRetry }) => {
+        attempts += 1
+        if (!isRetry) throw new Error('provider timed out')
+        const page = fixture.pageRefs.find((item) => item.pageId === pageId)!
+        await fs.promises.writeFile(page.htmlPath, validPageHtml(page.pageId, 'after'), 'utf-8')
+        return 'done'
+      }
+    })
+
+    expect(attempts).toBe(2)
+    expect(results[0]).toMatchObject({ status: 'completed', retryCount: 1 })
+    expect(emitted).toContainEqual(
+      expect.objectContaining({
+        label: 'P1 首次处理失败，准备重试',
+        detail: 'provider timed out'
+      })
+    )
+    expect(emitted).toContainEqual(
+      expect.objectContaining({ label: 'P1 重试成功', progress: 90 })
+    )
+  })
+
+  it('describes a page-level completion as validation instead of whole-run completion', async () => {
+    const fixture = await createFixture(1)
+    const emittedLabels: string[] = []
+    await executeDeckEditBatchFlow({
+      pageRefs: fixture.pageRefs,
+      indexPath: fixture.indexPath,
+      originalUserMessage: '修改第一页',
+      runId: 'run-page-completed-label',
+      appLocale: 'zh',
+      launchStaggerMs: 0,
+      emit: (chunk) => {
+        if ('label' in chunk.payload) emittedLabels.push(chunk.payload.label)
+      },
+      validateChangedPages: () => [],
+      buildRetryMessage: () => null,
+      runPageAttempt: async ({ pageId, emit }) => {
+        emit({
+          type: 'llm_status',
+          payload: {
+            runId: 'run-page-completed-label',
+            stage: 'editing',
+            label: '已完成',
+            progress: 100
+          }
+        })
+        const page = fixture.pageRefs.find((item) => item.pageId === pageId)!
+        await fs.promises.writeFile(page.htmlPath, validPageHtml(page.pageId, 'after'), 'utf-8')
+        return 'done'
+      }
+    })
+
+    expect(emittedLabels).toContain('P1 当前步骤完成，正在校验页面')
+    expect(emittedLabels).toContain('P1 编辑完成')
+    expect(emittedLabels).not.toContain('已完成')
+  })
+
+  it('logs a heartbeat without emitting user-visible progress while a model request is silent', async () => {
+    const fixture = await createFixture(1)
+    const emitted: Array<{ label?: string; detail?: string }> = []
+    await executeDeckEditBatchFlow({
+      pageRefs: fixture.pageRefs,
+      indexPath: fixture.indexPath,
+      originalUserMessage: '修改第一页',
+      runId: 'run-silent-model',
+      appLocale: 'zh',
+      launchStaggerMs: 0,
+      heartbeatIntervalMs: 10,
+      emit: (chunk) => {
+        if (chunk.type === 'llm_status') emitted.push(chunk.payload)
+      },
+      validateChangedPages: () => [],
+      buildRetryMessage: () => null,
+      runPageAttempt: async ({ pageId }) => {
+        await new Promise((resolve) => setTimeout(resolve, 35))
+        const page = fixture.pageRefs.find((item) => item.pageId === pageId)!
+        await fs.promises.writeFile(page.htmlPath, validPageHtml(page.pageId, 'after'), 'utf-8')
+        return 'done'
+      }
+    })
+
+    expect(emitted).not.toContainEqual(
+      expect.objectContaining({ label: 'P1 正在等待模型响应' })
+    )
+    expect(logMocks.warn).toHaveBeenCalledWith(
+      '[deck-edit:page] model response silent',
+      expect.objectContaining({
+        runId: 'run-silent-model',
+        pageId: 'page-1',
+        pageNumber: 1,
+        attempt: 1,
+        silentForMs: expect.any(Number)
+      })
+    )
   })
 
   it('does not start a third attempt when the retry also makes no changes', async () => {
@@ -317,8 +446,8 @@ describe('deck edit batch flow', () => {
     }
   })
 
-  it('stagger-launches the three page requests to reduce provider 429 bursts', async () => {
-    const fixture = await createFixture(3)
+  it('stagger-launches concurrent page requests to reduce provider 429 bursts', async () => {
+    const fixture = await createFixture(2)
     const launchTimes: number[] = []
     const startedAt = Date.now()
     const results = await executeDeckEditBatchFlow({
@@ -339,9 +468,8 @@ describe('deck edit batch flow', () => {
     })
 
     expect(results.every((result) => result.status === 'completed')).toBe(true)
-    expect(launchTimes).toHaveLength(3)
+    expect(launchTimes).toHaveLength(2)
     expect(launchTimes[1] - launchTimes[0]).toBeGreaterThanOrEqual(70)
-    expect(launchTimes[2] - launchTimes[1]).toBeGreaterThanOrEqual(70)
   })
 
   it('removes abort listeners after stagger sleeps resolve', async () => {

@@ -11,6 +11,9 @@ import type {
   PrepareReferenceDocumentPayload,
   PreparedReferenceDocumentResult,
   SourceDocumentPlan,
+  SwitchSessionStylePayload,
+  RetrySessionStylePayload,
+  RetryDeckEditPayload,
   PptxImportPayload,
   PptxImportProgressPayload,
   PptxImportResult,
@@ -565,6 +568,30 @@ export const ipc = {
       alreadyRunning?: boolean
       queued?: boolean
     }>,
+  switchSessionStyle: (payload: SwitchSessionStylePayload) =>
+    getIpc().invoke('generate:switchStyle', payload) as Promise<{
+      success: boolean
+      runId?: string
+      styleId: string
+      unchanged?: boolean
+      alreadyRunning?: boolean
+      failedPageCount?: number
+    }>,
+  retrySessionStyle: (payload: RetrySessionStylePayload) =>
+    getIpc().invoke('generate:retryStyleSwitch', payload) as Promise<{
+      success: boolean
+      runId?: string
+      styleId: string
+      alreadyRunning?: boolean
+      failedPageCount: number
+    }>,
+  retryDeckEdit: (payload: RetryDeckEditPayload) =>
+    getIpc().invoke('generate:retryDeckEdit', payload) as Promise<{
+      success: boolean
+      runId?: string
+      alreadyRunning?: boolean
+      failedPageCount: number
+    }>,
   startTemplateGenerate: (payload: GenerateStartPayload & { retry?: boolean }) =>
     getIpc().invoke('generate:startTemplate', payload) as Promise<{
       success: boolean
@@ -775,7 +802,8 @@ export const ipc = {
     }>,
   getStyleDetail: (styleId: string) =>
     getIpc().invoke('styles:getDetail', styleId) as Promise<StyleDetail>,
-  listStyles: () => getIpc().invoke('styles:list') as Promise<{ items: StyleListItem[] }>,
+  listStyles: (payload?: { sessionId?: string }) =>
+    getIpc().invoke('styles:list', payload) as Promise<{ items: StyleListItem[] }>,
   generateStylePreview: (payload: { styleId: string; modelConfigId?: string }) =>
     getIpc().invoke('styles:generatePreview', payload) as Promise<{
       success: boolean

@@ -4,7 +4,12 @@ import crypto from 'crypto'
 import log from 'electron-log/main.js'
 import * as git from 'isomorphic-git'
 import { nanoid } from 'nanoid'
-import type { PPTDatabase, SessionOperationRecord, SessionPageRecord } from '../db/database'
+import type {
+  PPTDatabase,
+  SessionOperationRecord,
+  SessionPageRecord,
+  SessionStyleSnapshotRow
+} from '../db/database'
 import type {
   ChangedHistoryFile,
   HistoryOperationKind,
@@ -43,6 +48,55 @@ const parseJson = <T>(value: string | null | undefined, fallback: T): T => {
     return JSON.parse(value) as T
   } catch {
     return fallback
+  }
+}
+
+type HistorySessionStyleState = {
+  styleId: string | null
+  snapshot: SessionStyleSnapshotRow | null
+  designContract: unknown
+}
+
+const parseHistorySessionStyleState = (
+  metadata: Record<string, unknown>
+): HistorySessionStyleState | undefined => {
+  const raw = metadata.sessionStyleState
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined
+  const record = raw as Record<string, unknown>
+  const styleId = record.styleId === null ? null : record.styleId
+  if (styleId !== null && typeof styleId !== 'string') return undefined
+  const designContract = record.designContract ?? null
+  if (record.snapshot === null) return { styleId, snapshot: null, designContract }
+  if (!record.snapshot || typeof record.snapshot !== 'object' || Array.isArray(record.snapshot)) {
+    return undefined
+  }
+  const snapshot = record.snapshot as Record<string, unknown>
+  const requiredStrings = [
+    'id',
+    'sessionId',
+    'styleId',
+    'styleKey',
+    'styleName',
+    'styleNameZh',
+    'styleNameEn',
+    'description',
+    'category',
+    'aliases',
+    'source',
+    'version',
+    'styleCase',
+    'packageDir',
+    'styleSkill'
+  ]
+  if (requiredStrings.some((key) => typeof snapshot[key] !== 'string')) return undefined
+  if (typeof snapshot.createdAt !== 'number' || !Number.isFinite(snapshot.createdAt)) {
+    return undefined
+  }
+  if (!['builtin', 'custom', 'override'].includes(snapshot.source as string)) return undefined
+  return {
+    styleId,
+    snapshot: snapshot as unknown as SessionStyleSnapshotRow,
+    designContract
   }
 }
 
@@ -93,6 +147,30 @@ async function walkFiles(root: string, prefix = ''): Promise<string[]> {
 
 export class GitHistoryService {
   constructor(private readonly db: PPTDatabase) {}
+
+  async captureCurrentVersionStyleState(sessionId: string): Promise<void> {
+    const session = await this.db.getSession(sessionId)
+    const operationId = session?.currentOperationId
+    if (!operationId) return
+    const operation = await this.db.getSessionOperation(operationId)
+    if (!operation || operation.session_id !== sessionId) return
+    const metadata = parseJson<Record<string, unknown>>(operation.metadata_json, {})
+    const snapshot = await this.db.getSessionStyleSnapshot(sessionId)
+    await this.db.updateSessionOperationMetadata(operationId, {
+      ...metadata,
+      sessionStyleState: {
+        styleId: session.styleId ?? null,
+        snapshot: snapshot || null,
+        designContract: parseJson<unknown>(session.designContract, null)
+      }
+    })
+    log.info('[history] captured current version style snapshot', {
+      sessionId,
+      operationId,
+      styleId: session.styleId ?? null,
+      snapshotStyleId: snapshot?.styleId || null
+    })
+  }
 
   async ensureBaseline(sessionId: string, projectDir: string): Promise<void> {
     const resolvedProjectDir = path.resolve(projectDir)
@@ -307,6 +385,9 @@ export class GitHistoryService {
     await this.assertCommitExists(projectDir, targetOperation.after_commit)
     const beforePages = await this.db.listSessionPages(args.sessionId, { includeDeleted: true })
     const beforeMetadata = parseJson<Record<string, unknown>>(session?.metadata, {})
+    const beforeStyleSnapshot = await this.db.getSessionStyleSnapshot(args.sessionId)
+    const beforeStyleId = session?.styleId ?? null
+    const beforeDesignContract = parseJson<unknown>(session?.designContract, null)
     const beforeOperationId =
       typeof session?.currentOperationId === 'string' ? session.currentOperationId : null
     const beforeFiles = await this.listTrackedFiles(projectDir, beforeCommit)
@@ -321,6 +402,7 @@ export class GitHistoryService {
     try {
       await this.restoreCommitFiles(projectDir, targetOperation.after_commit, filesToRestore)
       const targetMetadata = parseJson<Record<string, unknown>>(targetOperation.metadata_json, {})
+      const targetStyleState = parseHistorySessionStyleState(targetMetadata)
       await this.syncSessionPagesForRestoredVersion(args.sessionId, projectDir, targetOperation.id)
       const sessionMetadata = targetMetadata.sessionMetadata
       await this.moveHeadToCommit(projectDir, targetOperation.after_commit)
@@ -332,6 +414,28 @@ export class GitHistoryService {
 
       if (sessionMetadata && typeof sessionMetadata === 'object' && !Array.isArray(sessionMetadata)) {
         await this.db.updateSessionMetadata(args.sessionId, sessionMetadata as Record<string, unknown>)
+      }
+      if (targetStyleState) {
+        await this.db.restoreSessionStyleState(
+          args.sessionId,
+          targetStyleState.styleId,
+          targetStyleState.snapshot || undefined
+        )
+        await this.db.updateSessionDesignContract(
+          args.sessionId,
+          targetStyleState.designContract
+        )
+        log.info('[history] restored session style snapshot', {
+          sessionId: args.sessionId,
+          versionId: targetOperation.id,
+          styleId: targetStyleState.styleId,
+          snapshotStyleId: targetStyleState.snapshot?.styleId || null
+        })
+      } else {
+        log.info('[history] target version has no session style snapshot; keeping current style', {
+          sessionId: args.sessionId,
+          versionId: targetOperation.id
+        })
       }
     } catch (error) {
       // Best-effort rollback to pre-rollback state for non-crash failures.
@@ -346,6 +450,19 @@ export class GitHistoryService {
         })
         .catch(() => {})
       await this.db.updateSessionMetadata(args.sessionId, beforeMetadata).catch(() => {})
+      await this.db
+        .restoreSessionStyleState(args.sessionId, beforeStyleId, beforeStyleSnapshot)
+        .catch((styleRollbackError) => {
+          log.error('[history] failed to restore style snapshot after rollback error', {
+            sessionId: args.sessionId,
+            versionId: targetOperation.id,
+            message:
+              styleRollbackError instanceof Error
+                ? styleRollbackError.message
+                : String(styleRollbackError)
+          })
+        })
+      await this.db.updateSessionDesignContract(args.sessionId, beforeDesignContract).catch(() => {})
       throw error
     }
 
@@ -753,9 +870,15 @@ export class GitHistoryService {
   private async buildOperationMetadata(args: RecordOperationArgs): Promise<Record<string, unknown>> {
     const session = await this.db.getSession(args.sessionId)
     const sessionMetadata = parseJson<Record<string, unknown>>(session?.metadata, {})
+    const sessionStyleSnapshot = await this.db.getSessionStyleSnapshot(args.sessionId)
     const providedSessionMetadata = args.metadata?.sessionMetadata
     return {
       ...(args.metadata || {}),
+      sessionStyleState: {
+        styleId: session?.styleId ?? null,
+        snapshot: sessionStyleSnapshot || null,
+        designContract: parseJson<unknown>(session?.designContract, null)
+      },
       sessionMetadata:
         providedSessionMetadata &&
         typeof providedSessionMetadata === 'object' &&

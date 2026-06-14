@@ -71,7 +71,12 @@ export type GenerationContext = {
 }
 
 export type DeckContext = GenerationContext & { effectiveMode: 'generate' }
-export type EditContext = GenerationContext & { effectiveMode: 'edit' }
+export type EditContext = GenerationContext & {
+  effectiveMode: 'edit'
+  resetVisualStyle?: boolean
+  designContract?: DesignContract
+  onDeckEditStarted?: () => void
+}
 export type RetryContext = GenerationContext & { effectiveMode: 'retry' }
 
 export type AnyFlowContext =

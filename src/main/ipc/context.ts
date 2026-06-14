@@ -4,7 +4,7 @@ import log from 'electron-log/main.js'
 import type { PPTDatabase } from '../db/database'
 import type { AgentManager } from '../agent'
 import type { GenerateChunkEvent, UploadedAsset } from '@shared/generation'
-import { progressLabel, type AppLocale } from '@shared/progress'
+import { progressDisplayLabel, type AppLocale } from '@shared/progress'
 import path from 'path'
 import fs from 'fs'
 
@@ -26,6 +26,7 @@ export type SessionRunState = {
   runId: string
   mode: 'generate' | 'edit' | 'retry' | 'addPage' | 'retrySinglePage'
   kind?: 'standard' | 'template' | 'retry'
+  activityKind?: 'edit' | 'style-switch'
   previousSessionStatus?: string
   status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'
   progress: number
@@ -80,6 +81,7 @@ export interface IpcContext {
     runId: string
     mode: 'generate' | 'edit' | 'retry' | 'addPage' | 'retrySinglePage'
     kind?: 'standard' | 'template' | 'retry'
+    activityKind?: 'edit' | 'style-switch'
     totalPages: number
     previousSessionStatus?: string
     status?: 'queued' | 'running'
@@ -376,12 +378,16 @@ export function createIpcContext(
       case 'run_completed':
         return {
           type: chunk.type,
-          totalPages: chunk.payload.totalPages
+          totalPages: chunk.payload.totalPages,
+          completedPageCount: chunk.payload.completedPageCount ?? null,
+          failedPageCount: chunk.payload.failedPageCount ?? null,
+          activityKind: chunk.payload.activityKind ?? null
         }
       case 'run_error':
         return {
           type: chunk.type,
-          message: chunk.payload.message
+          message: chunk.payload.message,
+          activityKind: chunk.payload.activityKind ?? null
         }
       default:
         return { type: chunk.type }
@@ -393,6 +399,7 @@ export function createIpcContext(
     runId: string
     mode: 'generate' | 'edit' | 'retry' | 'addPage' | 'retrySinglePage'
     kind?: 'standard' | 'template' | 'retry'
+    activityKind?: 'edit' | 'style-switch'
     totalPages: number
     previousSessionStatus?: string
     status?: 'queued' | 'running'
@@ -406,6 +413,7 @@ export function createIpcContext(
       runId: args.runId,
       mode: args.mode,
       kind: args.kind,
+      activityKind: args.activityKind,
       previousSessionStatus: args.previousSessionStatus,
       status: args.status || 'running',
       progress: 0,
@@ -534,6 +542,21 @@ export function createIpcContext(
       }
     }
 
+    trackSessionRunChunk(sessionId, enrichedChunk)
+    const state = sessionRunStates.get(sessionId)
+    if (state?.runId === enrichedChunk.payload.runId) {
+      const pageCounts = getSessionRunPageCounts(state)
+      enrichedChunk = {
+        ...enrichedChunk,
+        payload: {
+          ...enrichedChunk.payload,
+          activityKind: state.activityKind,
+          completedPageCount: pageCounts.completedPageCount,
+          failedPageCount: pageCounts.failedPageCount
+        }
+      } as GenerateChunkEvent
+    }
+
     if (
       enrichedChunk.type === 'stage_started' ||
       enrichedChunk.type === 'stage_progress' ||
@@ -547,19 +570,6 @@ export function createIpcContext(
       enrichedChunk.type === 'run_error'
     ) {
       log.info('[generate:chunk] emit', summarizeGenerateChunk(enrichedChunk))
-    }
-    trackSessionRunChunk(sessionId, enrichedChunk)
-    const state = sessionRunStates.get(sessionId)
-    if (state?.runId === enrichedChunk.payload.runId) {
-      const pageCounts = getSessionRunPageCounts(state)
-      enrichedChunk = {
-        ...enrichedChunk,
-        payload: {
-          ...enrichedChunk.payload,
-          completedPageCount: pageCounts.completedPageCount,
-          failedPageCount: pageCounts.failedPageCount
-        }
-      } as GenerateChunkEvent
     }
 
     const windows = BrowserWindow.getAllWindows()
@@ -628,7 +638,7 @@ export function createIpcContext(
         ...chunk,
         payload: {
           ...chunk.payload,
-          label: progressLabel(appLocale, chunk.payload.label),
+          label: progressDisplayLabel(appLocale, chunk.payload.label),
           progress: normalizedProgress
         }
       } as GenerateChunkEvent)

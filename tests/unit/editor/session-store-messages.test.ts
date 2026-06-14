@@ -84,4 +84,42 @@ describe('session store messages', () => {
       'assistant'
     ])
   })
+
+  it('ignores a stale session response without clearing the active request loading state', async () => {
+    let resolveOld: ((value: unknown) => void) | undefined
+    let resolveNew: ((value: unknown) => void) | undefined
+    const oldRequest = new Promise((resolve) => {
+      resolveOld = resolve
+    })
+    const newRequest = new Promise((resolve) => {
+      resolveNew = resolve
+    })
+    ipcMocks.getSession.mockImplementation((sessionId: string) =>
+      sessionId === 'session-old' ? oldRequest : newRequest
+    )
+    let activeSessionId = 'session-old'
+    const oldLoad = useSessionStore
+      .getState()
+      .loadSession('session-old', () => activeSessionId === 'session-old')
+
+    activeSessionId = 'session-new'
+    const newLoad = useSessionStore
+      .getState()
+      .loadSession('session-new', () => activeSessionId === 'session-new')
+    resolveNew?.({
+      session: { id: 'session-new' },
+      generatedPages: [{ id: 'page-new' }]
+    })
+    await newLoad
+
+    resolveOld?.({
+      session: { id: 'session-old' },
+      generatedPages: [{ id: 'page-old' }]
+    })
+    await oldLoad
+
+    expect(useSessionStore.getState().currentSession?.id).toBe('session-new')
+    expect(useSessionStore.getState().currentGeneratedPages).toEqual([{ id: 'page-new' }])
+    expect(useSessionStore.getState().loading).toBe(false)
+  })
 })

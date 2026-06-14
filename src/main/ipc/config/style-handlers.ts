@@ -292,11 +292,32 @@ export function registerStyleHandlers(ctx: IpcContext): void {
     })
   })
 
-  ipcMain.handle('styles:importPackageZip', async (_event, payload) => {
-    const filePath = typeof payload?.filePath === 'string' ? payload.filePath.trim() : ''
-    if (!filePath) throw new Error('文件路径为空')
-    const result = await importStylePackageZip(filePath)
-    return { success: true, ...result }
+  ipcMain.handle('styles:importPackageZip', async (event) => {
+    const ownerWindow = BrowserWindow.fromWebContents(event.sender)
+    const openResult = ownerWindow
+      ? await dialog.showOpenDialog(ownerWindow, {
+          title: '导入风格包',
+          buttonLabel: '导入',
+          properties: ['openFile'],
+          filters: [
+            { name: 'Style ZIP', extensions: ['zip'] },
+            { name: '所有文件', extensions: ['*'] }
+          ]
+        })
+      : await dialog.showOpenDialog({
+          title: '导入风格包',
+          buttonLabel: '导入',
+          properties: ['openFile'],
+          filters: [
+            { name: 'Style ZIP', extensions: ['zip'] },
+            { name: '所有文件', extensions: ['*'] }
+          ]
+        })
+    if (openResult.canceled || openResult.filePaths.length === 0) {
+      return { success: false, cancelled: true, id: '', source: 'custom' as const }
+    }
+    const result = await importStylePackageZip(openResult.filePaths[0])
+    return { success: true, cancelled: false, ...result }
   })
 
   ipcMain.handle('styles:exportPackageZip', async (event, payload) => {

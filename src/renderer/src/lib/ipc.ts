@@ -815,9 +815,10 @@ export const ipc = {
     getIpc().invoke('styles:parsePptx', payload) as Promise<StyleParseResult>,
   parseStyleImage: (payload: { imageBase64: string; mimeType: string; modelConfigId?: string }) =>
     getIpc().invoke('styles:parseImage', payload) as Promise<StyleParseResult>,
-  importStylePackageZip: (payload: { filePath: string }) =>
-    getIpc().invoke('styles:importPackageZip', payload) as Promise<{
+  importStylePackageZip: () =>
+    getIpc().invoke('styles:importPackageZip') as Promise<{
       success: boolean
+      cancelled?: boolean
       id: string
       source: 'custom' | 'override'
     }>,

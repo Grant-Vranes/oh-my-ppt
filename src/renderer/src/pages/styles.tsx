@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,20 +9,26 @@ import {
   AlertDialogDescription,
   AlertDialogTitle
 } from '../components/ui/AlertDialog'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger
-} from '../components/ui/Popover'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/Tooltip'
 import { ipc } from '@renderer/lib/ipc'
 import { useStylePreviewStore, useToastStore } from '../store'
-import { Download, Eye, Loader2, PencilLine, Plus, Sparkles, Trash2, Upload } from 'lucide-react'
+import {
+  Download,
+  Loader2,
+  Palette,
+  PencilLine,
+  Plus,
+  Sparkles,
+  Trash2,
+  Upload
+} from 'lucide-react'
 import { useT } from '../i18n'
 import {
   buildStyleCaseOptions,
   filterByStyleCase,
   parseStyleCases
 } from '@renderer/lib/style-case'
+import { useStylePreviewIds } from '@renderer/components/session-detail/style/useStylePreviewIds'
 
 type StyleSummary = {
   id: string
@@ -38,7 +43,23 @@ type StyleSummary = {
   updatedAt?: number
 }
 
+const VISIBLE_CACHE = 20
+
 const localAssetUrl = (filePath: string): string => `local-asset://${encodeURIComponent(filePath)}`
+const stylePreviewUrl = (filePath: string): string =>
+  import.meta.env.MODE === 'test' ? 'about:blank' : localAssetUrl(filePath)
+
+function findScrollableAncestor(element: HTMLElement): HTMLElement | null {
+  let parent: HTMLElement | null = element.parentElement
+  while (parent) {
+    const overflowY = getComputedStyle(parent).overflowY
+    if (overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay') {
+      return parent
+    }
+    parent = parent.parentElement
+  }
+  return null
+}
 
 export function StylesPage(): React.JSX.Element {
   const navigate = useNavigate()
@@ -48,7 +69,6 @@ export function StylesPage(): React.JSX.Element {
   const [selectedStyleCase, setSelectedStyleCase] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<StyleSummary | null>(null)
   const [deletingStyleId, setDeletingStyleId] = useState('')
-  const stylePackageInputRef = useRef<HTMLInputElement | null>(null)
   const { error, info, success, warning } = useToastStore()
   const generatingPreviewStyleId = useStylePreviewStore((state) => state.generatingStyleId)
   const previewCompletionVersion = useStylePreviewStore((state) => state.completionVersion)
@@ -67,6 +87,21 @@ export function StylesPage(): React.JSX.Element {
     () => filterByStyleCase(styles, selectedStyleCase),
     [selectedStyleCase, styles]
   )
+  const filteredStyleIds = useMemo(
+    () => new Set(filteredStyles.map((style) => style.id)),
+    [filteredStyles]
+  )
+  const { viewportRef, renderableIds, setStyleRef } = useStylePreviewIds(filteredStyleIds, VISIBLE_CACHE)
+  const rootRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (!rootRef.current) return
+    const scrollParent = findScrollableAncestor(rootRef.current)
+    if (scrollParent) viewportRef.current = scrollParent as HTMLDivElement
+    return () => {
+      if (viewportRef.current === scrollParent) viewportRef.current = null
+    }
+  }, [viewportRef])
 
   const loadStyles = useCallback(async (): Promise<void> => {
     try {
@@ -109,27 +144,12 @@ export function StylesPage(): React.JSX.Element {
     }
   }, [deleteTarget, deletingStyleId, error, info, warning, t, loadStyles])
 
-  const handleImportPackageClick = useCallback((): void => {
+  const handleImportPackageClick = useCallback(async (): Promise<void> => {
     if (importingZip) return
-    stylePackageInputRef.current?.click()
-  }, [importingZip])
-
-  const handlePackageFileSelected = useCallback(async (files: FileList | null): Promise<void> => {
-    const file = files?.[0]
-    if (stylePackageInputRef.current) stylePackageInputRef.current.value = ''
-    if (!file) return
-    if (!file.name.toLowerCase().endsWith('.zip')) {
-      warning(t('styles.packageZipRequired'))
-      return
-    }
-    const filePath = window.electron?.getPathForFile?.(file) || ''
-    if (!filePath) {
-      error(t('styleEditor.filePathFailed'))
-      return
-    }
     setImportingZip(true)
     try {
-      const result = await ipc.importStylePackageZip({ filePath })
+      const result = await ipc.importStylePackageZip()
+      if (result.cancelled) return
       success(t('styles.packageImported'), {
         description:
           result.source === 'override' ? t('styleEditor.savedOverride') : t('styleEditor.savedCustom')
@@ -142,7 +162,7 @@ export function StylesPage(): React.JSX.Element {
     } finally {
       setImportingZip(false)
     }
-  }, [error, loadStyles, success, t, warning])
+  }, [error, importingZip, loadStyles, success, t])
 
   const handleExportPackage = useCallback(async (style: StyleSummary): Promise<void> => {
     if (exportingStyleId) return
@@ -177,7 +197,8 @@ export function StylesPage(): React.JSX.Element {
   }, [error, generatePreview, success, t])
 
   return (
-    <div className="mx-auto w-full max-w-6xl p-6">
+    <TooltipProvider delayDuration={180}>
+      <div ref={rootRef} className="mx-auto w-full max-w-6xl p-6">
       <div className="mb-6">
         <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">{t('styles.eyebrow')}</p>
         <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -185,27 +206,34 @@ export function StylesPage(): React.JSX.Element {
             <h1 className="organic-serif text-[32px] font-semibold leading-none text-[#3e4a32]">{t('styles.title')}</h1>
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
-            <input
-              ref={stylePackageInputRef}
-              type="file"
-              accept=".zip,application/zip,application/x-zip-compressed"
-              className="hidden"
-              onChange={(event) => void handlePackageFileSelected(event.target.files)}
-            />
-            <Button
-              size="sm"
-              variant="secondary"
-              className="min-w-[112px]"
-              disabled={importingZip}
-              onClick={handleImportPackageClick}
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              {importingZip ? t('styles.importingPackage') : t('styles.importPackage')}
-            </Button>
-            <Button size="sm" className="min-w-[112px]" onClick={() => navigate('/styles/new')}>
-              <Plus className="mr-2 h-4 w-4" />
-              {t('styles.newStyle')}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="min-w-[112px]"
+                  disabled={importingZip}
+                  onClick={handleImportPackageClick}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  {importingZip ? t('styles.importingPackage') : t('styles.importPackage')}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" align="end">
+                {t('styles.importPackageTooltip')}
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" className="min-w-[112px]" onClick={() => navigate('/styles/new')}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  {t('styles.newStyle')}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" align="end">
+                {t('styles.newStyleTooltip')}
+              </TooltipContent>
+            </Tooltip>
           </div>
         </div>
         <p className="mt-2 text-[12px] text-muted-foreground">{t('styles.description')}</p>
@@ -244,114 +272,152 @@ export function StylesPage(): React.JSX.Element {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">
         {filteredStyles.map((style) => (
-          <Popover key={style.id}>
-            <Card className="group !rounded-lg transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(88,75,56,0.18)]">
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center justify-between text-base">
-                  <span className="truncate transition-colors duration-200 group-hover:text-foreground">{style.label}</span>
-                  <div className="flex shrink-0 items-center gap-1">
-                    {style.previewPath && (
-                      <PopoverTrigger asChild>
+            <div
+              key={style.id}
+              ref={setStyleRef(style.id)}
+              data-style-card-id={style.id}
+              className="group overflow-hidden rounded-2xl border border-[#d8cfbc]/75 bg-white/70 text-left shadow-[0_4px_16px_rgba(93,107,77,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(93,107,77,0.15)]"
+            >
+              <div className="relative aspect-video overflow-hidden bg-[#f5f1e8]">
+                {style.previewPath && renderableIds.has(style.id) ? (
+                  <iframe
+                    data-testid="style-preview-iframe"
+                    src={stylePreviewUrl(style.previewPath)}
+                    tabIndex={-1}
+                    className="pointer-events-none absolute left-0 top-0 h-[900px] w-[1600px] origin-top-left border-0 bg-white"
+                    style={{ transform: 'scale(0.2)' }}
+                    title={`${style.label} preview`}
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center text-[#8a9a7b]">
+                    {generatingPreviewStyleId === style.id ? (
+                      <Loader2 className="h-8 w-8 animate-spin" />
+                    ) : (
+                      <Palette className="h-8 w-8" />
+                    )}
+                  </div>
+                )}
+                <div className="absolute inset-x-0 top-0 flex items-start justify-end gap-1.5 bg-gradient-to-b from-black/30 to-transparent p-3 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                  {!style.previewPath && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-7 gap-1 px-2 text-[11px] transition-all duration-200 group-hover:-translate-y-0.5"
+                          className="h-8 w-8 rounded-md bg-white/95 p-0 text-[#3e4a32] shadow-[0_3px_10px_rgba(40,48,34,0.16)]"
+                          disabled={Boolean(generatingPreviewStyleId)}
+                          onClick={() => void handleGeneratePreview(style)}
+                          aria-label={
+                            generatingPreviewStyleId === style.id
+                              ? t('styles.generatingPreview')
+                              : t('styles.generatePreview')
+                          }
+                          title={
+                            generatingPreviewStyleId === style.id
+                              ? t('styles.generatingPreview')
+                              : t('styles.generatePreviewTooltip')
+                          }
                         >
-                          <Eye className="h-3 w-3" />
-                          {t('common.preview')}
+                          {generatingPreviewStyleId === style.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Sparkles className="h-3.5 w-3.5" />
+                          )}
                         </Button>
-                      </PopoverTrigger>
-                    )}
-                    {!style.previewPath && (
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" align="end">
+                        {generatingPreviewStyleId === style.id
+                          ? t('styles.generatingPreview')
+                          : t('styles.generatePreviewTooltip')}
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-7 gap-1 px-2 text-[11px] transition-all duration-200 group-hover:-translate-y-0.5"
-                        disabled={Boolean(generatingPreviewStyleId)}
-                        onClick={() => void handleGeneratePreview(style)}
+                        className="h-8 w-8 rounded-md bg-white/95 p-0 text-[#3e4a32] shadow-[0_3px_10px_rgba(40,48,34,0.16)]"
+                        onClick={() => navigate(`/styles/${style.id}`)}
+                        aria-label={t('common.edit')}
+                        title={t('styles.editTooltip')}
                       >
-                        {generatingPreviewStyleId === style.id ? (
-                          <Loader2 className="mr-0.5 h-3.5 w-3.5 shrink-0 animate-spin" />
-                        ) : (
-                          <Sparkles className="h-3 w-3" />
-                        )}
-                        {generatingPreviewStyleId === style.id
-                          ? t('styles.generatingPreview')
-                          : t('styles.generatePreview')}
+                        <PencilLine className="h-3.5 w-3.5" />
                       </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 gap-1 px-2 text-[11px] transition-all duration-200 group-hover:-translate-y-0.5"
-                      onClick={() => navigate(`/styles/${style.id}`)}
-                    >
-                      <PencilLine className="h-3 w-3" />
-                      {t('common.edit')}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 gap-1 px-2 text-[11px] transition-all duration-200 group-hover:-translate-y-0.5"
-                      disabled={exportingStyleId === style.id}
-                      onClick={() => void handleExportPackage(style)}
-                    >
-                      <Download className="h-3 w-3" />
-                      {t('styles.exportPackage')}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 gap-1 px-2 text-[11px] text-destructive/70 transition-all duration-200 hover:text-destructive group-hover:-translate-y-0.5"
-                      onClick={() => setDeleteTarget(style)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                      {t('common.delete')}
-                    </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" align="end">
+                      {t('styles.editTooltip')}
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 w-8 rounded-md bg-white/95 p-0 text-[#3e4a32] shadow-[0_3px_10px_rgba(40,48,34,0.16)]"
+                        disabled={exportingStyleId === style.id}
+                        onClick={() => void handleExportPackage(style)}
+                        aria-label={t('styles.exportPackage')}
+                        title={t('styles.exportPackageTooltip')}
+                      >
+                        {exportingStyleId === style.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Download className="h-3.5 w-3.5" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" align="end">
+                      {t('styles.exportPackageTooltip')}
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 w-8 rounded-md bg-white/95 p-0 text-[#8f3f31] shadow-[0_3px_10px_rgba(40,48,34,0.16)] hover:text-[#743126]"
+                        onClick={() => setDeleteTarget(style)}
+                        aria-label={t('common.delete')}
+                        title={t('styles.deleteTooltip')}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" align="end">
+                      {t('styles.deleteTooltip')}
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </div>
+              <div className="p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-[#3e4a32]">{style.label}</p>
+                    <p className="mt-0.5 text-[10px] font-medium text-[#718064]">
+                      {style.category} · {style.source || t('styles.sourceBuiltin')}
+                    </p>
                   </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+                </div>
+                <p className="mt-2 line-clamp-2 text-xs leading-5 text-[#6f6658]">
+                  {style.description || style.id}
+                </p>
                 {style.styleCase && (
-                  <div className="mb-2 flex flex-wrap gap-1">
+                  <div className="mt-2 flex flex-wrap gap-1">
                     {parseStyleCases(style.styleCase).map((styleCase) => (
                       <span
                         key={styleCase}
-                        className="rounded-md border border-[#d6c08d]/80 bg-[#fff7e8] px-1.5 py-0.5 text-xs font-medium text-[#7c6a4c]"
+                        className="rounded-md border border-[#d6c08d]/80 bg-[#fff7e8] px-1.5 py-0.5 text-[11px] font-medium leading-4 text-[#8a7048]"
                       >
                         {styleCase}
                       </span>
                     ))}
                   </div>
                 )}
-                <p className="line-clamp-2 text-[11px] text-muted-foreground/60 transition-colors duration-200 group-hover:text-foreground/50">
-                  {style.description || style.id}
-                </p>
-                <p className="mt-2 text-xs text-muted-foreground/60 transition-colors duration-200 group-hover:text-foreground/50">
-                  {style.category} · {style.source || t('styles.sourceBuiltin')}
-                </p>
-              </CardContent>
-            </Card>
-            {style.previewPath && (
-              <PopoverContent
-                side="right"
-                align="start"
-                sideOffset={12}
-                className="w-auto overflow-hidden rounded-lg border border-[#d8cfbc]/80 bg-[#fffaf0] p-2 shadow-[0_18px_44px_rgba(64,52,38,0.22)] data-[state=closed]:animate-none data-[state=open]:animate-none"
-              >
-                <div className="relative aspect-video w-[380px] overflow-hidden rounded-md border border-[#e3dac8] bg-white">
-                  <iframe
-                    src={localAssetUrl(style.previewPath)}
-                    className="absolute left-0 top-0 h-[900px] w-[1600px] origin-top-left border-0 bg-white"
-                    style={{ transform: 'scale(0.2375)' }}
-                    title={`${style.label} preview`}
-                  />
-                </div>
-              </PopoverContent>
-            )}
-          </Popover>
+              </div>
+            </div>
         ))}
       </div>
       {filteredStyles.length === 0 && (
@@ -392,6 +458,7 @@ export function StylesPage(): React.JSX.Element {
           </div>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+      </div>
+    </TooltipProvider>
   )
 }

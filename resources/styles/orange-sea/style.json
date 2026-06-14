@@ -1,0 +1,19 @@
+{
+  "style": "orange-sea",
+  "name": {
+    "zh": "晴橙落日海",
+    "en": "Sunset Bay"
+  },
+  "description": "晴空蓝柔杏白落日橙的治愈渐变",
+  "category": "自然 · 有机",
+  "aliases": [
+    "落日海",
+    "晴橙",
+    "治愈",
+    "海边",
+    "夕阳"
+  ],
+  "styleCase": "心理咨询、健康生活方式、旅行户外、教育儿童内容、自然环保、品牌治愈营销",
+  "version": "1.0.0",
+  "source": "builtin"
+}

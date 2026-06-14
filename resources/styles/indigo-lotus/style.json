@@ -1,0 +1,19 @@
+{
+  "style": "indigo-lotus",
+  "name": {
+    "zh": "青莲碧蓝 · 梦幻国风",
+    "en": "Indigo Lotus"
+  },
+  "description": "紫蓝渐变的黄昏海天国风",
+  "category": "自然 · 有机",
+  "aliases": [
+    "青莲",
+    "碧蓝",
+    "梦幻",
+    "国风",
+    "紫蓝"
+  ],
+  "styleCase": "国风文化讲座、传统节日企划、诗词散文分享、艺术展览导览、治愈系心理课",
+  "version": "1.0.0",
+  "source": "builtin"
+}

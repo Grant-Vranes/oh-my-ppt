@@ -1,0 +1,19 @@
+{
+  "style": "ink-wash-jiangnan",
+  "name": {
+    "zh": "水墨江南",
+    "en": "Ink Wash Jiangnan"
+  },
+  "description": "水墨意境，江南烟雨的东方诗意",
+  "category": "浅色 · 沉静",
+  "aliases": [
+    "水墨",
+    "江南",
+    "ink wash",
+    "jiangnan",
+    "中国风"
+  ],
+  "styleCase": "文化品牌、茶道香道、古典文学、节庆主题、东方美学",
+  "version": "1.0.0",
+  "source": "builtin"
+}

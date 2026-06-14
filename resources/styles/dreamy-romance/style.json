@@ -1,0 +1,19 @@
+{
+  "style": "dreamy-romance",
+  "name": {
+    "zh": "梦幻浪漫 · 治愈系",
+    "en": "Dreamy Romance"
+  },
+  "description": "雾紫樱花粉星空蓝的梦幻浪漫治愈风",
+  "category": "活力 · 创意",
+  "aliases": [
+    "梦幻",
+    "浪漫",
+    "治愈",
+    "雾紫",
+    "樱花粉"
+  ],
+  "styleCase": "婚庆企划、情人节营销、香水与美妆、心理疗愈、文学散文、艺术展览、星座占卜、治愈系插画",
+  "version": "1.0.0",
+  "source": "builtin"
+}

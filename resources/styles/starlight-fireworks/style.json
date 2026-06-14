@@ -1,0 +1,20 @@
+{
+  "style": "starlight-fireworks",
+  "name": {
+    "zh": "一半星河一半烟火",
+    "en": "Starlight Fireworks"
+  },
+  "description": "海军蓝暖焰橙对角，梦幻诗意二元",
+  "category": "深色 · 沉稳",
+  "aliases": [
+    "星河",
+    "烟火",
+    "对角",
+    "dreamy",
+    "duality",
+    "诗意"
+  ],
+  "styleCase": "文艺书封、诗歌海报、慢生活品牌、独立咖啡馆、瑜伽冥想、壁纸设计",
+  "version": "2.0.0",
+  "source": "builtin"
+}

@@ -1,0 +1,20 @@
+{
+  "style": "chinese-fresh-trio",
+  "name": {
+    "zh": "中国传统色·青绿湖蓝",
+    "en": "Chinese Fresh Trio"
+  },
+  "description": "翠绿湖蓝米白三色，清朗国风现代",
+  "category": "浅色 · 沉静",
+  "aliases": [
+    "三色",
+    "青绿",
+    "湖蓝",
+    "trio",
+    "fresh",
+    "国风现代"
+  ],
+  "styleCase": "品牌视觉、数据报告、教育科普、企业年报、清新演示",
+  "version": "1.0.0",
+  "source": "builtin"
+}

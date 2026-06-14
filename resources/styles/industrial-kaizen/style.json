@@ -1,0 +1,19 @@
+{
+  "style": "industrial-kaizen",
+  "name": {
+    "zh": "改善提案 · 极简商务",
+    "en": "Industrial Kaizen"
+  },
+  "description": "白灰极简的精益生产提案风",
+  "category": "浅色 · 沉静",
+  "aliases": [
+    "kaizen",
+    "提案",
+    "精益",
+    "改善",
+    "工业商务"
+  ],
+  "styleCase": "精益生产提案、设备改善汇报、流程优化报告、质量改善评审、ISO 体系评审",
+  "version": "1.0.0",
+  "source": "builtin"
+}

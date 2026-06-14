@@ -1,0 +1,20 @@
+{
+  "style": "healing-color-card",
+  "name": {
+    "zh": "情绪疗愈色卡",
+    "en": "Healing Color Card"
+  },
+  "description": "薰衣草暖桃薄荷，柔软治愈情绪色",
+  "category": "浅色 · 沉静",
+  "aliases": [
+    "疗愈",
+    "情绪",
+    "薰衣草",
+    "薄荷",
+    "healing",
+    "柔软"
+  ],
+  "styleCase": "心理健康、情绪疗愈、女性品牌、母婴育儿、冥想APP",
+  "version": "1.0.0",
+  "source": "builtin"
+}

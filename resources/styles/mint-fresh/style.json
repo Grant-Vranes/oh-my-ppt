@@ -1,0 +1,19 @@
+{
+  "style": "mint-fresh",
+  "name": {
+    "zh": "薄荷清新 · 高级绿",
+    "en": "Mint Fresh"
+  },
+  "description": "低饱和高明度的高级感绿色系",
+  "category": "自然 · 有机",
+  "aliases": [
+    "薄荷",
+    "绿色系",
+    "清新",
+    "高级绿",
+    "植物"
+  ],
+  "styleCase": "健康生活、有机食品、护肤品牌、自然教育、慢生活分享、瑜伽冥想、可持续设计",
+  "version": "1.0.0",
+  "source": "builtin"
+}

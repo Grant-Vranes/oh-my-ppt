@@ -1,0 +1,19 @@
+{
+  "style": "cobalt-sunshine",
+  "name": {
+    "zh": "明黄钴蓝 · 活力专业",
+    "en": "Cobalt Sunshine"
+  },
+  "description": "明黄与钴蓝的高饱和互补色撞色",
+  "category": "大胆 · 宣言",
+  "aliases": [
+    "明黄钴蓝",
+    "互补色",
+    "活力",
+    "专业",
+    "撞色"
+  ],
+  "styleCase": "产品发布会、品牌提案、教育讲座、创意展示、运动品牌、科技公司路演、青年创业 pitch",
+  "version": "1.0.0",
+  "source": "builtin"
+}

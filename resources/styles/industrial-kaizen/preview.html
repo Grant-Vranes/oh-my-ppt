@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>改善提案 · 极简商务</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1600px; height: 900px; overflow: hidden; }
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+    background: #FFFFFF;
+    color: #333333;
+    padding: 60px 70px;
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 2px solid #333333;
+    padding-bottom: 18px;
+    margin-bottom: 30px;
+  }
+  .header h1 {
+    font-size: 46px;
+    font-weight: 800;
+    letter-spacing: -1px;
+  }
+  .header .meta {
+    font-size: 15px;
+    color: #666666;
+    text-align: right;
+    line-height: 1.7;
+  }
+  .meta span { display: block; }
+  .meta .team { color: #333333; font-weight: 700; }
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px;
+    margin-bottom: 26px;
+  }
+  .panel {
+    border: 1px solid #CCCCCC;
+    background: #FFFFFF;
+  }
+  .panel-head {
+    background: #E0E0E0;
+    padding: 12px 20px;
+    font-size: 17px;
+    font-weight: 700;
+    color: #333333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .panel-head .tag {
+    font-size: 12px;
+    font-weight: 400;
+    color: #666666;
+  }
+  .panel-body { padding: 20px 22px; }
+  .panel-body p {
+    font-size: 14px;
+    color: #333333;
+    line-height: 1.8;
+    margin-bottom: 10px;
+  }
+  .panel-body .arrow {
+    color: #666666;
+    font-weight: 700;
+    margin-right: 6px;
+  }
+  .panel.before .panel-head { background: #E0E0E0; }
+  .panel.after .panel-head { background: #D0D0D0; }
+  .effect {
+    border: 1px solid #CCCCCC;
+    background: #F7F7F7;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    margin-bottom: 24px;
+  }
+  .metric {
+    padding: 22px 24px;
+    border-right: 1px solid #CCCCCC;
+  }
+  .metric:last-child { border-right: none; }
+  .metric .label {
+    font-size: 13px;
+    color: #666666;
+    margin-bottom: 8px;
+  }
+  .metric .value {
+    font-size: 32px;
+    font-weight: 800;
+    color: #333333;
+  }
+  .metric .value .unit {
+    font-size: 14px;
+    font-weight: 400;
+    color: #666666;
+    margin-left: 4px;
+  }
+  .metric .delta {
+    font-size: 12px;
+    color: #333333;
+    margin-top: 6px;
+  }
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 16px;
+    border-top: 1px solid #CCCCCC;
+    font-size: 13px;
+    color: #666666;
+  }
+  .footer .status {
+    display: flex;
+    gap: 24px;
+  }
+  .footer .status b { color: #333333; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>改善提案 · 焊装车间节拍优化</h1>
+    </div>
+    <div class="meta">
+      <span class="team">提案组｜焊装 B 线</span>
+      <span>编号 KZ-2026-0147　|　评审 2026.06</span>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="panel before">
+      <div class="panel-head">▶ 改善前问题点 <span class="tag">Before</span></div>
+      <div class="panel-body">
+        <p><span class="arrow">▶</span>工位 03 节拍 68s，超出目标 12s</p>
+        <p><span class="arrow">▶</span>夹具切换依赖人工找正，平均耗时 14s</p>
+        <p><span class="arrow">▶</span>物料小车摆放错位，每月 3 次停线</p>
+      </div>
+    </div>
+    <div class="panel after">
+      <div class="panel-head">▶ 改善后对策 <span class="tag">After</span></div>
+      <div class="panel-body">
+        <p><span class="arrow">▶</span>引入定位销 + 气动夹紧，节拍降至 56s</p>
+        <p><span class="arrow">▶</span>标准化小车定位区，停线归零</p>
+        <p><span class="arrow">▶</span>增设节拍看板，实时反馈偏差</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="effect">
+    <div class="metric">
+      <div class="label">单件节拍</div>
+      <div class="value">56<span class="unit">s</span></div>
+      <div class="delta">-12s / -17.6%</div>
+    </div>
+    <div class="metric">
+      <div class="label">月度产能</div>
+      <div class="value">+2,840<span class="unit">件</span></div>
+      <div class="delta">较基准 +18.3%</div>
+    </div>
+    <div class="metric">
+      <div class="label">停线时长</div>
+      <div class="value">0<span class="unit">min</span></div>
+      <div class="delta">原 142min → 0min</div>
+    </div>
+    <div class="metric">
+      <div class="label">年化收益</div>
+      <div class="value">¥38.6<span class="unit">万</span></div>
+      <div class="delta">投资回收期 4.2 月</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="status">
+      <span>状态：<b>已完成验证</b></span>
+      <span>责任工程师：<b>张工</b></span>
+      <span>产线：<b>焊装 B 线 / 工位 03</b></span>
+    </div>
+    <div>KAIZEN REPORT · 2026 Q2</div>
+  </div>
+</body>
+</html>

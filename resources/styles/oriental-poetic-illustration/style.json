@@ -1,0 +1,20 @@
+{
+  "style": "oriental-poetic-illustration",
+  "name": {
+    "zh": "东方意境插画",
+    "en": "Oriental Poetic Illustration"
+  },
+  "description": "竹影月色，禅意诗画的东方插画",
+  "category": "自然 · 有机",
+  "aliases": [
+    "东方",
+    "禅意",
+    "竹影",
+    "oriental",
+    "zen",
+    "诗意"
+  ],
+  "styleCase": "东方哲学、禅修冥想、茶道花艺、文学经典、节气文化",
+  "version": "2.0.0",
+  "source": "builtin"
+}

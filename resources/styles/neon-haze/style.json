@@ -1,0 +1,19 @@
+{
+  "style": "neon-haze",
+  "name": {
+    "zh": "深色弥散 · 氛围拉满",
+    "en": "Neon Haze"
+  },
+  "description": "深蓝紫底叠加霓虹弥散光的氛围感",
+  "category": "深色 · 沉稳",
+  "aliases": [
+    "弥散光",
+    "深色",
+    "霓虹",
+    "氛围",
+    "赛博"
+  ],
+  "styleCase": "科技产品发布、夜场活动、音乐节企划、游戏宣发、潮牌联名、AI 创作展、赛博朋克主题",
+  "version": "1.0.0",
+  "source": "builtin"
+}

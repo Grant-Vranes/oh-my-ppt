@@ -2588,6 +2588,27 @@ export class PPTDatabase {
     return row as ThumbnailRecord | undefined
   }
 
+  async getThumbnailRecords(
+    resourceType: string,
+    resourceIds: string[],
+    variant = 'default'
+  ): Promise<ThumbnailRecord[]> {
+    const ids = Array.from(new Set(resourceIds.map((id) => String(id || '').trim()).filter(Boolean)))
+    if (ids.length === 0) return []
+    const rows = await this.db
+      .select()
+      .from(schema.thumbnails)
+      .where(
+        and(
+          eq(schema.thumbnails.resourceType, resourceType),
+          inArray(schema.thumbnails.resourceId, ids),
+          eq(schema.thumbnails.variant, variant)
+        )
+      )
+      .all()
+    return rows as ThumbnailRecord[]
+  }
+
   async upsertThumbnailRecord(data: {
     resourceType: string
     resourceId: string

@@ -116,6 +116,7 @@ describe('html thumbnail background service', () => {
       resourceId: request.resourceId,
       variant: 'default',
       sourcePath: request.sourcePath,
+      pageId: '',
       query: {},
       captureWidth: 1600,
       captureHeight: 900,
@@ -145,6 +146,52 @@ describe('html thumbnail background service', () => {
     const newerTime = new Date(sourceMtimeMs + 2_000)
     fs.utimesSync(sourcePath, newerTime, newerTime)
     await expect(service.getFreshHtmlThumbnailPath(request)).resolves.toBeNull()
+    fs.rmSync(sourceRoot, { recursive: true, force: true })
+  })
+
+  it('returns an existing fresh thumbnail without opening a capture window', async () => {
+    const sourceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ohmyppt-thumbnail-existing-'))
+    const sourcePath = path.join(sourceRoot, 'page-1.html')
+    const thumbnailPath = path.join(sourceRoot, 'thumbnail.png')
+    fs.writeFileSync(sourcePath, '<!doctype html><html></html>')
+    fs.writeFileSync(thumbnailPath, 'png')
+    const request = {
+      resourceType: 'session',
+      resourceId: 'session-existing',
+      variant: 'first-page',
+      sourcePath
+    }
+    const db = {
+      getThumbnailRecord: vi.fn(async () => ({
+        resourceType: request.resourceType,
+        resourceId: request.resourceId,
+        variant: request.variant,
+        sourcePath,
+        sourceMtimeMs: Math.floor(fs.statSync(sourcePath).mtimeMs),
+        signature: JSON.stringify({
+          ...request,
+          pageId: '',
+          query: {},
+          captureWidth: 1600,
+          captureHeight: 900,
+          thumbnailWidth: 640,
+          thumbnailHeight: 360
+        }),
+        thumbnailPath,
+        status: 'completed',
+        error: null
+      })),
+      upsertThumbnailRecord: vi.fn()
+    }
+    const service = await import('../../../src/main/utils/html-thumbnail-service')
+    service.configureHtmlThumbnailService(db as never)
+
+    await expect(service.enqueueHtmlThumbnail(request)).resolves.toMatchObject({
+      status: 'completed',
+      thumbnailPath
+    })
+    expect(state.capturePage).not.toHaveBeenCalled()
+    expect(db.upsertThumbnailRecord).not.toHaveBeenCalled()
     fs.rmSync(sourceRoot, { recursive: true, force: true })
   })
 
@@ -197,6 +244,138 @@ describe('html thumbnail background service', () => {
       const task = await service.getHtmlThumbnailTask('style', 'style-3')
       expect(task?.status).toBe('completed')
     })
+
+    fs.rmSync(sourceRoot, { recursive: true, force: true })
+  })
+
+  it('resolves multiple fresh thumbnails with a single batched DB query', async () => {
+    const sourceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ohmyppt-thumbnail-batch-'))
+    const records = new Map<string, Record<string, unknown>>()
+    const db = {
+      getThumbnailRecord: vi.fn(async (resourceType: string, resourceId: string, variant: string) =>
+        records.get(`${resourceType}:${resourceId}:${variant}`)
+      ),
+      getThumbnailRecords: vi.fn(
+        async (resourceType: string, resourceIds: string[], variant: string) =>
+          resourceIds
+            .map((id) => records.get(`${resourceType}:${id}:${variant}`))
+            .filter((record): record is Record<string, unknown> => Boolean(record))
+      ),
+      upsertThumbnailRecord: vi.fn(async (record: Record<string, unknown>) => {
+        records.set(`${record.resourceType}:${record.resourceId}:${record.variant}`, record)
+      })
+    }
+    const service = await import('../../../src/main/utils/html-thumbnail-service')
+    service.configureHtmlThumbnailService(db as never)
+
+    const writeSource = (name: string): string => {
+      const sourcePath = path.join(sourceRoot, name)
+      fs.writeFileSync(sourcePath, '<!doctype html><html></html>')
+      return sourcePath
+    }
+    const makeSignature = (resourceId: string, sourcePath: string, thumbnailWidth = 640) =>
+      JSON.stringify({
+        resourceType: 'session',
+        resourceId,
+        variant: 'first-page',
+        sourcePath,
+        pageId: '',
+        query: {},
+        captureWidth: 1600,
+        captureHeight: 900,
+        thumbnailWidth,
+        thumbnailHeight: 360
+      })
+    const writeThumbnail = (name: string): string => {
+      const thumbnailPath = path.join(sourceRoot, name)
+      fs.writeFileSync(thumbnailPath, 'png')
+      return thumbnailPath
+    }
+
+    const freshSource = writeSource('fresh.html')
+    const freshThumbnail = writeThumbnail('fresh.png')
+    const staleSource = writeSource('stale.html')
+    const staleThumbnail = writeThumbnail('stale.png')
+    const resizedSource = writeSource('resized.html')
+    const resizedThumbnail = writeThumbnail('resized.png')
+
+    records.set('session:fresh:first-page', {
+      resourceType: 'session',
+      resourceId: 'fresh',
+      variant: 'first-page',
+      sourcePath: freshSource,
+      sourceMtimeMs: Math.floor(fs.statSync(freshSource).mtimeMs),
+      signature: makeSignature('fresh', freshSource),
+      thumbnailPath: freshThumbnail,
+      status: 'completed',
+      error: null
+    })
+    records.set('session:stale:first-page', {
+      resourceType: 'session',
+      resourceId: 'stale',
+      variant: 'first-page',
+      sourcePath: staleSource,
+      sourceMtimeMs: Math.floor(fs.statSync(staleSource).mtimeMs) - 5_000,
+      signature: makeSignature('stale', staleSource),
+      thumbnailPath: staleThumbnail,
+      status: 'completed',
+      error: null
+    })
+    records.set('session:resized:first-page', {
+      resourceType: 'session',
+      resourceId: 'resized',
+      variant: 'first-page',
+      sourcePath: resizedSource,
+      sourceMtimeMs: Math.floor(fs.statSync(resizedSource).mtimeMs),
+      signature: makeSignature('resized', resizedSource, 320),
+      thumbnailPath: resizedThumbnail,
+      status: 'completed',
+      error: null
+    })
+
+    const newerTime = new Date(Date.now() + 2_000)
+    fs.utimesSync(staleSource, newerTime, newerTime)
+
+    const result = await service.getFreshHtmlThumbnailPaths([
+      {
+        resourceType: 'session',
+        resourceId: 'fresh',
+        variant: 'first-page',
+        sourcePath: freshSource
+      },
+      {
+        resourceType: 'session',
+        resourceId: 'stale',
+        variant: 'first-page',
+        sourcePath: staleSource
+      },
+      {
+        resourceType: 'session',
+        resourceId: 'resized',
+        variant: 'first-page',
+        sourcePath: resizedSource
+      },
+      {
+        resourceType: 'session',
+        resourceId: 'missing-source',
+        variant: 'first-page',
+        sourcePath: path.join(sourceRoot, 'does-not-exist.html')
+      },
+      {
+        resourceType: 'session',
+        resourceId: 'no-record',
+        variant: 'first-page',
+        sourcePath: writeSource('no-record.html')
+      }
+    ])
+
+    expect(result.get('fresh')).toBe(freshThumbnail)
+    expect(result.has('stale')).toBe(false)
+    expect(result.has('resized')).toBe(false)
+    expect(result.has('missing-source')).toBe(false)
+    expect(result.has('no-record')).toBe(false)
+    expect(db.getThumbnailRecords).toHaveBeenCalledTimes(1)
+    expect(db.getThumbnailRecord).not.toHaveBeenCalled()
 
     fs.rmSync(sourceRoot, { recursive: true, force: true })
   })

@@ -19,6 +19,7 @@ export interface Session {
   generation_duration_sec?: number | null
   generated_count?: number | null
   failed_count?: number | null
+  thumbnailPath?: string | null
 }
 
 export interface Message {

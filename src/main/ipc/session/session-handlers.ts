@@ -20,6 +20,7 @@ import {
   patchIndexTransitionConfig,
   validateIndexShellHtml
 } from '../../session/index-transition'
+import { warmSessionFirstPageThumbnails } from '../../session/session-thumbnail'
 
 const THINKING_ID_RE = /^[a-zA-Z0-9_-]{6,32}$/
 const THINKING_IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp'])
@@ -492,15 +493,28 @@ export function registerSessionHandlers(ctx: IpcContext): void {
 
   ipcMain.handle('session:list', async () => {
     const sessions = await db.listSessions()
-    const enrichedSessions = await Promise.all(
-      sessions.map(async (session) => {
-        const snapshot = await buildSessionGenerationSnapshot(
+    const snapshots = await Promise.all(
+      sessions.map(async (session) => ({
+        session,
+        snapshot: await buildSessionGenerationSnapshot(
           session as unknown as Record<string, unknown>,
           {
             includeHtml: false
           }
         )
+      }))
+    )
+    const thumbnailMap = await warmSessionFirstPageThumbnails(
+      snapshots.map(({ session, snapshot }) => ({
+        sessionId: session.id,
+        pageId: snapshot.pages[0]?.pageId,
+        sourcePath: snapshot.pages[0]?.htmlPath
+      }))
+    )
+    const enrichedSessions = await Promise.all(
+      snapshots.map(async ({ session, snapshot }) => {
         const enriched = snapshot.session || (session as unknown as Record<string, unknown>)
+        enriched.thumbnailPath = thumbnailMap.get(session.id) ?? null
         const run = await db.getLatestGenerationRun(session.id)
         if (run && run.updated_at > run.created_at) {
           enriched.generation_duration_sec = run.updated_at - run.created_at
@@ -574,6 +588,7 @@ export function registerSessionHandlers(ctx: IpcContext): void {
       }
     }
     const projectDir = await resolveSessionProjectDir(sessionId)
+    allowLocalAssetRoot(projectDir)
     await ensureSessionRuntimeCompatible(ctx, projectDir)
     const outlineBySessionPageId = await resolveOutlinesForPages(db, sessionId, sessionPages)
     if (!(await db.hasAnyOperationPageSnapshots(sessionId))) {

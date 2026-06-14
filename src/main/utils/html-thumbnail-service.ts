@@ -165,6 +165,69 @@ export async function getHtmlThumbnailTask(
   return recordToTask(record)
 }
 
+export async function waitForHtmlThumbnailTask(
+  resourceType: string,
+  resourceId: string,
+  variant = 'default',
+  timeoutMs = 60_000
+): Promise<HtmlThumbnailTask> {
+  const normalizedVariant = variant.trim() || 'default'
+  return new Promise((resolve, reject) => {
+    let finished = false
+    let timeoutRef: NodeJS.Timeout | null = null
+
+    const finish = (task: HtmlThumbnailTask): void => {
+      if (finished) return
+      finished = true
+      if (timeoutRef) clearTimeout(timeoutRef)
+      unsubscribe()
+      if (task.status === 'completed' && task.thumbnailPath) {
+        resolve(task)
+        return
+      }
+      reject(new Error(task.error || 'Thumbnail generation failed'))
+    }
+
+    const unsubscribe = onHtmlThumbnailTaskChanged((task) => {
+      if (
+        task.resourceType !== resourceType ||
+        task.resourceId !== resourceId ||
+        task.variant !== normalizedVariant ||
+        (task.status !== 'completed' && task.status !== 'failed')
+      ) {
+        return
+      }
+      finish(task)
+    })
+
+    timeoutRef = setTimeout(() => {
+      finish({
+        resourceType,
+        resourceId,
+        variant: normalizedVariant,
+        status: 'failed',
+        thumbnailPath: null,
+        error: 'Thumbnail generation timed out'
+      })
+    }, Math.max(1_000, timeoutMs))
+
+    void getHtmlThumbnailTask(resourceType, resourceId, normalizedVariant)
+      .then((task) => {
+        if (task && (task.status === 'completed' || task.status === 'failed')) finish(task)
+      })
+      .catch((error) => {
+        finish({
+          resourceType,
+          resourceId,
+          variant: normalizedVariant,
+          status: 'failed',
+          thumbnailPath: null,
+          error: error instanceof Error ? error.message : String(error)
+        })
+      })
+  })
+}
+
 export async function getFreshHtmlThumbnailPath(
   request: HtmlThumbnailRequest
 ): Promise<string | null> {

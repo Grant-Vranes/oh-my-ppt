@@ -8,6 +8,7 @@ const state = vi.hoisted(() => {
     getStylePackageDirectory: vi.fn(),
     saveGeneratedStylePreview: vi.fn(),
     enqueueHtmlThumbnail: vi.fn(),
+    waitForHtmlThumbnailTask: vi.fn(),
     resolveGlobalModelTimeouts: vi.fn(),
     resolveModelConfigForTask: vi.fn(),
     ipcMain: {
@@ -28,7 +29,8 @@ vi.mock('../../../src/main/utils/style-preview-generator', () => ({
   generateStylePreviewHtml: state.generateStylePreviewHtml
 }))
 vi.mock('../../../src/main/utils/html-thumbnail-service', () => ({
-  enqueueHtmlThumbnail: state.enqueueHtmlThumbnail
+  enqueueHtmlThumbnail: state.enqueueHtmlThumbnail,
+  waitForHtmlThumbnailTask: state.waitForHtmlThumbnailTask
 }))
 vi.mock('../../../src/main/ipc/config/model-config-utils', () => ({
   resolveGlobalModelTimeouts: state.resolveGlobalModelTimeouts,
@@ -44,6 +46,7 @@ describe('registerStylePreviewHandlers', () => {
     state.getStylePackageDirectory.mockReset()
     state.saveGeneratedStylePreview.mockReset()
     state.enqueueHtmlThumbnail.mockReset()
+    state.waitForHtmlThumbnailTask.mockReset()
     state.resolveGlobalModelTimeouts.mockReset()
     state.resolveModelConfigForTask.mockReset()
   })
@@ -69,6 +72,13 @@ describe('registerStylePreviewHandlers', () => {
       status: 'queued',
       thumbnailPath: null
     })
+    state.waitForHtmlThumbnailTask.mockResolvedValue({
+      resourceType: 'style',
+      resourceId: 'paper-story',
+      variant: 'default',
+      status: 'completed',
+      thumbnailPath: '/thumbnail-cache/paper-story.png'
+    })
 
     const { registerStylePreviewHandlers } =
       await import('../../../src/main/ipc/config/style-preview-handlers')
@@ -79,7 +89,8 @@ describe('registerStylePreviewHandlers', () => {
 
     expect(result).toEqual({
       success: true,
-      previewPath: '/styles/user/paper-story/preview.html'
+      previewPath: '/styles/user/paper-story/preview.html',
+      thumbnailPath: '/thumbnail-cache/paper-story.png'
     })
     expect(state.resolveModelConfigForTask).toHaveBeenCalledWith(
       expect.anything(),
@@ -104,5 +115,6 @@ describe('registerStylePreviewHandlers', () => {
       },
       { force: true }
     )
+    expect(state.waitForHtmlThumbnailTask).toHaveBeenCalledWith('style', 'paper-story')
   })
 })

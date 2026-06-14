@@ -16,10 +16,12 @@ export const useStylePreviewStore = create<StylePreviewStore>((set, get) => ({
     set({ generatingStyleId: styleId })
     try {
       await ipc.generateStylePreview({ styleId })
-      set((state) => ({ completionVersion: state.completionVersion + 1 }))
       return true
     } finally {
-      set({ generatingStyleId: '' })
+      set((state) => ({
+        generatingStyleId: '',
+        completionVersion: state.completionVersion + 1
+      }))
     }
   }
 }))

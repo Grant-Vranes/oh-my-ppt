@@ -248,7 +248,7 @@ export interface GenerateStagePayload {
   completedPageCount?: number
   failedPageCount?: number
   timestamp?: string
-  activityKind?: 'edit' | 'style-switch'
+  activityKind?: 'edit' | 'style-switch' | 'single-page-retry'
 }
 
 export type GenerateChunkEvent =
@@ -274,7 +274,7 @@ export type GenerateChunkEvent =
         chatType?: 'main' | 'page'
         pageId?: string
         timestamp?: string
-        activityKind?: 'edit' | 'style-switch'
+        activityKind?: 'edit' | 'style-switch' | 'single-page-retry'
       }
     }
   | {
@@ -302,7 +302,7 @@ export type GenerateChunkEvent =
         completedPageCount?: number
         failedPageCount?: number
         timestamp?: string
-        activityKind?: 'edit' | 'style-switch'
+        activityKind?: 'edit' | 'style-switch' | 'single-page-retry'
       }
     }
   | {
@@ -315,6 +315,6 @@ export type GenerateChunkEvent =
         completedPageCount?: number
         failedPageCount?: number
         timestamp?: string
-        activityKind?: 'edit' | 'style-switch'
+        activityKind?: 'edit' | 'style-switch' | 'single-page-retry'
       }
     }

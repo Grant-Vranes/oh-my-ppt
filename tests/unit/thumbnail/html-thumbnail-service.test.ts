@@ -195,6 +195,38 @@ describe('html thumbnail background service', () => {
     fs.rmSync(sourceRoot, { recursive: true, force: true })
   })
 
+  it('waits until an enqueued thumbnail task completes', async () => {
+    const sourceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ohmyppt-thumbnail-wait-'))
+    const sourcePath = path.join(sourceRoot, 'preview.html')
+    fs.writeFileSync(sourcePath, '<!doctype html><html></html>')
+    const records = new Map<string, Record<string, unknown>>()
+    const db = {
+      getThumbnailRecord: vi.fn(async (resourceType: string, resourceId: string, variant: string) =>
+        records.get(`${resourceType}:${resourceId}:${variant}`)
+      ),
+      upsertThumbnailRecord: vi.fn(async (record: Record<string, unknown>) => {
+        records.set(`${record.resourceType}:${record.resourceId}:${record.variant}`, record)
+      })
+    }
+    const service = await import('../../../src/main/utils/html-thumbnail-service')
+    service.configureHtmlThumbnailService(db as never)
+
+    const completed = service.waitForHtmlThumbnailTask('style', 'style-wait', 'default', 2_000)
+    await service.enqueueHtmlThumbnail({
+      resourceType: 'style',
+      resourceId: 'style-wait',
+      sourcePath
+    })
+
+    await expect(completed).resolves.toMatchObject({
+      resourceType: 'style',
+      resourceId: 'style-wait',
+      status: 'completed',
+      thumbnailPath: expect.stringMatching(/\.png$/)
+    })
+    fs.rmSync(sourceRoot, { recursive: true, force: true })
+  })
+
   it('retries capture when the source changes and records the stable source mtime', async () => {
     const sourceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ohmyppt-thumbnail-changing-'))
     const sourcePath = path.join(sourceRoot, 'page-1.html')

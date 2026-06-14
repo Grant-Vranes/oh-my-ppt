@@ -1,3 +1,5 @@
+import fs from 'fs'
+import path from 'path'
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
   shouldAutoCloseGenerationActivity,
@@ -45,12 +47,31 @@ describe('generationActivityStore', () => {
     expect(shouldAutoCloseGenerationActivity('run_error', 0)).toBe(false)
   })
 
-  it('handles only edit activities or runs with an active retry context', () => {
+  it('handles dialog activities or runs with an active retry context', () => {
     expect(shouldHandleGenerationActivity(undefined, null)).toBe(false)
     expect(shouldHandleGenerationActivity('edit', null)).toBe(true)
     expect(shouldHandleGenerationActivity('style-switch', null)).toBe(true)
+    expect(shouldHandleGenerationActivity('single-page-retry', null)).toBe(true)
     expect(
       shouldHandleGenerationActivity(undefined, { kind: 'style-switch', styleId: 'style-2' })
     ).toBe(true)
+  })
+
+  it('routes single-page retries into the generation activity dialog', () => {
+    const handlerSource = fs.readFileSync(
+      path.resolve('src/main/ipc/engine/generation-handlers.ts'),
+      'utf8'
+    )
+    const retryHandler = handlerSource.slice(
+      handlerSource.indexOf("ipcMain.handle('generate:retrySinglePage'"),
+      handlerSource.indexOf("ipcMain.handle('generate:cancel'")
+    )
+    const dialogSource = fs.readFileSync(
+      path.resolve('src/renderer/src/components/session-detail/modal/GenerationActivityDialog.tsx'),
+      'utf8'
+    )
+
+    expect(retryHandler).toContain("activityKind: 'single-page-retry'")
+    expect(dialogSource).toContain("event.payload.activityKind === 'single-page-retry'")
   })
 })

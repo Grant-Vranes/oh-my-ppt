@@ -40,4 +40,20 @@ describe('useStylePreviewStore', () => {
       completionVersion: 1
     })
   })
+
+  it('refreshes style data after a failed generation attempt', async () => {
+    ipcState.generateStylePreview.mockRejectedValue(new Error('thumbnail failed'))
+    const { useStylePreviewStore } = await import(
+      '../../../src/renderer/src/store/stylePreviewStore'
+    )
+
+    await expect(
+      useStylePreviewStore.getState().generatePreview('paper-story')
+    ).rejects.toThrow('thumbnail failed')
+
+    expect(useStylePreviewStore.getState()).toMatchObject({
+      generatingStyleId: '',
+      completionVersion: 1
+    })
+  })
 })

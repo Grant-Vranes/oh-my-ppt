@@ -815,6 +815,7 @@ export function registerGenerationHandlers(ctx: IpcContext): void {
         sessionId: retryCtx.sessionId,
         runId: retryCtx.runId,
         mode: 'retrySinglePage',
+        activityKind: 'single-page-retry',
         previousSessionStatus: retryCtx.previousSessionStatus,
         totalPages: 1
       })

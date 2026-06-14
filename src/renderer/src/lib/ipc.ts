@@ -818,6 +818,7 @@ export const ipc = {
     getIpc().invoke('styles:generatePreview', payload) as Promise<{
       success: boolean
       previewPath: string
+      thumbnailPath: string
     }>,
   onHtmlThumbnailChanged: (callback: (task: HtmlThumbnailTask) => void): (() => void) => {
     const channel = 'thumbnails:changed'

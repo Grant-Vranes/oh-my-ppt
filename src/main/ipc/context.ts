@@ -26,7 +26,7 @@ export type SessionRunState = {
   runId: string
   mode: 'generate' | 'edit' | 'retry' | 'addPage' | 'retrySinglePage'
   kind?: 'standard' | 'template' | 'retry'
-  activityKind?: 'edit' | 'style-switch'
+  activityKind?: 'edit' | 'style-switch' | 'single-page-retry'
   previousSessionStatus?: string
   status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'
   progress: number
@@ -81,7 +81,7 @@ export interface IpcContext {
     runId: string
     mode: 'generate' | 'edit' | 'retry' | 'addPage' | 'retrySinglePage'
     kind?: 'standard' | 'template' | 'retry'
-    activityKind?: 'edit' | 'style-switch'
+    activityKind?: 'edit' | 'style-switch' | 'single-page-retry'
     totalPages: number
     previousSessionStatus?: string
     status?: 'queued' | 'running'
@@ -399,7 +399,7 @@ export function createIpcContext(
     runId: string
     mode: 'generate' | 'edit' | 'retry' | 'addPage' | 'retrySinglePage'
     kind?: 'standard' | 'template' | 'retry'
-    activityKind?: 'edit' | 'style-switch'
+    activityKind?: 'edit' | 'style-switch' | 'single-page-retry'
     totalPages: number
     previousSessionStatus?: string
     status?: 'queued' | 'running'

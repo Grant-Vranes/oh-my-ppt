@@ -363,11 +363,10 @@ export function SessionsPage(): React.JSX.Element {
             <FolderOpen className="mb-4 h-12 w-12 text-muted-foreground" />
             <h3 className="mb-2 text-lg font-medium">{t('sessions.emptyTitle')}</h3>
             <p className="mb-4 text-muted-foreground">{t('sessions.emptyDescription')}</p>
-          
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-3">
+        <div className="grid grid-cols-2 gap-4">
           {sortedSessions.map((session) => {
             const editorGate = getEditorGate(session)
             const activeRun = activeRuns[session.id]
@@ -430,142 +429,133 @@ export function SessionsPage(): React.JSX.Element {
               <Card
                 key={session.id}
                 data-session-card-id={session.id}
-                className="group cursor-pointer overflow-hidden rounded-2xl border border-[#d8cfbc]/75 bg-white/70 shadow-[0_4px_16px_rgba(93,107,77,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(93,107,77,0.15)]"
+                className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-[#d8cfbc]/75 bg-white/70 shadow-[0_4px_16px_rgba(93,107,77,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(93,107,77,0.15)]"
                 title={isPartialComplete ? t('sessions.statusPartialCompleteTip') : undefined}
                 onClick={() => navigate(getSessionRoute(session))}
               >
-                <div className="flex flex-col sm:flex-row">
-                  <div
-                    className="relative aspect-video w-full shrink-0 overflow-hidden bg-[#f5f1e8] sm:h-[144px] sm:w-[256px]"
-                  >
-                    {thumbnailPath ? (
-                      <img
-                        src={localAssetUrl(thumbnailPath)}
-                        loading="lazy"
-                        alt=""
-                        aria-hidden="true"
-                        className="absolute inset-0 h-full w-full object-cover"
-                      />
-                    ) : (
-                      <img
-                        src={sessionPlaceholder}
-                        alt=""
-                        aria-hidden="true"
-                        className="absolute inset-0 h-full w-full object-cover"
-                      />
+                <div className="relative aspect-video w-full shrink-0 overflow-hidden bg-[#f5f1e8]">
+                  {thumbnailPath ? (
+                    <img
+                      src={localAssetUrl(thumbnailPath)}
+                      loading="lazy"
+                      alt=""
+                      aria-hidden="true"
+                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.015]"
+                    />
+                  ) : (
+                    <img
+                      src={sessionPlaceholder}
+                      alt=""
+                      aria-hidden="true"
+                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.015]"
+                    />
+                  )}
+                  <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/45 via-black/10 to-transparent" />
+                  <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-lg bg-[#fffaf0]/92 px-2.5 py-1 text-xs font-semibold text-[#3e4a32] shadow-[0_4px_12px_rgba(31,38,29,0.16)] backdrop-blur-sm">
+                    <MessageSquare className="h-3 w-3" />
+                    {actionText}
+                  </span>
+                </div>
+
+                <div className="min-w-0 flex-1 p-4">
+                  <CardTitle className="line-clamp-2 min-h-10 text-base leading-5 text-[#3e4a32]">
+                    {session.title}
+                  </CardTitle>
+                  <p className="mt-1.5 text-xs text-[#847866]">
+                    {dayjs.unix(session.updated_at).format('YYYY/MM/DD HH:mm')}
+                  </p>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                    <span
+                      className={`rounded-lg border px-2 py-1 font-semibold ${statusClassName}`}
+                    >
+                      {statusText}
+                    </span>
+                    <span className={`${sourceTagBaseClass} ${sourceTag.className}`}>
+                      <SourceIcon className={`h-3.5 w-3.5 ${sourceTag.iconClassName}`} />
+                      {sourceTag.label}
+                    </span>
+                    <span className="rounded-lg border border-[#e1d1b7]/80 bg-[#fff7e8]/75 px-2 py-1 text-[#7c6a4c]">
+                      {t('sessions.pagesCount', {
+                        generated: displayGeneratedCount,
+                        total: displayTotalCount
+                      })}
+                    </span>
+                    {session.generation_duration_sec ? (
+                      <span className="rounded-lg border border-[#d5cfc5]/60 bg-[#f9f6f1] px-2 py-1 text-[#6b6560]">
+                        {(() => {
+                          const d = dayjs.duration(session.generation_duration_sec!, 'second')
+                          const m = Math.floor(d.asMinutes())
+                          const s = d.seconds()
+                          return m > 0 ? `${m}m ${s}s` : `${s}s`
+                        })()}
+                      </span>
+                    ) : null}
+                    {!isFullyComplete && displayFailedCount > 0 && (
+                      <span className="rounded-lg border border-[#d7b5ae]/70 bg-[#fff7f2]/80 px-2 py-1 text-[#93564f]">
+                        {t('sessions.failedCount', { count: displayFailedCount })}
+                      </span>
                     )}
-                    <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/20 to-transparent" />
                   </div>
+                </div>
 
-                  <div className="min-w-0 flex-1 p-5">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <CardTitle className="truncate text-base text-[#3e4a32]">
-                          {session.title}
-                        </CardTitle>
-                        <p className="mt-1 text-xs text-[#847866]">
-                          {dayjs.unix(session.updated_at).format('YYYY/MM/DD HH:mm')}
-                        </p>
-                      </div>
-                      <span className="soft-pill inline-flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1 text-xs text-secondary-foreground">
-                        <MessageSquare className="h-3 w-3" />
-                        {actionText}
-                      </span>
-                    </div>
-
-                    <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                      <span className={`rounded-lg border px-2 py-1 font-semibold ${statusClassName}`}>
-                        {statusText}
-                      </span>
-                      <span className={`${sourceTagBaseClass} ${sourceTag.className}`}>
-                        <SourceIcon className={`h-3.5 w-3.5 ${sourceTag.iconClassName}`} />
-                        {sourceTag.label}
-                      </span>
-                      <span className="rounded-lg border border-[#e1d1b7]/80 bg-[#fff7e8]/75 px-2 py-1 text-[#7c6a4c]">
-                        {t('sessions.pagesCount', {
-                          generated: displayGeneratedCount,
-                          total: displayTotalCount
-                        })}
-                      </span>
-                      {session.generation_duration_sec ? (
-                        <span className="rounded-lg border border-[#d5cfc5]/60 bg-[#f9f6f1] px-2 py-1 text-[#6b6560]">
-                          {(() => {
-                            const d = dayjs.duration(session.generation_duration_sec!, 'second')
-                            const m = Math.floor(d.asMinutes())
-                            const s = d.seconds()
-                            return m > 0 ? `${m}m ${s}s` : `${s}s`
-                          })()}
-                        </span>
-                      ) : null}
-                      {!isFullyComplete && displayFailedCount > 0 && (
-                        <span className="rounded-lg border border-[#d7b5ae]/70 bg-[#fff7f2]/80 px-2 py-1 text-[#93564f]">
-                          {t('sessions.failedCount', { count: displayFailedCount })}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex shrink-0 items-center justify-end gap-1 border-t border-[#e7dfd0]/70 px-3 py-2 sm:flex-col sm:justify-center sm:border-l sm:border-t-0">
-                    <TooltipProvider delayDuration={180}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
+                <div className="flex shrink-0 items-center justify-end gap-1 border-t border-[#e7dfd0]/70 bg-[#fffaf0]/45 px-3 py-2">
+                  <TooltipProvider delayDuration={180}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          aria-label={t('sessions.editTitleTooltip')}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            openRenameDialog(session)
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" align="end">
+                        {t('sessions.editTitleTooltip')}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider delayDuration={180}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex" onClick={(event) => event.stopPropagation()}>
                           <Button
                             variant="ghost"
                             size="sm"
-                            aria-label={t('sessions.editTitleTooltip')}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              openRenameDialog(session)
+                            aria-label={t('sessions.saveTemplateTooltip')}
+                            disabled={editorGate.generatedCount <= 0}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              setSaveTemplateTarget(session)
                             }}
                           >
-                            <Pencil className="h-4 w-4" />
+                            <LayoutTemplate className="h-4 w-4" />
                           </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom" align="end">
-                          {t('sessions.editTitleTooltip')}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <TooltipProvider delayDuration={180}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span
-                            className="inline-flex"
-                            onClick={(event) => event.stopPropagation()}
-                          >
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              aria-label={t('sessions.saveTemplateTooltip')}
-                              disabled={editorGate.generatedCount <= 0}
-                              onClick={(event) => {
-                                event.stopPropagation()
-                                setSaveTemplateTarget(session)
-                              }}
-                            >
-                              <LayoutTemplate className="h-4 w-4" />
-                            </Button>
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom" align="end">
-                          {editorGate.generatedCount <= 0
-                            ? t('sessions.saveTemplateTooltipDisabled')
-                            : t('sessions.saveTemplateTooltip')}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      aria-label={t('common.delete')}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setDeleteSessionTarget(session)
-                      }}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" align="end">
+                        {editorGate.generatedCount <= 0
+                          ? t('sessions.saveTemplateTooltipDisabled')
+                          : t('sessions.saveTemplateTooltip')}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label={t('common.delete')}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setDeleteSessionTarget(session)
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
               </Card>
             )

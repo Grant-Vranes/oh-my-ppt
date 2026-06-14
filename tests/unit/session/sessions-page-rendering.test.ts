@@ -85,7 +85,7 @@ describe('SessionsPage rendering', () => {
     document.body.innerHTML = ''
   })
 
-  it('keeps one session per row with a PNG preview and all actions', async () => {
+  it('renders sessions in a fixed two-column card grid with previews and all actions', async () => {
     const container = document.createElement('div')
     document.body.appendChild(container)
     const root = createRoot(container)
@@ -96,7 +96,9 @@ describe('SessionsPage rendering', () => {
 
     const card = container.querySelector('[data-session-card-id="session-1"]')
     expect(card).toBeTruthy()
-    expect(card?.querySelector('.sm\\:flex-row')).toBeTruthy()
+    expect(card?.parentElement?.className).toContain('grid-cols-2')
+    expect(card?.className).toContain('flex-col')
+    expect(card?.querySelector('.aspect-video')).toBeTruthy()
     expect(card?.querySelectorAll('img')).toHaveLength(1)
     expect(card?.querySelectorAll('iframe')).toHaveLength(0)
     const placeholderImage = container.querySelector(
@@ -105,9 +107,7 @@ describe('SessionsPage rendering', () => {
     expect(placeholderImage?.src).toContain('space.webp')
     expect(container.querySelectorAll('iframe')).toHaveLength(0)
     expect(container.textContent).toContain('Quarterly Review')
-    expect(
-      container.querySelector('button[aria-label="sessions.editTitleTooltip"]')
-    ).toBeTruthy()
+    expect(container.querySelector('button[aria-label="sessions.editTitleTooltip"]')).toBeTruthy()
     expect(
       container.querySelector('button[aria-label="sessions.saveTemplateTooltip"]')
     ).toBeTruthy()

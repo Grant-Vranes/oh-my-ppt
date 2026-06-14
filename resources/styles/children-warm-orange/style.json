@@ -1,0 +1,13 @@
+{
+  "style": "children-warm-orange",
+  "name": {
+    "zh": "童趣橙暖",
+    "en": "Children Warm Orange"
+  },
+  "description": "活泼可爱的儿童节橙暖风",
+  "category": "暖色 · 童趣",
+  "aliases": ["童趣", "儿童节", "橙暖", "可爱", "木马", "children"],
+  "styleCase": "儿童节活动、幼儿园小学海报、亲子活动邀请、童装玩具绘本宣传、生日派对、少儿教育课程、家庭亲子品牌",
+  "version": "2.0.0",
+  "source": "builtin"
+}

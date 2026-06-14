@@ -474,6 +474,29 @@ const ALLOWED_TEXT_STYLE_PROPS = new Set([
   'letter-spacing'
 ])
 
+const IMPORTED_FONT_REPLACEMENTS = new Map<string, string>([
+  ['方正大标宋简体', '"Songti SC","STSong","SimSun",serif'],
+  ['微软雅黑 light', '"PingFang SC","Microsoft YaHei",sans-serif'],
+  ['微软雅黑', '"PingFang SC","Microsoft YaHei",sans-serif'],
+  ['等线', '"PingFang SC","DengXian","Microsoft YaHei",sans-serif'],
+  ['宋体', '"Songti SC","SimSun",serif'],
+  ['黑体', '"PingFang SC","SimHei",sans-serif']
+])
+
+const normalizeImportedFontFamily = (value: string): string => {
+  const firstFamily = value
+    .split(',')[0]
+    ?.trim()
+    .replace(/^["']|["']$/g, '')
+  if (!firstFamily) return value
+  return IMPORTED_FONT_REPLACEMENTS.get(firstFamily.toLowerCase()) || value
+}
+
+const normalizeImportedSymbols = (value: string): string =>
+  value
+    // PowerPoint stores Wingdings 3 glyph 0xC4 in Unicode's private-use area.
+    .replace(/\uf0c4/gi, '➜')
+
 const sanitizeCssValue = (property: string, rawValue: string, scale: number): string | null => {
   const value = rawValue.trim()
   if (!value) return null
@@ -493,7 +516,8 @@ const sanitizeCssValue = (property: string, rawValue: string, scale: number): st
     }
   }
   if (normalizedProperty === 'font-family') {
-    return /^[\p{L}\p{N}\s,.'"_-]+$/u.test(value) ? value : null
+    if (!/^[\p{L}\p{N}\s,.'"_-]+$/u.test(value)) return null
+    return normalizeImportedFontFamily(value)
   }
   if (/^[#a-z0-9\s.,()%'"-]+$/i.test(value)) return value
   return null
@@ -591,6 +615,14 @@ const sanitizeContentHtml = (html: string, scale: number): string => {
       }
     }
   })
+  $.root()
+    .contents()
+    .add($.root().find('*').contents())
+    .each((_, node) => {
+      if (node.type === 'text' && 'data' in node && typeof node.data === 'string') {
+        node.data = normalizeImportedSymbols(node.data)
+      }
+    })
   return $.root().html() || ''
 }
 
@@ -1114,6 +1146,201 @@ const buildImageBlock = async (args: {
   return `<figure data-block-id="${escapeHtml(args.blockId)}"${animationAttrText} style="${css}"><img src="${source}" alt="" style="width:100%;height:100%;object-fit:contain;display:block;" /></figure>`
 }
 
+type SvgShapeFill = {
+  defs: string[]
+  paint: string
+  content?: string
+}
+
+type SvgPathBounds = {
+  minX: number
+  minY: number
+  width: number
+  height: number
+}
+
+const getSvgPathBounds = (pathData: string): SvgPathBounds | null => {
+  const tokens = pathData.match(/[MmLlHhVvCcSsQqTtAaZz]|[-+]?(?:\d*\.\d+|\d+)(?:[eE][-+]?\d+)?/g)
+  if (!tokens?.length) return null
+  const parameterCounts: Record<string, number> = {
+    M: 2,
+    L: 2,
+    H: 1,
+    V: 1,
+    C: 6,
+    S: 4,
+    Q: 4,
+    T: 2,
+    A: 7,
+    Z: 0
+  }
+  let command = ''
+  let index = 0
+  let x = 0
+  let y = 0
+  let startX = 0
+  let startY = 0
+  let minX = Number.POSITIVE_INFINITY
+  let minY = Number.POSITIVE_INFINITY
+  let maxX = Number.NEGATIVE_INFINITY
+  let maxY = Number.NEGATIVE_INFINITY
+  const include = (nextX: number, nextY: number): void => {
+    if (!Number.isFinite(nextX) || !Number.isFinite(nextY)) return
+    minX = Math.min(minX, nextX)
+    minY = Math.min(minY, nextY)
+    maxX = Math.max(maxX, nextX)
+    maxY = Math.max(maxY, nextY)
+  }
+  while (index < tokens.length) {
+    if (/^[a-z]$/i.test(tokens[index])) {
+      command = tokens[index]
+      index += 1
+      if (command.toUpperCase() === 'Z') {
+        x = startX
+        y = startY
+        include(x, y)
+        continue
+      }
+    }
+    if (!command) return null
+    const upper = command.toUpperCase()
+    const parameterCount = parameterCounts[upper]
+    if (!parameterCount || index + parameterCount > tokens.length) break
+    const values = tokens.slice(index, index + parameterCount).map(Number)
+    if (values.some((value) => !Number.isFinite(value))) return null
+    index += parameterCount
+    const relative = command === command.toLowerCase()
+    const point = (pointX: number, pointY: number): [number, number] => [
+      relative ? x + pointX : pointX,
+      relative ? y + pointY : pointY
+    ]
+    if (upper === 'H') {
+      x = relative ? x + values[0] : values[0]
+      include(x, y)
+    } else if (upper === 'V') {
+      y = relative ? y + values[0] : values[0]
+      include(x, y)
+    } else if (upper === 'A') {
+      const radius = Math.max(Math.abs(values[0]), Math.abs(values[1]))
+      const [nextX, nextY] = point(values[5], values[6])
+      include(x - radius, y - radius)
+      include(x + radius, y + radius)
+      include(nextX - radius, nextY - radius)
+      include(nextX + radius, nextY + radius)
+      x = nextX
+      y = nextY
+    } else {
+      for (let valueIndex = 0; valueIndex < values.length; valueIndex += 2) {
+        const [nextX, nextY] = point(values[valueIndex], values[valueIndex + 1])
+        include(nextX, nextY)
+      }
+      const [nextX, nextY] = point(
+        values[values.length - 2],
+        values[values.length - 1]
+      )
+      x = nextX
+      y = nextY
+      if (upper === 'M') {
+        startX = x
+        startY = y
+        command = relative ? 'l' : 'L'
+      }
+    }
+  }
+  if (![minX, minY, maxX, maxY].every(Number.isFinite)) return null
+  return {
+    minX,
+    minY,
+    width: Math.max(0.0001, maxX - minX),
+    height: Math.max(0.0001, maxY - minY)
+  }
+}
+
+const svgResourceId = (blockId: string, suffix: string): string =>
+  `pptx-${blockId}-${suffix}`.replace(/[^a-zA-Z0-9_-]/g, '-')
+
+const resolveSvgShapeFill = async (args: {
+  fill?: Fill
+  blockId: string
+  safePath: string
+  pathBounds: SvgPathBounds
+  imagesDir: string
+  registry: ImageRegistry
+}): Promise<SvgShapeFill> => {
+  if (!args.fill) return { defs: [], paint: 'none' }
+  if (args.fill.type === 'color') {
+    return { defs: [], paint: sanitizeImportedCssColor(args.fill.value) || 'none' }
+  }
+  if (args.fill.type === 'gradient' && args.fill.value.colors.length > 0) {
+    const gradient = args.fill.value
+    const gradientId = svgResourceId(args.blockId, 'gradient')
+    const stops = gradient.colors
+      .map((stop, index) => {
+        const color = sanitizeImportedCssColor(stop.color)
+        if (!color) return ''
+        const rawPosition = String(stop.pos || '').trim()
+        const offset = /^[0-9.]+%$/.test(rawPosition)
+          ? rawPosition
+          : `${Math.round((index / Math.max(1, gradient.colors.length - 1)) * 100)}%`
+        return `<stop offset="${offset}" stop-color="${color}" />`
+      })
+      .filter(Boolean)
+      .join('')
+    if (!stops) return { defs: [], paint: 'none' }
+    if (gradient.path === 'line') {
+      const rotation = clampNumber(gradient.rot)
+      return {
+        defs: [
+          `<linearGradient id="${gradientId}" x1="0" y1="0.5" x2="1" y2="0.5" gradientTransform="rotate(${rotation.toFixed(2)} 0.5 0.5)">${stops}</linearGradient>`
+        ],
+        paint: `url(#${gradientId})`
+      }
+    }
+    return {
+      defs: [
+        `<radialGradient id="${gradientId}" cx="50%" cy="50%" r="70%">${stops}</radialGradient>`
+      ],
+      paint: `url(#${gradientId})`
+    }
+  }
+  if (args.fill.type === 'pattern') {
+    const patternId = svgResourceId(args.blockId, 'pattern')
+    const foreground = sanitizeImportedCssColor(args.fill.value.foregroundColor) || '#000000'
+    const background = sanitizeImportedCssColor(args.fill.value.backgroundColor) || '#ffffff'
+    const patternType = String(args.fill.value.type || '').toLowerCase()
+    const patternLines = patternType.includes('vert')
+      ? '<path d="M4 0 V8" />'
+      : patternType.includes('horz')
+        ? '<path d="M0 4 H8" />'
+        : patternType.includes('cross')
+          ? '<path d="M4 0 V8 M0 4 H8" />'
+          : '<path d="M-2 2 L2 -2 M0 8 L8 0 M6 10 L10 6" />'
+    return {
+      defs: [
+        `<pattern id="${patternId}" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="${background}" /><g fill="none" stroke="${foreground}" stroke-width="1">${patternLines}</g></pattern>`
+      ],
+      paint: `url(#${patternId})`
+    }
+  }
+  if (args.fill.type === 'image' && args.fill.value.base64) {
+    const source = await writeImageDataUrl(
+      args.imagesDir,
+      args.registry,
+      args.fill.value.ref || args.fill.value.base64,
+      args.fill.value.base64
+    )
+    if (!source) return { defs: [], paint: 'none' }
+    const clipId = svgResourceId(args.blockId, 'clip')
+    const opacity = Math.min(1, Math.max(0, clampNumber(args.fill.value.opacity, 1)))
+    return {
+      defs: [`<clipPath id="${clipId}"><path d="${escapeHtml(args.safePath)}" /></clipPath>`],
+      paint: 'none',
+      content: `<image href="${escapeHtml(source)}" x="${args.pathBounds.minX.toFixed(4)}" y="${args.pathBounds.minY.toFixed(4)}" width="${args.pathBounds.width.toFixed(4)}" height="${args.pathBounds.height.toFixed(4)}" preserveAspectRatio="xMidYMid slice" opacity="${opacity.toFixed(3)}" clip-path="url(#${clipId})" />`
+    }
+  }
+  return { defs: [], paint: 'none' }
+}
+
 const buildShapeBlock = async (args: {
   element: Record<string, unknown>
   blockId: string
@@ -1133,6 +1360,66 @@ const buildShapeBlock = async (args: {
 }): Promise<string> => {
   if (typeof args.element.content === 'string' && stripHtml(args.element.content).length > 0) {
     return buildTextBlock(args)
+  }
+  const rawPath = typeof args.element.path === 'string' ? args.element.path.trim() : ''
+  const safePath = /^[MmLlHhVvCcSsQqTtAaZz0-9eE+.,\s-]+$/.test(rawPath) ? rawPath : ''
+  const fill = args.element.fill as Fill | undefined
+  const pathBounds = safePath ? getSvgPathBounds(safePath) : null
+  if (safePath && pathBounds) {
+    const shadow = args.element.shadow as
+      | { h?: number; v?: number; blur?: number; color?: string }
+      | undefined
+    const css = buildBlockStyle({
+      element: args.element,
+      scaleX: args.scaleX,
+      scaleY: args.scaleY,
+      zIndex: args.zIndex,
+      offsetX: args.offsetX,
+      offsetY: args.offsetY,
+      overflow: shadow ? 'visible' : 'hidden'
+    })
+    const svgFill = await resolveSvgShapeFill({
+      fill,
+      blockId: args.blockId,
+      safePath,
+      pathBounds,
+      imagesDir: args.imagesDir,
+      registry: args.registry
+    })
+    const strokeWidth = Math.max(0, clampNumber(args.element.borderWidth)) * (4 / 3)
+    const strokeColor = strokeWidth > 0
+      ? sanitizeImportedCssColor(args.element.borderColor) || '#000000'
+      : 'none'
+    let dashArray = typeof args.element.borderStrokeDasharray === 'string' &&
+      /^[0-9.,\s-]+$/.test(args.element.borderStrokeDasharray)
+      ? args.element.borderStrokeDasharray
+      : ''
+    const borderType = String(args.element.borderType || '').toLowerCase()
+    if (!dashArray && strokeWidth > 0 && borderType === 'dashed') {
+      dashArray = `${(strokeWidth * 4).toFixed(2)} ${(strokeWidth * 2).toFixed(2)}`
+    } else if (!dashArray && strokeWidth > 0 && borderType === 'dotted') {
+      dashArray = `0 ${(strokeWidth * 2).toFixed(2)}`
+    }
+    const defs = [...svgFill.defs]
+    let filterAttribute = ''
+    if (shadow) {
+      const shadowColor = sanitizeImportedCssColor(shadow.color) || '#00000066'
+      const shadowId = svgResourceId(args.blockId, 'shadow')
+      defs.push(
+        `<filter id="${shadowId}" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="${(clampNumber(shadow.h) * (4 / 3)).toFixed(3)}" dy="${(clampNumber(shadow.v) * (4 / 3)).toFixed(3)}" stdDeviation="${Math.max(0, clampNumber(shadow.blur) * (2 / 3)).toFixed(3)}" flood-color="${shadowColor}" /></filter>`
+      )
+      filterAttribute = ` filter="url(#${shadowId})"`
+    }
+    const flipX = args.element.isFlipH ? -1 : 1
+    const flipY = args.element.isFlipV ? -1 : 1
+    const svgTransform = flipX === 1 && flipY === 1
+      ? ''
+      : `transform:scale(${flipX},${flipY});transform-origin:center;`
+    const animationAttrs = buildAnimationAttrs(args.animation)
+    const animationAttrText = animationAttrs ? ` ${animationAttrs}` : ''
+    const defsMarkup = defs.length > 0 ? `<defs>${defs.join('')}</defs>` : ''
+    const shapeMarkup = `${svgFill.content || ''}<path d="${escapeHtml(safePath)}" fill="${svgFill.paint}" stroke="${strokeColor}" stroke-width="${strokeWidth.toFixed(3)}"${dashArray ? ` stroke-dasharray="${dashArray}"` : ''} stroke-linecap="round" stroke-linejoin="round" />`
+    return `<figure data-block-id="${escapeHtml(args.blockId)}" data-pptx-kind="vector-shape"${animationAttrText} style="${css};margin:0"><svg viewBox="${pathBounds.minX.toFixed(4)} ${pathBounds.minY.toFixed(4)} ${pathBounds.width.toFixed(4)} ${pathBounds.height.toFixed(4)}" preserveAspectRatio="none" style="width:100%;height:100%;display:block;overflow:visible;${svgTransform}" aria-hidden="true">${defsMarkup}<g${filterAttribute}>${shapeMarkup}</g></svg></figure>`
   }
   const fillCss = await fillToCss(args.element.fill as Fill | undefined, args.imagesDir, args.registry)
   const css = buildBlockStyle({
@@ -1430,13 +1717,16 @@ const buildChartBlock = (args: {
 }
 
 export const __pptxImporterTestUtils = {
+  buildShapeBlock,
   buildTableBlock,
   buildChartBlock,
   collectPptxTableStyleIds,
   normalizeChartValueCacheXml,
   normalizePptxChartValueCaches,
   removeUnsupportedTableStyleFlags,
-  resolveSlideFit
+  resolveSlideFit,
+  sanitizeContentHtml,
+  getSvgPathBounds
 }
 
 const renderElement = async (args: {

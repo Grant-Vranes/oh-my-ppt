@@ -251,6 +251,24 @@ CREATE TABLE IF NOT EXISTS styles (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_styles_style ON styles(style);
 
+CREATE TABLE IF NOT EXISTS thumbnails (
+  key TEXT PRIMARY KEY,
+  resource_type TEXT NOT NULL,
+  resource_id TEXT NOT NULL,
+  variant TEXT NOT NULL DEFAULT 'default',
+  source_path TEXT NOT NULL,
+  source_mtime_ms INTEGER NOT NULL DEFAULT 0,
+  signature TEXT NOT NULL DEFAULT '',
+  thumbnail_path TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'queued',
+  error TEXT,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS thumbnails_resource_variant_unique
+  ON thumbnails(resource_type, resource_id, variant);
+CREATE INDEX IF NOT EXISTS thumbnails_status_idx ON thumbnails(status, updated_at);
+
 CREATE TABLE IF NOT EXISTS session_style_snapshots (
   id TEXT PRIMARY KEY,
   session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,

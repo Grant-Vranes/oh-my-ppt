@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import {
@@ -10,7 +10,7 @@ import {
   AlertDialogTitle
 } from '../components/ui/AlertDialog'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/Tooltip'
-import { ipc } from '@renderer/lib/ipc'
+import { ipc, type HtmlThumbnailTask } from '@renderer/lib/ipc'
 import { useStylePreviewStore, useToastStore } from '../store'
 import {
   Download,
@@ -23,12 +23,13 @@ import {
   Upload
 } from 'lucide-react'
 import { useT } from '../i18n'
+import { useThumbnailUpdates } from '../hooks/useThumbnailUpdates'
+import { useVisibleItemIds } from '../hooks/useVisibleItemIds'
 import {
   buildStyleCaseOptions,
   filterByStyleCase,
   parseStyleCases
 } from '@renderer/lib/style-case'
-import { useStylePreviewIds } from '@renderer/components/session-detail/style/useStylePreviewIds'
 
 type StyleSummary = {
   id: string
@@ -39,27 +40,16 @@ type StyleSummary = {
   category: string
   styleCase?: string
   previewPath?: string | null
+  thumbnailPath?: string | null
   createdAt?: number
   updatedAt?: number
 }
 
-const VISIBLE_CACHE = 20
+const MAX_VISIBLE_IFRAMES = 8
 
 const localAssetUrl = (filePath: string): string => `local-asset://${encodeURIComponent(filePath)}`
 const stylePreviewUrl = (filePath: string): string =>
   import.meta.env.MODE === 'test' ? 'about:blank' : localAssetUrl(filePath)
-
-function findScrollableAncestor(element: HTMLElement): HTMLElement | null {
-  let parent: HTMLElement | null = element.parentElement
-  while (parent) {
-    const overflowY = getComputedStyle(parent).overflowY
-    if (overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay') {
-      return parent
-    }
-    parent = parent.parentElement
-  }
-  return null
-}
 
 export function StylesPage(): React.JSX.Element {
   const navigate = useNavigate()
@@ -87,21 +77,19 @@ export function StylesPage(): React.JSX.Element {
     () => filterByStyleCase(styles, selectedStyleCase),
     [selectedStyleCase, styles]
   )
-  const filteredStyleIds = useMemo(
-    () => new Set(filteredStyles.map((style) => style.id)),
+  const fallbackStyleIds = useMemo(
+    () =>
+      new Set(
+        filteredStyles
+          .filter((style) => !style.thumbnailPath && style.previewPath)
+          .map((style) => style.id)
+      ),
     [filteredStyles]
   )
-  const { viewportRef, renderableIds, setStyleRef } = useStylePreviewIds(filteredStyleIds, VISIBLE_CACHE)
-  const rootRef = useRef<HTMLDivElement | null>(null)
-
-  useEffect(() => {
-    if (!rootRef.current) return
-    const scrollParent = findScrollableAncestor(rootRef.current)
-    if (scrollParent) viewportRef.current = scrollParent as HTMLDivElement
-    return () => {
-      if (viewportRef.current === scrollParent) viewportRef.current = null
-    }
-  }, [viewportRef])
+  const { visibleIds: visibleFallbackIds, setItemRef } = useVisibleItemIds(
+    fallbackStyleIds,
+    MAX_VISIBLE_IFRAMES
+  )
 
   const loadStyles = useCallback(async (): Promise<void> => {
     try {
@@ -114,6 +102,17 @@ export function StylesPage(): React.JSX.Element {
       })
     }
   }, [error, t])
+
+  const applyThumbnail = useCallback((task: HtmlThumbnailTask): void => {
+    if (!task.thumbnailPath) return
+    setStyles((current) =>
+      current.map((style) =>
+        style.id === task.resourceId ? { ...style, thumbnailPath: task.thumbnailPath } : style
+      )
+    )
+  }, [])
+
+  useThumbnailUpdates('style', applyThumbnail)
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -198,7 +197,7 @@ export function StylesPage(): React.JSX.Element {
 
   return (
     <TooltipProvider delayDuration={180}>
-      <div ref={rootRef} className="mx-auto w-full max-w-6xl p-6">
+      <div className="mx-auto w-full max-w-6xl p-6">
       <div className="mb-6">
         <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">{t('styles.eyebrow')}</p>
         <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -276,12 +275,20 @@ export function StylesPage(): React.JSX.Element {
         {filteredStyles.map((style) => (
             <div
               key={style.id}
-              ref={setStyleRef(style.id)}
+              ref={!style.thumbnailPath && style.previewPath ? setItemRef(style.id) : undefined}
               data-style-card-id={style.id}
               className="group overflow-hidden rounded-2xl border border-[#d8cfbc]/75 bg-white/70 text-left shadow-[0_4px_16px_rgba(93,107,77,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(93,107,77,0.15)]"
             >
               <div className="relative aspect-video overflow-hidden bg-[#f5f1e8]">
-                {style.previewPath && renderableIds.has(style.id) ? (
+                {style.thumbnailPath ? (
+                  <img
+                    src={stylePreviewUrl(style.thumbnailPath)}
+                    loading="lazy"
+                    alt=""
+                    aria-hidden="true"
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
+                ) : style.previewPath && visibleFallbackIds.has(style.id) ? (
                   <iframe
                     data-testid="style-preview-iframe"
                     src={stylePreviewUrl(style.previewPath)}

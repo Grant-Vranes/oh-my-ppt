@@ -168,6 +168,23 @@ export interface SessionPageRecord {
   deleted_at: number | null
 }
 
+export type ThumbnailStatus = 'queued' | 'running' | 'completed' | 'failed'
+
+export interface ThumbnailRecord {
+  key: string
+  resourceType: string
+  resourceId: string
+  variant: string
+  sourcePath: string
+  sourceMtimeMs: number
+  signature: string
+  thumbnailPath: string
+  status: ThumbnailStatus
+  error: string | null
+  createdAt: number
+  updatedAt: number
+}
+
 export interface SourcePageSkeletonRecord {
   id: string
   session_id: string
@@ -2550,6 +2567,91 @@ export class PPTDatabase {
     await this.db.delete(schema.styles).where(eq(schema.styles.id, styleId)).run()
     await this._refreshStylesCache()
     return true
+  }
+
+  async getThumbnailRecord(
+    resourceType: string,
+    resourceId: string,
+    variant = 'default'
+  ): Promise<ThumbnailRecord | undefined> {
+    const row = await this.db
+      .select()
+      .from(schema.thumbnails)
+      .where(
+        and(
+          eq(schema.thumbnails.resourceType, resourceType),
+          eq(schema.thumbnails.resourceId, resourceId),
+          eq(schema.thumbnails.variant, variant)
+        )
+      )
+      .get()
+    return row as ThumbnailRecord | undefined
+  }
+
+  async upsertThumbnailRecord(data: {
+    resourceType: string
+    resourceId: string
+    variant: string
+    sourcePath: string
+    sourceMtimeMs: number
+    signature: string
+    thumbnailPath: string
+    status: ThumbnailStatus
+    error?: string | null
+  }): Promise<void> {
+    const now = Date.now()
+    const key = crypto
+      .createHash('sha256')
+      .update(
+        JSON.stringify({
+          resourceType: data.resourceType,
+          resourceId: data.resourceId,
+          variant: data.variant
+        })
+      )
+      .digest('hex')
+      .slice(0, 32)
+    await this.db
+      .insert(schema.thumbnails)
+      .values({
+        key,
+        resourceType: data.resourceType,
+        resourceId: data.resourceId,
+        variant: data.variant,
+        sourcePath: data.sourcePath,
+        sourceMtimeMs: data.sourceMtimeMs,
+        signature: data.signature,
+        thumbnailPath: data.thumbnailPath,
+        status: data.status,
+        error: data.error || null,
+        createdAt: now,
+        updatedAt: now
+      })
+      .onConflictDoUpdate({
+        target: schema.thumbnails.key,
+        set: {
+          sourcePath: data.sourcePath,
+          sourceMtimeMs: data.sourceMtimeMs,
+          signature: data.signature,
+          thumbnailPath: data.thumbnailPath,
+          status: data.status,
+          error: data.error || null,
+          updatedAt: now
+        }
+      })
+      .run()
+  }
+
+  async failInterruptedThumbnailTasks(): Promise<void> {
+    await this.db
+      .update(schema.thumbnails)
+      .set({
+        status: 'failed',
+        error: '应用退出时任务尚未完成',
+        updatedAt: Date.now()
+      })
+      .where(inArray(schema.thumbnails.status, ['queued', 'running']))
+      .run()
   }
 
   async getSessionStyleSnapshot(sessionId: string): Promise<SessionStyleSnapshotRow | undefined> {

@@ -13,27 +13,25 @@ const ipcMocks = vi.hoisted(() => ({
   generateStylePreview: vi.fn(),
   exportStylePackageZip: vi.fn(),
   deleteStyle: vi.fn(),
-  importStylePackageZip: vi.fn()
+  importStylePackageZip: vi.fn(),
+  onHtmlThumbnailChanged: vi.fn(() => () => undefined)
 }))
+let thumbnailListener: ((task: {
+  resourceType: string
+  resourceId: string
+  variant: string
+  status: 'completed'
+  thumbnailPath: string
+}) => void) | null = null
 const translate = vi.hoisted(() => vi.fn((key: string) => key))
-
-vi.mock('@renderer/lib/ipc', () => ({ ipc: ipcMocks }))
-
-vi.mock('@renderer/i18n', () => ({
-  useT: () => translate
-}))
 
 type ObserverEntry = Pick<IntersectionObserverEntry, 'target' | 'isIntersecting'>
 
 class MockIntersectionObserver {
   static instances: MockIntersectionObserver[] = []
-
   readonly observed = new Set<Element>()
 
-  constructor(
-    private readonly callback: IntersectionObserverCallback,
-    readonly options?: IntersectionObserverInit
-  ) {
+  constructor(private readonly callback: IntersectionObserverCallback) {
     MockIntersectionObserver.instances.push(this)
   }
 
@@ -49,37 +47,32 @@ class MockIntersectionObserver {
     this.observed.clear()
   }
 
-  takeRecords = (): IntersectionObserverEntry[] => []
-
   emit(entries: ObserverEntry[]): void {
     this.callback(entries as IntersectionObserverEntry[], this as unknown as IntersectionObserver)
   }
 }
 
 function getObservedCard(observer: MockIntersectionObserver, styleId: string): Element {
-  const element = Array.from(observer.observed).find(
-    (node) => (node as HTMLElement).dataset.styleCardId === styleId
+  const card = Array.from(observer.observed).find(
+    (element) => (element as HTMLElement).dataset.styleCardId === styleId
   )
-  if (!element) throw new Error(`Expected observed style card ${styleId}`)
-  return element
+  if (!card) throw new Error(`Expected observed style card ${styleId}`)
+  return card
 }
+
+vi.mock('@renderer/lib/ipc', () => ({ ipc: ipcMocks }))
+vi.mock('@renderer/i18n', () => ({ useT: () => translate }))
 
 async function renderStylesPage(): Promise<{ container: HTMLDivElement; root: Root }> {
   const container = document.createElement('div')
   document.body.appendChild(container)
   const root = createRoot(container)
-
   await act(async () => {
-    root.render(
-      React.createElement(MemoryRouter, null, React.createElement(StylesPage))
-    )
+    root.render(React.createElement(MemoryRouter, null, React.createElement(StylesPage)))
   })
-
   await act(async () => {
     await new Promise((resolve) => window.setTimeout(resolve, 5))
-    await Promise.resolve()
   })
-
   return { container, root }
 }
 
@@ -88,10 +81,7 @@ describe('StylesPage rendering', () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined)
     MockIntersectionObserver.instances = []
     vi.stubGlobal('IntersectionObserver', MockIntersectionObserver)
-    useStylePreviewStore.setState({
-      generatingStyleId: '',
-      completionVersion: 0
-    })
+    useStylePreviewStore.setState({ generatingStyleId: '', completionVersion: 0 })
     ipcMocks.listStyles.mockResolvedValue({
       items: [
         {
@@ -101,8 +91,18 @@ describe('StylesPage rendering', () => {
           category: 'deck',
           source: 'custom',
           styleCase: 'Pitch, Report',
-          previewPath: '/styles/preview/index.html',
+          previewPath: '/styles/preview/preview.html',
+          thumbnailPath: '/thumbnail-cache/style-with-preview.png',
           updatedAt: 2
+        },
+        {
+          id: 'style-pending-thumbnail',
+          label: 'Pending Thumbnail',
+          description: 'Uses iframe while visible',
+          category: 'deck',
+          source: 'custom',
+          previewPath: '/styles/pending/preview.html',
+          updatedAt: 1
         },
         {
           id: 'style-without-preview',
@@ -110,61 +110,70 @@ describe('StylesPage rendering', () => {
           description: 'Needs a generated preview',
           category: 'deck',
           source: 'builtin',
-          updatedAt: 1
+          updatedAt: 0
         }
       ]
     })
-    ipcMocks.generateStylePreview.mockResolvedValue({ previewPath: '/styles/fresh/index.html' })
+    ipcMocks.generateStylePreview.mockResolvedValue({ previewPath: '/styles/fresh/preview.html' })
+    ipcMocks.onHtmlThumbnailChanged.mockImplementation((listener) => {
+      thumbnailListener = listener
+      return () => {
+        thumbnailListener = null
+      }
+    })
   })
 
-  afterEach(async () => {
+  afterEach(() => {
     vi.unstubAllGlobals()
     vi.restoreAllMocks()
     document.body.innerHTML = ''
   })
 
-  it('renders StyleView-like cards and keeps preview generation available', async () => {
+  it('uses a visible iframe until the PNG thumbnail arrives', async () => {
     const { container, root } = await renderStylesPage()
-
     try {
-      expect(ipcMocks.listStyles).toHaveBeenCalledWith()
-      expect(container.querySelectorAll('[data-style-card-id]')).toHaveLength(2)
+      expect(container.querySelectorAll('[data-style-card-id]')).toHaveLength(3)
+      expect(container.querySelectorAll('img')).toHaveLength(1)
+      expect(container.querySelectorAll('iframe')).toHaveLength(0)
       expect(container.textContent).toContain('Preview Style')
       expect(container.textContent).toContain('Pitch')
-      expect(container.querySelectorAll('[data-testid="style-preview-iframe"]')).toHaveLength(0)
 
       const observer = MockIntersectionObserver.instances[0]
       await act(async () => {
         observer.emit([
           {
-            target: getObservedCard(observer, 'style-with-preview'),
+            target: getObservedCard(observer, 'style-pending-thumbnail'),
             isIntersecting: true
           }
         ])
       })
-
       expect(container.querySelectorAll('[data-testid="style-preview-iframe"]')).toHaveLength(1)
-      expect(
-        container.querySelector('[data-testid="style-preview-iframe"]')?.getAttribute('title')
-      ).toBe('Preview Style preview')
+
+      await act(async () => {
+        thumbnailListener?.({
+          resourceType: 'style',
+          resourceId: 'style-pending-thumbnail',
+          variant: 'default',
+          status: 'completed',
+          thumbnailPath: '/thumbnail-cache/style-pending-thumbnail.png'
+        })
+      })
+      expect(container.querySelectorAll('img')).toHaveLength(2)
+      expect(container.querySelectorAll('iframe')).toHaveLength(0)
+      expect(ipcMocks.listStyles).toHaveBeenCalledTimes(1)
 
       const generateButton = container.querySelector(
         'button[aria-label="styles.generatePreview"]'
       ) as HTMLButtonElement | null
-      expect(generateButton).toBeTruthy()
-
       await act(async () => {
         generateButton?.click()
         await Promise.resolve()
       })
-
       expect(ipcMocks.generateStylePreview).toHaveBeenCalledWith({
         styleId: 'style-without-preview'
       })
     } finally {
-      await act(async () => {
-        root.unmount()
-      })
+      await act(async () => root.unmount())
       container.remove()
     }
   })

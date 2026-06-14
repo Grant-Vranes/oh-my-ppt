@@ -19,11 +19,14 @@ import {
   initializeStyles,
   resolveBundledStylesSourcePath,
   resolveInstalledStylesPath,
-  setStylesRuntime
+  setStylesRuntime,
+  warmStyleThumbnails
 } from './styles'
 import { applyProxy } from './utils/proxy'
 import { createTray, destroyTray, showTrayHideBalloon } from './tray'
 import type { UpdateAvailablePayload } from '@shared/app-update'
+import { isRepeatedRendererCrash, shouldRecoverRenderer } from './renderer-recovery'
+import { configureHtmlThumbnailService } from './utils/html-thumbnail-service'
 
 let mainWindow: BrowserWindow | null = null
 let db: PPTDatabase | null = null
@@ -268,6 +271,33 @@ function createWindow(): BrowserWindow {
     return { action: 'deny' }
   })
 
+  let lastRendererCrashAt = 0
+  window.webContents.on('render-process-gone', (_event, details) => {
+    log.error('[renderer] process gone', details)
+    if (isShuttingDown || !shouldRecoverRenderer(details.reason)) return
+
+    const now = Date.now()
+    const repeatedCrash = isRepeatedRendererCrash(lastRendererCrashAt, now)
+    lastRendererCrashAt = now
+
+    setTimeout(() => {
+      if (isShuttingDown || window.isDestroyed() || window.webContents.isDestroyed()) return
+      if (!repeatedCrash) {
+        window.webContents.reload()
+        return
+      }
+
+      log.warn('[renderer] repeated crash; recovering at home route')
+      if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+        const rendererUrl = new URL(process.env['ELECTRON_RENDERER_URL'])
+        rendererUrl.hash = '/'
+        void window.loadURL(rendererUrl.toString())
+      } else {
+        void window.loadFile(join(__dirname, '../renderer/index.html'), { hash: '/' })
+      }
+    }, 250)
+  })
+
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     window.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
@@ -297,6 +327,8 @@ if (gotSingleInstanceLock) {
     const dbPath = is.dev ? join(process.cwd(), 'ohmyppt.dev.db') : undefined
     db = new PPTDatabase(dbPath)
     await db.init()
+    configureHtmlThumbnailService(db)
+    await db.failInterruptedThumbnailTasks()
     setStyleDb(db)
     log.info('[app] database initialized', {
       env: is.dev ? 'dev' : 'prod',
@@ -365,6 +397,17 @@ if (gotSingleInstanceLock) {
     agentManager = new AgentManager(db)
 
     const window = createWindow()
+
+    window.webContents.on('did-finish-load', () => {
+      void stylesReadyPromise
+        .then(() => db?.listStyleRows() || [])
+        .then((styles) => warmStyleThumbnails(installedStylesPath, styles))
+        .catch((error) => {
+          log.warn('[styles] thumbnail warmup failed', {
+            message: error instanceof Error ? error.message : String(error)
+          })
+        })
+    })
 
     if (process.platform === 'win32') {
       isTrayEnabled = createTray(window)

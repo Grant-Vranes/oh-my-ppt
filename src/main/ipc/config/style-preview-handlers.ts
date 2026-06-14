@@ -7,6 +7,7 @@ import {
   saveGeneratedStylePreview
 } from '../../utils/style-skills'
 import { generateStylePreviewHtml } from '../../utils/style-preview-generator'
+import { enqueueHtmlThumbnail } from '../../utils/html-thumbnail-service'
 
 export function registerStylePreviewHandlers(ctx: IpcContext): void {
   ipcMain.handle('styles:generatePreview', async (_event, payload) => {
@@ -30,6 +31,10 @@ export function registerStylePreviewHandlers(ctx: IpcContext): void {
       modelTimeoutMs: modelTimeouts.document
     })
     const result = await saveGeneratedStylePreview(styleId, previewHtml)
+    await enqueueHtmlThumbnail(
+      { resourceType: 'style', resourceId: styleId, sourcePath: result.previewPath },
+      { force: true }
+    )
 
     return { success: true, ...result }
   })

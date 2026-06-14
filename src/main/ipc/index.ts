@@ -6,6 +6,7 @@ import { registerSessionHandlers } from './session/session-handlers'
 import { registerSessionImportHandlers } from './session/session-import-handlers'
 import { registerSessionSaveAsNewHandler } from './session/session-save-as-new'
 import { registerAssetHandlers, registerLocalAssetProtocol } from './io/assets-handlers'
+import { registerThumbnailHandlers } from './io/thumbnail-handlers'
 import { registerGenerationHandlers } from './engine/generation-handlers'
 import { registerExportHandlers } from './io/export-handlers'
 import { registerStyleHandlers } from './config/style-handlers'
@@ -43,6 +44,7 @@ export function setupIPC(
   registerPageManagementHandlers(context)
   registerPageMergeHandlers(context)
   registerAssetHandlers(context)
+  registerThumbnailHandlers(context)
   registerGenerationHandlers(context)
   registerExportHandlers(context)
   registerStyleHandlers(context)

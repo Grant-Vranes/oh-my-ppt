@@ -103,8 +103,18 @@ export interface StyleListItem {
   styleCase?: string
   packageDir?: string
   previewPath?: string | null
+  thumbnailPath?: string | null
   createdAt?: number
   updatedAt?: number
+}
+
+export interface HtmlThumbnailTask {
+  resourceType: string
+  resourceId: string
+  variant: string
+  status: 'queued' | 'running' | 'completed' | 'failed'
+  thumbnailPath: string | null
+  error?: string
 }
 
 export interface StyleParseResult {
@@ -809,6 +819,48 @@ export const ipc = {
       success: boolean
       previewPath: string
     }>,
+  enqueueHtmlThumbnail: (payload: {
+    resourceType: string
+    resourceId: string
+    variant?: string
+    sourcePath: string
+    query?: Record<string, string>
+    captureWidth?: number
+    captureHeight?: number
+    thumbnailWidth?: number
+    thumbnailHeight?: number
+    force?: boolean
+  }) =>
+    getIpc().invoke('thumbnails:enqueue', payload) as Promise<HtmlThumbnailTask>,
+  enqueueHtmlThumbnails: (payload: {
+    items: Array<{
+      resourceType: string
+      resourceId: string
+      sourcePath: string
+      variant?: string
+      query?: Record<string, string>
+      captureWidth?: number
+      captureHeight?: number
+      thumbnailWidth?: number
+      thumbnailHeight?: number
+    }>
+    force?: boolean
+  }) =>
+    getIpc().invoke('thumbnails:enqueueBatch', payload) as Promise<{
+      tasks: HtmlThumbnailTask[]
+    }>,
+  getHtmlThumbnail: (payload: {
+    resourceType: string
+    resourceId: string
+    variant?: string
+  }) =>
+    getIpc().invoke('thumbnails:get', payload) as Promise<HtmlThumbnailTask | null>,
+  onHtmlThumbnailChanged: (callback: (task: HtmlThumbnailTask) => void): (() => void) => {
+    const channel = 'thumbnails:changed'
+    const handler = (_event: unknown, task: Parameters<typeof callback>[0]): void => callback(task)
+    getIpc().on(channel, handler)
+    return () => getIpc().removeListener(channel, handler)
+  },
   parseStyleFile: (payload: { filePath: string; modelConfigId?: string }) =>
     getIpc().invoke('styles:parseFile', payload) as Promise<StyleParseResult>,
   parseStylePptx: (payload: { filePath: string; modelConfigId?: string }) =>

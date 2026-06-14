@@ -7,6 +7,7 @@ const state = vi.hoisted(() => {
     generateStylePreviewHtml: vi.fn(),
     getStylePackageDirectory: vi.fn(),
     saveGeneratedStylePreview: vi.fn(),
+    enqueueHtmlThumbnail: vi.fn(),
     resolveGlobalModelTimeouts: vi.fn(),
     resolveModelConfigForTask: vi.fn(),
     ipcMain: {
@@ -26,6 +27,9 @@ vi.mock('../../../src/main/utils/style-skills', () => ({
 vi.mock('../../../src/main/utils/style-preview-generator', () => ({
   generateStylePreviewHtml: state.generateStylePreviewHtml
 }))
+vi.mock('../../../src/main/utils/html-thumbnail-service', () => ({
+  enqueueHtmlThumbnail: state.enqueueHtmlThumbnail
+}))
 vi.mock('../../../src/main/ipc/config/model-config-utils', () => ({
   resolveGlobalModelTimeouts: state.resolveGlobalModelTimeouts,
   resolveModelConfigForTask: state.resolveModelConfigForTask
@@ -39,6 +43,7 @@ describe('registerStylePreviewHandlers', () => {
     state.generateStylePreviewHtml.mockReset()
     state.getStylePackageDirectory.mockReset()
     state.saveGeneratedStylePreview.mockReset()
+    state.enqueueHtmlThumbnail.mockReset()
     state.resolveGlobalModelTimeouts.mockReset()
     state.resolveModelConfigForTask.mockReset()
   })
@@ -56,6 +61,13 @@ describe('registerStylePreviewHandlers', () => {
     state.generateStylePreviewHtml.mockResolvedValue('<!doctype html><html></html>')
     state.saveGeneratedStylePreview.mockResolvedValue({
       previewPath: '/styles/user/paper-story/preview.html'
+    })
+    state.enqueueHtmlThumbnail.mockResolvedValue({
+      resourceType: 'style',
+      resourceId: 'paper-story',
+      variant: 'default',
+      status: 'queued',
+      thumbnailPath: null
     })
 
     const { registerStylePreviewHandlers } =
@@ -83,6 +95,14 @@ describe('registerStylePreviewHandlers', () => {
     expect(state.saveGeneratedStylePreview).toHaveBeenCalledWith(
       'paper-story',
       '<!doctype html><html></html>'
+    )
+    expect(state.enqueueHtmlThumbnail).toHaveBeenCalledWith(
+      {
+        resourceType: 'style',
+        resourceId: 'paper-story',
+        sourcePath: '/styles/user/paper-story/preview.html'
+      },
+      { force: true }
     )
   })
 })

@@ -260,6 +260,32 @@ export const styles = sqliteTable('styles', {
   updatedAt: integer('updated_at').notNull()
 })
 
+export const thumbnails = sqliteTable(
+  'thumbnails',
+  {
+    key: text('key').primaryKey(),
+    resourceType: text('resource_type').notNull(),
+    resourceId: text('resource_id').notNull(),
+    variant: text('variant').notNull().default('default'),
+    sourcePath: text('source_path').notNull(),
+    sourceMtimeMs: integer('source_mtime_ms').notNull().default(0),
+    signature: text('signature').notNull().default(''),
+    thumbnailPath: text('thumbnail_path').notNull().default(''),
+    status: text('status').notNull().default('queued'),
+    error: text('error'),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull()
+  },
+  (table) => ({
+    resourceVariantUniqueIdx: uniqueIndex('thumbnails_resource_variant_unique').on(
+      table.resourceType,
+      table.resourceId,
+      table.variant
+    ),
+    statusIdx: index('thumbnails_status_idx').on(table.status, table.updatedAt)
+  })
+)
+
 export const sessionStyleSnapshots = sqliteTable(
   'session_style_snapshots',
   {

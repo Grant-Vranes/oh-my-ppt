@@ -3,7 +3,7 @@
  */
 import React, { act } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createRoot, type Root } from 'react-dom/client'
+import { createRoot } from 'react-dom/client'
 import { StyleView } from '../../../src/renderer/src/components/session-detail/style/StyleView'
 import { useGenerateStore } from '../../../src/renderer/src/store/generateStore'
 import { useGenerationActivityStore } from '../../../src/renderer/src/store/generationActivityStore'
@@ -11,34 +11,18 @@ import { useSessionStore } from '../../../src/renderer/src/store/sessionStore'
 
 const ipcMocks = vi.hoisted(() => ({
   listStyles: vi.fn(),
-  switchSessionStyle: vi.fn()
+  switchSessionStyle: vi.fn(),
+  onHtmlThumbnailChanged: vi.fn(() => () => undefined)
 }))
 const translate = vi.hoisted(() => vi.fn((key: string) => key))
-
-vi.mock('@renderer/lib/ipc', () => ({ ipc: ipcMocks }))
-
-vi.mock('@renderer/i18n', () => ({
-  useT: () => translate
-}))
-
-vi.mock('@renderer/hooks/useModelAction', () => ({
-  useModelAction: () => ({
-    selectedModelConfigId: 'model-1',
-    ensureModelActive: vi.fn()
-  })
-}))
 
 type ObserverEntry = Pick<IntersectionObserverEntry, 'target' | 'isIntersecting'>
 
 class MockIntersectionObserver {
   static instances: MockIntersectionObserver[] = []
-
   readonly observed = new Set<Element>()
 
-  constructor(
-    private readonly callback: IntersectionObserverCallback,
-    readonly options?: IntersectionObserverInit
-  ) {
+  constructor(private readonly callback: IntersectionObserverCallback) {
     MockIntersectionObserver.instances.push(this)
   }
 
@@ -54,58 +38,48 @@ class MockIntersectionObserver {
     this.observed.clear()
   }
 
-  takeRecords = (): IntersectionObserverEntry[] => []
-
   emit(entries: ObserverEntry[]): void {
     this.callback(entries as IntersectionObserverEntry[], this as unknown as IntersectionObserver)
   }
 }
 
-function makeStyles(count: number) {
-  return Array.from({ length: count }, (_, index) => ({
-    id: `style-${index + 1}`,
-    label: `Style ${index + 1}`,
-    description: `Description ${index + 1}`,
-    category: 'test',
-    previewPath: `/styles/style-${index + 1}/preview.html`,
-    updatedAt: count - index
-  }))
-}
-
 function getObservedCard(observer: MockIntersectionObserver, styleId: string): Element {
-  const element = Array.from(observer.observed).find(
-    (node) => (node as HTMLElement).dataset.styleCardId === styleId
+  const card = Array.from(observer.observed).find(
+    (element) => (element as HTMLElement).dataset.styleCardId === styleId
   )
-  if (!element) throw new Error(`Expected observed style card ${styleId}`)
-  return element
+  if (!card) throw new Error(`Expected observed style card ${styleId}`)
+  return card
 }
 
-async function renderStyleView(): Promise<{ container: HTMLDivElement; root: Root }> {
-  const container = document.createElement('div')
-  document.body.appendChild(container)
-  const root = createRoot(container)
-
-  await act(async () => {
-    root.render(React.createElement(StyleView, { sessionId: 'session-1' }))
-    await Promise.resolve()
-  })
-
-  return { container, root }
-}
+vi.mock('@renderer/lib/ipc', () => ({ ipc: ipcMocks }))
+vi.mock('@renderer/i18n', () => ({ useT: () => translate }))
+vi.mock('@renderer/hooks/useModelAction', () => ({
+  useModelAction: () => ({ selectedModelConfigId: 'model-1', ensureModelActive: vi.fn() })
+}))
 
 describe('StyleView preview rendering', () => {
   beforeEach(() => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined)
     MockIntersectionObserver.instances = []
     vi.stubGlobal('IntersectionObserver', MockIntersectionObserver)
-    ipcMocks.listStyles.mockResolvedValue({ items: makeStyles(24) })
+    ipcMocks.listStyles.mockResolvedValue({
+      items: Array.from({ length: 10 }, (_, index) => ({
+        id: `style-${index + 1}`,
+        label: `Style ${index + 1}`,
+        description: `Description ${index + 1}`,
+        category: 'test',
+        previewPath: `/styles/style-${index + 1}/preview.html`,
+        thumbnailPath: index === 0 ? '/thumbnails/style-1.png' : null,
+        updatedAt: 10 - index
+      }))
+    })
     useGenerateStore.getState().reset()
     useGenerationActivityStore.getState().reset()
     useSessionStore.getState().setCurrentSession({
       id: 'session-1',
       title: 'Session',
       topic: null,
-      styleId: null,
+      styleId: 'style-1',
       page_count: null,
       status: 'completed',
       provider: '',
@@ -116,7 +90,7 @@ describe('StyleView preview rendering', () => {
     })
   })
 
-  afterEach(async () => {
+  afterEach(() => {
     vi.unstubAllGlobals()
     vi.restoreAllMocks()
     useSessionStore.getState().resetRuntimeState()
@@ -124,88 +98,41 @@ describe('StyleView preview rendering', () => {
     document.body.innerHTML = ''
   })
 
-  it('mounts preview iframes only near the scroll viewport and caps them at twenty', async () => {
-    useSessionStore.setState((state) => ({
-      currentSession: state.currentSession ? { ...state.currentSession, styleId: 'style-1' } : null
-    }))
-    const { container, root } = await renderStyleView()
+  it('prefers PNG thumbnails and caps visible iframe placeholders at eight', async () => {
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+    await act(async () => {
+      root.render(React.createElement(StyleView, { sessionId: 'session-1' }))
+      await Promise.resolve()
+    })
 
     try {
       expect(ipcMocks.listStyles).toHaveBeenCalledWith({ sessionId: 'session-1' })
+      expect(container.querySelectorAll('img')).toHaveLength(1)
+      expect(container.querySelectorAll('iframe')).toHaveLength(0)
+
       const observer = MockIntersectionObserver.instances[0]
-      expect(observer.options?.rootMargin).toBe('200px 100px')
-      expect(observer.options?.root).toBeTruthy()
-      expect(observer.observed.size).toBe(24)
-      expect(container.querySelectorAll('[data-testid="style-selection-checkbox"]')).toHaveLength(
-        24
-      )
+      await act(async () => {
+        observer.emit(
+          Array.from({ length: 9 }, (_, index) => ({
+            target: getObservedCard(observer, `style-${index + 2}`),
+            isIntersecting: true
+          }))
+        )
+      })
+      expect(container.querySelectorAll('[data-testid="style-preview-iframe"]')).toHaveLength(8)
+      expect(
+        container.querySelector('[data-style-card-id="style-2"] iframe')
+      ).toBeNull()
       const checkedBox = container.querySelector(
         '[data-testid="style-selection-checkbox"][data-state="checked"]'
       )
       expect(
         (checkedBox?.closest('[data-style-card-id]') as HTMLElement | null)?.dataset.styleCardId
       ).toBe('style-1')
-      expect(container.querySelectorAll('[data-testid="style-preview-iframe"]')).toHaveLength(0)
-
-      await act(async () => {
-        observer.emit(
-          Array.from({ length: 24 }, (_, index) => ({
-            target: getObservedCard(observer, `style-${index + 1}`),
-            isIntersecting: true
-          }))
-        )
-      })
-
-      expect(container.querySelectorAll('[data-testid="style-preview-iframe"]')).toHaveLength(20)
-      const previewTitles = Array.from(
-        container.querySelectorAll('[data-testid="style-preview-iframe"]')
-      ).map((node) => node.getAttribute('title'))
-      expect(previewTitles).not.toContain('Style 1 preview')
-      expect(previewTitles).toContain('Style 24 preview')
     } finally {
-      await act(async () => {
-        root.unmount()
-      })
-      container.remove()
-    }
-  })
-
-  it('delays preview removal and cancels it when the card re-enters', async () => {
-    ipcMocks.listStyles.mockResolvedValue({ items: makeStyles(1) })
-    const { container, root } = await renderStyleView()
-    vi.useFakeTimers()
-
-    try {
-      const observer = MockIntersectionObserver.instances[0]
-      const card = getObservedCard(observer, 'style-1')
-
-      await act(async () => {
-        observer.emit([{ target: card, isIntersecting: true }])
-      })
-      expect(container.querySelectorAll('[data-testid="style-preview-iframe"]')).toHaveLength(1)
-
-      await act(async () => {
-        observer.emit([{ target: card, isIntersecting: false }])
-        vi.advanceTimersByTime(200)
-      })
-      expect(container.querySelectorAll('[data-testid="style-preview-iframe"]')).toHaveLength(1)
-
-      await act(async () => {
-        observer.emit([{ target: card, isIntersecting: true }])
-        vi.advanceTimersByTime(250)
-      })
-      expect(container.querySelectorAll('[data-testid="style-preview-iframe"]')).toHaveLength(1)
-
-      await act(async () => {
-        observer.emit([{ target: card, isIntersecting: false }])
-        vi.advanceTimersByTime(250)
-      })
-      expect(container.querySelectorAll('[data-testid="style-preview-iframe"]')).toHaveLength(0)
-    } finally {
-      vi.useRealTimers()
-      await act(async () => {
-        root.unmount()
-      })
+      await act(async () => root.unmount())
       container.remove()
     }
   })

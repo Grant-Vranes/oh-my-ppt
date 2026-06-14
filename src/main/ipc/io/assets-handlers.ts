@@ -45,7 +45,7 @@ const isPathInside = (candidate: string, root: string): boolean => {
 
 const getStaticAllowedRoots = (): string[] => [getResourcesRoot(), getUserFontsRoot()]
 
-const assertLocalAssetAllowed = (filePath: string): string | null => {
+export const resolveAllowedLocalAssetPath = (filePath: string): string | null => {
   const normalizedFile = normalizeExistingPath(filePath)
   const roots = [...getStaticAllowedRoots(), ...dynamicAllowedRoots]
     .map(normalizeExistingPath)
@@ -63,7 +63,7 @@ export function registerLocalAssetProtocol(): void {
     const requestedPath = decodeURIComponent(
       request.url.replace('local-asset://', '').split(/[?#]/, 1)[0]
     )
-    const filePath = assertLocalAssetAllowed(requestedPath)
+    const filePath = resolveAllowedLocalAssetPath(requestedPath)
     if (!filePath) return new Response('Forbidden', { status: 403 })
     try {
       const stat = fs.statSync(filePath)

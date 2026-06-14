@@ -20,6 +20,10 @@ import { parseStyleImage } from '../../utils/style-image-import'
 import { parseStylePptx } from '../../utils/style-pptx-import'
 import { isSupportedImageMimeType, normalizeImageMimeType } from '@shared/image-mime'
 import { getInstalledStylesPath } from '../../styles'
+import {
+  enqueueHtmlThumbnail,
+  getFreshHtmlThumbnailPath
+} from '../../utils/html-thumbnail-service'
 
 const nanoidLower = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 12)
 const MAX_STYLE_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
@@ -105,30 +109,46 @@ export function registerStyleHandlers(ctx: IpcContext): void {
     const sessionId = typeof payload?.sessionId === 'string' ? payload.sessionId.trim() : ''
     const rows = (await db.listStyleRows()).filter((row) => row.active !== false)
     rows.sort((a, b) => b.updatedAt - a.updatedAt || b.createdAt - a.createdAt)
-    const items = rows.map((row) => ({
-      id: row.id,
-      styleKey: row.style,
-      label: row.styleName,
-      name: {
-        zh: row.styleNameZh || row.styleName,
-        en: row.styleNameEn || ''
-      },
-      description: row.description,
-      aliases: parseAliases(row.aliases),
-      category: row.category || (row.source === 'builtin' ? '内置' : '自定义'),
-      source: row.source,
-      editable: row.source !== 'builtin',
-      version: row.version,
-      styleCase: row.styleCase,
-      packageDir: row.packageDir || '',
-      previewPath: resolvePreviewPath(row),
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt
+    const items = await Promise.all(rows.map(async (row) => {
+      const previewPath = resolvePreviewPath(row)
+      return {
+        id: row.id,
+        styleKey: row.style,
+        label: row.styleName,
+        name: {
+          zh: row.styleNameZh || row.styleName,
+          en: row.styleNameEn || ''
+        },
+        description: row.description,
+        aliases: parseAliases(row.aliases),
+        category: row.category || (row.source === 'builtin' ? '内置' : '自定义'),
+        source: row.source,
+        editable: row.source !== 'builtin',
+        version: row.version,
+        styleCase: row.styleCase,
+        packageDir: row.packageDir || '',
+        previewPath,
+        thumbnailPath: previewPath
+          ? await getFreshHtmlThumbnailPath({
+              resourceType: 'style',
+              resourceId: row.id,
+              sourcePath: previewPath
+            })
+          : null,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt
+      }
     }))
 
     if (sessionId) {
       const snapshot = await db.getSessionStyleSnapshot(sessionId)
       if (snapshot && !items.some((item) => item.id === snapshot.styleId)) {
+        const previewPath = resolvePreviewPath({
+          id: snapshot.styleId,
+          style: snapshot.styleKey,
+          source: snapshot.source,
+          packageDir: snapshot.packageDir
+        })
         items.unshift({
           id: snapshot.styleId,
           styleKey: snapshot.styleKey,
@@ -145,12 +165,14 @@ export function registerStyleHandlers(ctx: IpcContext): void {
           version: snapshot.version,
           styleCase: snapshot.styleCase,
           packageDir: snapshot.packageDir || '',
-          previewPath: resolvePreviewPath({
-            id: snapshot.styleId,
-            style: snapshot.styleKey,
-            source: snapshot.source,
-            packageDir: snapshot.packageDir
-          }),
+          previewPath,
+          thumbnailPath: previewPath
+            ? await getFreshHtmlThumbnailPath({
+                resourceType: 'style',
+                resourceId: snapshot.styleId,
+                sourcePath: previewPath
+              })
+            : null,
           createdAt: snapshot.createdAt,
           updatedAt: snapshot.createdAt
         })
@@ -317,6 +339,14 @@ export function registerStyleHandlers(ctx: IpcContext): void {
       return { success: false, cancelled: true, id: '', source: 'custom' as const }
     }
     const result = await importStylePackageZip(openResult.filePaths[0])
+    const importedStyle = await db.getStyleRow(result.id)
+    const previewPath = importedStyle ? resolvePreviewPath(importedStyle) : null
+    if (previewPath) {
+      await enqueueHtmlThumbnail(
+        { resourceType: 'style', resourceId: result.id, sourcePath: previewPath },
+        { force: true }
+      )
+    }
     return { success: true, cancelled: false, ...result }
   })
 

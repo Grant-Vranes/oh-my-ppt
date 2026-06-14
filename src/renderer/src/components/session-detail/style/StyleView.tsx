@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Check, Loader2, Palette } from 'lucide-react'
-import { ipc, type StyleListItem } from '@renderer/lib/ipc'
+import { ipc, type HtmlThumbnailTask, type StyleListItem } from '@renderer/lib/ipc'
 import { useT } from '@renderer/i18n'
 import { useModelAction } from '@renderer/hooks/useModelAction'
+import { useThumbnailUpdates } from '@renderer/hooks/useThumbnailUpdates'
+import { useVisibleItemIds } from '@renderer/hooks/useVisibleItemIds'
 import {
   useGenerateStore,
   useGenerationActivityStore,
@@ -19,9 +21,8 @@ import {
   AlertDialogDescription,
   AlertDialogTitle
 } from '../../ui/AlertDialog'
-import { useStylePreviewIds } from './useStylePreviewIds'
 
-const VISIBLE_CACHE = 20
+const MAX_VISIBLE_IFRAMES = 8
 
 const localAssetUrl = (filePath: string): string => `local-asset://${encodeURIComponent(filePath)}`
 const stylePreviewUrl = (filePath: string): string =>
@@ -40,28 +41,34 @@ export function StyleView({ sessionId }: { sessionId: string }): React.JSX.Eleme
   const [loading, setLoading] = useState(true)
   const [switchTarget, setSwitchTarget] = useState<StyleListItem | null>(null)
 
+  const loadStyles = useCallback(async (): Promise<void> => {
+    setLoading(true)
+    try {
+      const result = await ipc.listStyles({ sessionId })
+      setStyles(result.items)
+    } catch (loadError) {
+      error(t('sessionDetail.styleLoadFailed'), {
+        description: loadError instanceof Error ? loadError.message : t('common.retryLater')
+      })
+    } finally {
+      setLoading(false)
+    }
+  }, [error, sessionId, t])
+
+  const applyThumbnail = useCallback((task: HtmlThumbnailTask): void => {
+    if (!task.thumbnailPath) return
+    setStyles((current) =>
+      current.map((style) =>
+        style.id === task.resourceId ? { ...style, thumbnailPath: task.thumbnailPath } : style
+      )
+    )
+  }, [])
+
+  useThumbnailUpdates('style', applyThumbnail)
+
   useEffect(() => {
-    let cancelled = false
-    const load = async (): Promise<void> => {
-      setLoading(true)
-      try {
-        const result = await ipc.listStyles({ sessionId })
-        if (!cancelled) setStyles(result.items)
-      } catch (loadError) {
-        if (!cancelled) {
-          error(t('sessionDetail.styleLoadFailed'), {
-            description: loadError instanceof Error ? loadError.message : t('common.retryLater')
-          })
-        }
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-    void load()
-    return () => {
-      cancelled = true
-    }
-  }, [currentStyleId, sessionId])
+    void loadStyles()
+  }, [currentStyleId, loadStyles])
 
   const orderedStyles = useMemo(
     () =>
@@ -72,8 +79,19 @@ export function StyleView({ sessionId }: { sessionId: string }): React.JSX.Eleme
       }),
     [currentStyleId, styles]
   )
-  const styleIds = useMemo(() => new Set(orderedStyles.map((style) => style.id)), [orderedStyles])
-  const { viewportRef, renderableIds, setStyleRef } = useStylePreviewIds(styleIds, VISIBLE_CACHE)
+  const fallbackStyleIds = useMemo(
+    () =>
+      new Set(
+        orderedStyles
+          .filter((style) => !style.thumbnailPath && style.previewPath)
+          .map((style) => style.id)
+      ),
+    [orderedStyles]
+  )
+  const { visibleIds: visibleFallbackIds, setItemRef } = useVisibleItemIds(
+    fallbackStyleIds,
+    MAX_VISIBLE_IFRAMES
+  )
 
   const handleSwitch = async (style: StyleListItem): Promise<void> => {
     if (style.id === currentStyleId || isGenerating) return
@@ -113,7 +131,7 @@ export function StyleView({ sessionId }: { sessionId: string }): React.JSX.Eleme
   }
 
   return (
-    <ScrollArea className="flex-1" viewportRef={viewportRef}>
+    <ScrollArea className="flex-1">
       <div className="p-6">
         <div className="mb-4">
           <h2 className="text-lg font-semibold text-[#3e4a32]">{t('sessionDetail.styleTitle')}</h2>
@@ -126,7 +144,7 @@ export function StyleView({ sessionId }: { sessionId: string }): React.JSX.Eleme
             return (
               <div
                 key={style.id}
-                ref={setStyleRef(style.id)}
+                ref={!style.thumbnailPath && style.previewPath ? setItemRef(style.id) : undefined}
                 data-style-card-id={style.id}
                 role="button"
                 aria-current={isCurrent ? 'true' : undefined}
@@ -144,7 +162,15 @@ export function StyleView({ sessionId }: { sessionId: string }): React.JSX.Eleme
                 className="group overflow-hidden rounded-2xl border border-[#d8cfbc]/75 bg-white/70 text-left shadow-[0_4px_16px_rgba(93,107,77,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(93,107,77,0.15)] aria-disabled:cursor-default aria-disabled:hover:translate-y-0"
               >
                 <div className="relative aspect-video overflow-hidden bg-[#f5f1e8]">
-                  {style.previewPath && renderableIds.has(style.id) ? (
+                  {style.thumbnailPath ? (
+                    <img
+                      src={stylePreviewUrl(style.thumbnailPath)}
+                      loading="lazy"
+                      alt=""
+                      aria-hidden="true"
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                  ) : style.previewPath && visibleFallbackIds.has(style.id) ? (
                     <iframe
                       data-testid="style-preview-iframe"
                       src={stylePreviewUrl(style.previewPath)}

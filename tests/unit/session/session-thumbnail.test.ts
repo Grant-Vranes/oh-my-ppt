@@ -85,4 +85,23 @@ describe('session first page thumbnails', () => {
     expect(result.size).toBe(2)
     expect(state.enqueueHtmlThumbnails).not.toHaveBeenCalled()
   })
+
+  it('returns an empty result without enqueueing when the cache lookup fails', async () => {
+    state.getFreshHtmlThumbnailPaths.mockRejectedValue(new Error('database unavailable'))
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+
+    const { warmSessionFirstPageThumbnails } = await import(
+      '../../../src/main/session/session-thumbnail'
+    )
+    const result = await warmSessionFirstPageThumbnails([
+      { sessionId: 'session-1', pageId: 'p-1', sourcePath: '/tmp/page-1.html' }
+    ])
+
+    expect(result.size).toBe(0)
+    expect(state.enqueueHtmlThumbnails).not.toHaveBeenCalled()
+    expect(warn).toHaveBeenCalledWith(
+      '[session-thumbnail] fresh thumbnail lookup failed',
+      expect.any(Error)
+    )
+  })
 })

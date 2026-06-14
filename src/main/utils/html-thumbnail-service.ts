@@ -19,6 +19,7 @@ const PRINT_READY_DEFAULT_TIMEOUT_MS = 8000
 const PRINT_READY_SETTLE_MS = 120
 const PRINT_READY_PASS_TWO_DELAY_MS = 450
 const PRINT_READY_PASS_THREE_DELAY_MS = 80
+const MAX_SOURCE_STABILITY_ATTEMPTS = 2
 
 export type HtmlThumbnailRequest = {
   resourceType: string
@@ -370,11 +371,14 @@ async function persistTask(
   request: Required<HtmlThumbnailRequest>,
   status: HtmlThumbnailTaskStatus,
   thumbnailPath: string,
-  error?: string
+  error?: string,
+  sourceMtimeMsOverride?: number
 ): Promise<void> {
-  const sourceMtimeMs = fs.existsSync(request.sourcePath)
-    ? Math.floor((await fs.promises.stat(request.sourcePath)).mtimeMs)
-    : 0
+  const sourceMtimeMs =
+    sourceMtimeMsOverride ??
+    (fs.existsSync(request.sourcePath)
+      ? Math.floor((await fs.promises.stat(request.sourcePath)).mtimeMs)
+      : 0)
   await getDb().upsertThumbnailRecord({
     resourceType: request.resourceType,
     resourceId: request.resourceId,
@@ -446,14 +450,26 @@ export async function enqueueHtmlThumbnail(
         normalized.variant
       )
       pendingPath = `${thumbnailPath}.tmp`
-      const window = createCaptureWindow()
-      try {
-        const png = await captureThumbnail(window, normalized)
-        await fs.promises.writeFile(pendingPath, png)
-        await fs.promises.rename(pendingPath, thumbnailPath)
-      } finally {
-        if (!window.isDestroyed()) window.destroy()
+      let png: Buffer | null = null
+      let capturedSourceMtimeMs = 0
+      for (let attempt = 0; attempt < MAX_SOURCE_STABILITY_ATTEMPTS; attempt += 1) {
+        const sourceMtimeBefore = Math.floor((await fs.promises.stat(normalized.sourcePath)).mtimeMs)
+        const window = createCaptureWindow()
+        try {
+          png = await captureThumbnail(window, normalized)
+        } finally {
+          if (!window.isDestroyed()) window.destroy()
+        }
+        const sourceMtimeAfter = Math.floor((await fs.promises.stat(normalized.sourcePath)).mtimeMs)
+        if (sourceMtimeBefore === sourceMtimeAfter) {
+          capturedSourceMtimeMs = sourceMtimeAfter
+          break
+        }
+        png = null
       }
+      if (!png) throw new Error('Thumbnail source changed during capture')
+      await fs.promises.writeFile(pendingPath, png)
+      await fs.promises.rename(pendingPath, thumbnailPath)
       const completed: HtmlThumbnailTask = {
         resourceType: normalized.resourceType,
         resourceId: normalized.resourceId,
@@ -461,7 +477,7 @@ export async function enqueueHtmlThumbnail(
         status: 'completed',
         thumbnailPath
       }
-      await persistTask(normalized, 'completed', thumbnailPath)
+      await persistTask(normalized, 'completed', thumbnailPath, undefined, capturedSourceMtimeMs)
       emitTaskChanged(completed)
       backgroundTasks.delete(key)
     } catch (error) {

@@ -50,7 +50,13 @@ export async function warmSessionFirstPageThumbnails(
   entries: SessionThumbnailEntry[]
 ): Promise<Map<string, string>> {
   const requests = entriesToRequests(entries)
-  const freshMap = await getFreshHtmlThumbnailPaths(requests)
+  let freshMap: Map<string, string>
+  try {
+    freshMap = await getFreshHtmlThumbnailPaths(requests)
+  } catch (error) {
+    console.warn('[session-thumbnail] fresh thumbnail lookup failed', error)
+    return new Map()
+  }
   const missing = requests.filter((request) => !freshMap.has(request.resourceId))
   if (missing.length > 0) {
     void enqueueHtmlThumbnails(missing).catch((error) => {

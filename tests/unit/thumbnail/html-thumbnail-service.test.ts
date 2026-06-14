@@ -195,6 +195,48 @@ describe('html thumbnail background service', () => {
     fs.rmSync(sourceRoot, { recursive: true, force: true })
   })
 
+  it('retries capture when the source changes and records the stable source mtime', async () => {
+    const sourceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ohmyppt-thumbnail-changing-'))
+    const sourcePath = path.join(sourceRoot, 'page-1.html')
+    fs.writeFileSync(sourcePath, '<!doctype html><html><body>first</body></html>')
+    const records = new Map<string, Record<string, unknown>>()
+    const db = {
+      getThumbnailRecord: vi.fn(async (resourceType: string, resourceId: string, variant: string) =>
+        records.get(`${resourceType}:${resourceId}:${variant}`)
+      ),
+      upsertThumbnailRecord: vi.fn(async (record: Record<string, unknown>) => {
+        records.set(`${record.resourceType}:${record.resourceId}:${record.variant}`, record)
+      })
+    }
+    state.capturePage.mockImplementationOnce(async () => {
+      fs.writeFileSync(sourcePath, '<!doctype html><html><body>second</body></html>')
+      const changedTime = new Date(Date.now() + 2_000)
+      fs.utimesSync(sourcePath, changedTime, changedTime)
+      return {
+        resize: vi.fn(() => ({ toPNG: vi.fn(() => Buffer.from('stale')) }))
+      }
+    })
+
+    const service = await import('../../../src/main/utils/html-thumbnail-service')
+    service.configureHtmlThumbnailService(db as never)
+    await service.enqueueHtmlThumbnail({
+      resourceType: 'session',
+      resourceId: 'session-changing',
+      variant: 'first-page',
+      sourcePath
+    })
+
+    await vi.waitFor(() => {
+      const completed = db.upsertThumbnailRecord.mock.calls.find(
+        ([record]) => record.status === 'completed'
+      )?.[0]
+      expect(completed).toBeTruthy()
+      expect(completed?.sourceMtimeMs).toBe(Math.floor(fs.statSync(sourcePath).mtimeMs))
+    })
+    expect(state.capturePage).toHaveBeenCalledTimes(2)
+    fs.rmSync(sourceRoot, { recursive: true, force: true })
+  })
+
   it('runs at most two screenshot tasks concurrently', async () => {
     const sourceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ohmyppt-thumbnail-concurrency-'))
     const sourcePaths = Array.from({ length: 3 }, (_, index) => {

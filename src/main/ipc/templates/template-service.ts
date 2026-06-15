@@ -17,6 +17,10 @@ import { createPptxChartRewriteHandler } from '../../utils/pptx-chart-rewrite-ag
 import { extractStyleFromExistingHtml } from '../../utils/style-pptx-import'
 import { createStyleSkill, resolveUsableStyleId } from '../../utils/style-skills'
 import { recordHistoryOperationStrict } from '../../history/git-history-service'
+import {
+  captureTemplateCoverThumbnail,
+  warmTemplateCoverThumbnails
+} from '../../templates/template-thumbnail'
 import { copyDirExcluding } from './template-copy'
 import { resolveTemplateDesignContract } from './template-design-contract'
 import {
@@ -109,6 +113,38 @@ function resolveTemplateListPaths(templateDir: string, manifest: TemplateManifes
     previewHtmlPath,
     previewPages
   }
+}
+
+async function attachTemplateCoverThumbnails(
+  items: TemplateListItem[],
+  delayMs = 300
+): Promise<TemplateListItem[]> {
+  const thumbnailMap = await warmTemplateCoverThumbnails(
+    items.map((item) => ({
+      templateId: item.id,
+      sourcePath: item.previewHtmlPath,
+      pageId: item.previewPages[0]?.pageId
+    })),
+    delayMs
+  )
+  return items.map((item) => ({
+    ...item,
+    thumbnailPath: thumbnailMap.get(item.id) || null
+  }))
+}
+
+function warmCreatedTemplateCover(templateDir: string, manifest: TemplateManifest): void {
+  const paths = resolveTemplateListPaths(templateDir, manifest)
+  void warmTemplateCoverThumbnails(
+    [
+      {
+        templateId: manifest.id,
+        sourcePath: paths.previewHtmlPath,
+        pageId: paths.previewPages[0]?.pageId
+      }
+    ],
+    0
+  )
 }
 
 async function readManifest(templatesRoot: string, templateId: string): Promise<CacheValue> {
@@ -273,7 +309,7 @@ export async function listTemplates(): Promise<{ items: TemplateListItem[] }> {
   const templatesRoot = await ensureTemplatesRoot()
   const cacheKey = `list:${templatesRoot}`
   const cached = templateListCache.get(cacheKey)
-  if (cached) return { items: cached }
+  if (cached) return { items: await attachTemplateCoverThumbnails(cached) }
 
   const entries = await fs.promises.readdir(templatesRoot, { withFileTypes: true }).catch(() => [])
   const items: TemplateListItem[] = []
@@ -289,7 +325,7 @@ export async function listTemplates(): Promise<{ items: TemplateListItem[] }> {
 
   items.sort((a, b) => b.updatedAt - a.updatedAt || b.createdAt - a.createdAt)
   templateListCache.set(cacheKey, items)
-  return { items }
+  return { items: await attachTemplateCoverThumbnails(items) }
 }
 
 export async function getTemplate(templateId: string): Promise<{
@@ -324,9 +360,12 @@ export async function updateTemplateMetadata(payload: unknown): Promise<{
   }
   await writeManifest(templateDir, nextManifest)
   clearTemplateCache(templatesRoot, templateId)
+  const [item] = await attachTemplateCoverThumbnails([
+    manifestToListItem(nextManifest, resolveTemplateListPaths(templateDir, nextManifest))
+  ])
   return {
     success: true,
-    item: manifestToListItem(nextManifest, resolveTemplateListPaths(templateDir, nextManifest))
+    item
   }
 }
 
@@ -398,6 +437,7 @@ export async function createTemplateFromSession(
 
   await writeManifest(templateDir, manifest)
   clearTemplateCache(templatesRoot, templateId)
+  warmCreatedTemplateCover(templateDir, manifest)
   return { success: true, id: templateId }
 }
 
@@ -539,6 +579,19 @@ export async function importPptxAsTemplate(
 
     await writeManifest(templateDir, manifest)
     clearTemplateCache(templatesRoot, templateId)
+
+    onProgress?.({
+      stage: 'database',
+      progress: 98,
+      label: '正在生成模板封面',
+      totalPages: imported.pageCount
+    })
+    const paths = resolveTemplateListPaths(templateDir, manifest)
+    await captureTemplateCoverThumbnail({
+      templateId: manifest.id,
+      sourcePath: paths.previewHtmlPath,
+      pageId: paths.previewPages[0]?.pageId
+    })
 
     onProgress?.({
       stage: 'completed',

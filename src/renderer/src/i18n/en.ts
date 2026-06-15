@@ -39,6 +39,7 @@ export const en = {
     refresh: 'Refresh',
     importPptx: 'Import PPTX as template',
     pageCount: '{count} pages',
+    thumbnailGenerating: 'Preparing cover',
     pageCountLabel: 'Pages',
     noDescription: 'No description',
     use: 'Use',

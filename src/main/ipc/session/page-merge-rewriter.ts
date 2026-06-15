@@ -27,15 +27,14 @@ const splitResourceSuffix = (value: string): { pathname: string; suffix: string 
   return { pathname: match?.[1] || value, suffix: match?.[2] || '' }
 }
 
+const isIgnoredMergeResourceValue = (value: string): boolean =>
+  !value ||
+  value.startsWith('#') ||
+  /^(?:data|blob|https?|javascript|mailto|tel|local-asset):/i.test(value)
+
 const normalizeResourceKey = (value: string): string | null => {
   const raw = value.trim().replace(/^['"]|['"]$/g, '')
-  if (
-    !raw ||
-    raw.startsWith('#') ||
-    /^(?:data|blob|https?|javascript|mailto|tel|local-asset):/i.test(raw)
-  ) {
-    return null
-  }
+  if (isIgnoredMergeResourceValue(raw)) return null
   const { pathname } = splitResourceSuffix(raw)
   if (!pathname || path.isAbsolute(pathname) || pathname.startsWith('/')) return null
   let decodedPathname = pathname
@@ -51,13 +50,7 @@ const normalizeResourceKey = (value: string): string | null => {
 
 const unsafeLocalResourceValue = (value: string): string | null => {
   const raw = value.trim().replace(/^['"]|['"]$/g, '')
-  if (
-    !raw ||
-    raw.startsWith('#') ||
-    /^(?:data|blob|https?|javascript|mailto|tel|local-asset):/i.test(raw)
-  ) {
-    return null
-  }
+  if (isIgnoredMergeResourceValue(raw)) return null
   const { pathname } = splitResourceSuffix(raw)
   let decodedPathname = pathname
   try {

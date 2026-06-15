@@ -6,6 +6,7 @@ interface TemplateStore {
   templates: TemplateListItem[]
   loading: boolean
   fetchTemplates: () => Promise<void>
+  applyTemplateThumbnail: (templateId: string, thumbnailPath: string) => void
   createTemplateFromSession: (payload: {
     sessionId: string
     name?: string
@@ -52,6 +53,14 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
       set({ loading: false })
       throw error
     }
+  },
+
+  applyTemplateThumbnail: (templateId, thumbnailPath) => {
+    set((state) => ({
+      templates: state.templates.map((template) =>
+        template.id === templateId ? { ...template, thumbnailPath } : template
+      )
+    }))
   },
 
   createTemplateFromSession: async (payload) => {

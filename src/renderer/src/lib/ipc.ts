@@ -22,6 +22,7 @@ import type {
 import type { UpdateAvailablePayload } from '@shared/app-update.js'
 import type { SpeechConfig } from '@shared/speech'
 import type { HistoryVersion, RollbackHistoryResult } from '@shared/history.js'
+import type { HtmlThumbnailResourceType } from '@shared/thumbnail'
 import type { IndexTransitionConfig, IndexTransitionType } from '@shared/index-transition.js'
 import type {
   ThinkingStage,
@@ -109,7 +110,7 @@ export interface StyleListItem {
 }
 
 export interface HtmlThumbnailTask {
-  resourceType: string
+  resourceType: HtmlThumbnailResourceType
   resourceId: string
   variant: string
   status: 'queued' | 'running' | 'completed' | 'failed'
@@ -192,6 +193,7 @@ export interface TemplateListItem {
   pageCount: number
   tags: string[]
   previewHtmlPath: string | null
+  thumbnailPath: string | null
   previewPages: Array<{
     pageNumber: number
     pageId: string

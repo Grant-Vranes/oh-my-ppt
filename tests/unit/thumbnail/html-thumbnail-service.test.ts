@@ -99,6 +99,43 @@ describe('html thumbnail background service', () => {
     fs.rmSync(sourceRoot, { recursive: true, force: true })
   })
 
+  it('persists template cover completion with the template resource type', async () => {
+    const sourceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ohmyppt-template-thumbnail-source-'))
+    const sourcePath = path.join(sourceRoot, 'page-1.html')
+    fs.writeFileSync(sourcePath, '<!doctype html><html></html>')
+    const records = new Map<string, Record<string, unknown>>()
+    const db = {
+      getThumbnailRecord: vi.fn(async (resourceType: string, resourceId: string, variant: string) =>
+        records.get(`${resourceType}:${resourceId}:${variant}`)
+      ),
+      upsertThumbnailRecord: vi.fn(async (record: Record<string, unknown>) => {
+        records.set(`${record.resourceType}:${record.resourceId}:${record.variant}`, record)
+      })
+    }
+
+    const service = await import('../../../src/main/utils/html-thumbnail-service')
+    service.configureHtmlThumbnailService(db as never)
+    await service.enqueueHtmlThumbnail({
+      resourceType: 'template',
+      resourceId: 'template-real-id',
+      variant: 'cover',
+      sourcePath
+    })
+
+    await vi.waitFor(() => {
+      expect(db.upsertThumbnailRecord).toHaveBeenCalledWith(
+        expect.objectContaining({
+          resourceType: 'template',
+          resourceId: 'template-real-id',
+          variant: 'cover',
+          status: 'completed',
+          thumbnailPath: expect.stringMatching(/\.png$/)
+        })
+      )
+    })
+    fs.rmSync(sourceRoot, { recursive: true, force: true })
+  })
+
   it('invalidates cached thumbnails when source mtime or capture signature changes', async () => {
     const sourceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ohmyppt-thumbnail-freshness-'))
     const sourcePath = path.join(sourceRoot, 'index.html')

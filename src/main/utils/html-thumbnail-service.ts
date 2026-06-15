@@ -6,6 +6,7 @@ import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import pLimit from 'p-limit'
 import type { PPTDatabase, ThumbnailRecord } from '../db/database'
+import type { HtmlThumbnailResourceType } from '@shared/thumbnail'
 import { allowLocalAssetRoot } from '../ipc/io/assets-handlers'
 import { FREEZE_PAGE_FOR_EXPORT_SCRIPT } from './html-pptx/browser-scripts'
 
@@ -22,7 +23,7 @@ const PRINT_READY_PASS_THREE_DELAY_MS = 80
 const MAX_SOURCE_STABILITY_ATTEMPTS = 2
 
 export type HtmlThumbnailRequest = {
-  resourceType: string
+  resourceType: HtmlThumbnailResourceType
   resourceId: string
   variant?: string
   sourcePath: string
@@ -37,7 +38,7 @@ export type HtmlThumbnailRequest = {
 export type HtmlThumbnailTaskStatus = 'queued' | 'running' | 'completed' | 'failed'
 
 export type HtmlThumbnailTask = {
-  resourceType: string
+  resourceType: HtmlThumbnailResourceType
   resourceId: string
   variant: string
   status: HtmlThumbnailTaskStatus
@@ -82,7 +83,11 @@ function getDb(): PPTDatabase {
   return thumbnailDb
 }
 
-function thumbnailTaskKey(resourceType: string, resourceId: string, variant: string): string {
+function thumbnailTaskKey(
+  resourceType: HtmlThumbnailResourceType,
+  resourceId: string,
+  variant: string
+): string {
   return `${resourceType}\u0000${resourceId}\u0000${variant}`
 }
 
@@ -99,7 +104,7 @@ function normalizeRequest(request: HtmlThumbnailRequest): Required<HtmlThumbnail
       .sort(([left], [right]) => left.localeCompare(right))
   )
   return {
-    resourceType: String(request.resourceType || '').trim(),
+    resourceType: request.resourceType,
     resourceId: String(request.resourceId || '').trim(),
     variant: String(request.variant || 'default').trim() || 'default',
     sourcePath: path.resolve(request.sourcePath),
@@ -126,7 +131,7 @@ export function resolveHtmlThumbnailCacheRoot(): string {
 }
 
 export function resolveHtmlThumbnailPath(
-  resourceType: string,
+  resourceType: HtmlThumbnailResourceType,
   resourceId: string,
   variant = 'default'
 ): string {
@@ -153,7 +158,7 @@ function recordToTask(record: ThumbnailRecord | undefined): HtmlThumbnailTask | 
 }
 
 export async function getHtmlThumbnailTask(
-  resourceType: string,
+  resourceType: HtmlThumbnailResourceType,
   resourceId: string,
   variant = 'default'
 ): Promise<HtmlThumbnailTask | null> {
@@ -166,7 +171,7 @@ export async function getHtmlThumbnailTask(
 }
 
 export async function waitForHtmlThumbnailTask(
-  resourceType: string,
+  resourceType: HtmlThumbnailResourceType,
   resourceId: string,
   variant = 'default',
   timeoutMs = 60_000

@@ -36,6 +36,7 @@ export const zh = {
     refresh: '刷新',
     importPptx: '导入 PPTX 为模板',
     pageCount: '{count} 页',
+    thumbnailGenerating: '正在准备封面',
     pageCountLabel: '页数',
     noDescription: '暂无描述',
     use: '使用',

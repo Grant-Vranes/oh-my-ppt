@@ -29,9 +29,39 @@ export function TemplateCard({
   onPreview: (template: TemplateListItem) => void
 }): React.JSX.Element {
   const t = useT()
+  const thumbnailUrl = template.thumbnailPath
+    ? `local-asset://${encodeURI(template.thumbnailPath.replace(/\\/g, '/'))}`
+    : ''
 
   return (
-    <Card className="group !rounded-lg transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(88,75,56,0.18)]">
+    <Card
+      data-template-card-id={template.id}
+      className="group overflow-hidden !rounded-lg transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(88,75,56,0.18)]"
+    >
+      <button
+        type="button"
+        className="relative block aspect-video w-full overflow-hidden bg-[#f3ecdf] text-left"
+        onClick={() => onPreview(template)}
+        disabled={!template.previewHtmlPath}
+        aria-label={t('common.preview')}
+      >
+        {thumbnailUrl ? (
+          <img
+            src={thumbnailUrl}
+            loading="lazy"
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.015]"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_top_left,_#fffaf0,_#eee4d2)] text-[#8a7e6c]">
+            <div className="flex items-center gap-2 rounded-lg border border-white/70 bg-white/55 px-3 py-2 text-xs shadow-sm backdrop-blur-sm">
+              <LayoutTemplate className="h-4 w-4" />
+              <span>{t('templates.thumbnailGenerating')}</span>
+            </div>
+          </div>
+        )}
+      </button>
       <CardHeader className="pb-2">
         <CardTitle className="flex items-start justify-between gap-3 text-base">
           <span className="min-w-0 truncate text-[#3e4a32]">{template.name}</span>
@@ -58,7 +88,7 @@ export function TemplateCard({
         )}
         <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#e5dccd]/58 pt-3">
           <span className="min-w-0 truncate text-[11px] text-muted-foreground">
-            {dayjs(template.updatedAt).format('YYYY/MM/DD HH:mm')}
+            {dayjs(template.updatedAt).format('YYYY/MM/DD')}
           </span>
           <div className="flex shrink-0 items-center gap-1">
             <div className="flex items-center gap-1 rounded-md bg-[#f4ecdf]/52 p-0.5">

@@ -30,6 +30,7 @@ export interface TemplateListItem {
   pageCount: number
   tags: string[]
   previewHtmlPath: string | null
+  thumbnailPath: string | null
   previewPages: Array<{
     pageNumber: number
     pageId: string
@@ -100,6 +101,7 @@ export function manifestToListItem(
     pageCount: manifest.pageCount || manifest.pages.length,
     tags: manifest.tags,
     previewHtmlPath: paths.previewHtmlPath,
+    thumbnailPath: null,
     previewPages: paths.previewPages,
     createdAt: manifest.createdAt,
     updatedAt: manifest.updatedAt

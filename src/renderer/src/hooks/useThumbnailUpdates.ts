@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react'
 import { ipc, type HtmlThumbnailTask } from '@renderer/lib/ipc'
+import type { HtmlThumbnailResourceType } from '@shared/thumbnail'
 
 export function useThumbnailUpdates(
-  resourceType: string,
+  resourceType: HtmlThumbnailResourceType,
   onCompleted: (task: HtmlThumbnailTask) => void
 ): void {
   const onCompletedRef = useRef(onCompleted)

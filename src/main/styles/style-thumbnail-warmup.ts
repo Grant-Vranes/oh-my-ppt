@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import {
   enqueueHtmlThumbnails,
+  type HtmlThumbnailRequest,
   type HtmlThumbnailTask
 } from '../utils/html-thumbnail-service'
 
@@ -10,7 +11,7 @@ export async function warmStyleThumbnails(
   styles: Array<{ id: string; style: string; source: string; packageDir?: string | null }>,
   delayMs = 500
 ): Promise<HtmlThumbnailTask[]> {
-  const requests = styles.flatMap((style) => {
+  const requests: HtmlThumbnailRequest[] = styles.flatMap((style) => {
     const packagePath = style.packageDir
       ? path.join(installedRootPath, style.packageDir)
       : style.source === 'builtin'

@@ -15,6 +15,7 @@ import {
   readStylePackage,
   styleRowToPackageJson
 } from '../styles'
+import type { HtmlThumbnailResourceType } from '@shared/thumbnail'
 
 type SessionStatus = 'active' | 'completed' | 'failed' | 'archived'
 type MessageRole = 'user' | 'assistant' | 'system' | 'tool'
@@ -172,7 +173,7 @@ export type ThumbnailStatus = 'queued' | 'running' | 'completed' | 'failed'
 
 export interface ThumbnailRecord {
   key: string
-  resourceType: string
+  resourceType: HtmlThumbnailResourceType
   resourceId: string
   variant: string
   sourcePath: string
@@ -2570,7 +2571,7 @@ export class PPTDatabase {
   }
 
   async getThumbnailRecord(
-    resourceType: string,
+    resourceType: HtmlThumbnailResourceType,
     resourceId: string,
     variant = 'default'
   ): Promise<ThumbnailRecord | undefined> {
@@ -2589,7 +2590,7 @@ export class PPTDatabase {
   }
 
   async getThumbnailRecords(
-    resourceType: string,
+    resourceType: HtmlThumbnailResourceType,
     resourceIds: string[],
     variant = 'default'
   ): Promise<ThumbnailRecord[]> {
@@ -2610,7 +2611,7 @@ export class PPTDatabase {
   }
 
   async upsertThumbnailRecord(data: {
-    resourceType: string
+    resourceType: HtmlThumbnailResourceType
     resourceId: string
     variant: string
     sourcePath: string

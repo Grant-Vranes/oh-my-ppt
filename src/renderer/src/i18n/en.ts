@@ -480,7 +480,10 @@ export const en = {
     newStyle: 'New style',
     newStyleTooltip: 'Create a new custom style template',
     importPackage: 'Import Style ZIP',
-    importPackageTooltip: 'Import a packaged style ZIP to add or override styles',
+    importPackageTooltip: 'Import a packaged style ZIP.',
+    importPackageDirectory: 'Import Style Folder',
+    importPackageDirectoryTooltip:
+      'Import a style folder containing only style.json, SKILL.md, and preview.html.',
     importingPackage: 'Importing...',
     exportPackage: 'Export ZIP',
     exportPackageTooltip: 'Export this style as a portable ZIP package',

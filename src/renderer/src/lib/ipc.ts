@@ -844,6 +844,13 @@ export const ipc = {
       id: string
       source: 'custom' | 'override'
     }>,
+  importStylePackageDirectory: () =>
+    getIpc().invoke('styles:importPackageDirectory') as Promise<{
+      success: boolean
+      cancelled?: boolean
+      id: string
+      source: 'custom' | 'override'
+    }>,
   exportStylePackageZip: (payload: { styleId: string }) =>
     getIpc().invoke('styles:exportPackageZip', payload) as Promise<{
       success: boolean

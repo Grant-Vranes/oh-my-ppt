@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, readdir, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
@@ -31,6 +31,7 @@ import {
   createStyleSkill,
   deleteStyleSkill,
   exportStylePackageZip,
+  importStylePackageDirectory,
   importStylePackageZip,
   saveGeneratedStylePreview,
   setStyleDb,
@@ -343,6 +344,30 @@ describe('style packages', () => {
       'imported-style/preview.html',
       'imported-style/style.json'
     ])
+  })
+
+  it('imports a style package directory and ignores unrelated files', async () => {
+    const tmp = await mkdtemp(path.join(os.tmpdir(), 'ohmyppt-style-directory-'))
+    const installed = path.join(tmp, 'installed')
+    await makeStyle(tmp, 'hand-drawn-autumn', '1.0.0', '# Hand-drawn Autumn\n')
+    const sourceDir = path.join(tmp, 'hand-drawn-autumn')
+    await mkdir(path.join(sourceDir, '.claude'), { recursive: true })
+    await writeFile(path.join(sourceDir, '.claude', 'settings.local.json'), '{}', 'utf8')
+    await mkdir(path.join(sourceDir, 'assets', 'nested'), { recursive: true })
+    await writeFile(path.join(sourceDir, 'assets', 'nested', 'texture.png'), 'ignored', 'utf8')
+    await writeFile(path.join(sourceDir, 'README.md'), 'ignored', 'utf8')
+    await writeFile(path.join(sourceDir, 'notes.txt'), 'ignored', 'utf8')
+    setStylesRuntime({ installedStylesPath: installed, ready: Promise.resolve() })
+    setStyleDb(makeStyleDb().db as never)
+
+    await expect(importStylePackageDirectory(sourceDir)).resolves.toEqual({
+      id: 'hand-drawn-autumn',
+      source: 'custom'
+    })
+    const installedDir = path.join(installed, 'user', 'hand-drawn-autumn')
+    const installedPackage = await readStylePackage(installedDir)
+    expect(installedPackage.skillMarkdown).toBe('# Hand-drawn Autumn\n')
+    expect((await readdir(installedDir)).sort()).toEqual(['SKILL.md', 'preview.html', 'style.json'])
   })
 
   it('backfills legacy user styles into user packages without preview.html', async () => {

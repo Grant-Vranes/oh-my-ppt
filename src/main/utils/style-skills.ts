@@ -13,6 +13,7 @@ import {
 } from '../styles'
 
 export type StyleSource = 'builtin' | 'custom' | 'override'
+type ImportedStyleSource = Exclude<StyleSource, 'builtin'>
 
 export interface StylePreset {
   id: string
@@ -440,8 +441,9 @@ export async function updateStyleSkill(input: {
   return upsertStyleSkill(input)
 }
 
-export async function importStylePackageZip(filePath: string): Promise<{ id: string; source: StyleSource }> {
-  const db = getDb()
+export async function importStylePackageZip(
+  filePath: string
+): Promise<{ id: string; source: ImportedStyleSource }> {
   const zipPath = String(filePath || '').trim()
   if (!zipPath.toLowerCase().endsWith('.zip')) {
     throw new Error('请选择 .zip 风格包。')
@@ -458,66 +460,85 @@ export async function importStylePackageZip(filePath: string): Promise<{ id: str
         fs.promises.writeFile(path.join(tempDir, name), Buffer.from(data))
       )
     )
-    const stylePackage = await readStylePackage(tempDir)
-    if (stylePackage.json.style !== packageFiles.rootName) {
-      throw new Error('风格包目录名必须与 style.json 的 style 字段一致。')
-    }
-
-    const existing =
-      db.getStyleRowByStyleSync(stylePackage.json.style) || db.getStyleRowSync(stylePackage.json.style)
-    const id = existing?.id || stylePackage.json.style
-    const source: StyleSource = existing?.source === 'builtin' ? 'override' : existing?.source || 'custom'
-    const json = {
-      ...stylePackage.json,
-      source
-    }
-    const previewPath = path.join(tempDir, 'preview.html')
-    const previewHtml = packageFiles.files['preview.html']
-      ? await fs.promises.readFile(previewPath, 'utf8')
-      : undefined
-
-    if (existing) {
-      await db.updateStyleRow(existing.id, {
-        styleName: json.name.zh,
-        styleNameZh: json.name.zh,
-        styleNameEn: json.name.en,
-        description: json.description,
-        category: json.category,
-        aliases: json.aliases,
-        source,
-        styleSkill: stylePackage.skillMarkdown,
-        version: json.version,
-        styleCase: json.styleCase,
-        packageDir: 'user/' + id,
-        active: true
-      })
-    } else {
-      await db.createStyleRow({
-        id,
-        style: json.style,
-        styleName: json.name.zh,
-        styleNameZh: json.name.zh,
-        styleNameEn: json.name.en,
-        description: json.description,
-        category: json.category,
-        aliases: json.aliases,
-        source,
-        styleSkill: stylePackage.skillMarkdown,
-        version: json.version,
-        styleCase: json.styleCase,
-        packageDir: 'user/' + id
-      })
-    }
-    await writeStylePackage({
-      dir: getUserStyleDir(id),
-      json,
-      skillMarkdown: stylePackage.skillMarkdown,
-      previewHtml
-    })
-    return { id, source }
+    return await importStylePackageDirectory(tempDir)
   } finally {
     await fs.promises.rm(tempRoot, { recursive: true, force: true })
   }
+}
+
+export async function importStylePackageDirectory(
+  directoryPath: string
+): Promise<{ id: string; source: ImportedStyleSource }> {
+  const rawPath = String(directoryPath || '').trim()
+  if (!rawPath) throw new Error('请选择风格包文件夹。')
+  const sourceDir = path.resolve(rawPath)
+  const sourceStat = await fs.promises.stat(sourceDir)
+  if (!sourceStat.isDirectory()) throw new Error('请选择风格包文件夹。')
+  const directoryName = path.basename(sourceDir)
+  const stylePackage = await readStylePackage(sourceDir)
+  if (stylePackage.json.style !== directoryName) {
+    throw new Error('风格包目录名必须与 style.json 的 style 字段一致。')
+  }
+  return installStylePackage(stylePackage)
+}
+
+async function installStylePackage(
+  stylePackage: StylePackage
+): Promise<{ id: string; source: ImportedStyleSource }> {
+  const db = getDb()
+  const existing =
+    db.getStyleRowByStyleSync(stylePackage.json.style) ||
+    db.getStyleRowSync(stylePackage.json.style)
+  const id = existing?.id || stylePackage.json.style
+  const source: ImportedStyleSource =
+    existing?.source === 'builtin' ? 'override' : existing?.source || 'custom'
+  const json = {
+    ...stylePackage.json,
+    source
+  }
+  const previewHtml = stylePackage.previewPath
+    ? await fs.promises.readFile(stylePackage.previewPath, 'utf8')
+    : undefined
+
+  if (existing) {
+    await db.updateStyleRow(existing.id, {
+      styleName: json.name.zh,
+      styleNameZh: json.name.zh,
+      styleNameEn: json.name.en,
+      description: json.description,
+      category: json.category,
+      aliases: json.aliases,
+      source,
+      styleSkill: stylePackage.skillMarkdown,
+      version: json.version,
+      styleCase: json.styleCase,
+      packageDir: 'user/' + id,
+      active: true
+    })
+  } else {
+    await db.createStyleRow({
+      id,
+      style: json.style,
+      styleName: json.name.zh,
+      styleNameZh: json.name.zh,
+      styleNameEn: json.name.en,
+      description: json.description,
+      category: json.category,
+      aliases: json.aliases,
+      source,
+      styleSkill: stylePackage.skillMarkdown,
+      version: json.version,
+      styleCase: json.styleCase,
+      packageDir: 'user/' + id
+    })
+  }
+  await writeStylePackage({
+    dir: getUserStyleDir(id),
+    json,
+    skillMarkdown: stylePackage.skillMarkdown,
+    previewHtml
+  })
+  return { id, source }
 }
 
 export async function exportStylePackageZip(styleId: string, outputPath: string): Promise<{ filePath: string }> {

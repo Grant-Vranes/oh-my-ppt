@@ -13,6 +13,7 @@ const ipcMocks = vi.hoisted(() => ({
   generateStylePreview: vi.fn(),
   exportStylePackageZip: vi.fn(),
   deleteStyle: vi.fn(),
+  importStylePackageDirectory: vi.fn(),
   importStylePackageZip: vi.fn(),
   onHtmlThumbnailChanged: vi.fn(() => () => undefined)
 }))
@@ -115,6 +116,11 @@ describe('StylesPage rendering', () => {
       ]
     })
     ipcMocks.generateStylePreview.mockResolvedValue({ previewPath: '/styles/fresh/preview.html' })
+    ipcMocks.importStylePackageDirectory.mockResolvedValue({
+      success: true,
+      id: 'folder-style',
+      source: 'custom'
+    })
     ipcMocks.onHtmlThumbnailChanged.mockImplementation((listener) => {
       thumbnailListener = listener
       return () => {
@@ -133,6 +139,18 @@ describe('StylesPage rendering', () => {
     const { container, root } = await renderStylesPage()
     try {
       expect(container.querySelectorAll('[data-style-card-id]')).toHaveLength(3)
+      const importZipButton = Array.from(container.querySelectorAll('button')).find(
+        (button) => button.textContent?.trim() === 'styles.importPackage'
+      ) as HTMLButtonElement | undefined
+      await act(async () => {
+        importZipButton?.focus()
+        await new Promise((resolve) => window.setTimeout(resolve, 5))
+      })
+      const officialSkillLink = document.body.querySelector(
+        'a[href="https://github.com/arcsin1/style-generate-skill"]'
+      )
+      expect(officialSkillLink?.getAttribute('target')).toBe('_blank')
+      expect(officialSkillLink?.getAttribute('rel')).toBe('noopener noreferrer')
       expect(container.querySelectorAll('img')).toHaveLength(1)
       expect(container.querySelectorAll('iframe')).toHaveLength(0)
       expect(container.textContent).toContain('Preview Style')
@@ -174,6 +192,16 @@ describe('StylesPage rendering', () => {
       expect(ipcMocks.generateStylePreview).toHaveBeenCalledWith({
         styleId: 'style-without-preview'
       })
+
+      const importFolderButton = Array.from(container.querySelectorAll('button')).find(
+        (button) => button.textContent?.trim() === 'styles.importPackageDirectory'
+      )
+      await act(async () => {
+        importFolderButton?.click()
+        await Promise.resolve()
+        await Promise.resolve()
+      })
+      expect(ipcMocks.importStylePackageDirectory).toHaveBeenCalledTimes(1)
     } finally {
       await act(async () => root.unmount())
       container.remove()

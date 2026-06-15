@@ -14,6 +14,7 @@ import { ipc, type HtmlThumbnailTask } from '@renderer/lib/ipc'
 import { useStylePreviewStore, useToastStore } from '../store'
 import {
   Download,
+  FolderOpen,
   Loader2,
   Palette,
   PencilLine,
@@ -46,6 +47,7 @@ type StyleSummary = {
 }
 
 const MAX_VISIBLE_IFRAMES = 8
+const OFFICIAL_STYLE_SKILL_URL = 'https://github.com/arcsin1/style-generate-skill'
 
 const localAssetUrl = (filePath: string): string => `local-asset://${encodeURIComponent(filePath)}`
 const stylePreviewUrl = (filePath: string): string =>
@@ -54,7 +56,7 @@ const stylePreviewUrl = (filePath: string): string =>
 export function StylesPage(): React.JSX.Element {
   const navigate = useNavigate()
   const [styles, setStyles] = useState<StyleSummary[]>([])
-  const [importingZip, setImportingZip] = useState(false)
+  const [importingPackageType, setImportingPackageType] = useState<'zip' | 'directory' | ''>('')
   const [exportingStyleId, setExportingStyleId] = useState('')
   const [selectedStyleCase, setSelectedStyleCase] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<StyleSummary | null>(null)
@@ -143,11 +145,14 @@ export function StylesPage(): React.JSX.Element {
     }
   }, [deleteTarget, deletingStyleId, error, info, warning, t, loadStyles])
 
-  const handleImportPackageClick = useCallback(async (): Promise<void> => {
-    if (importingZip) return
-    setImportingZip(true)
+  const handleImportPackage = useCallback(async (type: 'zip' | 'directory'): Promise<void> => {
+    if (importingPackageType) return
+    setImportingPackageType(type)
     try {
-      const result = await ipc.importStylePackageZip()
+      const result =
+        type === 'zip'
+          ? await ipc.importStylePackageZip()
+          : await ipc.importStylePackageDirectory()
       if (result.cancelled) return
       success(t('styles.packageImported'), {
         description:
@@ -159,9 +164,9 @@ export function StylesPage(): React.JSX.Element {
         description: e instanceof Error ? e.message : t('common.retryLater')
       })
     } finally {
-      setImportingZip(false)
+      setImportingPackageType('')
     }
-  }, [error, importingZip, loadStyles, success, t])
+  }, [error, importingPackageType, loadStyles, success, t])
 
   const handleExportPackage = useCallback(async (style: StyleSummary): Promise<void> => {
     if (exportingStyleId) return
@@ -211,15 +216,52 @@ export function StylesPage(): React.JSX.Element {
                   size="sm"
                   variant="secondary"
                   className="min-w-[112px]"
-                  disabled={importingZip}
-                  onClick={handleImportPackageClick}
+                  disabled={Boolean(importingPackageType)}
+                  onClick={() => void handleImportPackage('zip')}
                 >
                   <Upload className="mr-2 h-4 w-4" />
-                  {importingZip ? t('styles.importingPackage') : t('styles.importPackage')}
+                  {importingPackageType === 'zip'
+                    ? t('styles.importingPackage')
+                    : t('styles.importPackage')}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="bottom" align="end">
-                {t('styles.importPackageTooltip')}
+              <TooltipContent side="bottom" align="end" className="max-w-[360px]">
+                {t('styles.importPackageTooltip')}{' '}
+                <a
+                  href={OFFICIAL_STYLE_SKILL_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-[#5a7a4e] underline underline-offset-2 hover:text-[#3e5a34]"
+                >
+                  官方风格解析 Skill：arcsin1/style-generate-skill
+                </a>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="min-w-[112px]"
+                  disabled={Boolean(importingPackageType)}
+                  onClick={() => void handleImportPackage('directory')}
+                >
+                  <FolderOpen className="mr-2 h-4 w-4" />
+                  {importingPackageType === 'directory'
+                    ? t('styles.importingPackage')
+                    : t('styles.importPackageDirectory')}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" align="end" className="max-w-[360px]">
+                {t('styles.importPackageDirectoryTooltip')}{' '}
+                <a
+                  href={OFFICIAL_STYLE_SKILL_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-[#5a7a4e] underline underline-offset-2 hover:text-[#3e5a34]"
+                >
+                  官方风格解析 Skill：arcsin1/style-generate-skill
+                </a>
               </TooltipContent>
             </Tooltip>
             <Tooltip>

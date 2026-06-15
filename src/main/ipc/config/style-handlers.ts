@@ -11,6 +11,7 @@ import {
   hasStyleSkill,
   deleteStyleSkill,
   exportStylePackageZip,
+  importStylePackageDirectory,
   importStylePackageZip
 } from '../../utils/style-skills'
 import type { IpcContext } from '../context'
@@ -69,6 +70,20 @@ function parseAliases(value: string): string[] {
 
 export function registerStyleHandlers(ctx: IpcContext): void {
   const { db } = ctx
+  const completeStylePackageImport = async (result: {
+    id: string
+    source: 'custom' | 'override'
+  }): Promise<{ success: true; cancelled: false; id: string; source: 'custom' | 'override' }> => {
+    const importedStyle = await db.getStyleRow(result.id)
+    const previewPath = importedStyle ? resolvePreviewPath(importedStyle) : null
+    if (previewPath) {
+      await enqueueHtmlThumbnail(
+        { resourceType: 'style', resourceId: result.id, sourcePath: previewPath },
+        { force: true }
+      )
+    }
+    return { success: true, cancelled: false, ...result }
+  }
 
   ipcMain.handle('styles:get', async () => {
     log.info('[styles:get] requested')
@@ -339,15 +354,27 @@ export function registerStyleHandlers(ctx: IpcContext): void {
       return { success: false, cancelled: true, id: '', source: 'custom' as const }
     }
     const result = await importStylePackageZip(openResult.filePaths[0])
-    const importedStyle = await db.getStyleRow(result.id)
-    const previewPath = importedStyle ? resolvePreviewPath(importedStyle) : null
-    if (previewPath) {
-      await enqueueHtmlThumbnail(
-        { resourceType: 'style', resourceId: result.id, sourcePath: previewPath },
-        { force: true }
-      )
+    return completeStylePackageImport(result)
+  })
+
+  ipcMain.handle('styles:importPackageDirectory', async (event) => {
+    const ownerWindow = BrowserWindow.fromWebContents(event.sender)
+    const openResult = ownerWindow
+      ? await dialog.showOpenDialog(ownerWindow, {
+          title: '导入风格文件夹',
+          buttonLabel: '导入',
+          properties: ['openDirectory']
+        })
+      : await dialog.showOpenDialog({
+          title: '导入风格文件夹',
+          buttonLabel: '导入',
+          properties: ['openDirectory']
+        })
+    if (openResult.canceled || openResult.filePaths.length === 0) {
+      return { success: false, cancelled: true, id: '', source: 'custom' as const }
     }
-    return { success: true, cancelled: false, ...result }
+    const result = await importStylePackageDirectory(openResult.filePaths[0])
+    return completeStylePackageImport(result)
   })
 
   ipcMain.handle('styles:exportPackageZip', async (event, payload) => {

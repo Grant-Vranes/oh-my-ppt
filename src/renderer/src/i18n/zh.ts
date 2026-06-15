@@ -455,7 +455,10 @@ export const zh = {
     newStyle: '新建风格',
     newStyleTooltip: '创建一个新的自定义风格模板',
     importPackage: '导入风格 ZIP',
-    importPackageTooltip: '导入已打包的风格 ZIP，支持新增或覆盖风格',
+    importPackageTooltip: '导入已打包的风格 ZIP，支持新增或覆盖风格。',
+    importPackageDirectory: '导入风格文件夹',
+    importPackageDirectoryTooltip:
+      '导入仅包含 style.json、SKILL.md、preview.html 的风格文件夹。',
     importingPackage: '导入中...',
     exportPackage: '导出 ZIP',
     exportPackageTooltip: '将这个风格导出为可迁移的 ZIP 包',

@@ -31,6 +31,7 @@ import {
 } from '../../utils/reference-document-retrieval'
 import { logAgentToolEvents } from '../../utils/agent-tool-logger'
 import { normalizeKeyPoints, normalizeOutlineText } from './outline-normalizer'
+import { buildLocalCompletedGenerationPageSummary } from '../generation/generation-summary'
 
 type AppLocale = 'zh' | 'en'
 
@@ -81,17 +82,13 @@ interface StreamProcessOptions {
   onCustom?: (custom: DeckToolStatusChunk) => boolean | void
   /** Called when `updates.model` is detected — the model is actively thinking. */
   onModelThinking?: (defaultProgress: number) => void
-  /** Called with the extracted assistant message text. */
-  onMessage?: (content: string) => void
 }
 
 async function processAgentStreamCore(
   stream: AsyncIterable<unknown>,
-  options: Omit<StreamProcessOptions, 'onMessage'> & {
-    onMessages?: (messages: Array<Record<string, unknown>>) => void
-  }
+  options: StreamProcessOptions
 ): Promise<void> {
-  const { sessionId, workerLabel, onCustom, onModelThinking, onMessages } = options
+  const { sessionId, workerLabel, onCustom, onModelThinking } = options
   let firstChunkLogged = false
   const seenToolEvents = new Set<string>()
 
@@ -127,39 +124,7 @@ async function processAgentStreamCore(
       }
       continue
     }
-
-    if (mode === 'messages' && Array.isArray(data)) {
-      onMessages?.(data as Array<Record<string, unknown>>)
-    }
   }
-}
-
-/**
- * Iterate an agent stream, dispatching parsed chunks to the provided handlers.
- * Covers the common custom / updates / messages mode triad shared by generation paths.
- */
-async function processAgentStream(
-  stream: AsyncIterable<unknown>,
-  options: StreamProcessOptions
-): Promise<void> {
-  await processAgentStreamCore(stream, {
-    ...options,
-    onMessages: (messages) => {
-      const content = extractModelText(messages[0])
-      if (content) {
-        options.onMessage?.(content)
-      }
-    }
-  })
-}
-
-async function processEditAgentStream(
-  stream: AsyncIterable<unknown>,
-  options: Omit<StreamProcessOptions, 'onMessage'>
-): Promise<void> {
-  // Edit replies are built later from validated changed-page facts. Ignore raw message
-  // text here so tool results, HTML fragments, and provider-specific chunks cannot leak.
-  await processAgentStreamCore(stream, options)
 }
 
 const normalizeDesignContract = (value: unknown): DesignContract => {
@@ -256,31 +221,6 @@ const parseModelJson = (responseText: string, appLocale?: AppLocale): unknown =>
       `Failed to parse JSON returned by the LLM: ${lastError instanceof Error ? lastError.message : String(lastError)}. Raw text preview: ${preview}`
     )
   )
-}
-
-const SUMMARY_PUNCT_ONLY_RE = /^[\s.。!！?？,，;；:：、~—_`'"“”‘’()（）[\]【】-]+$/
-
-const isMeaningfulSummary = (value: string): boolean => {
-  const text = value.trim()
-  if (!text) return false
-  if (SUMMARY_PUNCT_ONLY_RE.test(text)) return false
-  if (text.length <= 2 && !/[\p{L}\p{N}\u4e00-\u9fff]/u.test(text)) return false
-  return true
-}
-
-const normalizePageSummary = (raw: string, pageTitle: string, appLocale?: AppLocale): string => {
-  const trimmed = raw.replace(/\s+/g, ' ').trim()
-  const withoutPrefix = trimmed.replace(/^第\s*\d+\s*页\s*[:：]\s*/u, '').trim()
-  const candidate = withoutPrefix || trimmed
-  if (!isMeaningfulSummary(candidate)) {
-    return uiText(
-      appLocale,
-      `已完成《${pageTitle}》页面生成`,
-      `Completed page "${pageTitle}" generation`
-    )
-  }
-  if (candidate.length <= 120) return candidate
-  return `${candidate.slice(0, 120).trimEnd()}…`
 }
 
 const buildPlanningRetryUserPrompt = (
@@ -1227,9 +1167,9 @@ export const runDeepAgentDeckGeneration = async (args: {
         }
       )
 
-      let pageSummaryFromStatus = ''
-      let pageSummaryFromMessage = ''
-      await processAgentStream(stream, {
+      // Final user-facing generation replies are built later from validated page facts.
+      // Raw messages may be token deltas, tool-call turns, or cumulative provider chunks.
+      await processAgentStreamCore(stream, {
         emit: args.emit,
         runId: args.runId || '',
         stage: 'rendering',
@@ -1251,14 +1191,6 @@ export const runDeepAgentDeckGeneration = async (args: {
                   `${page.title} · page content written`
                 )
               : custom.detail
-          if (
-            typeof custom.label === 'string' &&
-            /生成完成|修改完成/.test(custom.label) &&
-            typeof custom.detail === 'string' &&
-            isMeaningfulSummary(custom.detail)
-          ) {
-            pageSummaryFromStatus = custom.detail.trim()
-          }
           emitPageStatus({
             pageId: page.pageId,
             label:
@@ -1277,10 +1209,6 @@ export const runDeepAgentDeckGeneration = async (args: {
             detail: page.title,
             pageProgress: mappedPageProgress
           })
-        },
-        onMessage: (content) => {
-          if (!isMeaningfulSummary(content)) return
-          pageSummaryFromMessage = content.trim()
         }
       })
 
@@ -1336,8 +1264,10 @@ export const runDeepAgentDeckGeneration = async (args: {
         pagePath: currentPagePath
       })
 
-      const rawSummary = pageSummaryFromMessage || pageSummaryFromStatus
-      return normalizePageSummary(rawSummary, page.title, args.appLocale)
+      return buildLocalCompletedGenerationPageSummary({
+        appLocale: args.appLocale || 'zh',
+        pageTitle: page.title
+      })
     } finally {
       args.agentManager.removePageAgent(args.sessionId, page.pageId)
     }
@@ -1747,7 +1677,8 @@ const runDeepAgentScopedEdit = async (args: RunDeepAgentScopedEditArgs): Promise
       }
     )
 
-    await processEditAgentStream(stream, {
+    // Edit replies are built later from validated changed-page facts.
+    await processAgentStreamCore(stream, {
       emit: args.emit,
       runId: args.runId || '',
       stage: 'editing',

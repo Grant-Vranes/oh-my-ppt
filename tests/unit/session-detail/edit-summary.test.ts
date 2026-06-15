@@ -79,18 +79,4 @@ describe('edit summary', () => {
 
     expect(emitAssistant).toHaveBeenCalledWith(context, '修改完成：第1页。')
   })
-
-  it('keeps raw agent messages isolated from deterministic edit replies', async () => {
-    const fs = await import('node:fs')
-    const path = await import('node:path')
-    const source = fs.readFileSync(
-      path.resolve(process.cwd(), 'src/main/ipc/engine/generate.ts'),
-      'utf8'
-    )
-
-    expect(source).toContain('async function processEditAgentStream')
-    expect(source).toContain('Ignore raw message')
-    expect(source).toContain('await processAgentStream(stream, {')
-    expect(source).toContain('await processEditAgentStream(stream, {')
-  })
 })

@@ -32,7 +32,6 @@ export type DeckEditCompletedBatch = {
   status: 'completed'
   pageId: string
   changedPages: EditedPageDescriptor[]
-  summary: string
   retryCount: number
 }
 
@@ -88,7 +87,7 @@ export type ExecuteDeckEditBatchFlowArgs = {
   launchStaggerMs?: number
   heartbeatIntervalMs?: number
   emit: (chunk: GenerateChunkEvent) => void
-  runPageAttempt: (args: RunPageAttemptArgs) => Promise<string>
+  runPageAttempt: (args: RunPageAttemptArgs) => Promise<void>
   validateChangedPages: (pages: EditedPageDescriptor[]) => InvalidEditedPage[]
   buildRetryMessage: (args: {
     baseMessage: string
@@ -410,9 +409,8 @@ export async function executeDeckEditBatchFlow(
                 lastActivityAt = now
               }, heartbeatIntervalMs)
             : undefined
-        let summary: string
         try {
-          summary = await args.runPageAttempt({
+          await args.runPageAttempt({
             pageId: page.pageId,
             pageNumber: page.pageNumber,
             userMessage: attemptMessage,
@@ -463,8 +461,7 @@ export async function executeDeckEditBatchFlow(
           pageNumber: page.pageNumber,
           attempt,
           elapsedMs: Date.now() - attemptStartedAt,
-          activityCount,
-          summaryLength: summary.length
+          activityCount
         })
         if (args.signal?.aborted) throw new Error('生成已取消')
         if (await hasIndexChanged(operationSnapshot)) throw new DeckEditIndexMutationError()
@@ -495,7 +492,6 @@ export async function executeDeckEditBatchFlow(
           status: 'completed',
           pageId: page.pageId,
           changedPages,
-          summary,
           retryCount: retryUsed ? 1 : 0
         }
       } catch (error) {

@@ -17,7 +17,6 @@ import type { FontSelection, GenerateChunkEvent } from '@shared/generation'
 import { normalizeLayoutIntent, type LayoutIntent } from '@shared/layout-intent'
 import { resolveModelTimeoutMs, type ModelTimeoutProfile } from '@shared/model-timeout'
 import { progressLabel, progressText } from '@shared/progress'
-import { stripInternalEditConfirmations } from '@shared/edit-output'
 import type { DeckEditScope, DesignContract, OutlineItem } from '../../tools/types'
 import { isPlaceholderPageHtml } from '../../tools/html-utils'
 import {
@@ -86,16 +85,13 @@ interface StreamProcessOptions {
   onMessage?: (content: string) => void
 }
 
-/**
- * Iterate an agent stream, dispatching parsed chunks to the provided handlers.
- * Covers the common `custom` / `updates` / `messages` mode triad shared by all three
- * generation paths (single-page, parallel, edit).
- */
-async function processAgentStream(
+async function processAgentStreamCore(
   stream: AsyncIterable<unknown>,
-  options: StreamProcessOptions
+  options: Omit<StreamProcessOptions, 'onMessage'> & {
+    onMessages?: (messages: Array<Record<string, unknown>>) => void
+  }
 ): Promise<void> {
-  const { sessionId, workerLabel, onCustom, onModelThinking, onMessage } = options
+  const { sessionId, workerLabel, onCustom, onModelThinking, onMessages } = options
   let firstChunkLogged = false
   const seenToolEvents = new Set<string>()
 
@@ -133,13 +129,37 @@ async function processAgentStream(
     }
 
     if (mode === 'messages' && Array.isArray(data)) {
-      const [message] = data as Array<Record<string, unknown>>
-      const content = extractModelText(message)
-      if (content) {
-        onMessage?.(content)
-      }
+      onMessages?.(data as Array<Record<string, unknown>>)
     }
   }
+}
+
+/**
+ * Iterate an agent stream, dispatching parsed chunks to the provided handlers.
+ * Covers the common custom / updates / messages mode triad shared by generation paths.
+ */
+async function processAgentStream(
+  stream: AsyncIterable<unknown>,
+  options: StreamProcessOptions
+): Promise<void> {
+  await processAgentStreamCore(stream, {
+    ...options,
+    onMessages: (messages) => {
+      const content = extractModelText(messages[0])
+      if (content) {
+        options.onMessage?.(content)
+      }
+    }
+  })
+}
+
+async function processEditAgentStream(
+  stream: AsyncIterable<unknown>,
+  options: Omit<StreamProcessOptions, 'onMessage'>
+): Promise<void> {
+  // Edit replies are built later from validated changed-page facts. Ignore raw message
+  // text here so tool results, HTML fragments, and provider-specific chunks cannot leak.
+  await processAgentStreamCore(stream, options)
 }
 
 const normalizeDesignContract = (value: unknown): DesignContract => {
@@ -1559,7 +1579,7 @@ type RunDeepAgentPageEditArgs = RunDeepAgentEditBaseArgs & {
 
 type RunDeepAgentDeckAllPageEditArgs = RunDeepAgentEditBaseArgs
 
-const runDeepAgentScopedEdit = async (args: RunDeepAgentScopedEditArgs): Promise<string> => {
+const runDeepAgentScopedEdit = async (args: RunDeepAgentScopedEditArgs): Promise<void> => {
   const editAgent = createSessionEditAgent({
     provider: args.provider,
     apiKey: args.apiKey,
@@ -1667,7 +1687,6 @@ const runDeepAgentScopedEdit = async (args: RunDeepAgentScopedEditArgs): Promise
     elementText: args.elementText || ''
   })
 
-  let finalAssistantText = ''
   const scopedEditPageIds =
     args.selectPageIds && args.selectPageIds.length > 0
       ? args.selectPageIds
@@ -1728,7 +1747,7 @@ const runDeepAgentScopedEdit = async (args: RunDeepAgentScopedEditArgs): Promise
       }
     )
 
-    await processAgentStream(stream, {
+    await processEditAgentStream(stream, {
       emit: args.emit,
       runId: args.runId || '',
       stage: 'editing',
@@ -1768,9 +1787,6 @@ const runDeepAgentScopedEdit = async (args: RunDeepAgentScopedEditArgs): Promise
           progress: defaultProgress
         })
       },
-      onMessage: (content) => {
-        finalAssistantText = content
-      }
     })
   } finally {
     if (concurrentDeckPageId) {
@@ -1783,19 +1799,16 @@ const runDeepAgentScopedEdit = async (args: RunDeepAgentScopedEditArgs): Promise
   log.info('[deepagent] edit agent completed', {
     sessionId: args.sessionId,
     styleId: args.styleId || '',
-    concurrentDeckPageId,
-    finalAssistantPreview: finalAssistantText.slice(0, 200)
+    concurrentDeckPageId
   })
-
-  return stripInternalEditConfirmations(finalAssistantText)
 }
 
-export const runDeepAgentEdit = async (args: RunDeepAgentPageEditArgs): Promise<string> =>
+export const runDeepAgentEdit = async (args: RunDeepAgentPageEditArgs): Promise<void> =>
   runDeepAgentScopedEdit(args)
 
 export const runDeepAgentDeckAllPageEdit = async (
   args: RunDeepAgentDeckAllPageEditArgs
-): Promise<string> =>
+): Promise<void> =>
   runDeepAgentScopedEdit({
     ...args,
     editScope: 'deck',

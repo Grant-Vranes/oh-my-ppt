@@ -228,7 +228,7 @@ describe('source-grounded prompt rules', () => {
     expect(retryFlow).toContain('`正在重新生成 ${retryPages.length} 个失败页面`')
   })
 
-  it('returns agent completion messages instead of replacing them with host-written replies', () => {
+  it('uses successful edit facts for edit replies instead of raw agent/tool output', () => {
     const deckFlow = readSource('src/main/ipc/generation/deck-flow.ts')
     const editFlow = readSource('src/main/ipc/generation/edit-flow.ts')
     const batchEditFlow = readSource('src/main/ipc/generation/edit-deck-allpage-flow.ts')
@@ -237,8 +237,20 @@ describe('source-grounded prompt rules', () => {
     const retrySinglePageFlow = readSource('src/main/ipc/generation/retry-single-page-flow.ts')
 
     expect(deckFlow).toContain('agentSummary.trim() || fallbackCompletionSummary')
-    expect(editFlow).toContain('editSummaryFromEngine.trim() ||')
-    expect(batchEditFlow).toContain('result.summary.trim()')
+    expect(editFlow).toContain('emitSuccessfulEditSummary(context, editSummary, emitAssistant)')
+    expect(editFlow).not.toContain('editSummaryFromEngine')
+    expect(batchEditFlow).toContain(
+      'emitSuccessfulEditSummary(context, fallbackEditSummary, emitAssistant)'
+    )
+    expect(batchEditFlow).not.toContain('result.summary')
+    expect(editFlow.lastIndexOf('await db.updateGenerationRunStatus(')).toBeLessThan(
+      editFlow.indexOf('await emitSuccessfulEditSummary(context, editSummary, emitAssistant)')
+    )
+    expect(batchEditFlow.lastIndexOf('await db.updateGenerationRunStatus(')).toBeLessThan(
+      batchEditFlow.indexOf(
+        'await emitSuccessfulEditSummary(context, fallbackEditSummary, emitAssistant)'
+      )
+    )
     expect(addPageFlow).toContain('agentSummary ||')
     expect(retryFlow).toContain('agentSummary.trim() || fallbackCompletionSummary')
     expect(retrySinglePageFlow).toContain('generationResult.summary.trim() ||')
@@ -254,8 +266,9 @@ describe('source-grounded prompt rules', () => {
     expect(sharedGeneration).toContain('focusPage?: boolean')
     expect(sessionDetail).toContain('if (payload.focusPage !== false)')
     expect(batchEditFlow).toContain('focusPage: false')
-    expect(batchEditFlow).toContain('let emittedPageSummaryCount = 0')
-    expect(batchEditFlow).toContain('if (emittedPageSummaryCount === 0)')
+    expect(batchEditFlow).toContain(
+      'emitSuccessfulEditSummary(context, fallbackEditSummary, emitAssistant)'
+    )
     expect(batchEditFlow.indexOf('await db.upsertSessionPage({')).toBeLessThan(
       batchEditFlow.indexOf("type: isExisting ? 'page_updated' : 'page_generated'")
     )

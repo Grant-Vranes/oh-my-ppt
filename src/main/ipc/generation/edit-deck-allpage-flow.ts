@@ -34,6 +34,10 @@ import {
   recordHistoryOperationStrict
 } from '../../history/git-history-service'
 import { resolveRemainingFailedPageInfo } from './edit-deck-failure-state'
+import {
+  buildLocalSuccessfulEditSummary,
+  emitSuccessfulEditSummary
+} from './edit-summary'
 
 export function filterPageRefsBySelectedPageIds<T extends { pageId: string }>(
   pageRefs: T[],
@@ -247,8 +251,6 @@ export async function executeDeckAllPageEditGeneration(
     includeDeleted: true
   })
   const existingBySlug = new Map(existingSessionPages.map((sp) => [sp.file_slug, sp]))
-  let emittedPageSummaryCount = 0
-
   let batchResults: DeckEditBatchResult[]
   try {
     context.onDeckEditStarted?.()
@@ -386,11 +388,6 @@ export async function executeDeckAllPageEditGeneration(
             }
           })
         }
-        const summary = result.summary.trim()
-        if (summary.length >= 2) {
-          await emitAssistant(context, `P${pageRef.pageNumber}：${summary}`)
-          emittedPageSummaryCount += 1
-        }
       },
       onPageFailed: async (result) => {
         const pageRef = selectedPageRefs.find((p) => p.pageId === result.pageId)
@@ -475,51 +472,22 @@ export async function executeDeckAllPageEditGeneration(
     completedPageIds: changedPageIdSet,
     pageRefs
   })
-  const changedPagesText = completedBatchResults
-    .flatMap((r) => r.changedPages)
-    .map((p) => uiText(context.appLocale, `第${p.pageNumber}页`, `page ${p.pageNumber}`))
-    .join(uiText(context.appLocale, '、', ', '))
-  const failedPagesText = failedBatchResults
-    .map((item) => {
-      const page = pageRefs.find((ref) => ref.pageId === item.pageId)
-      return uiText(
-        context.appLocale,
-        `第${page?.pageNumber || item.pageId}页`,
-        page?.pageNumber ? `page ${page.pageNumber}` : item.pageId
-      )
-    })
-    .join(uiText(context.appLocale, '、', ', '))
-
-  const fallbackSummary =
-    completedBatchResults.length > 0 && failedBatchResults.length > 0
-      ? uiText(
-          context.appLocale,
-          `部分修改完成：成功 ${changedPagesText}；失败 ${failedPagesText}。`,
-          `Partial edit completed: succeeded on ${changedPagesText}; failed on ${failedPagesText}.`
-        )
-      : completedBatchResults.length > 0
-        ? uiText(
-            context.appLocale,
-            `修改完成：${changedPagesText}。`,
-            `Edit completed: ${changedPagesText}.`
-          )
-        : uiText(
-            context.appLocale,
-            `页面编辑失败：${failedPagesText}。`,
-            `Page edit failed: ${failedPagesText}.`
-          )
-  if (emittedPageSummaryCount === 0) {
-    await emitAssistant(context, fallbackSummary)
-  } else if (failedBatchResults.length > 0) {
-    await emitAssistant(
-      context,
-      uiText(
-        context.appLocale,
-        `未完成：${failedPagesText}。`,
-        `Not completed: ${failedPagesText}.`
-      )
+  const changedPages = completedBatchResults.flatMap((r) => r.changedPages)
+  const failedPageLabels = failedBatchResults.map((item) => {
+    const page = pageRefs.find((ref) => ref.pageId === item.pageId)
+    return uiText(
+      context.appLocale,
+      `第${page?.pageNumber || item.pageId}页`,
+      page?.pageNumber ? `page ${page.pageNumber}` : item.pageId
     )
+  })
+  const summaryArgs = {
+    context,
+    changedPages,
+    editScope: 'deck' as const,
+    failedPageLabels
   }
+  const fallbackEditSummary = buildLocalSuccessfulEditSummary(summaryArgs)
 
   await db.updateSessionMetadata(context.sessionId, {
     lastRunId: context.runId,
@@ -564,6 +532,7 @@ export async function executeDeckAllPageEditGeneration(
       }
     })
   }
+  await emitSuccessfulEditSummary(context, fallbackEditSummary, emitAssistant)
   log.info('[generate:start] deck all-page edit completed', {
     sessionId: context.sessionId,
     styleId: context.styleId,
@@ -577,7 +546,7 @@ export async function executeDeckAllPageEditGeneration(
       type: 'run_error',
       payload: {
         runId: context.runId,
-        message: failedDetails || fallbackSummary,
+        message: failedDetails || fallbackEditSummary,
         completedPageCount: 0,
         failedPageCount: failedBatchResults.length
       }

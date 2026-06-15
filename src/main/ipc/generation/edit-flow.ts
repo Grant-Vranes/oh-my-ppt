@@ -31,6 +31,10 @@ import {
   ensureHistoryBaselineSafe,
   recordHistoryOperationStrict
 } from '../../history/git-history-service'
+import {
+  buildLocalSuccessfulEditSummary,
+  emitSuccessfulEditSummary
+} from './edit-summary'
 
 export async function resolveEditContext(
   ctx: IpcContext,
@@ -330,7 +334,7 @@ export async function executeEditGeneration(
     runId: context.runId,
     signal: context.entry.abortController.signal
   } satisfies Parameters<typeof runDeepAgentEdit>[0]
-  const runEditAttempt = async (userMessage: string, retryDetail?: string): Promise<string> => {
+  const runEditAttempt = async (userMessage: string, retryDetail?: string): Promise<void> => {
     if (retryDetail) {
       emitEditChunk({
         type: 'llm_status',
@@ -352,7 +356,6 @@ export async function executeEditGeneration(
     }
     return runDeepAgentEdit({ ...editRunArgs, userMessage })
   }
-  let editSummaryFromEngine = ''
   let editToolSchemaRetryUsed = false
   let editValidationRetryUsed = false
   const failWithUserMessage = async (userMessage: string): Promise<never> => {
@@ -364,9 +367,9 @@ export async function executeEditGeneration(
     retryDetail: string,
     failureMessage: string,
     logLabel: string
-  ): Promise<string> => {
+  ): Promise<void> => {
     try {
-      return await runEditAttempt(userMessage, retryDetail)
+      await runEditAttempt(userMessage, retryDetail)
     } catch (retryError) {
       log.error(logLabel, {
         sessionId: context.sessionId,
@@ -377,7 +380,7 @@ export async function executeEditGeneration(
     }
   }
   try {
-    editSummaryFromEngine = await runEditAttempt(context.userMessage)
+    await runEditAttempt(context.userMessage)
   } catch (error) {
     const canRetryByValidation = isEditValidationRetryableError(error)
     const canRetryBySchema = isEditToolSchemaRetryableError(error)
@@ -402,7 +405,7 @@ export async function executeEditGeneration(
           selectedPageId: resolvedSelectedPageId || null
         })
       : buildEditValidationRetryMessage(context.userMessage, detail)
-    editSummaryFromEngine = await runRetryAttempt(
+    await runRetryAttempt(
       retryMessage,
       uiText(
         context.appLocale,
@@ -502,7 +505,7 @@ export async function executeEditGeneration(
       detail,
       schemaRetryUsed: editToolSchemaRetryUsed
     })
-    editSummaryFromEngine = await runRetryAttempt(
+    await runRetryAttempt(
       buildEditNoChangeRetryMessage({
         originalMessage: context.userMessage,
         allowedTool: 'update_single_page_file',
@@ -557,7 +560,7 @@ export async function executeEditGeneration(
       runId: context.runId,
       details
     })
-    editSummaryFromEngine = await runRetryAttempt(
+    await runRetryAttempt(
       buildEditValidationRetryMessage(context.userMessage, `页面编辑结果验证失败：${details}`),
       uiText(
         context.appLocale,
@@ -648,20 +651,6 @@ export async function executeEditGeneration(
     })
   )
 
-  const changedPages = changedPageDescriptors
-    .map((p) => uiText(context.appLocale, `第${p.pageNumber}页`, `page ${p.pageNumber}`))
-    .join(uiText(context.appLocale, '、', ', '))
-  const editSummary =
-    editSummaryFromEngine.trim() ||
-    (changedPageDescriptors.length > 0
-      ? uiText(context.appLocale, `修改完成：${changedPages}。`, `Edit completed: ${changedPages}.`)
-      : uiText(
-          context.appLocale,
-          '这次没有检测到需要保存的页面变化。',
-          'No page changes needed to be saved this time.'
-        ))
-  await emitAssistant(context, editSummary)
-
   await db.updateSessionMetadata(context.sessionId, {
     lastRunId: context.runId,
     entryMode: 'multi_page',
@@ -715,6 +704,12 @@ export async function executeEditGeneration(
       }
     })
   }
+  const editSummary = buildLocalSuccessfulEditSummary({
+    context,
+    changedPages: changedPageDescriptors,
+    editScope: selectedSelector ? 'selector' : 'page'
+  })
+  await emitSuccessfulEditSummary(context, editSummary, emitAssistant)
   log.info('[generate:start] edit completed', {
     sessionId: context.sessionId,
     styleId: context.styleId,

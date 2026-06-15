@@ -1,10 +1,11 @@
-import { useCallback, useEffect, forwardRef, useRef } from 'react'
+import { useCallback, useEffect, forwardRef, useRef, useState } from 'react'
 import { Sparkles } from 'lucide-react'
 import { useSessionDetailUiStore } from '@renderer/store'
 import { PreviewIframe, type PreviewIframeHandle } from '../../preview/PreviewIframe'
 import type { EditModeMovePayload, EditSelectionPayload } from '../../preview/edit-mode-script'
 import type { SessionPreviewPage } from '../shared/types'
 import { useT } from '@renderer/i18n'
+import { EDITOR_INSET, EditorGuidesOverlay } from './EditorGuidesOverlay'
 
 export const PreviewStage = forwardRef<
   PreviewIframeHandle,
@@ -38,9 +39,12 @@ export const PreviewStage = forwardRef<
 ) {
   const t = useT()
   const previewIframeRef = useRef<PreviewIframeHandle>(null)
+  const frameRef = useRef<HTMLDivElement>(null)
+  const canvasHostRef = useRef<HTMLDivElement>(null)
   const wasEditingRef = useRef(false)
   const previewIdentityRef = useRef('')
   const restoreTimerRef = useRef<number | null>(null)
+  const [previewReloadSignal, setPreviewReloadSignal] = useState(0)
   const previewKey = useSessionDetailUiStore((state) => state.previewKey)
   const interactionMode = useSessionDetailUiStore((state) => state.interactionMode)
   const setInteractionMode = useSessionDetailUiStore((state) => state.setInteractionMode)
@@ -96,6 +100,7 @@ export const PreviewStage = forwardRef<
 
   const handleDidReload = useCallback((): void => {
     onReplayPendingEdits()
+    setPreviewReloadSignal((value) => value + 1)
     if (!isEditing || !editSelectedSelector) return
     restoreEditSelection(editSelectedSelector)
   }, [editSelectedSelector, isEditing, onReplayPendingEdits, restoreEditSelection])
@@ -179,29 +184,52 @@ export const PreviewStage = forwardRef<
         <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] bg-[#d4e4c1]/42" />
         <div className="pointer-events-none absolute -bottom-24 left-8 h-48 w-64 rounded-[5%_95%_10%_90%/85%_15%_85%_15%] bg-[#c8b89e]/20" />
         {selectedPage ? (
-          <div className="relative h-full overflow-hidden rounded-[1.55rem] bg-[#f5f1e8] shadow-[0_10px_24px_rgba(93,107,77,0.11)]">
-            <PreviewIframe
-              ref={setPreviewIframeHandle}
-              key={`preview-${selectedPage.pageId}-${previewKey}-${previewRefreshKey}`}
-              src={selectedPage.sourceUrl}
-              htmlPath={selectedPage.htmlPath}
-              pageId={selectedPage.pageId}
-              title={`preview-page-${selectedPage.pageNumber}`}
-              inspectable
-              interactionMode={interactionMode}
-              inspecting={isInspecting}
-              editMode={isEditing}
-              onSelectorSelected={setSelectedElement}
-              onElementMoved={onElementMoved}
-              onElementSelected={onElementSelected}
-              onInspectExit={() => {
-                setInteractionMode('preview')
-                setWorkspaceTab('preview')
-                onCancelElementEdit()
-              }}
-              onDidReload={handleDidReload}
-              onDeleteRequest={onDeleteRequest}
-            />
+          <div
+            ref={frameRef}
+            className="relative h-full overflow-hidden rounded-[1.55rem] bg-[#f5f1e8] shadow-[0_10px_24px_rgba(93,107,77,0.11)]"
+          >
+            <div
+              ref={canvasHostRef}
+              className={
+                isEditing
+                  ? 'absolute bottom-2 right-2 overflow-hidden rounded-[1rem]'
+                  : 'absolute inset-0 overflow-hidden rounded-[inherit]'
+              }
+              style={isEditing ? { left: EDITOR_INSET, top: EDITOR_INSET } : undefined}
+            >
+              <PreviewIframe
+                ref={setPreviewIframeHandle}
+                key={`preview-${selectedPage.pageId}-${previewKey}-${previewRefreshKey}`}
+                src={selectedPage.sourceUrl}
+                htmlPath={selectedPage.htmlPath}
+                pageId={selectedPage.pageId}
+                title={`preview-page-${selectedPage.pageNumber}`}
+                inspectable
+                interactionMode={interactionMode}
+                inspecting={isInspecting}
+                editMode={isEditing}
+                onSelectorSelected={setSelectedElement}
+                onElementMoved={onElementMoved}
+                onElementSelected={onElementSelected}
+                onInspectExit={() => {
+                  setInteractionMode('preview')
+                  setWorkspaceTab('preview')
+                  onCancelElementEdit()
+                }}
+                onDidReload={handleDidReload}
+                onDeleteRequest={onDeleteRequest}
+              />
+            </div>
+
+            {isEditing && (
+              <EditorGuidesOverlay
+                selectedPageId={selectedPage.pageId}
+                frameRef={frameRef}
+                canvasHostRef={canvasHostRef}
+                previewIframeRef={previewIframeRef}
+                reloadSignal={previewReloadSignal}
+              />
+            )}
             {selectedPage.status === 'failed' && (
               <div className="absolute bottom-5 left-5 z-20 max-w-[520px] rounded-[1rem] bg-[#fff4ef]/92 px-3 py-2 text-xs text-[#8e5a53] shadow-[0_10px_24px_rgba(142,90,83,0.12)] backdrop-blur-sm">
                 {t('sessionDetail.failedPageHint')}

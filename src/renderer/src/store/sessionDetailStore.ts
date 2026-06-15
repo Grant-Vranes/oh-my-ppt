@@ -17,6 +17,11 @@ export type {
   SessionWorkspaceTab
 } from '@renderer/types/session-detail'
 
+export interface EditorGuideState {
+  vertical: number[]
+  horizontal: number[]
+}
+
 interface SessionDetailUiStore {
   input: string
   aiPanelMode: SessionDetailAiPanelMode
@@ -41,6 +46,10 @@ interface SessionDetailUiStore {
   isExportingSessionZip: boolean
   interactionMode: InteractionMode
   workspaceTab: SessionWorkspaceTab
+  editorSnapEnabled: boolean
+  editorGridVisible: boolean
+  editorGridSize: number
+  editorGuidesByPage: Record<string, EditorGuideState>
   thumbnailVersions: Record<string, number>
   selectedSelector: string | null
   editSelectedSelector: string | null
@@ -94,6 +103,17 @@ interface SessionDetailUiStore {
   setIsExportingSessionZip: (isExporting: boolean) => void
   setInteractionMode: (mode: InteractionMode) => void
   setWorkspaceTab: (tab: SessionWorkspaceTab) => void
+  setEditorSnapEnabled: (enabled: boolean) => void
+  setEditorGridVisible: (visible: boolean) => void
+  setEditorGridSize: (size: number) => void
+  addEditorGuide: (pageId: string, axis: keyof EditorGuideState, position: number) => void
+  moveEditorGuide: (
+    pageId: string,
+    axis: keyof EditorGuideState,
+    index: number,
+    position: number
+  ) => void
+  removeEditorGuide: (pageId: string, axis: keyof EditorGuideState, index: number) => void
   setSelectedElement: (
     selector: string,
     label: string,
@@ -157,6 +177,10 @@ export const useSessionDetailUiStore = create<SessionDetailUiStore>((set) => ({
   isExportingSessionZip: false,
   interactionMode: 'preview' as InteractionMode,
   workspaceTab: 'preview' as SessionWorkspaceTab,
+  editorSnapEnabled: true,
+  editorGridVisible: false,
+  editorGridSize: 20,
+  editorGuidesByPage: {},
   thumbnailVersions: {},
   selectedSelector: null,
   editSelectedSelector: null,
@@ -246,6 +270,50 @@ export const useSessionDetailUiStore = create<SessionDetailUiStore>((set) => ({
   setIsExportingSessionZip: (isExportingSessionZip) => set({ isExportingSessionZip }),
   setInteractionMode: (interactionMode) => set({ interactionMode }),
   setWorkspaceTab: (workspaceTab) => set({ workspaceTab }),
+  setEditorSnapEnabled: (editorSnapEnabled) => set({ editorSnapEnabled }),
+  setEditorGridVisible: (editorGridVisible) => set({ editorGridVisible }),
+  setEditorGridSize: (editorGridSize) =>
+    set({ editorGridSize: Math.max(4, Math.min(200, Math.round(editorGridSize))) }),
+  addEditorGuide: (pageId, axis, position) =>
+    set((state) => {
+      const current = state.editorGuidesByPage[pageId] || { vertical: [], horizontal: [] }
+      return {
+        editorGuidesByPage: {
+          ...state.editorGuidesByPage,
+          [pageId]: {
+            ...current,
+            [axis]: [...current[axis], Number(position.toFixed(1))]
+          }
+        }
+      }
+    }),
+  moveEditorGuide: (pageId, axis, index, position) =>
+    set((state) => {
+      const current = state.editorGuidesByPage[pageId]
+      if (!current || index < 0 || index >= current[axis].length) return state
+      const nextAxis = [...current[axis]]
+      nextAxis[index] = Number(position.toFixed(1))
+      return {
+        editorGuidesByPage: {
+          ...state.editorGuidesByPage,
+          [pageId]: { ...current, [axis]: nextAxis }
+        }
+      }
+    }),
+  removeEditorGuide: (pageId, axis, index) =>
+    set((state) => {
+      const current = state.editorGuidesByPage[pageId]
+      if (!current || index < 0 || index >= current[axis].length) return state
+      return {
+        editorGuidesByPage: {
+          ...state.editorGuidesByPage,
+          [pageId]: {
+            ...current,
+            [axis]: current[axis].filter((_, guideIndex) => guideIndex !== index)
+          }
+        }
+      }
+    }),
   // Fix: only reset to preview when currently in preview mode.
   // In edit/ai-inspect mode, selecting an element should NOT change the mode.
   setSelectedElement: (selectedSelector, selectorLabel, elementTag = '', elementText = '') =>
@@ -348,6 +416,10 @@ export const useSessionDetailUiStore = create<SessionDetailUiStore>((set) => ({
       selectedPageId: null,
       interactionMode: 'preview' as InteractionMode,
       workspaceTab: 'preview' as SessionWorkspaceTab,
+      editorSnapEnabled: true,
+      editorGridVisible: false,
+      editorGridSize: 20,
+      editorGuidesByPage: {},
       selectedSelector: null,
       editSelectedSelector: null,
       selectorLabel: '',

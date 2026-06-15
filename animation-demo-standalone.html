@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>PR#107 Animation Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+      overflow-x: hidden;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: white;
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 2.5rem;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+
+    .controls {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .btn {
+      background: white;
+      color: #667eea;
+      border: none;
+      padding: 15px 40px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      transition: all 0.3s;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .demo-section {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      margin-bottom: 30px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+
+    .section-title {
+      color: #667eea;
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+      font-weight: 600;
+    }
+
+    .demo-row {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+
+    .demo-box {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 15px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      text-align: center;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      position: relative;
+      min-width: 150px;
+    }
+
+    .demo-box.green {
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    }
+
+    .demo-box.orange {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .demo-box.blue {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+
+    .demo-box.yellow {
+      background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+
+    .demo-box.pink {
+      background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+    }
+
+    .subtitle {
+      display: block;
+      font-size: 0.9rem;
+      opacity: 0.9;
+      margin-top: 10px;
+    }
+
+    /* Animation keyframes */
+    @keyframes flyInLeft {
+      from {
+        transform: translateX(-100vw);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes flyInCenter {
+      from {
+        transform: scale(0) rotate(180deg);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+      }
+    }
+
+    @keyframes exitScale {
+      from {
+        transform: scale(1);
+        opacity: 1;
+      }
+      to {
+        transform: scale(0);
+        opacity: 0;
+      }
+    }
+
+    @keyframes exitZoom {
+      from {
+        transform: scale(1);
+        opacity: 1;
+      }
+      to {
+        transform: scale(3);
+        opacity: 0;
+      }
+    }
+
+    @keyframes pulseSoft {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.08);
+      }
+    }
+
+    @keyframes pulseStrong {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.2);
+      }
+    }
+
+    @keyframes growShrinkSoft {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.12);
+      }
+    }
+
+    @keyframes growShrinkStrong {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.3);
+      }
+    }
+
+    @keyframes pathMotion {
+      from {
+        transform: translate(0, 0);
+      }
+      to {
+        transform: translate(200px, 80px);
+      }
+    }
+
+    /* Animation classes */
+    .animate-fly-in {
+      animation: flyInLeft 0.8s ease-out forwards;
+    }
+
+    .animate-fly-center {
+      animation: flyInCenter 0.8s ease-out forwards;
+    }
+
+    .animate-exit-scale {
+      animation: exitScale 0.8s ease-in forwards;
+    }
+
+    .animate-exit-zoom {
+      animation: exitZoom 0.8s ease-in forwards;
+    }
+
+    .animate-pulse-soft {
+      animation: pulseSoft 1.5s ease-in-out infinite;
+    }
+
+    .animate-pulse-strong {
+      animation: pulseStrong 1.5s ease-in-out infinite;
+    }
+
+    .animate-grow-shrink-soft {
+      animation: growShrinkSoft 1.5s ease-in-out infinite;
+    }
+
+    .animate-grow-shrink-strong {
+      animation: growShrinkStrong 1.5s ease-in-out infinite;
+    }
+
+    .animate-path {
+      animation: pathMotion 2s ease-in-out forwards;
+    }
+
+    .status {
+      background: rgba(255,255,255,0.9);
+      padding: 15px 25px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      text-align: center;
+      font-weight: 600;
+      color: #667eea;
+    }
+
+    .hidden {
+      opacity: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎬 PR#107 Animation Features Demo</h1>
+
+    <div class="controls">
+      <button class="btn" onclick="playAnimations()">▶️ Play All Animations</button>
+      <button class="btn" onclick="resetAnimations()" style="margin-left: 10px;">🔄 Reset</button>
+    </div>
+
+    <div class="status" id="status">Click "Play All Animations" to start</div>
+
+    <!-- Feature 1 & 2: Sequence + Stagger -->
+    <div class="demo-section">
+      <div class="section-title">Feature 1-2: Sequence Control + Stagger</div>
+      <div class="demo-row">
+        <div class="demo-box green hidden" id="card1" data-anim="fly-in" data-anim-stagger="0">
+          Card 1
+          <span class="subtitle">stagger: 0ms</span>
+        </div>
+        <div class="demo-box green hidden" id="card2" data-anim="fly-in" data-anim-stagger="150">
+          Card 2
+          <span class="subtitle">stagger: 150ms</span>
+        </div>
+        <div class="demo-box green hidden" id="card3" data-anim="fly-in" data-anim-stagger="300">
+          Card 3
+          <span class="subtitle">stagger: 300ms</span>
+        </div>
+        <div class="demo-box orange hidden" id="with-seq" data-anim="fly-in" data-anim-sequence="with">
+          With Previous
+          <span class="subtitle">sequence="with"</span>
+        </div>
+        <div class="demo-box blue hidden" id="after-seq" data-anim="fly-in" data-anim-sequence="after">
+          After Previous
+          <span class="subtitle">sequence="after"</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature 3: Click Groups -->
+    <div class="demo-section">
+      <div class="section-title">Feature 3: Click Groups</div>
+      <div class="demo-row">
+        <div class="demo-box yellow hidden" id="group1-a" data-anim="fly-in" data-anim-click-group="group1">
+          Group 1A
+          <span class="subtitle">click-group="group1"</span>
+        </div>
+        <div class="demo-box yellow hidden" id="group1-b" data-anim="fly-in" data-anim-click-group="group1">
+          Group 1B
+          <span class="subtitle">click-group="group1"</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature 4: Center Direction -->
+    <div class="demo-section">
+      <div class="section-title">Feature 4: Center Direction</div>
+      <div class="demo-row">
+        <div class="demo-box pink hidden" id="center" data-anim="fly-in" data-anim-from="center">
+          From Center
+          <span class="subtitle">from="center"</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature 5: Exit Animations -->
+    <div class="demo-section">
+      <div class="section-title">Feature 5: Exit Animations</div>
+      <div class="demo-row">
+        <div class="demo-box" id="exit-scale" data-anim="exit-scale">
+          Exit Scale
+          <span class="subtitle">Shrinks to 0</span>
+        </div>
+        <div class="demo-box" id="exit-zoom" data-anim="exit-zoom">
+          Exit Zoom
+          <span class="subtitle">Zooms out</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature 6: Pulse Animations -->
+    <div class="demo-section">
+      <div class="section-title">Feature 6: Pulse Animations</div>
+      <div class="demo-row">
+        <div class="demo-box green" id="pulse-soft" data-anim="pulse-soft">
+          Pulse Soft
+          <span class="subtitle">Subtle pulse</span>
+        </div>
+        <div class="demo-box orange" id="pulse-strong" data-anim="pulse-strong">
+          Pulse Strong
+          <span class="subtitle">Strong pulse</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature 7: Grow-Shrink -->
+    <div class="demo-section">
+      <div class="section-title">Feature 7: Grow-Shrink Animations</div>
+      <div class="demo-row">
+        <div class="demo-box blue" id="grow-soft" data-anim="grow-shrink-soft">
+          Grow-Shrink Soft
+          <span class="subtitle">Gentle grow</span>
+        </div>
+        <div class="demo-box yellow" id="grow-strong" data-anim="grow-shrink-strong">
+          Grow-Shrink Strong
+          <span class="subtitle">Strong grow</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature 8: Path Animation -->
+    <div class="demo-section">
+      <div class="section-title">Feature 8: Path Motion</div>
+      <div class="demo-row">
+        <div class="demo-box pink hidden" id="path" data-anim="path" data-anim-path="M 0 0 L 200 80">
+          Path Motion
+          <span class="subtitle">Moves along path</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let animationTimeout;
+
+    function updateStatus(message) {
+      document.getElementById('status').textContent = message;
+    }
+
+    function resetAnimations() {
+      clearTimeout(animationTimeout);
+
+      // Remove all animation classes
+      document.querySelectorAll('.demo-box').forEach(el => {
+        el.className = el.className.replace(/animate-\S+/g, '').trim();
+        if (!el.id.includes('pulse') && !el.id.includes('grow')) {
+          el.classList.add('hidden');
+        }
+      });
+
+      // Reset pulse and grow-shrink to always visible
+      ['pulse-soft', 'pulse-strong', 'grow-soft', 'grow-strong'].forEach(id => {
+        const el = document.getElementById(id);
+        el.classList.remove('hidden');
+      });
+
+      updateStatus('Reset complete. Click "Play All Animations" to start');
+    }
+
+    async function playAnimations() {
+      updateStatus('🎬 Starting animation sequence...');
+      resetAnimations();
+
+      await sleep(500);
+
+      // Phase 1: Staggered fly-in
+      updateStatus('Phase 1: Staggered animations...');
+      document.getElementById('card1').classList.remove('hidden');
+      document.getElementById('card1').classList.add('animate-fly-in');
+
+      await sleep(150);
+      document.getElementById('card2').classList.remove('hidden');
+      document.getElementById('card2').classList.add('animate-fly-in');
+
+      await sleep(150);
+      document.getElementById('card3').classList.remove('hidden');
+      document.getElementById('card3').classList.add('animate-fly-in');
+
+      // Phase 2: With sequence (plays with card3)
+      updateStatus('Phase 2: Sequence="with" (simultaneous)...');
+      document.getElementById('with-seq').classList.remove('hidden');
+      document.getElementById('with-seq').classList.add('animate-fly-in');
+
+      await sleep(800);
+
+      // Phase 3: After sequence
+      updateStatus('Phase 3: Sequence="after"...');
+      document.getElementById('after-seq').classList.remove('hidden');
+      document.getElementById('after-seq').classList.add('animate-fly-in');
+
+      await sleep(800);
+
+      // Phase 4: Click groups (simultaneous)
+      updateStatus('Phase 4: Click groups (simultaneous)...');
+      document.getElementById('group1-a').classList.remove('hidden');
+      document.getElementById('group1-b').classList.remove('hidden');
+      document.getElementById('group1-a').classList.add('animate-fly-in');
+      document.getElementById('group1-b').classList.add('animate-fly-in');
+
+      await sleep(800);
+
+      // Phase 5: Center direction
+      updateStatus('Phase 5: From center...');
+      document.getElementById('center').classList.remove('hidden');
+      document.getElementById('center').classList.add('animate-fly-center');
+
+      await sleep(800);
+
+      // Phase 6: Exit animations
+      updateStatus('Phase 6: Exit animations...');
+      document.getElementById('exit-scale').classList.add('animate-exit-scale');
+      await sleep(400);
+      document.getElementById('exit-zoom').classList.add('animate-exit-zoom');
+
+      await sleep(1000);
+
+      // Phase 7: Pulse animations (already running continuously)
+      updateStatus('Phase 7: Pulse animations (continuous)...');
+      document.getElementById('pulse-soft').classList.add('animate-pulse-soft');
+      document.getElementById('pulse-strong').classList.add('animate-pulse-strong');
+
+      await sleep(2000);
+
+      // Phase 8: Grow-shrink animations (already running continuously)
+      updateStatus('Phase 8: Grow-shrink animations (continuous)...');
+      document.getElementById('grow-soft').classList.add('animate-grow-shrink-soft');
+      document.getElementById('grow-strong').classList.add('animate-grow-shrink-strong');
+
+      await sleep(2000);
+
+      // Phase 9: Path motion
+      updateStatus('Phase 9: Path motion...');
+      document.getElementById('path').classList.remove('hidden');
+      document.getElementById('path').classList.add('animate-path');
+
+      await sleep(2000);
+
+      updateStatus('✅ All animations complete! Click "Play All Animations" to replay');
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // Auto-start after 2 seconds
+    setTimeout(() => {
+      playAnimations();
+    }, 2000);
+
+    // Auto-repeat every 20 seconds
+    setInterval(() => {
+      playAnimations();
+    }, 20000);
+  </script>
+</body>
+</html>

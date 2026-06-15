@@ -1,0 +1,61 @@
+<div class="flex h-full flex-col gap-6 bg-gradient-to-br from-blue-50 to-purple-50 p-12" data-block-id="content">
+  <div class="rounded-xl bg-white p-6 shadow-md" data-block-id="header" data-anim="fade-up" data-anim-duration="600">
+    <h1 class="text-3xl font-bold text-gray-900">PR#107 Animation Feature Test</h1>
+  </div>
+  <div class="rounded-lg bg-blue-100 p-4 text-sm text-blue-900" data-block-id="subtitle" data-anim="fade" data-anim-sequence="with" data-anim-delay="100">
+    This subtitle uses data-anim-sequence="with"
+  </div>
+  <div class="grid grid-cols-3 gap-4">
+    <div class="rounded-lg bg-green-100 p-4 text-center" data-block-id="card-1" data-anim="fade-up" data-anim-stagger="90">
+      Card 1<br><small>stagger 90ms</small>
+    </div>
+    <div class="rounded-lg bg-green-100 p-4 text-center" data-block-id="card-2" data-anim="fade-up" data-anim-stagger="90">
+      Card 2<br><small>stagger 90ms</small>
+    </div>
+    <div class="rounded-lg bg-green-100 p-4 text-center" data-block-id="card-3" data-anim="fade-up" data-anim-stagger="90">
+      Card 3<br><small>stagger 90ms</small>
+    </div>
+  </div>
+  <div class="rounded-lg bg-purple-100 p-4" data-block-id="after-card" data-anim="fade-up" data-anim-sequence="after">
+    This appears AFTER the staggered cards finish
+  </div>
+  <div class="rounded-lg bg-yellow-100 p-4 text-center" data-block-id="center-fly" data-anim="fly-in" data-anim-from="center" data-anim-duration="700">
+    fly-in from="center"
+  </div>
+  <div class="flex gap-4">
+    <div class="rounded-lg bg-red-100 p-3 text-sm" data-block-id="exit-scale" data-anim="exit-scale" data-anim-trigger="click">
+      Click: exit-scale
+    </div>
+    <div class="rounded-lg bg-red-200 p-3 text-sm" data-block-id="exit-zoom" data-anim="exit-zoom" data-anim-trigger="click">
+      Click: exit-zoom
+    </div>
+  </div>
+  <div class="flex gap-4">
+    <div class="rounded-lg bg-orange-100 p-3 text-sm" data-block-id="pulse-soft" data-anim="pulse-soft" data-anim-duration="600">
+      pulse-soft
+    </div>
+    <div class="rounded-lg bg-orange-200 p-3 text-sm" data-block-id="pulse-strong" data-anim="pulse-strong" data-anim-duration="600">
+      pulse-strong
+    </div>
+    <div class="rounded-lg bg-orange-300 p-3 text-sm" data-block-id="grow-shrink-soft" data-anim="grow-shrink-soft" data-anim-duration="600">
+      grow-shrink-soft
+    </div>
+    <div class="rounded-lg bg-orange-400 p-3 text-sm" data-block-id="grow-shrink-strong" data-anim="grow-shrink-strong" data-anim-duration="600">
+      grow-shrink-strong
+    </div>
+  </div>
+  <div class="flex gap-4">
+    <div class="rounded-lg bg-indigo-100 p-3 text-sm" data-block-id="click-group-1" data-anim="fade-up" data-anim-trigger="click" data-anim-click-group="reveal">
+      Click Group 1
+    </div>
+    <div class="rounded-lg bg-indigo-100 p-3 text-sm" data-block-id="click-group-2" data-anim="pulse-soft" data-anim-trigger="click" data-anim-click-group="reveal">
+      Click Group 2
+    </div>
+    <div class="rounded-lg bg-indigo-200 p-3 text-sm" data-block-id="click-separate" data-anim="fade" data-anim-trigger="click">
+      Separate Click
+    </div>
+  </div>
+  <div class="rounded-lg bg-pink-100 p-3 text-sm" data-block-id="path-anim" data-anim="path" data-anim-path="M 0 0 L 120 30" data-anim-duration="800">
+    path animation: M 0 0 L 120 30
+  </div>
+</div>

@@ -2,7 +2,6 @@ import { BaseCallbackHandler } from '@langchain/core/callbacks/base'
 import type { BaseMessage } from '@langchain/core/messages'
 import type { LLMResult } from '@langchain/core/outputs'
 import log from 'electron-log/main.js'
-import { get_encoding, type Tiktoken } from 'tiktoken'
 import type { PPTDatabase } from './db/database'
 
 export interface ExtractedModelUsage {
@@ -15,7 +14,6 @@ export interface ExtractedModelUsage {
 type UnknownRecord = Record<string, unknown>
 
 let usageDb: PPTDatabase | null = null
-let fallbackEncoder: Tiktoken | null = null
 
 const asRecord = (value: unknown): UnknownRecord | null =>
   value && typeof value === 'object' && !Array.isArray(value)
@@ -57,12 +55,7 @@ const readUsageRecord = (value: unknown): ExtractedModelUsage | null => {
 
 const countEstimatedTokens = (value: string): number => {
   if (!value) return 0
-  try {
-    fallbackEncoder ||= get_encoding('o200k_base')
-    return fallbackEncoder.encode(value).length
-  } catch {
-    return Math.max(1, Math.ceil(value.length / 4))
-  }
+  return Math.max(1, Math.ceil(value.length / 4))
 }
 
 const serializeMessages = (messages: BaseMessage[][]): string =>

@@ -2,6 +2,29 @@ import { cp, mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/pro
 import fs from 'node:fs'
 import path from 'node:path'
 import crypto from 'node:crypto'
+import * as cheerio from 'cheerio'
+
+const MAX_PREVIEW_HTML_BYTES = 1024 * 1024
+const PREVIEW_RESOURCE_ATTRIBUTES = new Set([
+  'action',
+  'archive',
+  'background',
+  'cite',
+  'classid',
+  'codebase',
+  'data',
+  'formaction',
+  'href',
+  'icon',
+  'longdesc',
+  'manifest',
+  'ping',
+  'poster',
+  'profile',
+  'src',
+  'usemap',
+  'xlink:href'
+])
 
 export type StyleSource = 'builtin' | 'custom' | 'override'
 
@@ -192,19 +215,110 @@ function validateStyleSkillMarkdown(markdown: string, filePath: string): void {
 }
 
 function validatePreviewHtml(html: string, filePath: string): void {
+  if (Buffer.byteLength(html, 'utf8') > MAX_PREVIEW_HTML_BYTES) {
+    throw new Error('preview.html must not exceed 1MB at ' + filePath)
+  }
   if (!/<!doctype html>|<html[\s>]/i.test(html)) {
     throw new Error('preview.html must be complete HTML at ' + filePath)
   }
-  const lower = html.toLowerCase()
-  const forbidden = ['http://', 'https://', 'file://', '../']
-  for (const token of forbidden) {
-    if (lower.includes(token)) throw new Error('Forbidden preview reference ' + token + ' at ' + filePath)
+
+  const $ = cheerio.load(html)
+  if ($('script').length > 0) {
+    throw new Error('Inline or external script is forbidden at ' + filePath)
   }
-  if (/\b(?:src|href)=["']\/[^"']*/i.test(html)) {
+
+  $('*').each((_, element) => {
+    if (!('attribs' in element)) return
+    const attributes = element.attribs as Record<string, string>
+    for (const [rawName, value] of Object.entries(attributes)) {
+      const name = rawName.toLowerCase()
+      if (name.startsWith('on')) {
+        throw new Error('Inline event handlers are forbidden at ' + filePath)
+      }
+      if (name === 'srcdoc') {
+        throw new Error('iframe srcdoc is forbidden at ' + filePath)
+      }
+      if (PREVIEW_RESOURCE_ATTRIBUTES.has(name)) {
+        validatePreviewReference(value, filePath)
+      } else if (name === 'srcset') {
+        for (const candidate of value.split(',')) {
+          validatePreviewReference(candidate.trim().split(/\s+/)[0] || '', filePath)
+        }
+      }
+      if (name === 'style' || /url\s*\(/i.test(value)) {
+        validatePreviewCss(value, filePath)
+      }
+    }
+  })
+
+  $('style').each((_, element) => validatePreviewCss($(element).html() || '', filePath))
+
+  $('meta[http-equiv]').each((_, element) => {
+    if (($(element).attr('http-equiv') || '').trim().toLowerCase() !== 'refresh') return
+    const content = $(element).attr('content') || ''
+    const refreshUrl = content.match(/(?:^|;)\s*url\s*=\s*(['"]?)(.*?)\1\s*$/i)?.[2]
+    if (refreshUrl) validatePreviewReference(refreshUrl, filePath)
+  })
+}
+
+function validatePreviewReference(reference: string, filePath: string): void {
+  const normalized = decodePreviewReference(reference).trim().replace(/\\/g, '/')
+  if (!normalized || normalized.startsWith('#')) return
+  const compactProtocol = normalized.replace(/[\u0000-\u0020\u007f]+/g, '')
+  if (/^[a-z][a-z0-9+.-]*:/i.test(compactProtocol) || compactProtocol.startsWith('//')) {
+    throw new Error('Forbidden preview reference ' + reference + ' at ' + filePath)
+  }
+  if (normalized.startsWith('/')) {
     throw new Error('Absolute preview asset path is forbidden at ' + filePath)
   }
-  if (/<script\b/i.test(html)) throw new Error('Inline or external script is forbidden at ' + filePath)
-  if (/@import\b/i.test(html)) throw new Error('CSS @import is forbidden at ' + filePath)
+  const pathname = normalized.split(/[?#]/, 1)[0]
+  if (pathname.split('/').includes('..')) {
+    throw new Error('Forbidden preview reference ' + reference + ' at ' + filePath)
+  }
+}
+
+function decodePreviewReference(reference: string): string {
+  let decoded = reference
+  for (let index = 0; index < 5; index += 1) {
+    try {
+      const next = decodeURIComponent(decoded)
+      if (next === decoded) break
+      decoded = next
+    } catch {
+      break
+    }
+  }
+  return decoded
+}
+
+function validatePreviewCss(css: string, filePath: string): void {
+  const normalized = decodeCssEscapes(css).replace(/\/\*[\s\S]*?\*\//g, '')
+  if (/@import\b/i.test(normalized)) {
+    throw new Error('CSS @import is forbidden at ' + filePath)
+  }
+
+  const cssUrlPattern = /url\(\s*(['"]?)(.*?)\1\s*\)/gi
+  for (const match of normalized.matchAll(cssUrlPattern)) {
+    validatePreviewReference(match[2] || '', filePath)
+  }
+
+  const imageSetPattern = /(?:-webkit-)?image-set\(([\s\S]*?)\)/gi
+  for (const imageSet of normalized.matchAll(imageSetPattern)) {
+    for (const quoted of (imageSet[1] || '').matchAll(/(['"])(.*?)\1/g)) {
+      validatePreviewReference(quoted[2] || '', filePath)
+    }
+  }
+}
+
+function decodeCssEscapes(css: string): string {
+  return css.replace(
+    /\\(?:([0-9a-f]{1,6})(?:\r\n|[\t\n\f\r ])?|([^\r\n\f]))/gi,
+    (_match, hex: string | undefined, escaped: string | undefined) => {
+      if (!hex) return escaped || ''
+      const codePoint = Number.parseInt(hex, 16)
+      return codePoint === 0 || codePoint > 0x10ffff ? '\uFFFD' : String.fromCodePoint(codePoint)
+    }
+  )
 }
 
 function normalizeStyleKey(value: string): string {

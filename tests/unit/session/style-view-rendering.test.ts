@@ -122,6 +122,9 @@ describe('StyleView preview rendering', () => {
         )
       })
       expect(container.querySelectorAll('[data-testid="style-preview-iframe"]')).toHaveLength(8)
+      for (const iframe of container.querySelectorAll('[data-testid="style-preview-iframe"]')) {
+        expect(iframe.getAttribute('sandbox')).toBe('')
+      }
       expect(
         container.querySelector('[data-style-card-id="style-2"] iframe')
       ).toBeNull()

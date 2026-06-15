@@ -91,7 +91,6 @@
     "slate-react": "^0.124.2",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.0.1",
-    "tiktoken": "^1.0.18",
     "turndown": "^7.2.4",
     "undici": "^8.3.0",
     "woff2-encoder": "^2.0.0",
@@ -140,6 +139,7 @@
       ]
     },
     "onlyBuiltDependencies": [
+      "@google/genai",
       "electron",
       "electron-winstaller",
       "esbuild",

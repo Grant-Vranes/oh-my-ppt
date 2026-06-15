@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const tokenUsagePageState = vi.hoisted(() => ({
   destroy: vi.fn(),
-  translate: (key: string, params?: Record<string, string | number>) =>
+  translate: (key: string) =>
     key === 'settings.usagePageTitle'
       ? 'Token 用量统计'
       : key === 'settings.usageTotalTokens'
@@ -18,9 +18,7 @@ const tokenUsagePageState = vi.hoisted(() => ({
             ? '输出 Token'
             : key === 'settings.usageCalls'
               ? '模型调用'
-              : key === 'settings.usageAccuracyNote'
-                ? `真实 ${params?.exact}，估算 ${params?.estimated}`
-                : key,
+              : key,
   navTranslate: (key: string) => (key === 'nav.tokenUsage' ? 'Token 用量' : key),
   getAppVersion: vi.fn(async () => ({ version: '2.0.16' })),
   getModelUsage: vi.fn(async () => ({

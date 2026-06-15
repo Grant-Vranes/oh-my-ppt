@@ -32,8 +32,6 @@ files:
   - '!*.db-*'
   - '!{ohmyppt.dev.db,ohmyppt.db}'
   - '!thumb.png'
-  - '!node_modules/tiktoken'
-  - '!node_modules/web-streams-polyfill'
   - '!tests/**'
   - '!test/**'
 asarUnpack:

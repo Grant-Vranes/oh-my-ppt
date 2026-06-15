@@ -32,7 +32,7 @@ describe('model usage tracking', () => {
     })
   })
 
-  it('uses tiktoken estimates when the provider omits usage', async () => {
+  it('uses heuristic estimates when the provider omits usage', async () => {
     const recordModelUsage = vi.fn(async () => undefined)
     configureModelUsageRecorder({ recordModelUsage } as never)
     const handler = new ModelUsageCallbackHandler({

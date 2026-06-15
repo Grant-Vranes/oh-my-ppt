@@ -337,7 +337,7 @@ export const en = {
     usagePageEyebrow: 'Usage Analytics',
     usagePageTitle: 'Token usage',
     usagePageDescription:
-      'Review input, output, and total token trends, plus usage distribution across models.',
+      'Review input, output, and total token trends, plus usage distribution across models(For reference only).',
     usagePeriod7d: 'Last 7 days',
     usagePeriod30d: 'Last 30 days',
     usagePeriodAll: 'All time',
@@ -352,8 +352,6 @@ export const en = {
     usageTodayHourly: "Today's hourly usage",
     usageByModel: 'Usage by model',
     usageEmpty: 'No model usage has been recorded yet',
-    usageAccuracyNote:
-      'Recording starts with this version. In this range, {exact} calls use provider-reported usage and {estimated} calls use tiktoken estimates.',
     modelAccess: 'Base model configuration',
     imageModelAccess: 'Image models',
     modelHelpTitle: 'Recommended cloud models',

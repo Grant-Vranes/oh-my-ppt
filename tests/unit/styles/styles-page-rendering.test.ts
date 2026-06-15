@@ -147,7 +147,9 @@ describe('StylesPage rendering', () => {
           }
         ])
       })
-      expect(container.querySelectorAll('[data-testid="style-preview-iframe"]')).toHaveLength(1)
+      const previewIframe = container.querySelector('[data-testid="style-preview-iframe"]')
+      expect(previewIframe).not.toBeNull()
+      expect(previewIframe?.getAttribute('sandbox')).toBe('')
 
       await act(async () => {
         thumbnailListener?.({

@@ -174,6 +174,7 @@ export function StyleView({ sessionId }: { sessionId: string }): React.JSX.Eleme
                     <iframe
                       data-testid="style-preview-iframe"
                       src={stylePreviewUrl(style.previewPath)}
+                      sandbox=""
                       tabIndex={-1}
                       className="pointer-events-none absolute left-0 top-0 h-[900px] w-[1600px] origin-top-left border-0 bg-white"
                       style={{ transform: 'scale(0.2)' }}

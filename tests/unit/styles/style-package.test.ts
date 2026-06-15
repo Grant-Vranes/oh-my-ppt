@@ -156,6 +156,84 @@ describe('style packages', () => {
     expect(rawJson.styleSkill).toBeUndefined()
   })
 
+  it('allows standard inline SVG namespace declarations in preview.html', async () => {
+    const tmp = await mkdtemp(path.join(os.tmpdir(), 'ohmyppt-style-svg-preview-'))
+    const dir = path.join(tmp, 'svg-preview')
+
+    await writeStylePackage({
+      dir,
+      json: {
+        style: 'svg-preview',
+        name: { zh: 'SVG 预览', en: 'SVG Preview' },
+        description: 'Inline SVG preview',
+        category: '测试',
+        aliases: [],
+        styleCase: 'Unit test',
+        version: '1.0.0',
+        source: 'custom'
+      },
+      skillMarkdown: '# SVG Preview\n',
+      previewHtml:
+        '<!doctype html><html><body><svg xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="gradient"></linearGradient></defs><rect fill="url(#gradient)" /></svg></body></html>'
+    })
+
+    await expect(readStylePackage(dir)).resolves.toMatchObject({ previewPath: path.join(dir, 'preview.html') })
+  })
+
+  it.each([
+    '<!doctype html><html><body><img src="https://example.com/image.png"></body></html>',
+    '<!doctype html><html><body><img src="data:image/png;base64,AAAA"></body></html>',
+    '<!doctype html><html><body><a href="javascript:alert(1)">open</a></body></html>',
+    '<!doctype html><html><body onload="alert(1)"></body></html>',
+    '<!doctype html><html><body><iframe srcdoc="&lt;img src=https://example.com/a.png&gt;"></iframe></body></html>',
+    '<!doctype html><html><style>body{background:url(http://example.com/bg.png)}</style></html>',
+    '<!doctype html><html><style>body{background:url(\\68 ttp://example.com/bg.png)}</style></html>',
+    '<!doctype html><html><style>@import "https://example.com/style.css";</style></html>',
+    '<!doctype html><html><meta http-equiv="refresh" content="0; url=https://example.com"></html>'
+  ])('rejects unsafe references or executable markup in preview.html', async (previewHtml) => {
+    const tmp = await mkdtemp(path.join(os.tmpdir(), 'ohmyppt-style-remote-preview-'))
+
+    await expect(
+      writeStylePackage({
+        dir: path.join(tmp, 'remote-preview'),
+        json: {
+          style: 'remote-preview',
+          name: { zh: '远程预览', en: 'Remote Preview' },
+          description: 'Remote preview',
+          category: '测试',
+          aliases: [],
+          styleCase: 'Unit test',
+          version: '1.0.0',
+          source: 'custom'
+        },
+        skillMarkdown: '# Remote Preview\n',
+        previewHtml
+      })
+    ).rejects.toThrow(/forbidden|Forbidden/)
+  })
+
+  it('rejects oversized preview.html files before persisting them', async () => {
+    const tmp = await mkdtemp(path.join(os.tmpdir(), 'ohmyppt-style-large-preview-'))
+
+    await expect(
+      writeStylePackage({
+        dir: path.join(tmp, 'large-preview'),
+        json: {
+          style: 'large-preview',
+          name: { zh: '大预览', en: 'Large Preview' },
+          description: 'Large preview',
+          category: '测试',
+          aliases: [],
+          styleCase: 'Unit test',
+          version: '1.0.0',
+          source: 'custom'
+        },
+        skillMarkdown: '# Large Preview\n',
+        previewHtml: '<!doctype html><html><body>' + 'x'.repeat(1024 * 1024) + '</body></html>'
+      })
+    ).rejects.toThrow('preview.html must not exceed 1MB')
+  })
+
   it('rewrites old installed system packages from bundled styles', async () => {
     const tmp = await mkdtemp(path.join(os.tmpdir(), 'ohmyppt-style-init-'))
     const bundled = path.join(tmp, 'bundled')

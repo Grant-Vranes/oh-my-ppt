@@ -318,7 +318,7 @@ export const zh = {
     advancedTab: '高级',
     usagePageEyebrow: 'Usage Analytics',
     usagePageTitle: 'Token 用量统计',
-    usagePageDescription: '查看模型调用的输入、输出与总 Token 趋势，以及不同模型的用量分布。',
+    usagePageDescription: '查看模型调用的输入、输出与总 Token 趋势，以及不同模型的用量分布（仅供参考）。',
     usagePeriod7d: '近 7 天',
     usagePeriod30d: '近 30 天',
     usagePeriodAll: '全部',
@@ -333,8 +333,6 @@ export const zh = {
     usageTodayHourly: '当天每小时用量',
     usageByModel: '模型用量占比',
     usageEmpty: '还没有可统计的模型调用',
-    usageAccuracyNote:
-      '从此版本开始记录。当前范围内 {exact} 次调用使用供应商返回的真实用量，{estimated} 次调用使用 tiktoken 估算。',
     modelAccess: '基础模型配置',
     imageModelAccess: '生图模型',
     modelHelpTitle: '推荐的云上模型',

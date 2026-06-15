@@ -44,6 +44,7 @@ import type {
 } from '@shared/image-generation.js'
 import type { ExportProgressPayload } from '@shared/export-progress.js'
 import type { PageMergeDisabledReason } from '@shared/page-merge'
+import type { ModelUsagePeriod, ModelUsageStats } from '@shared/model-usage'
 
 type IpcRendererLike = Window['electron']['ipcRenderer']
 
@@ -699,6 +700,8 @@ export const ipc = {
     return () => getIpc().removeListener(channel, handler)
   },
   getSettings: () => getIpc().invoke('settings:get') as Promise<Record<string, unknown>>,
+  getModelUsage: (period: ModelUsagePeriod) =>
+    getIpc().invoke('settings:getModelUsage', period) as Promise<ModelUsageStats>,
   listModelConfigs: () => getIpc().invoke('settings:listModelConfigs') as Promise<ModelConfig[]>,
   listImageModelConfigs: () => getIpc().invoke('imageModels:list') as Promise<ImageModelConfig[]>,
   validateUploadPrerequisites: () =>

@@ -46,6 +46,23 @@ CREATE INDEX IF NOT EXISTS idx_messages_session_scope ON messages(session_id, ch
 CREATE INDEX IF NOT EXISTS idx_messages_session_only ON messages(session_id);
 `
 
+const MODEL_USAGE_TABLE_SQL = `
+CREATE TABLE IF NOT EXISTS model_usage_events (
+  id TEXT PRIMARY KEY,
+  provider TEXT NOT NULL,
+  model TEXT NOT NULL,
+  model_config_id TEXT,
+  input_tokens INTEGER NOT NULL DEFAULT 0,
+  output_tokens INTEGER NOT NULL DEFAULT 0,
+  total_tokens INTEGER NOT NULL DEFAULT 0,
+  usage_source TEXT NOT NULL DEFAULT 'provider',
+  created_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_model_usage_events_created ON model_usage_events(created_at);
+CREATE INDEX IF NOT EXISTS idx_model_usage_events_model ON model_usage_events(provider, model, created_at);
+`
+
 const INIT_SQL = `
 CREATE TABLE IF NOT EXISTS sessions (
   id TEXT PRIMARY KEY,
@@ -66,6 +83,8 @@ CREATE TABLE IF NOT EXISTS sessions (
 );
 
 ${MESSAGES_TABLE_SQL}
+
+${MODEL_USAGE_TABLE_SQL}
 
 CREATE TABLE IF NOT EXISTS projects (
   id TEXT PRIMARY KEY,
@@ -1287,6 +1306,7 @@ export const runDatabasePatches = async (args: {
   await enforceModelConfigsSchema(client)
   await enforceImageModelConfigsSchema(client)
   await enforceMessagesSchema(client)
+  await client.executeMultiple(MODEL_USAGE_TABLE_SQL)
   await enforceGenerationSchema(client)
   await enforceSessionPagesSchema(client)
   await enforceSessionOperationsSchema(client)

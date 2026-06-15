@@ -25,6 +25,7 @@ import {
   buildOpenAIModelOptions,
   shouldDisableOpenAICompatibleThinking
 } from './openai-model-options'
+import { ModelUsageCallbackHandler } from './model-usage'
 import { createSessionBoundDeckTools, type SessionDeckGenerationContext } from './tools'
 import { buildDeckAgentSystemPrompt, buildEditAgentSystemPrompt } from './prompt'
 import {
@@ -481,6 +482,11 @@ export function resolveModel(
   const resolvedMaxTokens = maxTokens && maxTokens > 0 ? maxTokens : 4096
   const disableCompatibleThinking =
     provider === 'openai' && shouldDisableOpenAICompatibleThinking(resolvedBaseUrl)
+  const usageCallback = new ModelUsageCallbackHandler({
+    provider,
+    model: resolvedModel,
+    modelConfigId: temperatureControl?.modelConfigId
+  })
 
   log.info('[llm] resolveModel', {
     provider,
@@ -497,13 +503,16 @@ export function resolveModel(
   switch (provider) {
     case 'openai':
       return new ChatOpenAI(
-        buildOpenAIModelOptions({
-          model: resolvedModel,
-          apiKey,
-          baseUrl: resolvedBaseUrl,
-          temperatureOptions,
-          maxTokens: resolvedMaxTokens
-        })
+        {
+          ...buildOpenAIModelOptions({
+            model: resolvedModel,
+            apiKey,
+            baseUrl: resolvedBaseUrl,
+            temperatureOptions,
+            maxTokens: resolvedMaxTokens
+          }),
+          callbacks: [usageCallback]
+        }
       )
     case 'anthropic':
       return new ChatAnthropic({
@@ -511,7 +520,8 @@ export function resolveModel(
         apiKey,
         ...temperatureOptions,
         maxTokens: resolvedMaxTokens,
-        anthropicApiUrl: resolvedBaseUrl || undefined
+        anthropicApiUrl: resolvedBaseUrl || undefined,
+        callbacks: [usageCallback]
       })
     case 'google':
       return new ChatGoogleGenerativeAI({
@@ -519,7 +529,8 @@ export function resolveModel(
         apiKey,
         ...temperatureOptions,
         maxOutputTokens: resolvedMaxTokens,
-        baseUrl: resolvedBaseUrl || undefined
+        baseUrl: resolvedBaseUrl || undefined,
+        callbacks: [usageCallback]
       })
     default:
       throw new Error(`Unknown provider: ${provider}`)

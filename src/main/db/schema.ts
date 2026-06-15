@@ -36,6 +36,29 @@ export const messages = sqliteTable('messages', {
   createdAt: integer('created_at').notNull()
 })
 
+export const modelUsageEvents = sqliteTable(
+  'model_usage_events',
+  {
+    id: text('id').primaryKey(),
+    provider: text('provider').notNull(),
+    model: text('model').notNull(),
+    modelConfigId: text('model_config_id'),
+    inputTokens: integer('input_tokens').notNull().default(0),
+    outputTokens: integer('output_tokens').notNull().default(0),
+    totalTokens: integer('total_tokens').notNull().default(0),
+    usageSource: text('usage_source').notNull().default('provider'),
+    createdAt: integer('created_at').notNull()
+  },
+  (table) => ({
+    modelUsageCreatedIdx: index('idx_model_usage_events_created').on(table.createdAt),
+    modelUsageModelIdx: index('idx_model_usage_events_model').on(
+      table.provider,
+      table.model,
+      table.createdAt
+    )
+  })
+)
+
 export const projects = sqliteTable('projects', {
   id: text('id').primaryKey(),
   sessionId: text('session_id').notNull(),
@@ -372,6 +395,7 @@ export const sessionOperationPages = sqliteTable(
 
 export type Session = typeof sessions.$inferSelect
 export type Message = typeof messages.$inferSelect
+export type ModelUsageEvent = typeof modelUsageEvents.$inferSelect
 export type Project = typeof projects.$inferSelect
 export type GenerationRun = typeof generationRuns.$inferSelect
 export type GenerationPage = typeof generationPages.$inferSelect

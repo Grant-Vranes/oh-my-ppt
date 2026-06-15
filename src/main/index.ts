@@ -27,6 +27,7 @@ import { createTray, destroyTray, showTrayHideBalloon } from './tray'
 import type { UpdateAvailablePayload } from '@shared/app-update'
 import { isRepeatedRendererCrash, shouldRecoverRenderer } from './renderer-recovery'
 import { configureHtmlThumbnailService } from './utils/html-thumbnail-service'
+import { configureModelUsageRecorder } from './model-usage'
 
 let mainWindow: BrowserWindow | null = null
 let db: PPTDatabase | null = null
@@ -327,6 +328,7 @@ if (gotSingleInstanceLock) {
     const dbPath = is.dev ? join(process.cwd(), 'ohmyppt.dev.db') : undefined
     db = new PPTDatabase(dbPath)
     await db.init()
+    configureModelUsageRecorder(db)
     configureHtmlThumbnailService(db)
     await db.failInterruptedThumbnailTasks()
     setStyleDb(db)

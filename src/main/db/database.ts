@@ -16,6 +16,12 @@ import {
   styleRowToPackageJson
 } from '../styles'
 import type { HtmlThumbnailResourceType } from '@shared/thumbnail'
+import type {
+  ModelUsageByHour,
+  ModelUsagePeriod,
+  ModelUsageStats,
+  ModelUsageTotals
+} from '@shared/model-usage'
 
 type SessionStatus = 'active' | 'completed' | 'failed' | 'archived'
 type MessageRole = 'user' | 'assistant' | 'system' | 'tool'
@@ -1868,6 +1874,149 @@ export class PPTDatabase {
   }
 
   // ========== Settings ==========
+
+  async recordModelUsage(data: {
+    provider: string
+    model: string
+    modelConfigId?: string
+    inputTokens: number
+    outputTokens: number
+    totalTokens: number
+    source: 'provider' | 'estimated'
+  }): Promise<void> {
+    await this.db
+      .insert(schema.modelUsageEvents)
+      .values({
+        id: crypto.randomUUID(),
+        provider: data.provider,
+        model: data.model,
+        modelConfigId: data.modelConfigId || null,
+        inputTokens: Math.max(0, Math.floor(data.inputTokens)),
+        outputTokens: Math.max(0, Math.floor(data.outputTokens)),
+        totalTokens: Math.max(0, Math.floor(data.totalTokens)),
+        usageSource: data.source,
+        createdAt: Math.floor(Date.now() / 1000)
+      })
+      .run()
+  }
+
+  async getModelUsageStats(period: ModelUsagePeriod): Promise<ModelUsageStats> {
+    const now = new Date()
+    let startedAt: number | null = null
+    if (period === 'today') {
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      startedAt = Math.floor(start.getTime() / 1000)
+    } else if (period !== 'all') {
+      const days = period === '7d' ? 7 : 30
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - days + 1)
+      startedAt = Math.floor(start.getTime() / 1000)
+    }
+    const whereSql = startedAt === null ? '' : ' WHERE created_at >= ?'
+    const args = startedAt === null ? [] : [startedAt]
+    const totalsResult = await this.client.execute({
+      sql: `
+        SELECT
+          COUNT(*) AS call_count,
+          SUM(CASE WHEN usage_source = 'provider' THEN 1 ELSE 0 END) AS exact_call_count,
+          SUM(CASE WHEN usage_source = 'estimated' THEN 1 ELSE 0 END) AS estimated_call_count,
+          COALESCE(SUM(input_tokens), 0) AS input_tokens,
+          COALESCE(SUM(output_tokens), 0) AS output_tokens,
+          COALESCE(SUM(total_tokens), 0) AS total_tokens
+        FROM model_usage_events${whereSql}
+      `,
+      args
+    })
+    const byModelResult = await this.client.execute({
+      sql: `
+        SELECT
+          provider,
+          model,
+          COUNT(*) AS call_count,
+          SUM(CASE WHEN usage_source = 'provider' THEN 1 ELSE 0 END) AS exact_call_count,
+          SUM(CASE WHEN usage_source = 'estimated' THEN 1 ELSE 0 END) AS estimated_call_count,
+          COALESCE(SUM(input_tokens), 0) AS input_tokens,
+          COALESCE(SUM(output_tokens), 0) AS output_tokens,
+          COALESCE(SUM(total_tokens), 0) AS total_tokens
+        FROM model_usage_events${whereSql}
+        GROUP BY provider, model
+        ORDER BY total_tokens DESC
+      `,
+      args
+    })
+    const byDayResult = await this.client.execute({
+      sql: `
+        SELECT
+          date(created_at, 'unixepoch', 'localtime') AS date,
+          COUNT(*) AS call_count,
+          SUM(CASE WHEN usage_source = 'provider' THEN 1 ELSE 0 END) AS exact_call_count,
+          SUM(CASE WHEN usage_source = 'estimated' THEN 1 ELSE 0 END) AS estimated_call_count,
+          COALESCE(SUM(input_tokens), 0) AS input_tokens,
+          COALESCE(SUM(output_tokens), 0) AS output_tokens,
+          COALESCE(SUM(total_tokens), 0) AS total_tokens
+        FROM model_usage_events${whereSql}
+        GROUP BY date
+        ORDER BY date ASC
+      `,
+      args
+    })
+
+    const byHourResult =
+      period === 'today'
+        ? await this.client.execute({
+            sql: `
+              SELECT
+                CAST(strftime('%H', created_at, 'unixepoch', 'localtime') AS INTEGER) AS hour,
+                COUNT(*) AS call_count,
+                SUM(CASE WHEN usage_source = 'provider' THEN 1 ELSE 0 END) AS exact_call_count,
+                SUM(CASE WHEN usage_source = 'estimated' THEN 1 ELSE 0 END) AS estimated_call_count,
+                COALESCE(SUM(input_tokens), 0) AS input_tokens,
+                COALESCE(SUM(output_tokens), 0) AS output_tokens,
+                COALESCE(SUM(total_tokens), 0) AS total_tokens
+              FROM model_usage_events${whereSql}
+              GROUP BY hour
+              ORDER BY hour ASC
+            `,
+            args
+          })
+        : null
+
+    const readTotals = (row: Record<string, unknown> | undefined): ModelUsageTotals => ({
+      callCount: Number(row?.call_count || 0),
+      exactCallCount: Number(row?.exact_call_count || 0),
+      estimatedCallCount: Number(row?.estimated_call_count || 0),
+      inputTokens: Number(row?.input_tokens || 0),
+      outputTokens: Number(row?.output_tokens || 0),
+      totalTokens: Number(row?.total_tokens || 0)
+    })
+
+    const byHour: ModelUsageByHour[] = []
+    if (byHourResult) {
+      const hourMap = new Map<number, ModelUsageTotals>()
+      for (const row of byHourResult.rows) {
+        const hour = Number((row as Record<string, unknown>).hour || 0)
+        hourMap.set(hour, readTotals(row as Record<string, unknown>))
+      }
+      for (let hour = 0; hour < 24; hour += 1) {
+        byHour.push({ hour, ...(hourMap.get(hour) || readTotals(undefined)) })
+      }
+    }
+
+    return {
+      period,
+      startedAt,
+      totals: readTotals(totalsResult.rows[0] as Record<string, unknown> | undefined),
+      byModel: byModelResult.rows.map((row) => ({
+        provider: String(row.provider || ''),
+        model: String(row.model || ''),
+        ...readTotals(row as Record<string, unknown>)
+      })),
+      byDay: byDayResult.rows.map((row) => ({
+        date: String(row.date || ''),
+        ...readTotals(row as Record<string, unknown>)
+      })),
+      byHour
+    }
+  }
 
   async getSetting<T>(key: string): Promise<T | undefined> {
     const result = await this.db

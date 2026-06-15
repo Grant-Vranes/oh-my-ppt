@@ -99,6 +99,9 @@ importers:
       '@tanstack/react-virtual':
         specifier: ^3.11.2
         version: 3.13.24(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      chart.js:
+        specifier: ^4.5.1
+        version: 4.5.1
       cheerio:
         specifier: ^1.2.0
         version: 1.2.0
@@ -1085,6 +1088,9 @@ packages:
 
   '@juggle/resize-observer@3.4.0':
     resolution: {integrity: sha512-dfLbk+PwWvFzSxwk3n5ySL0hfBog779o8h68wK/7/APo/7cgyWp5jcXockbxdk5kFRkbeXWm4Fbi9FrdN381sA==}
+
+  '@kurkle/color@0.3.4':
+    resolution: {integrity: sha512-M5UknZPHRu3DEDWoipU6sE8PdkZ6Z/S+v4dD+Ke8IaNlpdSQah50lz1KtcFBa2vsdOnwbbnxJwVM4wty6udA5w==}
 
   '@langchain/anthropic@1.3.29':
     resolution: {integrity: sha512-ep1qBIcV07bajsg3fDqMd39rYwoRLOEK/6lk+MCxlm1YB5SRoKKJAZANrblQ/4RYhZJnxf95c6BSQu8VoNbVAQ==}
@@ -2665,6 +2671,10 @@ packages:
 
   character-reference-invalid@2.0.1:
     resolution: {integrity: sha512-iBZ4F4wRbyORVsu0jPV7gXkOsGYjGHPmAyv+HiHG8gi5PtC9KI2j1+v8/tlibRvjoWX027ypmG/n0HtO5t7unw==}
+
+  chart.js@4.5.1:
+    resolution: {integrity: sha512-GIjfiT9dbmHRiYi6Nl2yFCq7kkwdkp1W/lp2J99rX0yo9tgJGn3lKQATztIjb5tVtevcBtIdICNWqlq5+E8/Pw==}
+    engines: {pnpm: '>=8'}
 
   cheerio-select@2.1.0:
     resolution: {integrity: sha512-9v9kG0LvzrlcungtnJtpGNxY+fzECQKhK4EGJX2vByejiMX84MFNQw4UxPJl3bFbTMw+Dfs37XaIkCwTZfLh4g==}
@@ -6231,6 +6241,8 @@ snapshots:
 
   '@juggle/resize-observer@3.4.0': {}
 
+  '@kurkle/color@0.3.4': {}
+
   '@langchain/anthropic@1.3.29(@langchain/core@1.1.47(openai@6.34.0(ws@8.20.0)(zod@4.4.3))(ws@8.20.0))':
     dependencies:
       '@anthropic-ai/sdk': 0.91.1(zod@3.25.76)
@@ -7843,6 +7855,10 @@ snapshots:
   character-entities@2.0.2: {}
 
   character-reference-invalid@2.0.1: {}
+
+  chart.js@4.5.1:
+    dependencies:
+      '@kurkle/color': 0.3.4
 
   cheerio-select@2.1.0:
     dependencies:

@@ -13,6 +13,7 @@ import { StylesPage } from './pages/styles'
 import { FontsPage } from './pages/fonts'
 import { StyleEditorPage } from './pages/style-editor'
 import { TemplatesPage } from './pages/templates'
+import { TokenUsagePage } from './pages/token-usage'
 import { AppToaster } from './components/AppToaster'
 import { UpdateAvailableDialog } from './components/UpdateAvailableDialog'
 import { ScrollArea } from './components/ui/ScrollArea'
@@ -79,6 +80,7 @@ function App(): React.JSX.Element {
                   <Route path="/templates" element={<TemplatesPage />} />
                   <Route path="/styles" element={<StylesPage />} />
                   <Route path="/fonts" element={<FontsPage />} />
+                  <Route path="/token-usage" element={<TokenUsagePage />} />
                   <Route path="/styles/new" element={<StyleEditorPage />} />
                   <Route path="/styles/:styleId" element={<StyleEditorPage />} />
                   <Route path="/settings" element={<SettingsPage />} />

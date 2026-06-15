@@ -10,6 +10,7 @@ import {
 } from '@shared/model-timeout'
 import { readAppLocale, uiText } from '../config/locale-utils'
 import { runWithModelTemperatureControl } from '../../model-runtime'
+import type { ModelUsagePeriod } from '@shared/model-usage'
 
 const readGlobalTimeouts = (
   settings: Record<string, unknown>
@@ -71,6 +72,17 @@ export function registerSettingsHandlers(ctx: IpcContext): void {
       createdAt: config.createdAt,
       updatedAt: config.updatedAt
     }))
+  })
+
+  ipcMain.handle('settings:getModelUsage', async (_event, requestedPeriod) => {
+    const period: ModelUsagePeriod =
+      requestedPeriod === 'today' ||
+      requestedPeriod === '7d' ||
+      requestedPeriod === '30d' ||
+      requestedPeriod === 'all'
+        ? requestedPeriod
+        : '30d'
+    return db.getModelUsageStats(period)
   })
 
   ipcMain.handle('settings:validateUploadPrerequisites', async () => {

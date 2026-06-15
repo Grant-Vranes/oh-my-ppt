@@ -138,7 +138,7 @@ export const zh = {
     eyebrow: 'Unleash your creativity',
     title: '开始一个新的演示任务',
     description:
-      '内置30+风格，支持自定义风格，Chart.js 图表库与 anime.js 动画引擎，采用「任务下发 → 会话细化」的渐进式协作模式。',
+      '内置70+风格，支持自定义风格，Chart.js 图表库与 anime.js 动画引擎，采用「任务下发 → 会话细化」的渐进式协作模式。',
     uploadDocument: '上传文档/图片自动解析',
     uploadReference: '上传参考文件',
     processingReference: '处理中...',
@@ -432,7 +432,7 @@ export const zh = {
     eyebrow: 'Style Lab',
     title: '风格管理',
     description:
-      '内置 30+ 风格，支持导入 PPTX、HTML、图片等文件自动提取风格，也可从零新建自定义风格。',
+      '内置 70+ 风格，支持导入 PPTX、HTML、图片等文件自动提取风格，也可从零新建自定义风格。',
     refresh: '刷新',
     newStyle: '新建风格',
     newStyleTooltip: '创建一个新的自定义风格模板',
@@ -1143,7 +1143,7 @@ export const zh = {
     eyebrow: 'Explore before creating',
     title: '对话创作',
     description:
-      '先用对话把需求、素材和页面结构梳理清楚，再调用 30+ 内置风格、自定义风格、Chart.js 图表和 anime.js 动画生成演示稿。',
+      '先用对话把需求、素材和页面结构梳理清楚，再调用 70+ 内置风格、自定义风格、Chart.js 图表和 anime.js 动画生成演示稿。',
     chatTitle: 'AI 对话',
     thinking: '思考中...',
     inputPlaceholder: '描述你想呈现的主题和内容...',

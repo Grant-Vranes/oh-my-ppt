@@ -33,7 +33,7 @@
 - [Why I Built This](#why)
 - [What It Can Do](#features)
 - [Workflow](#workflow)
-- [30+ Built-in Style Skills](#style-skills)
+- [70+ Built-in Style Skills](#style-skills)
 - [Font Management](#fonts)
 - [Animation Support](#animations)
 - [Local Ollama Support](#ollama)
@@ -76,7 +76,7 @@ Output is pure HTML slides: instant browser preview, no extra software, easy to 
 - 🖼️ **Image-based style and outline generation** — Upload a screenshot or design mockup, then automatically extract a distinctive visual style and generate an outline
 - 🔒 **Local-first** — Runs on your machine, no signup, no upload anxiety  
 - 🔤 **Font management** — 14 curated Google Fonts built-in (including CJK), upload local fonts, pick title and body fonts separately or let AI auto-match
-- 🎨 **30+ built-in style skills** — Minimal White, Cyber Neon, Bauhaus, Japanese Minimal, Xiaohongshu White, and more, plus custom styles
+- 🎨 **70+ built-in style skills** — Minimal White, Cyber Neon, Bauhaus, Japanese Minimal, Xiaohongshu White, and more, plus custom styles
 - ✏️ **Chat-based editing** — Tell it “change title color” or “add a data chart” on a specific page, without rebuilding everything  
 - 🖱️ **Visual editing** — Every visible element can be dragged and resized, and every element can be picked and modified with AI
 - 📸 **Image and video insertion** — Upload images and videos directly in edit mode, from the asset library or local files
@@ -122,7 +122,7 @@ You can also save an existing session to the template library, or import a PPTX 
 After generation, you can enter preview or presentation mode, keep editing by dragging elements, inserting images/videos, using chat edits, rolling back history, and generate speaker scripts for the full deck or the current slide.
 
 <a id="style-skills"></a>
-## 🎨 30+ Built-in Style Skills
+## 🎨 70+ Built-in Style Skills
 
 <img src="./docs/images/4.webp" alt="Oh My PPT" width="500" />
 
@@ -174,7 +174,7 @@ Notes:
 
 - Ollama does not validate API keys by default, but this app enforces a non-empty check, so `api_key` cannot be blank.
 - 14B+ local models (or strong cloud models) are recommended for stable generation quality.
-- The app does not use thinking / reasoning mode by default. When a custom OpenAI-compatible `base_url` is configured, the app asks the provider to disable thinking so document parsing, tool calls, and retry generation avoid `reasoning_content` compatibility issues.
+- Official OpenAI endpoints do not receive the non-standard `thinking` parameter, avoiding `400 Unknown parameter` responses. Other OpenAI-compatible `base_url` values still request disabled thinking so multi-turn tool flows do not lose `reasoning_content`.
 
 <a id="usage-notes"></a>
 ## Usage Notes

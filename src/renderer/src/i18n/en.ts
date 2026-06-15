@@ -147,7 +147,7 @@ export const en = {
     eyebrow: 'Unleash your creativity',
     title: 'Start a new presentation task',
     description:
-      'Built-in 30+ styles, custom style support, Chart.js charts, anime.js animation, and a progressive workflow from task brief to session refinement.',
+      'Built-in 70+ styles, custom style support, Chart.js charts, anime.js animation, and a progressive workflow from task brief to session refinement.',
     uploadDocument: 'Upload document/image',
     uploadReference: 'Upload reference file',
     processingReference: 'Processing...',
@@ -456,7 +456,7 @@ export const en = {
     eyebrow: 'Style Lab',
     title: 'Style management',
     description:
-      'Built-in 30+ styles. Import PPTX, HTML, images, and more to auto-extract styles, or create your own from scratch.',
+      'Built-in 70+ styles. Import PPTX, HTML, images, and more to auto-extract styles, or create your own from scratch.',
     refresh: 'Refresh',
     newStyle: 'New style',
     newStyleTooltip: 'Create a new custom style template',
@@ -1201,7 +1201,7 @@ Business presentations, product introductions, project summaries — formal but 
     eyebrow: 'Explore before creating',
     title: 'Chat to Create',
     description:
-      'Shape the brief, source material, and page structure through conversation, then generate the deck with 30+ built-in styles, custom styles, Chart.js charts, and anime.js animation.',
+      'Shape the brief, source material, and page structure through conversation, then generate the deck with 70+ built-in styles, custom styles, Chart.js charts, and anime.js animation.',
     chatTitle: 'AI Chat',
     thinking: 'Thinking...',
     inputPlaceholder: 'Describe the topic and content you want to present...',

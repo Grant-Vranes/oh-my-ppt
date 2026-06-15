@@ -21,6 +21,10 @@ import {
   isCurrentModelTemperatureEnabled,
   resolveCurrentModelTemperatureOptions
 } from './model-runtime'
+import {
+  buildOpenAIModelOptions,
+  shouldDisableOpenAICompatibleThinking
+} from './openai-model-options'
 import { createSessionBoundDeckTools, type SessionDeckGenerationContext } from './tools'
 import { buildDeckAgentSystemPrompt, buildEditAgentSystemPrompt } from './prompt'
 import {
@@ -458,19 +462,6 @@ export function createSessionDeckAgent(args: {
 
 export { DEFAULT_MODEL_TEMPERATURE, isCurrentModelTemperatureEnabled }
 
-const resolveOpenAICompatibilityModelKwargs = (
-  baseUrl?: string
-): { modelKwargs: Record<string, unknown>; compatibilityFlags: string[] } => {
-  if (!baseUrl) {
-    return { modelKwargs: {}, compatibilityFlags: [] }
-  }
-
-  return {
-    modelKwargs: { thinking: { type: 'disabled' } },
-    compatibilityFlags: ['thinking.type=disabled']
-  }
-}
-
 export function resolveModel(
   provider: string,
   apiKey: string,
@@ -488,7 +479,8 @@ export function resolveModel(
   const temperatureControl = getCurrentModelTemperatureControl()
   const resolvedBaseUrl = typeof baseUrl === 'string' ? baseUrl.trim() : ''
   const resolvedMaxTokens = maxTokens && maxTokens > 0 ? maxTokens : 4096
-  const { modelKwargs, compatibilityFlags } = resolveOpenAICompatibilityModelKwargs(resolvedBaseUrl)
+  const disableCompatibleThinking =
+    provider === 'openai' && shouldDisableOpenAICompatibleThinking(resolvedBaseUrl)
 
   log.info('[llm] resolveModel', {
     provider,
@@ -499,19 +491,20 @@ export function resolveModel(
     temperatureControlBound: temperatureControl !== undefined,
     modelConfigId: temperatureControl?.modelConfigId ?? null,
     maxTokens: resolvedMaxTokens,
-    openAICompatibility: compatibilityFlags
+    openAICompatibility: disableCompatibleThinking ? ['thinking.type=disabled'] : []
   })
 
   switch (provider) {
     case 'openai':
-      return new ChatOpenAI({
-        model: resolvedModel,
-        apiKey,
-        ...temperatureOptions,
-        maxTokens: resolvedMaxTokens,
-        configuration: resolvedBaseUrl ? { baseURL: resolvedBaseUrl } : undefined,
-        modelKwargs
-      })
+      return new ChatOpenAI(
+        buildOpenAIModelOptions({
+          model: resolvedModel,
+          apiKey,
+          baseUrl: resolvedBaseUrl,
+          temperatureOptions,
+          maxTokens: resolvedMaxTokens
+        })
+      )
     case 'anthropic':
       return new ChatAnthropic({
         model: resolvedModel,

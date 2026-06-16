@@ -479,6 +479,8 @@ export const en = {
     refresh: 'Refresh',
     newStyle: 'New style',
     newStyleTooltip: 'Create a new custom style template',
+    importMenu: 'Import Style',
+    importMenuTooltip: 'Import a packaged style ZIP or a style folder.',
     importPackage: 'Import Style ZIP',
     importPackageTooltip: 'Import a packaged style ZIP.',
     importPackageDirectory: 'Import Style Folder',

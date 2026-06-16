@@ -454,6 +454,8 @@ export const zh = {
     refresh: '刷新',
     newStyle: '新建风格',
     newStyleTooltip: '创建一个新的自定义风格模板',
+    importMenu: '导入风格',
+    importMenuTooltip: '导入已打包的风格 ZIP 或风格文件夹，支持新增或覆盖风格。',
     importPackage: '导入风格 ZIP',
     importPackageTooltip: '导入已打包的风格 ZIP，支持新增或覆盖风格。',
     importPackageDirectory: '导入风格文件夹',

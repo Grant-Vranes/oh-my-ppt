@@ -10,9 +10,17 @@ import {
   AlertDialogTitle
 } from '../components/ui/AlertDialog'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/Tooltip'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '../components/ui/DropdownMenu'
 import { ipc, type HtmlThumbnailTask } from '@renderer/lib/ipc'
 import { useStylePreviewStore, useToastStore } from '../store'
 import {
+  ChevronDown,
   Download,
   FolderOpen,
   Loader2,
@@ -210,60 +218,61 @@ export function StylesPage(): React.JSX.Element {
             <h1 className="organic-serif text-[32px] font-semibold leading-none text-[#3e4a32]">{t('styles.title')}</h1>
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
-            <Tooltip>
-              <TooltipTrigger asChild>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <Button
                   size="sm"
                   variant="secondary"
                   className="min-w-[112px]"
                   disabled={Boolean(importingPackageType)}
-                  onClick={() => void handleImportPackage('zip')}
+                  title={t('styles.importMenuTooltip')}
                 >
                   <Upload className="mr-2 h-4 w-4" />
-                  {importingPackageType === 'zip'
-                    ? t('styles.importingPackage')
-                    : t('styles.importPackage')}
+                  {importingPackageType ? t('styles.importingPackage') : t('styles.importMenu')}
+                  <ChevronDown className="ml-1 h-3.5 w-3.5 opacity-75" />
                 </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" align="end" className="max-w-[360px]">
-                {t('styles.importPackageTooltip')}{' '}
-                <a
-                  href={OFFICIAL_STYLE_SKILL_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-medium text-[#5a7a4e] underline underline-offset-2 hover:text-[#3e5a34]"
-                >
-                  官方风格解析 Skill：arcsin1/style-generate-skill
-                </a>
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="min-w-[112px]"
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-[280px]">
+                <DropdownMenuItem
                   disabled={Boolean(importingPackageType)}
-                  onClick={() => void handleImportPackage('directory')}
+                  onSelect={() => void handleImportPackage('zip')}
                 >
-                  <FolderOpen className="mr-2 h-4 w-4" />
-                  {importingPackageType === 'directory'
-                    ? t('styles.importingPackage')
-                    : t('styles.importPackageDirectory')}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" align="end" className="max-w-[360px]">
-                {t('styles.importPackageDirectoryTooltip')}{' '}
-                <a
-                  href={OFFICIAL_STYLE_SKILL_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-medium text-[#5a7a4e] underline underline-offset-2 hover:text-[#3e5a34]"
+                  <Upload className="h-4 w-4" />
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">{t('styles.importPackage')}</span>
+                    <span className="text-[11px] text-muted-foreground">
+                      {t('styles.importPackageTooltip')}
+                    </span>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={Boolean(importingPackageType)}
+                  onSelect={() => void handleImportPackage('directory')}
                 >
-                  官方风格解析 Skill：arcsin1/style-generate-skill
-                </a>
-              </TooltipContent>
-            </Tooltip>
+                  <FolderOpen className="h-4 w-4" />
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">
+                      {t('styles.importPackageDirectory')}
+                    </span>
+                    <span className="text-[11px] text-muted-foreground">
+                      {t('styles.importPackageDirectoryTooltip')}
+                    </span>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <div className="px-2 py-1.5 text-[11px] leading-4 text-muted-foreground">
+                  {t('styles.importMenuTooltip')}{' '}
+                  <a
+                    href={OFFICIAL_STYLE_SKILL_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-[#5a7a4e] underline underline-offset-2 hover:text-[#3e5a34]"
+                  >
+                    官方风格解析 Skill：arcsin1/style-generate-skill
+                  </a>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button size="sm" className="min-w-[112px]" onClick={() => navigate('/styles/new')}>

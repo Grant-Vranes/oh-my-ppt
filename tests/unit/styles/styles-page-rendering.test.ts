@@ -139,18 +139,32 @@ describe('StylesPage rendering', () => {
     const { container, root } = await renderStylesPage()
     try {
       expect(container.querySelectorAll('[data-style-card-id]')).toHaveLength(3)
-      const importZipButton = Array.from(container.querySelectorAll('button')).find(
-        (button) => button.textContent?.trim() === 'styles.importPackage'
+      const importMenuButton = Array.from(container.querySelectorAll('button')).find(
+        (button) => button.textContent?.includes('styles.importMenu')
       ) as HTMLButtonElement | undefined
-      await act(async () => {
-        importZipButton?.focus()
-        await new Promise((resolve) => window.setTimeout(resolve, 5))
-      })
+      const openMenu = async (): Promise<void> => {
+        await act(async () => {
+          importMenuButton?.dispatchEvent(
+            new PointerEvent('pointerdown', { bubbles: true, cancelable: true })
+          )
+          importMenuButton?.dispatchEvent(
+            new MouseEvent('mousedown', { bubbles: true, cancelable: true })
+          )
+          await new Promise((resolve) => window.setTimeout(resolve, 5))
+        })
+      }
+      await openMenu()
       const officialSkillLink = document.body.querySelector(
         'a[href="https://github.com/arcsin1/style-generate-skill"]'
       )
       expect(officialSkillLink?.getAttribute('target')).toBe('_blank')
       expect(officialSkillLink?.getAttribute('rel')).toBe('noopener noreferrer')
+      await act(async () => {
+        document.body.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+        )
+        await new Promise((resolve) => window.setTimeout(resolve, 5))
+      })
       expect(container.querySelectorAll('img')).toHaveLength(1)
       expect(container.querySelectorAll('iframe')).toHaveLength(0)
       expect(container.textContent).toContain('Preview Style')
@@ -193,13 +207,26 @@ describe('StylesPage rendering', () => {
         styleId: 'style-without-preview'
       })
 
-      const importFolderButton = Array.from(container.querySelectorAll('button')).find(
-        (button) => button.textContent?.trim() === 'styles.importPackageDirectory'
-      )
       await act(async () => {
-        importFolderButton?.click()
-        await Promise.resolve()
-        await Promise.resolve()
+        importMenuButton?.dispatchEvent(
+          new PointerEvent('pointerdown', { bubbles: true, cancelable: true })
+        )
+        importMenuButton?.dispatchEvent(
+          new MouseEvent('mousedown', { bubbles: true, cancelable: true })
+        )
+        importMenuButton?.click()
+        await new Promise((resolve) => window.setTimeout(resolve, 5))
+      })
+      const importFolderItem = Array.from(document.body.querySelectorAll('[role="menuitem"]')).find(
+        (item) => item.textContent?.includes('styles.importPackageDirectory')
+      )
+      expect(importFolderItem).toBeTruthy()
+      await act(async () => {
+        importFolderItem?.dispatchEvent(
+          new PointerEvent('pointerup', { bubbles: true, cancelable: true })
+        )
+        importFolderItem?.click()
+        await new Promise((resolve) => window.setTimeout(resolve, 10))
       })
       expect(ipcMocks.importStylePackageDirectory).toHaveBeenCalledTimes(1)
     } finally {

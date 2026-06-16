@@ -295,15 +295,28 @@ export const validateHtmlContent = (html: string): { valid: boolean; errors: str
       )
     }
     const invalidFromValues = new Set<string>()
+    const incompatibleCenterAnims = new Set<string>()
     $('[data-anim-from]').each((_, node) => {
       const from = (($(node).attr('data-anim-from') || '').trim().toLowerCase())
       if (!from || !supportedAnimFromValues.has(from)) {
         invalidFromValues.add(from || '(empty)')
       }
+      // center cannot roundtrip with trace-based motions
+      if (from === 'center') {
+        const animType = (($(node).attr('data-anim') || '').trim().toLowerCase())
+        if (['fly-in', 'wipe', 'exit-fly', 'exit-wipe'].includes(animType)) {
+          incompatibleCenterAnims.add(animType)
+        }
+      }
     })
     if (invalidFromValues.size > 0) {
       errors.push(
         `data-anim-from 仅支持 ${DATA_ANIM_FROM_VALUES.join('/')}，非法值：${Array.from(invalidFromValues).join(', ')}`
+      )
+    }
+    if (incompatibleCenterAnims.size > 0) {
+      errors.push(
+        `data-anim-from="center" 与以下动画类型不兼容（无法往返）：${Array.from(incompatibleCenterAnims).join(', ')}。center 仅支持 fade/zoom/path 类动画`
       )
     }
     const missingPathValues = new Set<string>()

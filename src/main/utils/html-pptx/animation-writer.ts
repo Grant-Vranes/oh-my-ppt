@@ -196,8 +196,37 @@ const scaleXml = (
   id: number,
   duration: number,
   from = 85000,
-  to = 100000
-): string => `<p:animScale>
+  to = 100000,
+  options?: { emphasisRebound?: boolean }
+): string => {
+  // For emphasis animations (pulse, grow-shrink), generate two-phase rebound
+  if (options?.emphasisRebound && from !== to) {
+    const halfDur = Math.floor(duration / 2)
+    return `<p:seq>
+  <p:cTn id="${id}" fill="hold">
+    <p:childTnLst>
+      <p:animScale>
+        <p:cBhvr additive="base">
+          <p:cTn id="${id + 1}" dur="${halfDur}" fill="hold"/>
+          ${targetXml(spid)}
+        </p:cBhvr>
+        <p:from x="${from}" y="${from}"/>
+        <p:to x="${to}" y="${to}"/>
+      </p:animScale>
+      <p:animScale>
+        <p:cBhvr additive="base">
+          <p:cTn id="${id + 2}" dur="${halfDur}" fill="remove"/>
+          ${targetXml(spid)}
+        </p:cBhvr>
+        <p:from x="${to}" y="${to}"/>
+        <p:to x="100000" y="100000"/>
+      </p:animScale>
+    </p:childTnLst>
+  </p:cTn>
+</p:seq>`
+  }
+
+  return `<p:animScale>
   <p:cBhvr additive="base">
     <p:cTn id="${id}" dur="${duration}" fill="hold"/>
     ${targetXml(spid)}
@@ -205,6 +234,7 @@ const scaleXml = (
   <p:from x="${from}" y="${from}"/>
   <p:to x="${to}" y="${to}"/>
 </p:animScale>`
+}
 
 const rotationXml = (
   spid: number,
@@ -231,7 +261,16 @@ const effectXml = (
   const effectId = nextId()
   const chunks = [visibilitySetXml(anim.spid, nextId()), ...motionXml(anim, duration, nextId)]
   if (preset.scale) {
-    chunks.push(scaleXml(anim.spid, nextId(), duration, preset.scaleFrom, preset.scaleTo))
+    const isEmphasis = preset.presetClass === 'emph'
+    const scaleId = nextId()
+    chunks.push(scaleXml(anim.spid, scaleId, duration, preset.scaleFrom, preset.scaleTo, {
+      emphasisRebound: isEmphasis
+    }))
+    // Reserve additional IDs for two-phase emphasis animation
+    if (isEmphasis) {
+      nextId()
+      nextId()
+    }
   }
   if (preset.rotateFrom !== undefined || preset.rotateTo !== undefined) {
     chunks.push(rotationXml(anim.spid, nextId(), duration, preset.rotateFrom, preset.rotateTo))

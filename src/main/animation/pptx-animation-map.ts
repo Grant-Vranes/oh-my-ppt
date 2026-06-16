@@ -232,7 +232,7 @@ export const PPTX_ANIMATION_PRESETS: Record<DataAnimType, PptxAnimationPreset> =
     fade: true,
     transition: 'out'
   },
-  path: { presetId: 10, presetClass: 'entr', fade: true }
+  path: { presetId: 10, presetClass: 'entr' }
 }
 
 export const getPptxAnimationPreset = (

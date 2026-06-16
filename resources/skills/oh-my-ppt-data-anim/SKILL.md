@@ -173,3 +173,14 @@ Two levels of chart animation, each handled by a different system:
 ## Cross-skill references
 
 - Animation follows the reading path defined by layout (see layout skill). Do not animate elements in an order that contradicts the visual hierarchy.
+
+## Export Contract Notes
+
+### from="center" compatibility
+`data-anim-from="center"` cannot roundtrip reliably with trace-based motions (`fly-in`, `wipe`, `exit-fly`, `exit-wipe`). The validator will reject these incompatible combinations. Use `center` only with fade/zoom/path animations that don't depend on directional motion paths.
+
+### Click-group token identity
+`data-anim-click-group` values preserve grouping structure and click timing when roundtripping through PPTX, but the token text itself may change (e.g., `reveal` → `1`). The semantic behavior (elements grouped into the same click step) is preserved.
+
+### Path animation constraints
+`data-anim="path"` requires `data-anim-path` with a constrained linear path format: `M x y L dx dy` (integer or decimal coordinates). More complex SVG path commands are not supported in the editable contract.

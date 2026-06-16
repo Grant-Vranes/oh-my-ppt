@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>孟菲斯波普 · Memphis Pop</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #0f1117; display: grid; place-items: center; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; }
+
+.slide {
+  position: relative;
+  width: min(100vw, calc(100vh * 16 / 9));
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #fef3c7;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.08);
+}
+
+.shape { position: absolute; z-index: 1; }
+.s-tri-1 {
+  top: 6%; right: 8%;
+  width: 0; height: 0;
+  border-left: clamp(18px, 3vw, 40px) solid transparent;
+  border-right: clamp(18px, 3vw, 40px) solid transparent;
+  border-bottom: clamp(30px, 5vw, 65px) solid #f59e0b;
+  transform: rotate(15deg);
+}
+.s-tri-2 {
+  bottom: 12%; left: 5%;
+  width: 0; height: 0;
+  border-left: clamp(14px, 2.2vw, 30px) solid transparent;
+  border-right: clamp(14px, 2.2vw, 30px) solid transparent;
+  border-bottom: clamp(24px, 3.8vw, 50px) solid #8b5cf6;
+  transform: rotate(-20deg);
+}
+.s-circ-1 {
+  top: 14%; left: 42%;
+  width: clamp(20px, 3.2vw, 42px); height: clamp(20px, 3.2vw, 42px);
+  border-radius: 50%; background: #8b5cf6; opacity: 0.7;
+}
+.s-circ-2 {
+  bottom: 8%; right: 18%;
+  width: clamp(14px, 2vw, 28px); height: clamp(14px, 2vw, 28px);
+  border-radius: 50%; background: #f59e0b; opacity: 0.6;
+}
+.s-circ-3 {
+  top: 50%; right: 6%;
+  width: clamp(10px, 1.6vw, 22px); height: clamp(10px, 1.6vw, 22px);
+  border-radius: 50%; background: #0f172a; opacity: 0.25;
+}
+.s-squiggle {
+  top: 22%; left: 6%;
+  width: clamp(60px, 10vw, 130px); height: clamp(10px, 1.5vw, 20px);
+  border-top: 3px solid #8b5cf6; border-right: 3px solid #8b5cf6;
+  border-radius: 0 50% 0 0; opacity: 0.6;
+}
+.s-squiggle2 {
+  bottom: 20%; right: 8%;
+  width: clamp(40px, 7vw, 90px); height: clamp(8px, 1.2vw, 16px);
+  border-bottom: 3px solid #f59e0b; border-left: 3px solid #f59e0b;
+  border-radius: 0 0 0 50%; opacity: 0.6;
+}
+.s-rect {
+  top: 8%; left: 10%;
+  width: clamp(16px, 2.5vw, 34px); height: clamp(16px, 2.5vw, 34px);
+  background: #f59e0b; transform: rotate(30deg); opacity: 0.55;
+}
+.s-cross {
+  top: 65%; left: 50%;
+  width: clamp(20px, 3vw, 38px); height: clamp(20px, 3vw, 38px);
+  position: absolute;
+}
+.s-cross::before, .s-cross::after {
+  content: ''; position: absolute; background: #8b5cf6; opacity: 0.4;
+}
+.s-cross::before {
+  width: 100%; height: 3px; top: 50%; left: 0; transform: translateY(-50%);
+}
+.s-cross::after {
+  width: 3px; height: 100%; left: 50%; top: 0; transform: translateX(-50%);
+}
+
+.zigzag {
+  position: absolute; top: 0; left: 0; right: 0;
+  height: clamp(8px, 1.2vw, 16px); z-index: 2;
+  background: repeating-linear-gradient(90deg,
+    #f59e0b 0px, #f59e0b clamp(6px, 1vw, 14px),
+    #8b5cf6 clamp(6px, 1vw, 14px), #8b5cf6 clamp(12px, 2vw, 28px)
+  );
+  clip-path: polygon(0 100%, 5% 0, 10% 100%, 15% 0, 20% 100%, 25% 0, 30% 100%, 35% 0, 40% 100%, 45% 0, 50% 100%, 55% 0, 60% 100%, 65% 0, 70% 100%, 75% 0, 80% 100%, 85% 0, 90% 100%, 95% 0, 100% 100%);
+}
+.zigzag-bottom {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: clamp(8px, 1.2vw, 16px); z-index: 2;
+  background: repeating-linear-gradient(90deg,
+    #8b5cf6 0px, #8b5cf6 clamp(6px, 1vw, 14px),
+    #f59e0b clamp(6px, 1vw, 14px), #f59e0b clamp(12px, 2vw, 28px)
+  );
+  clip-path: polygon(0 0, 5% 100%, 10% 0, 15% 100%, 20% 0, 25% 100%, 30% 0, 35% 100%, 40% 0, 45% 100%, 50% 0, 55% 100%, 60% 0, 65% 100%, 70% 0, 75% 100%, 80% 0, 85% 100%, 90% 0, 95% 100%, 100% 0);
+}
+
+.content {
+  position: absolute;
+  inset: clamp(20px, 3.5vw, 48px);
+  z-index: 3;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: clamp(12px, 2vw, 28px);
+  align-items: center;
+}
+.hero { display: flex; flex-direction: column; gap: clamp(6px, 1vw, 14px); }
+.eyebrow {
+  font-size: clamp(6px, 0.8vw, 10px);
+  font-weight: 800; letter-spacing: 0.18em;
+  text-transform: uppercase; color: #8b5cf6;
+}
+h1 {
+  font-size: clamp(26px, 4.8vw, 56px);
+  line-height: 0.95; font-weight: 900; color: #0f172a;
+}
+.desc {
+  font-size: clamp(8px, 1.1vw, 14px);
+  line-height: 1.6; color: #374151; max-width: 90%;
+}
+.tags { display: flex; flex-wrap: wrap; gap: clamp(3px, 0.4vw, 6px); }
+.tags span {
+  font-size: clamp(6px, 0.7vw, 9px); font-weight: 700;
+  padding: clamp(2px, 0.3vw, 4px) clamp(5px, 0.6vw, 8px);
+  background: #0f172a; color: #fef3c7;
+}
+.info-card {
+  background: rgba(255,255,255,0.85);
+  border: 3px solid #0f172a;
+  padding: clamp(10px, 1.6vw, 22px);
+  box-shadow: clamp(4px, 0.6vw, 8px) clamp(4px, 0.6vw, 8px) 0 #8b5cf6;
+}
+.card-label {
+  font-size: clamp(7px, 0.85vw, 11px); font-weight: 900;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: #f59e0b; margin-bottom: clamp(4px, 0.6vw, 8px);
+}
+.card-text {
+  font-size: clamp(7px, 0.9vw, 12px); line-height: 1.55; color: #374151;
+}
+.palette { display: flex; gap: clamp(4px, 0.5vw, 8px); margin-top: clamp(6px, 1vw, 14px); }
+.palette i {
+  display: block; width: clamp(14px, 2vw, 26px); height: clamp(14px, 2vw, 26px);
+  border-radius: 50%; background: var(--c); border: 2px solid #0f172a;
+}
+.transition-note {
+  font-size: clamp(6px, 0.7vw, 9px);
+  color: #374151; opacity: 0.6; margin-top: clamp(4px, 0.5vw, 8px);
+}
+
+@media (max-aspect-ratio: 16/9) { .slide { width: min(100vw, calc(100vh * 16 / 9)); height: auto; } }
+@media (min-aspect-ratio: 16/9) { .slide { height: min(100vh, calc(100vw * 9 / 16)); width: auto; } }
+</style>
+</head>
+<body>
+  <main class="slide" aria-label="孟菲斯波普 style preview">
+    <div class="zigzag"></div>
+    <div class="shape s-tri-1"></div>
+    <div class="shape s-tri-2"></div>
+    <div class="shape s-circ-1"></div>
+    <div class="shape s-circ-2"></div>
+    <div class="shape s-circ-3"></div>
+    <div class="shape s-squiggle"></div>
+    <div class="shape s-squiggle2"></div>
+    <div class="shape s-rect"></div>
+    <div class="shape s-cross"></div>
+    <section class="content">
+      <div class="hero">
+        <div class="eyebrow">大胆 · 宣言 · memphis-pop</div>
+        <h1>孟菲斯波普</h1>
+        <p class="desc">霓虹渐变洒满画布，孟菲斯派对永不散场</p>
+        <div class="tags"><span>年轻品牌发布</span><span>潮流合作</span><span>创意工作坊</span><span>毕业展示</span></div>
+        <p class="transition-note">zoom-pop / stagger-list / shimmer-sweep</p>
+      </div>
+      <div class="info-card">
+        <div class="card-label">Style DNA</div>
+        <p class="card-text">孟菲斯波普风格是一场色彩与几何的狂欢派对。粗犷无衬线字体，大字重，标题字号可以夸张到让排版本身成为装饰。不对称布局中穿插圆点、三角、锯齿线条。</p>
+        <div class="palette">
+          <i style="--c:#0f172a"></i>
+          <i style="--c:#374151"></i>
+          <i style="--c:#f59e0b"></i>
+          <i style="--c:#8b5cf6"></i>
+          <i style="--c:#fef3c7"></i>
+        </div>
+      </div>
+    </section>
+    <div class="zigzag-bottom"></div>
+  </main>
+</body>
+</html>

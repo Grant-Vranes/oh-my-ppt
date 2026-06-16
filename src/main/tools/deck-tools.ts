@@ -24,11 +24,21 @@ const uiText = (locale: 'zh' | 'en' | undefined, zh: string, en: string): string
 
 export function createSessionBoundDeckTools(context: SessionDeckGenerationContext): unknown[] {
   let lastReportedProgress = 0
+  const explicitTargetPageIds =
+    Array.isArray(context.selectPageIds) && context.selectPageIds.length > 0
+      ? context.selectPageIds.filter((pid) => Boolean(context.pageFileMap[pid]))
+      : []
+  const targetPageIds =
+    explicitTargetPageIds.length > 0
+      ? explicitTargetPageIds
+      : Array.isArray(context.allowedPageIds) && context.allowedPageIds.length > 0
+        ? context.allowedPageIds.filter((pid) => Boolean(context.pageFileMap[pid]))
+        : []
 
   const totalScopedPages = Math.max(
     1,
-    (Array.isArray(context.allowedPageIds) && context.allowedPageIds.length > 0
-      ? context.allowedPageIds.length
+    (targetPageIds.length > 0
+      ? targetPageIds.length
       : Object.keys(context.pageFileMap).length) || 1
   )
   const isEditMode = context.mode === 'edit'
@@ -38,12 +48,10 @@ export function createSessionBoundDeckTools(context: SessionDeckGenerationContex
   const statusLanguage = context.appLocale === 'en' ? 'English' : 'Simplified Chinese'
   const isSinglePageTask =
     !isEditMode &&
-    (Boolean(context.selectedPageId) ||
-      (Array.isArray(context.allowedPageIds) && context.allowedPageIds.length === 1) ||
-      context.outlineTitles.length === 1)
+    (Boolean(context.selectedPageId) || targetPageIds.length === 1 || context.outlineTitles.length === 1)
   const orderedPageIdsForProgress =
-    Array.isArray(context.allowedPageIds) && context.allowedPageIds.length > 0
-      ? context.allowedPageIds.filter((pid) => Boolean(context.pageFileMap[pid]))
+    targetPageIds.length > 0
+      ? targetPageIds
       : Object.keys(context.pageFileMap)
 
   const parsePageNumber = (pageId?: string): number | null => {
@@ -130,28 +138,26 @@ export function createSessionBoundDeckTools(context: SessionDeckGenerationContex
     tool(
       async (_input, config) => {
         const scopedPageFileMap =
-          Array.isArray(context.allowedPageIds) && context.allowedPageIds.length > 0
+          targetPageIds.length > 0
             ? Object.fromEntries(
-                Object.entries(context.pageFileMap).filter(([pageId]) =>
-                  context.allowedPageIds!.includes(pageId)
-                )
+                Object.entries(context.pageFileMap).filter(([pageId]) => targetPageIds.includes(pageId))
               )
             : context.pageFileMap
-        const scopedPageIds = Object.keys(scopedPageFileMap)
+        const visiblePageIds = Object.keys(scopedPageFileMap)
         const agentPageFileMap = Object.fromEntries(
-          scopedPageIds.map((pageId) => [pageId, `/${pageId}.html`])
+          visiblePageIds.map((pageId) => [pageId, `/${pageId}.html`])
         )
         const selectedPagePath =
           context.selectedPageId && agentPageFileMap[context.selectedPageId]
             ? agentPageFileMap[context.selectedPageId]
             : undefined
-        const pageFiles = scopedPageIds.map((pageId) => ({
+        const pageFiles = visiblePageIds.map((pageId) => ({
           pageId,
           agentPath: `/${pageId}.html`
         }))
         const scopedExistingPageIds =
-          Array.isArray(context.allowedPageIds) && context.allowedPageIds.length > 0
-            ? (context.existingPageIds || []).filter((pid) => context.allowedPageIds!.includes(pid))
+          targetPageIds.length > 0
+            ? (context.existingPageIds || []).filter((pid) => targetPageIds.includes(pid))
             : context.existingPageIds
 
         emitNormalizedToolStatus(config, {
@@ -226,8 +232,9 @@ export function createSessionBoundDeckTools(context: SessionDeckGenerationContex
             pageFileMap: agentPageFileMap,
             pageFiles,
             allowedPageIds: context.allowedPageIds ?? null,
+            selectPageIds: context.selectPageIds ?? [],
             userMessage: context.userMessage,
-            pageIds: scopedPageIds,
+            pageIds: visiblePageIds,
             selectedPageId: context.selectedPageId ?? undefined,
             selectedPagePath,
             selectedPageNumber: context.selectedPageNumber ?? undefined,
@@ -382,9 +389,9 @@ export function createSessionBoundDeckTools(context: SessionDeckGenerationContex
           progress: 88
         })
         const pageIds = Object.keys(context.pageFileMap)
-        const targetPageIds =
-          Array.isArray(context.allowedPageIds) && context.allowedPageIds.length > 0
-            ? pageIds.filter((pid) => context.allowedPageIds!.includes(pid))
+        const verificationPageIds =
+          targetPageIds.length > 0
+            ? pageIds.filter((pid) => targetPageIds.includes(pid))
             : pageIds
         const results: Array<{
           pageId: string
@@ -392,7 +399,7 @@ export function createSessionBoundDeckTools(context: SessionDeckGenerationContex
           hasContent: boolean
           hasRemoteRuntime: boolean
         }> = []
-        for (const pid of targetPageIds) {
+        for (const pid of verificationPageIds) {
           const pagePath = context.pageFileMap[pid]
           const exists = fs.existsSync(pagePath)
           const content = exists ? await fs.promises.readFile(pagePath, 'utf-8') : ''
@@ -409,12 +416,12 @@ export function createSessionBoundDeckTools(context: SessionDeckGenerationContex
           return `验证发现问题：以下页面文件缺失或为空: ${missingFiles.join(', ')}。请检查对应 /<pageId>.html 是否已创建。`
         }
         if (emptyPages.length > 0) {
-          return `部分页面尚未填充: ${emptyPages.join(', ')}。已完成 ${filledCount}/${targetPageIds.length} 页。单页任务请用 update_single_page_file(pageId, content)，多页任务请用 update_page_file(content) 继续填充。`
+          return `部分页面尚未填充: ${emptyPages.join(', ')}。已完成 ${filledCount}/${verificationPageIds.length} 页。单页任务请用 update_single_page_file(pageId, content)，多页任务请用 update_page_file(content) 继续填充。`
         }
         if (remoteRuntimePages.length > 0) {
           return `验证失败：以下页面包含禁止的 CDN/远程 script/link 资源: ${remoteRuntimePages.join(', ')}。请移除外链并仅使用系统预注入的本地 ./assets/* 资源。`
         }
-        const isSinglePageCheck = targetPageIds.length === 1
+        const isSinglePageCheck = verificationPageIds.length === 1
         emitNormalizedToolStatus(config, {
           label: isSinglePageCheck
             ? uiText(context.appLocale, '当前页面已填充', 'Current page filled')
@@ -422,19 +429,19 @@ export function createSessionBoundDeckTools(context: SessionDeckGenerationContex
           detail: isSinglePageCheck
             ? uiText(
                 context.appLocale,
-                `${targetPageIds[0]} 已完成`,
-                `${targetPageIds[0]} completed`
+                `${verificationPageIds[0]} 已完成`,
+                `${verificationPageIds[0]} completed`
               )
             : uiText(
                 context.appLocale,
-                `${filledCount}/${targetPageIds.length} 页已完成`,
-                `${filledCount}/${targetPageIds.length} pages completed`
+                `${filledCount}/${verificationPageIds.length} 页已完成`,
+                `${filledCount}/${verificationPageIds.length} pages completed`
               ),
           progress: 95
         })
         return isSinglePageCheck
-          ? `验证通过：${targetPageIds[0]} 已成功填充。${JSON.stringify(results, null, 2)}`
-          : `验证通过：全部 ${targetPageIds.length} 页已成功填充。${JSON.stringify(results, null, 2)}`
+          ? `验证通过：${verificationPageIds[0]} 已成功填充。${JSON.stringify(results, null, 2)}`
+          : `验证通过：全部 ${verificationPageIds.length} 页已成功填充。${JSON.stringify(results, null, 2)}`
       },
       {
         name: 'verify_completion',

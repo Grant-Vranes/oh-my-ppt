@@ -1,0 +1,20 @@
+{
+  "style": "chinese-cream-blossom",
+  "name": {
+    "zh": "中国传统色·米白樱粉",
+    "en": "Chinese Cream Blossom"
+  },
+  "description": "宣纸米白配樱粉，温柔雅致国风",
+  "category": "浅色 · 沉静",
+  "aliases": [
+    "米白",
+    "樱粉",
+    "温柔",
+    "cream",
+    "blossom",
+    "国风"
+  ],
+  "styleCase": "女性品牌、婚庆喜事、春季节庆、美妆护肤、温柔生活方式",
+  "version": "2.0.0",
+  "source": "builtin"
+}

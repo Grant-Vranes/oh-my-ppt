@@ -249,4 +249,113 @@ describe('registerSettingsHandlers model temperature settings', () => {
       })
     )
   })
+
+  it('accepts the OpenAI Responses provider when saving a model config', async () => {
+    const upsertModelConfig = vi.fn(async () => 'model-1')
+    const { getHandler } = await registerWithDb({ upsertModelConfig })
+
+    const saveModelConfig = getHandler('settings:upsertModelConfig')
+    await saveModelConfig?.(undefined, {
+      name: 'Responses model',
+      provider: 'openai-responses',
+      model: 'gpt-5.1',
+      apiKey: 'secret',
+      baseUrl: 'https://api.openai.com/v1',
+      maxTokens: 4096,
+      disableTemperature: false
+    })
+
+    expect(upsertModelConfig).toHaveBeenCalledWith(
+      expect.objectContaining({
+        provider: 'openai-responses'
+      })
+    )
+  })
+
+  it('explains invalid Responses API payloads during model verification', async () => {
+    settingsHandlersState.localeMock.readAppLocale.mockResolvedValue('zh')
+    settingsHandlersState.resolveModelMock.mockReturnValue({
+      invoke: vi.fn(async () => {
+        throw new TypeError("Cannot read properties of undefined (reading 'map')")
+      })
+    })
+    const { getHandler } = await registerWithDb()
+
+    const verifyApiKey = getHandler('settings:verifyApiKey')
+    const result = await verifyApiKey?.(undefined, {
+      provider: 'openai-responses',
+      model: 'gpt-5.5',
+      apiKey: 'secret',
+      baseUrl: 'https://www.toumingren.xyz/v1',
+      maxTokens: 4096,
+      timeoutMs: 60000
+    })
+
+    expect(result).toEqual({
+      valid: false,
+      message: expect.stringContaining('不是 OpenAI Responses API 格式')
+    })
+  })
+
+  it('explains older undefined map errors during Responses API verification', async () => {
+    settingsHandlersState.localeMock.readAppLocale.mockResolvedValue('zh')
+    settingsHandlersState.resolveModelMock.mockReturnValue({
+      invoke: vi.fn(async () => {
+        throw new TypeError("Cannot read property 'map' of undefined")
+      })
+    })
+    const { getHandler } = await registerWithDb()
+
+    const verifyApiKey = getHandler('settings:verifyApiKey')
+    const result = await verifyApiKey?.(undefined, {
+      provider: 'openai-responses',
+      model: 'gpt-5.5',
+      apiKey: 'secret',
+      baseUrl: 'https://www.toumingren.xyz/v1',
+      maxTokens: 4096,
+      timeoutMs: 60000
+    })
+
+    expect(result).toEqual({
+      valid: false,
+      message: expect.stringContaining('OpenAI Responses API')
+    })
+  })
+})
+
+describe('registerSettingsHandlers model usage', () => {
+  beforeEach(() => {
+    settingsHandlersState.handlers.clear()
+    settingsHandlersState.ipcMainMock.handle.mockClear()
+  })
+
+  it('delegates the selected usage period to the database', async () => {
+    const stats = {
+      period: '7d',
+      startedAt: 1,
+      totals: {
+        callCount: 2,
+        exactCallCount: 1,
+        estimatedCallCount: 1,
+        inputTokens: 100,
+        outputTokens: 20,
+        totalTokens: 120
+      },
+      byModel: [],
+      byDay: []
+    }
+    const getModelUsageStats = vi.fn(async () => stats)
+    const { getHandler } = await registerWithDb({ getModelUsageStats })
+
+    await expect(getHandler('settings:getModelUsage')?.(undefined, '7d')).resolves.toBe(stats)
+    expect(getModelUsageStats).toHaveBeenCalledWith('7d')
+  })
+
+  it('falls back to 30 days for an invalid usage period', async () => {
+    const getModelUsageStats = vi.fn(async () => ({ period: '30d' }))
+    const { getHandler } = await registerWithDb({ getModelUsageStats })
+
+    await getHandler('settings:getModelUsage')?.(undefined, 'invalid')
+    expect(getModelUsageStats).toHaveBeenCalledWith('30d')
+  })
 })

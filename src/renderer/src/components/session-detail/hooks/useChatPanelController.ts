@@ -7,6 +7,7 @@ import {
   useSessionStore,
   useToastStore
 } from '@renderer/store'
+import { useGenerationActivityStore } from '@renderer/store/generationActivityStore'
 import type { GenerateStartPayload } from '@shared/generation.js'
 import type { ChatPanelController } from '@renderer/types/session-detail'
 import { normalizePagesForSelection } from '../shared/pageUtils'
@@ -94,7 +95,7 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
     }
   }
 
-  const send = async (modelConfigId: string): Promise<void> => {
+  const send = async (modelConfigId: string, selectPageIds: string[] = []): Promise<boolean> => {
     const detailState = useSessionDetailUiStore.getState()
     if (
       isChatSendBlocked({
@@ -105,7 +106,7 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
         pendingAssetCount: detailState.pendingAssets.length
       })
     ) {
-      return
+      return false
     }
 
     const content = detailState.input.trim() || t('sessionDetail.useUploadedAssets')
@@ -124,15 +125,26 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
     })
     if (!context.ready) {
       toastError(t('sessionDetail.selectPageFirst'))
-      return
+      return false
     }
     if (context.hasSelector && detailState.chatType !== 'page') detailState.setChatType('page')
+    const selectedScopePages =
+      context.chatType === 'main' && selectPageIds.length > 0
+        ? pages
+            .filter((page) => selectPageIds.includes(page.pageId))
+            .map((page) => `P${page.pageNumber}`)
+        : []
+    const scopedMessageContent =
+      selectedScopePages.length > 0
+        ? `${t('sessionDetail.mainPageScopeMessagePrefix', { pages: selectedScopePages.join('、') })}\n${content}`
+        : content
     const generatePayload: GenerateStartPayload = {
       sessionId,
       modelConfigId,
-      userMessage: content,
+      userMessage: scopedMessageContent,
       type: pages.length > 0 ? 'page' : 'deck',
       chatType: context.chatType,
+      selectPageIds: context.chatType === 'main' ? selectPageIds : undefined,
       chatPageId: context.targetPageId,
       selectedPageId:
         pages.length > 0 && context.chatType === 'page' ? context.targetPageId : undefined,
@@ -147,6 +159,9 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
     sendingMessageRef.current = true
     try {
       useGenerateStore.setState({ isGenerating: true, error: null, status: 'running' })
+      if (pages.length > 0) {
+        useGenerationActivityStore.getState().startEdit(generatePayload)
+      }
       addMessage({
         id: crypto.randomUUID(),
         session_id: sessionId,
@@ -156,7 +171,7 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
         image_paths: imagePaths,
         video_paths: videoPaths,
         role: 'user',
-        content,
+        content: scopedMessageContent,
         type: 'text',
         tool_name: null,
         tool_call_id: null,
@@ -167,10 +182,13 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
       detailState.clearPendingAssets()
       detailState.clearSelectedElement()
       await ipc.startGenerate(generatePayload)
+      return true
     } catch (sendError) {
       const message = sendError instanceof Error ? sendError.message : t('generating.failed')
       useGenerateStore.getState().setError(message)
+      useGenerationActivityStore.getState().reset()
       toastError(message)
+      return false
     } finally {
       sendingMessageRef.current = false
     }

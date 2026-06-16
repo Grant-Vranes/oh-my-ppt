@@ -6,10 +6,13 @@ const sourceFileNameFor = (platformName, archName) => {
   if (platformName === 'darwin' && archName === 'arm64') return 'ffmpeg-arm'
   if (platformName === 'darwin' && archName === 'x64') return 'ffmpeg-intel'
   if (platformName === 'win32' && archName === 'x64') return 'ffmpeg.exe'
+  if (platformName === 'linux' && archName === 'x64') return 'ffmpeg-linux-x64'
   return null
 }
 
 const targetFileNameFor = (platformName) => (platformName === 'win32' ? 'ffmpeg.exe' : 'ffmpeg')
+
+const isRequiredFfmpegFor = (platformName) => platformName !== 'linux'
 
 exports.default = async function afterPack(context) {
   const platformName = context.electronPlatformName
@@ -26,6 +29,14 @@ exports.default = async function afterPack(context) {
   try {
     await fs.access(sourcePath)
   } catch {
+    if (!isRequiredFfmpegFor(platformName)) {
+      console.warn(
+        `[afterPack] optional bundled ffmpeg missing for ${platformName}-${archName}: ${sourcePath}. ` +
+          'The package will be created without built-in MP4 export support.'
+      )
+      return
+    }
+
     throw new Error(`Missing bundled ffmpeg for ${platformName}-${archName}: ${sourcePath}`)
   }
 

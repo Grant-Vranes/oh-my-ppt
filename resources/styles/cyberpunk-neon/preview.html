@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>赛博霓虹 · Cyberpunk Neon</title>
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#0f1117}
+body{display:grid;place-items:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+.slide{position:relative;width:min(100vw,calc(100vh*16/9));aspect-ratio:16/9;overflow:hidden;background:#0a0a0a;border-radius:8px}
+.grid{position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 49px,rgba(6,182,212,.06) 50px),repeating-linear-gradient(90deg,transparent,transparent 49px,rgba(6,182,212,.06) 50px)}
+.scanline{position:absolute;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,rgba(6,182,212,.15),transparent);top:40%}
+.neon-line{position:absolute;height:2px;box-shadow:0 0 8px var(--c),0 0 20px var(--c)}
+.nl1{left:8%;right:8%;top:22%;--c:#ec4899}
+.nl2{left:8%;right:8%;bottom:30%;--c:#06b6d4}
+.corner{position:absolute;width:20px;height:20px;border-color:#ec4899;border-style:solid}
+.c1{top:10%;left:6%;border-width:2px 0 0 2px}
+.c2{top:10%;right:6%;border-width:2px 2px 0 0}
+.c3{bottom:10%;left:6%;border-width:0 0 2px 2px}
+.c4{bottom:10%;right:6%;border-width:0 2px 2px 0}
+.glitch{position:relative;z-index:2}
+.glitch::before,.glitch::after{content:attr(data-text);position:absolute;left:0;top:0;width:100%;height:100%}
+.glitch::before{color:#06b6d4;clip-path:inset(0 0 65% 0);transform:translate(3px,-2px)}
+.glitch::after{color:#ec4899;clip-path:inset(65% 0 0 0);transform:translate(-3px,2px)}
+.content{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;z-index:3;padding:8%}
+h1{font-size:clamp(36px,7vw,80px);font-weight:900;color:#f8fafc;letter-spacing:.05em;text-shadow:0 0 10px rgba(236,72,153,.6),0 0 30px rgba(236,72,153,.3),0 0 60px rgba(6,182,212,.2)}
+.desc{margin-top:3%;font-size:clamp(11px,1.5vw,17px);color:#cbd5e1;max-width:65%;line-height:1.6}
+.palette{display:flex;gap:clamp(6px,1vw,12px);margin-top:5%}
+.palette i{display:block;width:clamp(18px,2.8vw,32px);height:clamp(18px,2.8vw,32px);border-radius:50%;background:var(--c);border:2px solid rgba(255,255,255,.1);box-shadow:0 0 15px var(--c)}
+.label{margin-top:4%;font-size:clamp(8px,1vw,13px);font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#cbd5e1;font-family:"SFMono-Regular",Consolas,monospace}
+.label b{color:#ec4899;font-weight:400}
+@media(max-aspect-ratio:16/9){.slide{width:min(100vw,calc(100vh*16/9));height:auto}}
+@media(min-aspect-ratio:16/9){.slide{height:min(100vh,calc(100vw*9/16));width:auto}}
+</style>
+</head>
+<body>
+<div class="slide" aria-label="赛博霓虹 style preview">
+  <div class="grid"></div>
+  <div class="scanline"></div>
+  <div class="neon-line nl1"></div>
+  <div class="neon-line nl2"></div>
+  <div class="corner c1"></div>
+  <div class="corner c2"></div>
+  <div class="corner c3"></div>
+  <div class="corner c4"></div>
+  <div class="content">
+    <h1 class="glitch" data-text="赛博霓虹">赛博霓虹</h1>
+    <p class="desc">霓虹粉青撕裂纯黑夜幕，未来已来且不问你是否准备好</p>
+    <div class="palette">
+      <i style="--c:#f8fafc"></i>
+      <i style="--c:#cbd5e1"></i>
+      <i style="--c:#ec4899"></i>
+      <i style="--c:#06b6d4"></i>
+      <i style="--c:#1a1a2e"></i>
+    </div>
+    <div class="label"><b>&gt;</b> cyberpunk-neon</div>
+  </div>
+</div>
+</body>
+</html>

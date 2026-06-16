@@ -1,0 +1,17 @@
+{
+  "style": "vaporwave",
+  "name": {
+    "zh": "蒸汽波",
+    "en": "Vaporwave"
+  },
+  "description": "深紫渐变中粉红与青蓝晕染，怀旧美学抵达意识深处",
+  "category": "效果 · 戏剧",
+  "aliases": [
+    "vaporwave",
+    "蒸汽",
+    "美学"
+  ],
+  "styleCase": "音乐分享、潮流艺术展示、A E S T H E T I C 叙事、怀旧文化演讲",
+  "version": "2.0.0",
+  "source": "builtin"
+}

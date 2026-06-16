@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>终端绿 · terminal-green</title>
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:100%;height:100%;overflow:hidden}
+html{display:grid;place-items:center;background:#0f1117}
+body{display:grid;place-items:center;font-family:"SFMono-Regular","Consolas","Menlo","Courier New",monospace;color:#4ade80;background:#0f1117}
+
+.slide {
+  position: relative;
+  width: min(100vw, calc(100vh * 16 / 9));
+  aspect-ratio: 16/9;
+  overflow: hidden;
+  background: #0a1a0a;
+  box-shadow: 0 0 0 1px rgba(74,222,128,.1), 0 0 100px rgba(74,222,128,.04);
+}
+
+/* Scanline overlay */
+.slide::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0,0,0,.15) 0px,
+    rgba(0,0,0,.15) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  pointer-events: none;
+  z-index: 4;
+  opacity: .6;
+}
+
+/* Green phosphor glow from center */
+.slide::after {
+  content: "";
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 60%; height: 60%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(74,222,128,.04) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.content {
+  position: absolute;
+  inset: 8% 7%;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1.1fr .9fr;
+  gap: 6%;
+  align-items: stretch;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.eyebrow {
+  font-size: clamp(7px, .95vw, 11px);
+  font-weight: 700;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: #4ade80;
+  margin-bottom: 3%;
+  text-shadow: 0 0 8px rgba(74,222,128,.4);
+}
+
+h1 {
+  font-size: clamp(32px, 5.5vw, 68px);
+  line-height: .92;
+  font-weight: 900;
+  color: #4ade80;
+  text-shadow: 0 0 20px rgba(74,222,128,.3), 0 0 60px rgba(74,222,128,.15);
+  letter-spacing: -.02em;
+}
+
+.desc {
+  margin-top: 4%;
+  font-size: clamp(10px, 1.35vw, 15px);
+  line-height: 1.7;
+  color: rgba(134,239,172,.55);
+  max-width: 92%;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 5%;
+}
+.tags span {
+  border: 1px solid rgba(74,222,128,.2);
+  background: rgba(74,222,128,.04);
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: clamp(7px, .85vw, 10px);
+  font-weight: 600;
+  color: rgba(134,239,172,.7);
+}
+
+.story {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3%;
+  margin-top: 5%;
+}
+.story p {
+  border-left: 2px solid #4ade80;
+  padding-left: 8px;
+  font-size: clamp(8px, .95vw, 11px);
+  line-height: 1.5;
+  color: rgba(134,239,172,.45);
+}
+
+.chips {
+  display: flex;
+  gap: 10px;
+  margin-top: 4%;
+}
+.chips span {
+  font-size: clamp(7px, .85vw, 10px);
+  color: rgba(74,222,128,.35);
+  border-bottom: 1px solid rgba(74,222,128,.12);
+  padding-bottom: 2px;
+}
+
+/* Right panel - CRT terminal */
+.panel {
+  position: relative;
+  overflow: hidden;
+  border: 2px solid rgba(74,222,128,.2);
+  border-radius: 8px;
+  background: rgba(10,26,10,.8);
+  padding: 6%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 5%;
+}
+.panel::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: #4ade80;
+  box-shadow: 0 0 10px #4ade80;
+}
+
+.kicker {
+  font-size: clamp(8px, 1vw, 11px);
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #4ade80;
+  text-shadow: 0 0 6px rgba(74,222,128,.4);
+}
+
+.layout {
+  font-size: clamp(9px, 1.05vw, 13px);
+  line-height: 1.6;
+  color: rgba(134,239,172,.5);
+}
+
+/* Terminal prompt */
+.visual {
+  position: relative;
+  min-height: 0;
+  border: 1px solid rgba(74,222,128,.12);
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(0,0,0,.4);
+}
+
+.prompt-block {
+  position: absolute;
+  inset: 8%;
+  font-family: "SFMono-Regular", "Consolas", "Menlo", monospace;
+}
+.prompt-lines {
+  font-size: clamp(7px, .95vw, 12px);
+  line-height: 2;
+  color: rgba(134,239,172,.7);
+}
+.prompt-lines .ps { color: #4ade80; text-shadow: 0 0 6px rgba(74,222,128,.5) }
+.prompt-lines .cmd { color: #86efac }
+.prompt-lines .out { color: rgba(74,222,128,.45) }
+.prompt-lines .ok { color: #4ade80 }
+
+.prompt-cursor {
+  display: inline-block;
+  width: 7px; height: clamp(10px, 1.3vw, 16px);
+  background: #4ade80;
+  animation: blink 1s step-end infinite;
+  vertical-align: middle;
+  box-shadow: 0 0 6px #4ade80;
+}
+
+.palette {
+  display: flex;
+  gap: 7px;
+}
+.palette i {
+  display: block;
+  width: clamp(14px, 2vw, 22px);
+  height: clamp(14px, 2vw, 22px);
+  border-radius: 50%;
+  background: var(--c);
+  border: 1px solid rgba(74,222,128,.2);
+  box-shadow: 0 0 8px var(--c);
+}
+
+.footer {
+  position: absolute;
+  left: 7%; right: 7%;
+  bottom: 4.5%;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: clamp(7px, .85vw, 10px);
+  font-weight: 700;
+  color: rgba(74,222,128,.3);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.footer b { color: rgba(74,222,128,.6); text-shadow: 0 0 4px rgba(74,222,128,.3) }
+
+@keyframes blink {
+  50% { opacity: 0 }
+}
+
+@media(max-aspect-ratio:16/9){.slide{width:min(100vw,calc(100vh*16/9));height:auto}}
+@media(min-aspect-ratio:16/9){.slide{height:min(100vh,calc(100vw*9/16));width:auto}}
+</style>
+</head>
+<body>
+  <main class="slide" aria-label="终端绿 style preview">
+    <section class="content">
+      <div class="hero">
+        <div>
+          <div class="eyebrow">效果 · 重 · terminal-green</div>
+          <h1>终端绿</h1>
+          <p class="desc">绿屏荧光在黑暗中闪烁，终端美学最原始的浪漫</p>
+          <div class="tags">
+            <span>CLI 工具展示</span>
+            <span>黑客马拉松</span>
+            <span>安全演讲</span>
+            <span>复古计算文化</span>
+          </div>
+          <div class="story">
+            <p>标题 #4ade80 亮绿、正文 #86efac 浅绿，强调色 #22c55e 绿色与 #16a34a 深绿是荧光的两种亮度。</p>
+            <p>等宽字体是唯一选择——终端美学只认等宽。CRT 复古质感。</p>
+          </div>
+        </div>
+        <div class="chips">
+          <span>typewriter</span>
+          <span>neon-glow</span>
+          <span>glitch-in</span>
+        </div>
+      </div>
+      <aside class="panel">
+        <div>
+          <div class="kicker">Style DNA</div>
+          <div class="layout">终端绿是黑客美学的原点——深绿黑的底色上，荧光绿的文字在黑暗中闪烁，像一台老式 CRT 终端在地下室里独自运行。</div>
+        </div>
+        <div class="visual">
+          <div class="prompt-block">
+            <div class="prompt-lines">
+              <div><span class="ps">$</span> <span class="cmd">style inspect terminal-green</span></div>
+              <div><span class="out">&gt; palette: phosphor green</span></div>
+              <div><span class="out">&gt; motion: typewriter</span></div>
+              <div><span class="ok">&gt; scanline: enabled</span></div>
+              <div><span class="ps">$</span> <span class="prompt-cursor"></span></div>
+            </div>
+          </div>
+        </div>
+        <div class="palette">
+          <i style="--c:#4ade80"></i>
+          <i style="--c:#86efac"></i>
+          <i style="--c:#22c55e"></i>
+          <i style="--c:#16a34a"></i>
+          <i style="--c:#0a1a0a"></i>
+        </div>
+      </aside>
+    </section>
+    <div class="footer">
+      <span><b>Layout</b> 模拟终端界面——黑色背景上的绿色文字，卡片像终端窗口。</span>
+      <span>16:9 preview</span>
+    </div>
+  </main>
+</body>
+</html>

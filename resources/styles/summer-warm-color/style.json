@@ -1,0 +1,13 @@
+{
+  "style": "summer-warm-color",
+  "name": {
+    "zh": "夏日暖色",
+    "en": "Summer Warm Color"
+  },
+  "description": "清新治愈的夏日绘本风",
+  "category": "暖色 · 治愈",
+  "aliases": ["夏日", "summer", "暖色", "童趣", "水彩绘本"],
+  "styleCase": "儿童亲子活动、夏日主题宣传、教育科普、心理成长、户外露营野餐、治愈系品牌海报",
+  "version": "2.0.0",
+  "source": "builtin"
+}

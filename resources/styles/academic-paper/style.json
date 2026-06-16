@@ -1,0 +1,18 @@
+{
+  "style": "academic-paper",
+  "name": {
+    "zh": "学术论文",
+    "en": "Academic Paper"
+  },
+  "description": "黑墨蓝链落在论文白上，学术严谨自带说服力",
+  "category": "浅色 · 专业",
+  "aliases": [
+    "academic",
+    "论文",
+    "学术",
+    "研究"
+  ],
+  "styleCase": "学术报告、研究分享、会议论文展示、博士答辩",
+  "version": "2.0.0",
+  "source": "builtin"
+}

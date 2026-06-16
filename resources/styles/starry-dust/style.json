@@ -1,0 +1,19 @@
+{
+  "style": "starry-dust",
+  "name": {
+    "zh": "星屑柔光 · 童话感",
+    "en": "Starry Dust"
+  },
+  "description": "雾紫香槟粉星空蓝的柔光童话风",
+  "category": "活力 · 创意",
+  "aliases": [
+    "星屑",
+    "柔光",
+    "童话",
+    "梦幻",
+    "少女"
+  ],
+  "styleCase": "童话主题、儿童内容、少女品牌、婚庆企划、生日派对、礼物营销、星座占卜",
+  "version": "2.0.0",
+  "source": "builtin"
+}

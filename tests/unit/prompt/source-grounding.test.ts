@@ -83,7 +83,7 @@ describe('source-grounded prompt rules', () => {
     expect(templateUseDialog).not.toContain('suggestionCardClass')
   })
 
-  it('edit, add-page, and retry-single-page flows resolve source documents', () => {
+  it('keeps source documents for edits and retries but excludes them from generated add-page', () => {
     const generationContext = readSource('src/main/ipc/generation/context.ts')
     const sourceDocuments = readSource('src/main/ipc/generation/source-documents.ts')
     const editFlow = readSource('src/main/ipc/generation/edit-flow.ts')
@@ -101,12 +101,230 @@ describe('source-grounded prompt rules', () => {
     expect(editFlow).toContain('resolveSourceDocuments')
     expect(editFlow).toContain('sourceDocumentPaths: context.sourceDocumentPaths')
     expect(deckAllPageEditFlow).toContain('sourceDocumentPaths: context.sourceDocumentPaths')
-    expect(addPageFlow).toContain('resolveSourceDocuments')
-    expect(addPageFlow).toContain('sourceDocumentPaths: context.sourceDocumentPaths')
-    expect(addPageFlow).not.toContain('sourceDocumentPaths: []')
+    expect(addPageFlow).not.toContain('resolveSourceDocuments')
+    expect(addPageFlow).not.toContain('context.sourceDocumentPaths')
+    expect(addPageFlow.match(/sourceDocumentPaths: \[\]/g)).toHaveLength(3)
     expect(retrySinglePageFlow).toContain('resolveSourceDocuments')
     expect(retrySinglePageFlow).toContain('sourceDocumentPaths: context.sourceDocumentPaths')
     expect(retrySinglePageFlow).not.toContain('sourceDocumentPaths: []')
+  })
+
+  it('deck all-page edit selected page ids only match file slugs', () => {
+    const deckAllPageEditFlow = readSource('src/main/ipc/generation/edit-deck-allpage-flow.ts')
+
+    expect(deckAllPageEditFlow).toContain('requestedPageIdSet.has(ref.pageId)')
+    expect(deckAllPageEditFlow).not.toContain('requestedPageIdSet.has(ref.id)')
+  })
+
+  it('main-session deck edit enforces the shared selected-page limit', () => {
+    const sharedGeneration = readSource('src/shared/generation.ts')
+    const deckAllPageEditFlow = readSource('src/main/ipc/generation/edit-deck-allpage-flow.ts')
+    const chatPanel = readSource(
+      'src/renderer/src/components/session-detail/ai-panel/ChatPanel.tsx'
+    )
+
+    expect(sharedGeneration).toContain('export const MAX_SELECTED_PAGES = 50')
+    expect(sharedGeneration).toContain('export const MAX_STYLE_SWITCH_PAGES = 500')
+    expect(sharedGeneration).not.toContain('.slice(0, 200)')
+    expect(deckAllPageEditFlow).toContain(
+      'context.resetVisualStyle ? MAX_STYLE_SWITCH_PAGES : MAX_SELECTED_PAGES'
+    )
+    expect(chatPanel).toContain('effectiveMainPageIds.length >= MAX_SELECTED_PAGES')
+    expect(chatPanel).toContain('pageIds.length > MAX_SELECTED_PAGES')
+  })
+
+  it('deck edit batch aborts finalize the run before rethrowing', () => {
+    const deckAllPageEditFlow = readSource('src/main/ipc/generation/edit-deck-allpage-flow.ts')
+
+    expect(deckAllPageEditFlow).toContain('batchResults = await executeDeckEditBatchFlow')
+    expect(deckAllPageEditFlow).toContain(
+      "await db.updateGenerationRunStatus(context.runId, 'failed', message)"
+    )
+    expect(deckAllPageEditFlow).toContain("type: 'run_error'")
+    expect(deckAllPageEditFlow).toContain('throw error')
+  })
+
+  it('deck edit staggers three independent page agents to reduce rate-limit bursts', () => {
+    const batchFlow = readSource('src/main/ipc/generation/edit-deck-batch-flow.ts')
+    const deckAllPageEditFlow = readSource('src/main/ipc/generation/edit-deck-allpage-flow.ts')
+    const engine = readSource('src/main/ipc/engine/generate.ts')
+
+    expect(batchFlow).toContain('export const BATCH_EDIT_LAUNCH_STAGGER_MS = 100')
+    expect(batchFlow).toContain('import pLimit from')
+    expect(batchFlow).toContain('pLimit(BATCH_EDIT_CHUNK_SIZE)')
+    expect(batchFlow).toContain('pageIndex % BATCH_EDIT_CHUNK_SIZE')
+    expect(batchFlow).toContain('Promise.allSettled')
+    expect(deckAllPageEditFlow).toContain('runPageAttempt')
+    expect(deckAllPageEditFlow).toContain('selectPageIds: [pageId]')
+    expect(deckAllPageEditFlow).toContain('isDeckEditRateLimitRetryableError(error)')
+    expect(engine).toContain('setPageAgent(args.sessionId, concurrentDeckPageId, editAgent)')
+  })
+
+  it('shows generation progress in an independent modal with local state', () => {
+    const chatPanel = readSource(
+      'src/renderer/src/components/session-detail/ai-panel/ChatPanel.tsx'
+    )
+    const previewStage = readSource(
+      'src/renderer/src/components/session-detail/preview/PreviewStage.tsx'
+    )
+    const sessionDetail = readSource('src/renderer/src/pages/session-detail.tsx')
+    const activityDialog = readSource(
+      'src/renderer/src/components/session-detail/modal/GenerationActivityDialog.tsx'
+    )
+
+    expect(chatPanel).not.toContain('<Progress value={progress.progress}')
+    expect(previewStage).not.toContain('useGenerationLoading')
+    expect(previewStage).not.toContain('generationLoading')
+    expect(activityDialog).toContain('ipc.onGenerateChunk')
+    expect(activityDialog).toContain('useState<ActivityLog[]>([])')
+    expect(activityDialog).not.toContain('ipc.cancelGenerate')
+    expect(activityDialog).toContain("showClose={status !== 'running'}")
+    expect(activityDialog).toContain("if (!nextOpen && status === 'running') return")
+    expect(activityDialog).not.toContain('useGenerateStore')
+    expect(activityDialog).toContain('useGenerationActivityStore')
+    expect(activityDialog).toContain('useSessionStore')
+    expect(sessionDetail).toContain('<GenerationActivityDialog sessionId={id} />')
+    expect(sessionDetail).not.toContain('onStyleSwitchCompleted')
+    expect(sessionDetail).not.toContain('<PageProgressOverlay')
+  })
+
+  it('preserves chat messages when generation is cancelled', () => {
+    const sessionStore = readSource('src/renderer/src/store/sessionStore.ts')
+    const sessionDetail = readSource('src/renderer/src/pages/session-detail.tsx')
+    const loadSessionSource = sessionStore.slice(
+      sessionStore.indexOf('loadSession: async'),
+      sessionStore.indexOf('loadMessages: async')
+    )
+
+    expect(loadSessionSource).not.toContain('currentMessages: []')
+    expect(sessionDetail).toContain('if (payload.cancelled)')
+    expect(sessionDetail).toContain('cancelGeneration(payload.message)')
+  })
+
+  it('keeps concurrent deck-page progress on the active page instead of resetting to understanding', () => {
+    const deckAllPageEditFlow = readSource('src/main/ipc/generation/edit-deck-allpage-flow.ts')
+    const batchFlow = readSource('src/main/ipc/generation/edit-deck-batch-flow.ts')
+    const engine = readSource('src/main/ipc/engine/generate.ts')
+
+    expect(deckAllPageEditFlow).toContain("'正在准备批量编辑'")
+    expect(engine).toContain('`正在编辑页面 ${concurrentDeckPageId}`')
+    expect(engine).toContain("'正在生成并校验当前页面'")
+    expect(batchFlow).toContain('`正在编辑 P${args.pageNumber}`')
+  })
+
+  it('uses operation-specific progress copy for add-page and failed-page retries', () => {
+    const engine = readSource('src/main/ipc/engine/generate.ts')
+    const addPageFlow = readSource('src/main/ipc/generation/add-page-flow.ts')
+    const retrySinglePageFlow = readSource('src/main/ipc/generation/retry-single-page-flow.ts')
+    const retryFlow = readSource('src/main/ipc/generation/retry-flow.ts')
+
+    expect(engine).toContain('renderingLabel?: string')
+    expect(engine).toContain(
+      "const renderingLabel = args.renderingLabel || progressText(args.appLocale, 'generating')"
+    )
+    expect(addPageFlow).toContain("'正在规划新增页面'")
+    expect(addPageFlow).toContain("'正在生成新增页面'")
+    expect(retrySinglePageFlow).toContain('`正在重新生成第 ${context.pageNumber} 页`')
+    expect(retryFlow).toContain('`正在重新生成 ${retryPages.length} 个失败页面`')
+  })
+
+  it('uses successful edit facts for edit replies instead of raw agent/tool output', () => {
+    const deckFlow = readSource('src/main/ipc/generation/deck-flow.ts')
+    const editFlow = readSource('src/main/ipc/generation/edit-flow.ts')
+    const batchEditFlow = readSource('src/main/ipc/generation/edit-deck-allpage-flow.ts')
+    const addPageFlow = readSource('src/main/ipc/generation/add-page-flow.ts')
+    const retryFlow = readSource('src/main/ipc/generation/retry-flow.ts')
+    const retrySinglePageFlow = readSource('src/main/ipc/generation/retry-single-page-flow.ts')
+
+    expect(deckFlow).toContain('agentSummary.trim() || fallbackCompletionSummary')
+    expect(editFlow).toContain('emitSuccessfulEditSummary(context, editSummary, emitAssistant)')
+    expect(editFlow).not.toContain('editSummaryFromEngine')
+    expect(batchEditFlow).toContain(
+      'emitSuccessfulEditSummary(context, fallbackEditSummary, emitAssistant)'
+    )
+    expect(batchEditFlow).not.toContain('result.summary')
+    expect(editFlow.lastIndexOf('await db.updateGenerationRunStatus(')).toBeLessThan(
+      editFlow.indexOf('await emitSuccessfulEditSummary(context, editSummary, emitAssistant)')
+    )
+    expect(batchEditFlow.lastIndexOf('await db.updateGenerationRunStatus(')).toBeLessThan(
+      batchEditFlow.indexOf(
+        'await emitSuccessfulEditSummary(context, fallbackEditSummary, emitAssistant)'
+      )
+    )
+    expect(addPageFlow).toContain('agentSummary ||')
+    expect(retryFlow).toContain('agentSummary.trim() || fallbackCompletionSummary')
+    expect(retrySinglePageFlow).toContain('generationResult.summary.trim() ||')
+    expect(editFlow).not.toContain('我准备开始调整')
+    expect(batchEditFlow).not.toContain('我准备按主会话指令调整')
+  })
+
+  it('publishes durable batch page results without stealing preview focus or duplicating summaries', () => {
+    const sharedGeneration = readSource('src/shared/generation.ts')
+    const sessionDetail = readSource('src/renderer/src/pages/session-detail.tsx')
+    const batchEditFlow = readSource('src/main/ipc/generation/edit-deck-allpage-flow.ts')
+
+    expect(sharedGeneration).toContain('focusPage?: boolean')
+    expect(sessionDetail).toContain('if (payload.focusPage !== false)')
+    expect(batchEditFlow).toContain('focusPage: false')
+    expect(batchEditFlow).toContain(
+      'emitSuccessfulEditSummary(context, fallbackEditSummary, emitAssistant)'
+    )
+    expect(batchEditFlow.indexOf('await db.upsertSessionPage({')).toBeLessThan(
+      batchEditFlow.indexOf("type: isExisting ? 'page_updated' : 'page_generated'")
+    )
+    expect(batchEditFlow).toContain("status: existing?.status || 'failed'")
+    expect(batchEditFlow).toContain('error: existing?.error || null')
+    expect(batchEditFlow).toContain('resolveRemainingFailedPageInfo({')
+  })
+
+  it('main-session page scope is visible and resets after a successful send', () => {
+    const chatPanel = readSource(
+      'src/renderer/src/components/session-detail/ai-panel/ChatPanel.tsx'
+    )
+    const chatController = readSource(
+      'src/renderer/src/components/session-detail/hooks/useChatPanelController.ts'
+    )
+
+    expect(chatPanel).toContain('mainPageScopeConflictWarning')
+    expect(chatPanel).toContain('if (started) setSelectedMainPageIds([])')
+    expect(chatController).toContain('mainPageScopeMessagePrefix')
+    expect(chatController).toContain('userMessage: scopedMessageContent')
+    expect(chatController).toContain('content: scopedMessageContent')
+  })
+
+  it('deck edit selected single-page scope still uses deck edit tools', () => {
+    const agent = readSource('src/main/agent.ts')
+    const editSystem = readSource('src/main/prompt/edit-system.ts')
+    const deckSystem = readSource('src/main/prompt/deck-system.ts')
+    const deckTools = readSource('src/main/tools/deck-tools.ts')
+
+    expect(agent).toContain("return context.mode === 'edit'")
+    expect(agent).toContain('当前编辑任务禁止使用 write_file')
+    expect(editSystem).toContain('仅允许调用 set_index_transition(type, durationMs)')
+    expect(editSystem).toContain('read_file target page + grep to locate target → edit_file')
+    expect(editSystem).toContain('update_single_page_file(pageId="${targetPageId}"')
+    expect(editSystem).toContain('For each target page: update_page_file(pageId, content)')
+    expect(deckSystem).toContain("context.mode !== 'edit'")
+    expect(deckTools).toContain('!isEditMode &&')
+  })
+
+  it('deck edit prompt applies UI-selected page ids only to deck scope', () => {
+    const editSystem = readSource('src/main/prompt/edit-system.ts')
+    const selectorPromptSource = editSystem.slice(
+      editSystem.indexOf('function buildSelectorEditPrompt('),
+      editSystem.indexOf('function buildSinglePageEditPrompt(')
+    )
+    const deckPromptSource = editSystem.slice(editSystem.indexOf('function buildDeckEditPrompt('))
+
+    expect(selectorPromptSource).not.toContain('explicitTargetInfo')
+    expect(selectorPromptSource).not.toContain('Selected page ids from UI (hard target)')
+    expect(deckPromptSource).toContain('const explicitTargetInfo =')
+    expect(deckPromptSource).toContain('context.selectPageIds?.length')
+    expect(deckPromptSource).toContain(
+      'Selected page ids from UI (hard target): ${context.selectPageIds.join'
+    )
+    expect(deckPromptSource).toContain("'Target pages: all relevant /<pageId>.html files'")
+    expect(deckPromptSource).toContain('    explicitTargetInfo,')
   })
 
   it('edit prompt injects source document rules', () => {

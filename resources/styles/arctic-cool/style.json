@@ -1,0 +1,17 @@
+{
+  "style": "arctic-cool",
+  "name": {
+    "zh": "北极冷",
+    "en": "Arctic Cool"
+  },
+  "description": "冰蓝渐变裹住冷静理性，数据在这里找到尊严",
+  "category": "冷色 · 深色",
+  "aliases": [
+    "arctic",
+    "冷",
+    "商业分析"
+  ],
+  "styleCase": "商业分析报告、金融数据展示、季度汇报、市场研究",
+  "version": "2.0.0",
+  "source": "builtin"
+}

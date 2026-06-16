@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>杂志大字 / Magazine Bold</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden}
+html{display:grid;place-items:center;background:#0f1117}
+body{display:grid;place-items:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:#0f1117}
+.slide{position:relative;width:min(100vw,calc(100vh*16/9));aspect-ratio:16/9;overflow:hidden;background:#fef3c7;border-radius:6px;box-shadow:0 0 0 1px rgba(255,255,255,.08)}
+.watermark{position:absolute;bottom:clamp(16px,3vw,40px);right:clamp(24px,5vw,64px);font-family:Georgia,serif;font-size:clamp(72px,14vw,200px);font-weight:900;color:#f59e0b;opacity:.06;line-height:.85;pointer-events:none}
+.content{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:7% 8%}
+.title{font-family:Georgia,"Songti SC",serif;font-size:clamp(48px,10vw,130px);font-weight:900;color:#451a03;line-height:.92;letter-spacing:clamp(-2px,-.4vw,-4px);margin-bottom:clamp(6px,1vw,14px)}
+.accent{width:clamp(50px,8vw,100px);height:3px;background:#d97706;margin-bottom:clamp(8px,1.4vw,18px)}
+.desc{font-family:Georgia,"Songti SC",serif;font-size:clamp(11px,1.5vw,17px);color:#78350f;line-height:1.65;max-width:clamp(200px,38vw,480px)}
+.palette{display:flex;gap:clamp(4px,.6vw,7px);margin-top:auto;padding-top:clamp(8px,1.5vw,20px)}
+.sw{width:clamp(12px,1.8vw,20px);height:clamp(12px,1.8vw,20px);border-radius:3px;background:var(--c);border:1px solid rgba(0,0,0,.06)}
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="watermark">BOLD</div>
+  <div class="content">
+    <div class="title">杂志<br>大字</div>
+    <div class="accent"></div>
+    <div class="desc">奶油纸上跃动超大衬线，翻开的每一页都是封面</div>
+    <div class="palette">
+      <i class="sw" style="--c:#451a03"></i>
+      <i class="sw" style="--c:#78350f"></i>
+      <i class="sw" style="--c:#f59e0b"></i>
+      <i class="sw" style="--c:#d97706"></i>
+      <i class="sw" style="--c:#fef3c7"></i>
+    </div>
+  </div>
+</div>
+</body>
+</html>

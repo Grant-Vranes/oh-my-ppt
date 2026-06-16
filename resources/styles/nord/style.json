@@ -1,0 +1,17 @@
+{
+  "style": "nord",
+  "name": {
+    "zh": "北欧",
+    "en": "Nord"
+  },
+  "description": "极夜蓝底映冰蓝微光，安静到只听得见思考的声音",
+  "category": "冷色 · 深色",
+  "aliases": [
+    "nord",
+    "北欧",
+    "清冷"
+  ],
+  "styleCase": "基础设施介绍、云产品发布、技术架构分享、哲学式技术演讲",
+  "version": "2.0.0",
+  "source": "builtin"
+}

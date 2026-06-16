@@ -11,6 +11,9 @@ import type {
   PrepareReferenceDocumentPayload,
   PreparedReferenceDocumentResult,
   SourceDocumentPlan,
+  SwitchSessionStylePayload,
+  RetrySessionStylePayload,
+  RetryDeckEditPayload,
   PptxImportPayload,
   PptxImportProgressPayload,
   PptxImportResult,
@@ -19,6 +22,7 @@ import type {
 import type { UpdateAvailablePayload } from '@shared/app-update.js'
 import type { SpeechConfig } from '@shared/speech'
 import type { HistoryVersion, RollbackHistoryResult } from '@shared/history.js'
+import type { HtmlThumbnailResourceType } from '@shared/thumbnail'
 import type { IndexTransitionConfig, IndexTransitionType } from '@shared/index-transition.js'
 import type {
   ThinkingStage,
@@ -39,6 +43,8 @@ import type {
   ImageModelProvider
 } from '@shared/image-generation.js'
 import type { ExportProgressPayload } from '@shared/export-progress.js'
+import type { PageMergeDisabledReason } from '@shared/page-merge'
+import type { ModelUsagePeriod, ModelUsageStats } from '@shared/model-usage'
 
 type IpcRendererLike = Window['electron']['ipcRenderer']
 
@@ -67,28 +73,50 @@ export interface StyleDetail {
   id: string
   styleKey?: string
   label: string
+  name?: {
+    zh: string
+    en: string
+  }
   description: string
   aliases: string[]
   styleSkill: string
   source?: 'builtin' | 'custom' | 'override'
   editable?: boolean
   category?: string
+  version?: string
   styleCase?: string
+  packageDir?: string
 }
 
 export interface StyleListItem {
   id: string
   styleKey?: string
   label: string
+  name?: {
+    zh: string
+    en: string
+  }
   description: string
   aliases?: string[]
   category: string
   source?: 'builtin' | 'custom' | 'override'
   editable?: boolean
+  version?: string
   styleCase?: string
+  packageDir?: string
   previewPath?: string | null
+  thumbnailPath?: string | null
   createdAt?: number
   updatedAt?: number
+}
+
+export interface HtmlThumbnailTask {
+  resourceType: HtmlThumbnailResourceType
+  resourceId: string
+  variant: string
+  status: 'queued' | 'running' | 'completed' | 'failed'
+  thumbnailPath: string | null
+  error?: string
 }
 
 export interface StyleParseResult {
@@ -126,6 +154,29 @@ export interface ExportDeckResult {
   frameCount?: number
 }
 
+export interface MergeSourceSessionSummary {
+  id: string
+  title: string
+  pageCount: number
+  updatedAt: number
+  status: string
+  selectable: boolean
+  disabledReason?: PageMergeDisabledReason
+}
+
+export interface MergeSourcePageSummary {
+  id: string
+  pageId: string
+  pageNumber: number
+  title: string
+  contentOutline?: string | null
+  htmlPath?: string
+  sourceUrl?: string
+  status?: string
+  selectable: boolean
+  disabledReason?: PageMergeDisabledReason
+}
+
 export interface ImportSessionFileResult {
   success: boolean
   cancelled?: boolean
@@ -143,6 +194,7 @@ export interface TemplateListItem {
   pageCount: number
   tags: string[]
   previewHtmlPath: string | null
+  thumbnailPath: string | null
   previewPages: Array<{
     pageNumber: number
     pageId: string
@@ -240,7 +292,7 @@ export interface SaveSessionAsNewResult {
 export interface ModelConfig {
   id: string
   name: string
-  provider: 'anthropic' | 'openai' | 'google'
+  provider: 'anthropic' | 'openai' | 'openai-responses' | 'google'
   model: string
   apiKey: string
   baseUrl: string
@@ -303,6 +355,32 @@ export const ipc = {
   createSession: (payload: CreateSessionPayload) =>
     getIpc().invoke('session:create', payload) as Promise<{ sessionId: string }>,
   listSessions: () => getIpc().invoke('session:list') as Promise<unknown[]>,
+  listMergeSourceSessions: (payload: { targetSessionId: string }) =>
+    getIpc().invoke('session:listMergeSources', payload) as Promise<MergeSourceSessionSummary[]>,
+  listMergeSourcePages: (payload: { targetSessionId: string; sourceSessionId: string }) =>
+    getIpc().invoke('session:listMergeSourcePages', payload) as Promise<MergeSourcePageSummary[]>,
+  mergeSessionPages: (payload: {
+    targetSessionId: string
+    sourceSessionId: string
+    sourcePageIds: string[]
+  }) =>
+    getIpc().invoke('session:mergePages', payload) as Promise<{
+      ok: true
+      generatedPages: Array<{
+        id: string
+        pageNumber: number
+        pageId: string
+        title: string
+        contentOutline?: string | null
+        html: string
+        htmlPath: string
+        sourceUrl?: string
+        status?: string
+        error?: string | null
+      }>
+      insertedPageIds: string[]
+      selectedPageId: string
+    }>,
   saveSessionAsNew: (payload: SaveSessionAsNewPayload): Promise<SaveSessionAsNewResult> =>
     getIpc().invoke('session:saveAsNew', payload) as Promise<SaveSessionAsNewResult>,
   getSession: (sessionId: string) =>
@@ -379,10 +457,7 @@ export const ipc = {
       }>
       selectedPageId: string | null
     }>,
-  createBlankSessionPage: (payload: {
-    sessionId: string
-    sourcePageId: string
-  }) =>
+  createBlankSessionPage: (payload: { sessionId: string; sourcePageId: string }) =>
     getIpc().invoke('session:createBlankPage', payload) as Promise<{
       ok: boolean
       generatedPages: Array<{
@@ -398,11 +473,7 @@ export const ipc = {
       }>
       selectedPageId: string | null
     }>,
-  updateSessionPageTitle: (payload: {
-    sessionId: string
-    pageId: string
-    title: string
-  }) =>
+  updateSessionPageTitle: (payload: { sessionId: string; pageId: string; title: string }) =>
     getIpc().invoke('session:updatePageTitle', payload) as Promise<{
       ok: boolean
       generatedPages: Array<{
@@ -449,8 +520,7 @@ export const ipc = {
     getIpc().invoke('session:updateTitle', payload) as Promise<{ ok: boolean }>,
   importSessionFile: () =>
     getIpc().invoke('session:importFile') as Promise<ImportSessionFileResult>,
-  listTemplates: () =>
-    getIpc().invoke('templates:list') as Promise<{ items: TemplateListItem[] }>,
+  listTemplates: () => getIpc().invoke('templates:list') as Promise<{ items: TemplateListItem[] }>,
   createTemplateFromSession: (payload: {
     sessionId: string
     name?: string
@@ -482,11 +552,7 @@ export const ipc = {
       success: true
       sessionId: string
     }>,
-  importPptxAsTemplate: (payload: {
-    filePath: string
-    name?: string
-    modelConfigId?: string
-  }) =>
+  importPptxAsTemplate: (payload: { filePath: string; name?: string; modelConfigId?: string }) =>
     getIpc().invoke('templates:importPptx', payload) as Promise<{
       success: true
       id: string
@@ -514,6 +580,30 @@ export const ipc = {
       runId?: string
       alreadyRunning?: boolean
       queued?: boolean
+    }>,
+  switchSessionStyle: (payload: SwitchSessionStylePayload) =>
+    getIpc().invoke('generate:switchStyle', payload) as Promise<{
+      success: boolean
+      runId?: string
+      styleId: string
+      unchanged?: boolean
+      alreadyRunning?: boolean
+      failedPageCount?: number
+    }>,
+  retrySessionStyle: (payload: RetrySessionStylePayload) =>
+    getIpc().invoke('generate:retryStyleSwitch', payload) as Promise<{
+      success: boolean
+      runId?: string
+      styleId: string
+      alreadyRunning?: boolean
+      failedPageCount: number
+    }>,
+  retryDeckEdit: (payload: RetryDeckEditPayload) =>
+    getIpc().invoke('generate:retryDeckEdit', payload) as Promise<{
+      success: boolean
+      runId?: string
+      alreadyRunning?: boolean
+      failedPageCount: number
     }>,
   startTemplateGenerate: (payload: GenerateStartPayload & { retry?: boolean }) =>
     getIpc().invoke('generate:startTemplate', payload) as Promise<{
@@ -560,9 +650,15 @@ export const ipc = {
   uploadAssets: (payload: UploadAssetsPayload) =>
     getIpc().invoke('assets:upload', payload) as Promise<{ assets: UploadedAsset[] }>,
   prepareReferenceDocument: (payload: PrepareReferenceDocumentPayload) =>
-    getIpc().invoke('documents:prepareReference', payload) as Promise<PreparedReferenceDocumentResult>,
+    getIpc().invoke(
+      'documents:prepareReference',
+      payload
+    ) as Promise<PreparedReferenceDocumentResult>,
   parseImageReferenceDocument: (payload: ParseImageReferencePayload) =>
-    getIpc().invoke('documents:parseImageReference', payload) as Promise<PreparedReferenceDocumentResult>,
+    getIpc().invoke(
+      'documents:parseImageReference',
+      payload
+    ) as Promise<PreparedReferenceDocumentResult>,
   parseDocumentPlan: (payload: ParseDocumentPlanPayload) =>
     getIpc().invoke('documents:parsePlan', payload) as Promise<ParsedDocumentPlanResult>,
   importPptx: (payload: PptxImportPayload) =>
@@ -589,8 +685,7 @@ export const ipc = {
       embedFonts?: boolean | 'auto' | 'always' | 'never'
       pageId?: string
     }
-  ) =>
-    getIpc().invoke('export:pptx', { sessionId, ...options }) as Promise<ExportDeckResult>,
+  ) => getIpc().invoke('export:pptx', { sessionId, ...options }) as Promise<ExportDeckResult>,
   exportSlidePack: (sessionId: string) =>
     getIpc().invoke('export:slidePack', { sessionId }) as Promise<ExportDeckResult>,
   exportSessionZip: (sessionId: string) =>
@@ -605,9 +700,10 @@ export const ipc = {
     return () => getIpc().removeListener(channel, handler)
   },
   getSettings: () => getIpc().invoke('settings:get') as Promise<Record<string, unknown>>,
+  getModelUsage: (period: ModelUsagePeriod) =>
+    getIpc().invoke('settings:getModelUsage', period) as Promise<ModelUsageStats>,
   listModelConfigs: () => getIpc().invoke('settings:listModelConfigs') as Promise<ModelConfig[]>,
-  listImageModelConfigs: () =>
-    getIpc().invoke('imageModels:list') as Promise<ImageModelConfig[]>,
+  listImageModelConfigs: () => getIpc().invoke('imageModels:list') as Promise<ImageModelConfig[]>,
   validateUploadPrerequisites: () =>
     getIpc().invoke('settings:validateUploadPrerequisites') as Promise<UploadPrerequisitesResult>,
   listFonts: () => getIpc().invoke('fonts:list') as Promise<FontRegistryResponse>,
@@ -631,7 +727,7 @@ export const ipc = {
   upsertModelConfig: (payload: {
     id?: string
     name: string
-    provider: 'anthropic' | 'openai' | 'google'
+    provider: 'anthropic' | 'openai' | 'openai-responses' | 'google'
     model: string
     apiKey: string
     baseUrl: string
@@ -662,10 +758,7 @@ export const ipc = {
     getIpc().invoke('imageModels:setActive', id) as Promise<{ success: boolean }>,
   deleteImageModelConfig: (id: string) =>
     getIpc().invoke('imageModels:delete', id) as Promise<{ success: boolean }>,
-  verifyImageModel: (payload: {
-    provider: ImageModelProvider
-    modelConfig: string
-  }) =>
+  verifyImageModel: (payload: { provider: ImageModelProvider; modelConfig: string }) =>
     getIpc().invoke('imageModels:verify', payload) as Promise<{
       valid: boolean
       message?: string
@@ -724,13 +817,46 @@ export const ipc = {
     }>,
   getStyleDetail: (styleId: string) =>
     getIpc().invoke('styles:getDetail', styleId) as Promise<StyleDetail>,
-  listStyles: () => getIpc().invoke('styles:list') as Promise<{ items: StyleListItem[] }>,
+  listStyles: (payload?: { sessionId?: string }) =>
+    getIpc().invoke('styles:list', payload) as Promise<{ items: StyleListItem[] }>,
+  generateStylePreview: (payload: { styleId: string; modelConfigId?: string }) =>
+    getIpc().invoke('styles:generatePreview', payload) as Promise<{
+      success: boolean
+      previewPath: string
+      thumbnailPath: string
+    }>,
+  onHtmlThumbnailChanged: (callback: (task: HtmlThumbnailTask) => void): (() => void) => {
+    const channel = 'thumbnails:changed'
+    const handler = (_event: unknown, task: Parameters<typeof callback>[0]): void => callback(task)
+    getIpc().on(channel, handler)
+    return () => getIpc().removeListener(channel, handler)
+  },
   parseStyleFile: (payload: { filePath: string; modelConfigId?: string }) =>
     getIpc().invoke('styles:parseFile', payload) as Promise<StyleParseResult>,
   parseStylePptx: (payload: { filePath: string; modelConfigId?: string }) =>
     getIpc().invoke('styles:parsePptx', payload) as Promise<StyleParseResult>,
   parseStyleImage: (payload: { imageBase64: string; mimeType: string; modelConfigId?: string }) =>
     getIpc().invoke('styles:parseImage', payload) as Promise<StyleParseResult>,
+  importStylePackageZip: () =>
+    getIpc().invoke('styles:importPackageZip') as Promise<{
+      success: boolean
+      cancelled?: boolean
+      id: string
+      source: 'custom' | 'override'
+    }>,
+  importStylePackageDirectory: () =>
+    getIpc().invoke('styles:importPackageDirectory') as Promise<{
+      success: boolean
+      cancelled?: boolean
+      id: string
+      source: 'custom' | 'override'
+    }>,
+  exportStylePackageZip: (payload: { styleId: string }) =>
+    getIpc().invoke('styles:exportPackageZip', payload) as Promise<{
+      success: boolean
+      canceled?: boolean
+      filePath?: string
+    }>,
   createStyle: (payload: {
     label: string
     description: string
@@ -762,7 +888,6 @@ export const ipc = {
     getIpc().invoke('styles:delete', styleId) as Promise<{
       success: boolean
       deleted: boolean
-      message?: string
     }>,
   loadPreview: (htmlPath: string, sessionId?: string) =>
     getIpc().invoke('preview:load', { htmlPath, sessionId }) as Promise<string>,
@@ -857,11 +982,10 @@ export const ipc = {
     }>,
   openPresentation: (payload: { sessionId: string; startIndex?: number }) =>
     getIpc().invoke('presentation:open', payload) as Promise<{ success: boolean }>,
-  generateSpeechScript: (
-    sessionId: string,
-    config: SpeechConfig & { currentPageId?: string }
-  ) =>
-    getIpc().invoke('speech:generateScript', { sessionId, ...config }) as Promise<{ success: boolean }>,
+  generateSpeechScript: (sessionId: string, config: SpeechConfig & { currentPageId?: string }) =>
+    getIpc().invoke('speech:generateScript', { sessionId, ...config }) as Promise<{
+      success: boolean
+    }>,
   getSpeechScript: (sessionId: string) =>
     getIpc().invoke('speech:getScript', { sessionId }) as Promise<{
       success: boolean
@@ -891,7 +1015,9 @@ export const ipc = {
   thinkingGetLatestWorkspace: () =>
     getIpc().invoke('thinking:getLatestWorkspace') as Promise<ThinkingWorkspace | null>,
   thinkingListWorkspaces: (payload?: { limit?: number }) =>
-    getIpc().invoke('thinking:listWorkspaces', payload || {}) as Promise<ThinkingWorkspaceListItem[]>,
+    getIpc().invoke('thinking:listWorkspaces', payload || {}) as Promise<
+      ThinkingWorkspaceListItem[]
+    >,
   thinkingDeleteWorkspace: (thinkingId: string) =>
     getIpc().invoke('thinking:deleteWorkspace', thinkingId) as Promise<{ success: boolean }>,
   thinkingRevealWorkspace: (thinkingId: string) =>
@@ -922,12 +1048,19 @@ export const ipc = {
     userMessage: string
     recentMessages?: ThinkingChatMessage[]
     attachments?: ThinkingChatMessage['attachments']
-  }) =>
-    getIpc().invoke('thinking:chat', payload) as Promise<ThinkingChatResult>,
+  }) => getIpc().invoke('thinking:chat', payload) as Promise<ThinkingChatResult>,
   thinkingPrepareGeneration: (payload: { thinkingId: string }) =>
-    getIpc().invoke('thinking:prepareGeneration', payload) as Promise<ThinkingPrepareGenerationResult>,
+    getIpc().invoke(
+      'thinking:prepareGeneration',
+      payload
+    ) as Promise<ThinkingPrepareGenerationResult>,
   onThinkingStreamThinking: (
-    callback: (payload: { thinkingId: string; type: string; toolName: string; summary: string }) => void
+    callback: (payload: {
+      thinkingId: string
+      type: string
+      toolName: string
+      summary: string
+    }) => void
   ): (() => void) => {
     const channel = 'thinking:stream:thinking'
     const handler = (_event: unknown, payload: unknown): void =>
@@ -936,15 +1069,13 @@ export const ipc = {
     return () => getIpc().removeListener(channel, handler)
   },
   onThinkingStreamEnd: (
-    callback: (
-      payload: {
-        thinkingId: string
-        reply: string
-        thinkingMd: string
-        contextMd: string
-        stage: ThinkingStage
-      }
-    ) => void
+    callback: (payload: {
+      thinkingId: string
+      reply: string
+      thinkingMd: string
+      contextMd: string
+      stage: ThinkingStage
+    }) => void
   ): (() => void) => {
     const channel = 'thinking:stream:end'
     const handler = (_event: unknown, payload: unknown): void =>

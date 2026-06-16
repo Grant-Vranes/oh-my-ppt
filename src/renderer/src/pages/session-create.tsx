@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '../components/ui/Select'
+import { StyleSelect } from '../components/style/StyleSelect'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/Tooltip'
 import { CircleAlert, Eye, FileText, Loader2, Pencil, Sparkles, X } from 'lucide-react'
 import { useSessionStore } from '../store'
@@ -87,7 +88,14 @@ export function SessionCreatePage(): ReactElement {
   const [selectedTitleFontId, setSelectedTitleFontId] = useState('auto')
   const [selectedBodyFontId, setSelectedBodyFontId] = useState('auto')
   const [styleOptions, setStyleOptions] = useState<
-    Array<{ id: string; label: string; description: string; styleCase?: string }>
+    Array<{
+      id: string
+      label: string
+      description: string
+      styleCase?: string
+      thumbnailPath?: string | null
+      previewPath?: string | null
+    }>
   >([])
   const [fontOptions, setFontOptions] = useState<FontListItem[]>([])
   const [attachedReferenceFile, setAttachedReferenceFile] = useState<AttachedReferenceFile | null>(
@@ -158,7 +166,9 @@ export function SessionCreatePage(): ReactElement {
           id: item.id,
           label: item.label,
           description: item.description,
-          styleCase: item.styleCase
+          styleCase: item.styleCase,
+          thumbnailPath: item.thumbnailPath,
+          previewPath: item.previewPath
         }))
         setStyleOptions(options)
         setSelectedStyleId((current) => {
@@ -536,29 +546,13 @@ export function SessionCreatePage(): ReactElement {
             <div className="grid gap-3 md:grid-cols-[1fr_100px]">
               <div>
                 <label className="block font-medium">{t('home.style')}</label>
-                <Select value={selectedStyleId} onValueChange={setSelectedStyleId}>
-                  <SelectTrigger className={compactSelectTriggerClass}>
-                    <SelectValue placeholder={t('home.stylePlaceholder')} />
-                  </SelectTrigger>
-                  <SelectContent className={compactSelectContentClass}>
-                    {styleOptions.map((option) => (
-                      <SelectItem
-                        key={option.id}
-                        value={option.id}
-                        className={compactSelectItemClass}
-                      >
-                        <span className="flex items-center gap-1.5">
-                          {option.label}
-                          {(option.styleCase || option.description) && (
-                            <span className="rounded-md border border-[#d6c08d]/80 bg-[#fff7e8] px-1.5 py-px text-[10px] font-medium text-[#7c6a4c]">
-                              {option.styleCase || option.description}
-                            </span>
-                          )}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <StyleSelect
+                  value={selectedStyleId}
+                  onChange={setSelectedStyleId}
+                  options={styleOptions}
+                  placeholder={t('home.stylePlaceholder')}
+                  compact
+                />
               </div>
 
               <div>

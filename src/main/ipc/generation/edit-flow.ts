@@ -31,6 +31,10 @@ import {
   ensureHistoryBaselineSafe,
   recordHistoryOperationStrict
 } from '../../history/git-history-service'
+import {
+  buildLocalSuccessfulEditSummary,
+  emitSuccessfulEditSummary
+} from './edit-summary'
 
 export async function resolveEditContext(
   ctx: IpcContext,
@@ -58,17 +62,19 @@ export async function resolveEditContext(
     throw new Error('chatType=page requires chatPageId or selectedPageId')
   }
 
-  await db.addMessage(input.sessionId, {
-    role: 'user',
-    content: input.rawUserMessage,
-    type: 'text',
-    chat_scope: chatType,
-    page_id: chatType === 'page' ? chatPageId : undefined,
-    selector: chatType === 'page' ? input.selector : undefined,
-    image_paths: imagePaths,
-    video_paths: videoPaths,
-    run_model: common.runModel
-  })
+  if (input.persistUserMessage) {
+    await db.addMessage(input.sessionId, {
+      role: 'user',
+      content: input.rawUserMessage,
+      type: 'text',
+      chat_scope: chatType,
+      page_id: chatType === 'page' ? chatPageId : undefined,
+      selector: chatType === 'page' ? input.selector : undefined,
+      image_paths: imagePaths,
+      video_paths: videoPaths,
+      run_model: common.runModel
+    })
+  }
   await db.updateSessionStatus(input.sessionId, 'active')
 
   return {
@@ -76,7 +82,9 @@ export async function resolveEditContext(
     userMessage,
     requestedType: 'page',
     effectiveMode: 'edit',
+    resetVisualStyle: input.resetVisualStyle,
     selectedPageId: input.selectedPageId,
+    selectPageIds: input.chatType === 'main' ? input.selectPageIds : [],
     htmlPath: input.htmlPath,
     selector: input.selector,
     elementTag: input.elementTag,
@@ -88,6 +96,9 @@ export async function resolveEditContext(
     runId: common.runId,
     styleId: common.styleId,
     styleSkill: common.styleSkill,
+    styleKey: common.styleKey,
+    styleName: common.styleName,
+    styleVersion: common.styleVersion,
     userProvidedOutlineTitles: buildOutlineTitles(input.rawUserMessage),
     totalPages: buildTotalPages(common.sessionRecord),
     provider: common.provider,
@@ -144,7 +155,13 @@ export async function executeEditGeneration(
   const selectedSelector = context.selector
 
   let outlineTitles: string[] = context.userProvidedOutlineTitles
-  let pageRefs: Array<{ id: string; pageNumber: number; title: string; pageId: string; htmlPath: string }> = []
+  let pageRefs: Array<{
+    id: string
+    pageNumber: number
+    title: string
+    pageId: string
+    htmlPath: string
+  }> = []
   let savedDesignContract: DesignContract | undefined
   const sessionPages = await db.listSessionPages(context.sessionId)
   if (sessionPages.length === 0) {
@@ -201,8 +218,7 @@ export async function executeEditGeneration(
     resolvedSelectedPageId = pageRefs[0].pageId
   }
   const resolvedSelectedPageNumber =
-    pageRefs.find((ref) => ref.pageId === resolvedSelectedPageId)?.pageNumber ||
-    undefined
+    pageRefs.find((ref) => ref.pageId === resolvedSelectedPageId)?.pageNumber || undefined
   if (outlineTitles.length !== pageRefs.length) {
     outlineTitles = pageRefs.map((ref) => ref.title)
   }
@@ -260,20 +276,18 @@ export async function executeEditGeneration(
     payload: {
       runId: context.runId,
       stage: 'editing',
-      label: progressText(context.appLocale, 'understanding'),
+      label: resolvedSelectedPageNumber
+        ? uiText(
+            context.appLocale,
+            `正在准备编辑第 ${resolvedSelectedPageNumber} 页`,
+            `Preparing to edit page ${resolvedSelectedPageNumber}`
+          )
+        : uiText(context.appLocale, '正在定位需要编辑的页面', 'Locating pages to edit'),
       progress: 10,
       totalPages: outlineTitles.length
     }
   })
 
-  await emitAssistant(
-    context,
-    uiText(
-      context.appLocale,
-      `我准备开始调整「${context.topic}」了。目标：${resolvedSelectedPageId ? `第 ${resolvedSelectedPageNumber ?? '?'} 页` : '按你的指令智能定位'}${selectedSelector ? `（选择器：${selectedSelector}）` : ''}。`,
-      `I am ready to adjust "${context.topic}". Target: ${resolvedSelectedPageId ? `page ${resolvedSelectedPageNumber ?? '?'}` : 'infer from your instruction'}${selectedSelector ? ` (selector: ${selectedSelector})` : ''}.`
-    )
-  )
   const editTemperature = selectedSelector
     ? PAGE_EDIT_WITH_SELECTOR_TEMPERATURE
     : PAGE_EDIT_DEFAULT_TEMPERATURE
@@ -294,6 +308,9 @@ export async function executeEditGeneration(
     temperature: editTemperature,
     styleId: context.styleId,
     styleSkillPrompt: context.styleSkill.prompt,
+    styleKey: context.styleKey,
+    styleName: context.styleName,
+    styleVersion: context.styleVersion,
     appLocale: context.appLocale,
     topic: context.topic,
     deckTitle: context.deckTitle,
@@ -317,14 +334,20 @@ export async function executeEditGeneration(
     runId: context.runId,
     signal: context.entry.abortController.signal
   } satisfies Parameters<typeof runDeepAgentEdit>[0]
-  const runEditAttempt = async (userMessage: string, retryDetail?: string): Promise<string> => {
+  const runEditAttempt = async (userMessage: string, retryDetail?: string): Promise<void> => {
     if (retryDetail) {
       emitEditChunk({
         type: 'llm_status',
         payload: {
           runId: context.runId,
           stage: 'editing',
-          label: progressText(context.appLocale, 'retrying'),
+          label: resolvedSelectedPageNumber
+            ? uiText(
+                context.appLocale,
+                `正在重试第 ${resolvedSelectedPageNumber} 页的编辑`,
+                `Retrying the edit for page ${resolvedSelectedPageNumber}`
+              )
+            : uiText(context.appLocale, '正在重试页面编辑', 'Retrying the page edit'),
           progress: 55,
           totalPages: pageRefs.length,
           detail: retryDetail
@@ -333,7 +356,6 @@ export async function executeEditGeneration(
     }
     return runDeepAgentEdit({ ...editRunArgs, userMessage })
   }
-  let editSummaryFromEngine = ''
   let editToolSchemaRetryUsed = false
   let editValidationRetryUsed = false
   const failWithUserMessage = async (userMessage: string): Promise<never> => {
@@ -345,9 +367,9 @@ export async function executeEditGeneration(
     retryDetail: string,
     failureMessage: string,
     logLabel: string
-  ): Promise<string> => {
+  ): Promise<void> => {
     try {
-      return await runEditAttempt(userMessage, retryDetail)
+      await runEditAttempt(userMessage, retryDetail)
     } catch (retryError) {
       log.error(logLabel, {
         sessionId: context.sessionId,
@@ -358,7 +380,7 @@ export async function executeEditGeneration(
     }
   }
   try {
-    editSummaryFromEngine = await runEditAttempt(context.userMessage)
+    await runEditAttempt(context.userMessage)
   } catch (error) {
     const canRetryByValidation = isEditValidationRetryableError(error)
     const canRetryBySchema = isEditToolSchemaRetryableError(error)
@@ -383,7 +405,7 @@ export async function executeEditGeneration(
           selectedPageId: resolvedSelectedPageId || null
         })
       : buildEditValidationRetryMessage(context.userMessage, detail)
-    editSummaryFromEngine = await runRetryAttempt(
+    await runRetryAttempt(
       retryMessage,
       uiText(
         context.appLocale,
@@ -483,7 +505,7 @@ export async function executeEditGeneration(
       detail,
       schemaRetryUsed: editToolSchemaRetryUsed
     })
-    editSummaryFromEngine = await runRetryAttempt(
+    await runRetryAttempt(
       buildEditNoChangeRetryMessage({
         originalMessage: context.userMessage,
         allowedTool: 'update_single_page_file',
@@ -538,7 +560,7 @@ export async function executeEditGeneration(
       runId: context.runId,
       details
     })
-    editSummaryFromEngine = await runRetryAttempt(
+    await runRetryAttempt(
       buildEditValidationRetryMessage(context.userMessage, `页面编辑结果验证失败：${details}`),
       uiText(
         context.appLocale,
@@ -629,38 +651,23 @@ export async function executeEditGeneration(
     })
   )
 
-  const changedPages = changedPageDescriptors
-    .map((p) => uiText(context.appLocale, `第${p.pageNumber}页`, `page ${p.pageNumber}`))
-    .join(uiText(context.appLocale, '、', ', '))
-  const editSummary =
-    changedPageDescriptors.length > 0
-      ? uiText(
-          context.appLocale,
-          `修改完成：${changedPages}${selectedSelector ? `（目标选择器：${selectedSelector}）` : ''}。`,
-          `Edit completed: ${changedPages}${selectedSelector ? ` (target selector: ${selectedSelector})` : ''}.`
-        )
-      : editSummaryFromEngine.trim() ||
-        uiText(
-          context.appLocale,
-          '我已经检查过了，这次没有检测到需要落盘的页面变化。',
-          'I checked the session and did not detect page changes that needed to be written this time.'
-        )
-  await emitAssistant(context, editSummary)
-
   await db.updateSessionMetadata(context.sessionId, {
     lastRunId: context.runId,
     entryMode: 'multi_page',
     indexPath,
     projectId: context.projectId
   })
-  const existingSessionPages = await db.listSessionPages(context.sessionId, { includeDeleted: true })
+  const existingSessionPages = await db.listSessionPages(context.sessionId, {
+    includeDeleted: true
+  })
   const existingBySlug = new Map(existingSessionPages.map((sp) => [sp.file_slug, sp]))
   for (const page of generatedPagesForMetadata) {
     const existing = existingBySlug.get(page.pageId)
     await db.upsertSessionPage({
       id: existing?.id || nanoid(),
       sessionId: context.sessionId,
-      legacyPageId: existing?.legacy_page_id || (page.pageId.match(/^page-\d+$/) ? page.pageId : null),
+      legacyPageId:
+        existing?.legacy_page_id || (page.pageId.match(/^page-\d+$/) ? page.pageId : null),
       fileSlug: page.pageId,
       pageNumber: page.pageNumber,
       title: page.title,
@@ -697,6 +704,12 @@ export async function executeEditGeneration(
       }
     })
   }
+  const editSummary = buildLocalSuccessfulEditSummary({
+    context,
+    changedPages: changedPageDescriptors,
+    editScope: selectedSelector ? 'selector' : 'page'
+  })
+  await emitSuccessfulEditSummary(context, editSummary, emitAssistant)
   log.info('[generate:start] edit completed', {
     sessionId: context.sessionId,
     styleId: context.styleId,

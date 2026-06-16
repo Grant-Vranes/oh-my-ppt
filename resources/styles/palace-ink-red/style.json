@@ -1,0 +1,20 @@
+{
+  "style": "palace-ink-red",
+  "name": {
+    "zh": "故宫墨红",
+    "en": "Palace Ink Red"
+  },
+  "description": "厚重墨红配宣纸米灰，新中式高级感的东方力量",
+  "category": "国风商务",
+  "aliases": [
+    "宫墙红",
+    "故宫配色",
+    "墨红高级感",
+    "新中式深色",
+    "palace",
+    "ink-red"
+  ],
+  "styleCase": "传统文化分享、品牌视觉提案、审美设计课程、高端商务汇报",
+  "version": "2.0.0",
+  "source": "builtin"
+}

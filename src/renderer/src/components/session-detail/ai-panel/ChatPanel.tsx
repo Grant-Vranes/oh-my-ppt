@@ -1,5 +1,7 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
+  Check,
+  ChevronDown,
   FileText,
   Image as ImageIcon,
   Loader2,
@@ -11,7 +13,12 @@ import {
 } from 'lucide-react'
 import { cn } from '@renderer/lib/utils'
 import { useModelAction } from '@renderer/hooks/useModelAction'
-import { useSessionDetailUiStore, useSessionStore } from '@renderer/store'
+import {
+  useGenerateStore,
+  useSessionDetailUiStore,
+  useSessionStore,
+  useToastStore
+} from '@renderer/store'
 import { Button } from '../../ui/Button'
 import { ModelSplitButton } from '../../model/ModelActionButton'
 import {
@@ -21,22 +28,23 @@ import {
   DropdownMenuTrigger
 } from '../../ui/DropdownMenu'
 import { Textarea } from '../../ui/Input'
-import { Progress } from '../../ui/Progress'
 import { ScrollArea } from '../../ui/ScrollArea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/Select'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/Tooltip'
 import { MessageBubble } from './MessageBubble'
 import { useT } from '@renderer/i18n'
 import { useChatPanelController } from '../hooks/useChatPanelController'
+import { normalizePagesForSelection } from '../shared/pageUtils'
+import { MAX_SELECTED_PAGES } from '@shared/generation'
 
 export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Element {
   const t = useT()
   const modelAction = useModelAction()
+  const toastWarning = useToastStore((state) => state.warning)
   const {
     selectedPageExists,
     selectedPageNumber,
     isGenerating,
-    progress,
     error,
     uploadFiles,
     chooseAssets,
@@ -44,6 +52,7 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
     cancel
   } = useChatPanelController(sessionId)
   const messages = useSessionStore((state) => state.currentMessages)
+  const currentPages = useGenerateStore((state) => state.currentPages)
   const chatType = useSessionDetailUiStore((state) => state.chatType)
   const input = useSessionDetailUiStore((state) => state.input)
   const selectedSelector = useSessionDetailUiStore((state) => state.selectedSelector)
@@ -60,10 +69,23 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
   const clearSelectedElement = useSessionDetailUiStore((state) => state.clearSelectedElement)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const composingRef = useRef(false)
+  const [selectedMainPageIds, setSelectedMainPageIds] = useState<string[]>([])
+  const pages = useMemo(() => normalizePagesForSelection(currentPages), [currentPages])
+  const pageIds = useMemo(() => pages.map((page) => page.pageId), [pages])
+  const effectiveMainPageIds = useMemo(
+    () => selectedMainPageIds.filter((id) => pageIds.includes(id)),
+    [pageIds, selectedMainPageIds]
+  )
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, isGenerating, progress?.progress])
+  }, [messages, isGenerating])
+
+  useEffect(() => {
+    if (effectiveMainPageIds.length !== selectedMainPageIds.length) {
+      setSelectedMainPageIds(effectiveMainPageIds)
+    }
+  }, [effectiveMainPageIds, selectedMainPageIds.length])
 
   const contextHint =
     chatType === 'page' && selectedPageNumber
@@ -102,13 +124,60 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
   const handleSendWithModel = async (modelConfigId?: string): Promise<void> => {
     if (sendDisabled) return
     try {
+      if (
+        chatType === 'main' &&
+        effectiveMainPageIds.length === 0 &&
+        pageIds.length > MAX_SELECTED_PAGES
+      ) {
+        toastWarning(
+          t('sessionDetail.mainPageScopeAllLimitReached', {
+            count: pageIds.length,
+            limit: MAX_SELECTED_PAGES
+          })
+        )
+        return
+      }
+      if (
+        chatType === 'main' &&
+        effectiveMainPageIds.length > 0 &&
+        /\b(all|every|entire)\b|全部|所有|整套|全套|每一页|每页/i.test(input)
+      ) {
+        toastWarning(t('sessionDetail.mainPageScopeConflictWarning'))
+      }
       const resolvedModelConfigId = await modelAction.ensureModelActive(modelConfigId)
       if (!resolvedModelConfigId) return
-      await send(resolvedModelConfigId)
+      const started = await send(resolvedModelConfigId, effectiveMainPageIds)
+      if (started) setSelectedMainPageIds([])
     } catch (err) {
       console.error('[MessagePanel] send model activation failed', err)
     }
   }
+
+  const toggleMainPage = (pageId: string): void => {
+    if (
+      !selectedMainPageIds.includes(pageId) &&
+      effectiveMainPageIds.length >= MAX_SELECTED_PAGES
+    ) {
+      toastWarning(t('sessionDetail.mainPageScopeLimitReached', { count: MAX_SELECTED_PAGES }))
+      return
+    }
+    setSelectedMainPageIds((current) =>
+      current.includes(pageId) ? current.filter((id) => id !== pageId) : [...current, pageId]
+    )
+  }
+
+  const selectedSingleMainPage =
+    effectiveMainPageIds.length === 1
+      ? pages.find((page) => page.pageId === effectiveMainPageIds[0])
+      : undefined
+  const mainPageScopeLabel =
+    effectiveMainPageIds.length === 0
+      ? t('sessionDetail.mainPageScopeAll')
+      : effectiveMainPageIds.length === 1
+        ? selectedSingleMainPage?.pageNumber
+          ? `P${selectedSingleMainPage.pageNumber}`
+          : effectiveMainPageIds[0]
+        : t('sessionDetail.mainPageScopeCount', { count: effectiveMainPageIds.length })
 
   return (
     <>
@@ -152,15 +221,6 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
             {messages.map((msg) => (
               <MessageBubble key={msg.id} message={msg} />
             ))}
-
-            {isGenerating && progress && (
-              <div className="rounded-[1.15rem] border border-[#ded2bd]/72 bg-[#fffaf1]/82 px-3 py-2 shadow-[0_6px_14px_rgba(74,59,42,0.08)]">
-                <p className="mb-2 text-sm text-[#655843]">
-                  {progress.label || t('sessionDetail.modelProcessing')}
-                </p>
-                <Progress value={progress.progress} />
-              </div>
-            )}
 
             {error && (
               <div className="rounded-[1.15rem] bg-[rgba(217,124,139,0.12)] px-3 py-2 text-sm text-destructive">
@@ -222,8 +282,64 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
           </div>
         )}
         {chatType === 'main' && (
-          <div className="mb-2 rounded-[1rem] border border-[#ded2bd]/65 bg-[#f4ebdc]/70 px-2.5 py-2 text-xs text-[#6a5c48]">
-            {t('sessionDetail.mainDeckHint')}
+          <div className="mb-2 flex items-center gap-2 rounded-[1rem] border border-[#ded2bd]/65 bg-[#f4ebdc]/70 px-2.5 py-2 text-xs text-[#6a5c48]">
+            <span className="min-w-0 flex-1">{t('sessionDetail.mainDeckHint')}</span>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  disabled={isGenerating || pages.length === 0}
+                  className="inline-flex h-7 max-w-[116px] shrink-0 items-center gap-1.5 rounded-full border border-[#c7d9b4]/72 bg-[#fffdf8]/86 px-2 text-[11px] font-medium text-[#405333] transition-colors hover:bg-[#edf5e5] disabled:pointer-events-none disabled:opacity-45"
+                  title={
+                    effectiveMainPageIds.length > 0
+                      ? effectiveMainPageIds.map((id) => `/${id}.html`).join('\n')
+                      : t('sessionDetail.mainPageScopeAll')
+                  }
+                >
+                  <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
+                    {mainPageScopeLabel}
+                  </span>
+                  <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" side="top" className="max-h-72 w-56 overflow-y-auto">
+                <DropdownMenuItem
+                  onSelect={(event) => {
+                    event.preventDefault()
+                    setSelectedMainPageIds([])
+                  }}
+                  className="text-xs"
+                >
+                  <Check
+                    className={cn(
+                      'h-3.5 w-3.5',
+                      effectiveMainPageIds.length === 0 ? 'opacity-100' : 'opacity-0'
+                    )}
+                  />
+                  {t('sessionDetail.mainPageScopeAll')}
+                </DropdownMenuItem>
+                {pages.map((page) => {
+                  const checked = effectiveMainPageIds.includes(page.pageId)
+                  const limitReached = !checked && effectiveMainPageIds.length >= MAX_SELECTED_PAGES
+                  return (
+                    <DropdownMenuItem
+                      key={page.pageId}
+                      onSelect={(event) => {
+                        event.preventDefault()
+                        toggleMainPage(page.pageId)
+                      }}
+                      className={cn('text-xs', limitReached && 'opacity-55')}
+                      title={`/${page.pageId}.html`}
+                    >
+                      <Check className={cn('h-3.5 w-3.5', checked ? 'opacity-100' : 'opacity-0')} />
+                      <span className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">
+                        P{page.pageNumber} · {page.title || page.pageId}
+                      </span>
+                    </DropdownMenuItem>
+                  )
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )}
         {pendingAssets.length > 0 && (

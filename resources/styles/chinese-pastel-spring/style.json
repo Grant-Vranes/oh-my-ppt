@@ -1,0 +1,20 @@
+{
+  "style": "chinese-pastel-spring",
+  "name": {
+    "zh": "中国传统色·春日嫩柳",
+    "en": "Chinese Pastel Spring"
+  },
+  "description": "嫩柳绿配桃花粉，初春国风温柔配色",
+  "category": "自然 · 有机",
+  "aliases": [
+    "国风",
+    "春日",
+    "嫩绿",
+    "桃花",
+    "pastel",
+    "spring"
+  ],
+  "styleCase": "春季节庆、新品发布、国风美妆服饰、教育科普、生活方式",
+  "version": "2.0.0",
+  "source": "builtin"
+}

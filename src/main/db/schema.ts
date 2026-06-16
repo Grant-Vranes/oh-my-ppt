@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real, index } from 'drizzle-orm/sqlite-core'
+import { sqliteTable, text, integer, real, index, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
 export const sessions = sqliteTable('sessions', {
   id: text('id').primaryKey(),
@@ -35,6 +35,29 @@ export const messages = sqliteTable('messages', {
   runModel: text('run_model'),
   createdAt: integer('created_at').notNull()
 })
+
+export const modelUsageEvents = sqliteTable(
+  'model_usage_events',
+  {
+    id: text('id').primaryKey(),
+    provider: text('provider').notNull(),
+    model: text('model').notNull(),
+    modelConfigId: text('model_config_id'),
+    inputTokens: integer('input_tokens').notNull().default(0),
+    outputTokens: integer('output_tokens').notNull().default(0),
+    totalTokens: integer('total_tokens').notNull().default(0),
+    usageSource: text('usage_source').notNull().default('provider'),
+    createdAt: integer('created_at').notNull()
+  },
+  (table) => ({
+    modelUsageCreatedIdx: index('idx_model_usage_events_created').on(table.createdAt),
+    modelUsageModelIdx: index('idx_model_usage_events_model').on(
+      table.provider,
+      table.model,
+      table.createdAt
+    )
+  })
+)
 
 export const projects = sqliteTable('projects', {
   id: text('id').primaryKey(),
@@ -245,17 +268,75 @@ export const styles = sqliteTable('styles', {
   id: text('id').primaryKey(),
   style: text('style').notNull().unique(),
   styleName: text('style_name').notNull(),
+  styleNameZh: text('style_name_zh').notNull().default(''),
+  styleNameEn: text('style_name_en').notNull().default(''),
   description: text('description').notNull().default(''),
   category: text('category').notNull().default(''),
   aliases: text('aliases').notNull().default('[]'),
   source: text('source').notNull().default('custom'),
   styleSkill: text('style_skill').notNull().default(''),
-  version: integer('version').notNull().default(1),
+  version: text('version').notNull().default('1.0.0'),
   styleCase: text('style_case').notNull().default(''),
+  packageDir: text('package_dir').notNull().default(''),
   active: integer('active', { mode: 'boolean' }).notNull().default(true),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull()
 })
+
+export const thumbnails = sqliteTable(
+  'thumbnails',
+  {
+    key: text('key').primaryKey(),
+    resourceType: text('resource_type').notNull(),
+    resourceId: text('resource_id').notNull(),
+    variant: text('variant').notNull().default('default'),
+    sourcePath: text('source_path').notNull(),
+    sourceMtimeMs: integer('source_mtime_ms').notNull().default(0),
+    signature: text('signature').notNull().default(''),
+    thumbnailPath: text('thumbnail_path').notNull().default(''),
+    status: text('status').notNull().default('queued'),
+    error: text('error'),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull()
+  },
+  (table) => ({
+    resourceVariantUniqueIdx: uniqueIndex('thumbnails_resource_variant_unique').on(
+      table.resourceType,
+      table.resourceId,
+      table.variant
+    ),
+    statusIdx: index('thumbnails_status_idx').on(table.status, table.updatedAt)
+  })
+)
+
+export const sessionStyleSnapshots = sqliteTable(
+  'session_style_snapshots',
+  {
+    id: text('id').primaryKey(),
+    sessionId: text('session_id')
+      .notNull()
+      .references(() => sessions.id, { onDelete: 'cascade' }),
+    styleId: text('style_id').notNull(),
+    styleKey: text('style_key').notNull(),
+    styleName: text('style_name').notNull(),
+    styleNameZh: text('style_name_zh').notNull().default(''),
+    styleNameEn: text('style_name_en').notNull().default(''),
+    description: text('description').notNull().default(''),
+    category: text('category').notNull().default(''),
+    aliases: text('aliases').notNull().default('[]'),
+    source: text('source').notNull(),
+    version: text('version').notNull().default('1.0.0'),
+    styleCase: text('style_case').notNull().default(''),
+    packageDir: text('package_dir').notNull().default(''),
+    styleSkill: text('style_skill').notNull().default(''),
+    createdAt: integer('created_at').notNull()
+  },
+  (table) => ({
+    sessionIdUniqueIdx: uniqueIndex('session_style_snapshots_session_id_unique').on(
+      table.sessionId
+    )
+  })
+)
 
 export const sessionOperations = sqliteTable('session_operations', {
   id: text('id').primaryKey(),
@@ -314,6 +395,7 @@ export const sessionOperationPages = sqliteTable(
 
 export type Session = typeof sessions.$inferSelect
 export type Message = typeof messages.$inferSelect
+export type ModelUsageEvent = typeof modelUsageEvents.$inferSelect
 export type Project = typeof projects.$inferSelect
 export type GenerationRun = typeof generationRuns.$inferSelect
 export type GenerationPage = typeof generationPages.$inferSelect

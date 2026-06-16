@@ -1,3 +1,6 @@
+import fs from 'fs'
+import os from 'os'
+import path from 'path'
 import { describe, expect, it, vi } from 'vitest'
 import { unzipSync, zipSync } from 'fflate'
 import { __pptxImporterTestUtils } from '../../src/main/utils/pptx-importer'
@@ -17,6 +20,185 @@ const baseBlockArgs = {
 }
 
 describe('pptx importer table and chart blocks', () => {
+  it('renders PPTX freeform paths as SVG instead of their bounding rectangles', async () => {
+    const html = await __pptxImporterTestUtils.buildShapeBlock({
+      ...baseBlockArgs,
+      blockId: 'shape-logo',
+      imagesDir: '/tmp',
+      registry: { index: 0, byKey: new Map() },
+      element: {
+        left: 10,
+        top: 20,
+        width: 120,
+        height: 60,
+        path: 'M 0,0 L 160,0 L 80,80 z',
+        fill: { type: 'color', value: '#FEFEFE' },
+        borderColor: '#0079BA',
+        borderWidth: 0.75,
+        isFlipH: false,
+        isFlipV: false
+      }
+    })
+
+    expect(html).toContain('data-pptx-kind="vector-shape"')
+    expect(html).toContain('<svg viewBox="0.0000 0.0000 160.0000 80.0000"')
+    expect(html).toContain('<path d="M 0,0 L 160,0 L 80,80 z"')
+    expect(html).toContain('fill="#FEFEFE"')
+    expect(html).toContain('stroke="#0079BA"')
+    expect(html).not.toContain('background:#FEFEFE')
+  })
+
+  it('uses each freeform path coordinate bounds instead of assuming a fixed point scale', async () => {
+    expect(
+      __pptxImporterTestUtils.getSvgPathBounds(
+        'M 10,20 L 15,20 L 15,25 L 10,25 z'
+      )
+    ).toEqual({ minX: 10, minY: 20, width: 5, height: 5 })
+
+    const html = await __pptxImporterTestUtils.buildShapeBlock({
+      ...baseBlockArgs,
+      blockId: 'shape-small-domain',
+      imagesDir: os.tmpdir(),
+      registry: { index: 0, byKey: new Map() },
+      element: {
+        left: 100,
+        top: 200,
+        width: 246.7151,
+        height: 16.695,
+        path: 'M 0,0 L 33.25,0 L 33.25,2.25 L 0,2.25 z',
+        fill: { type: 'color', value: '#FEFEFE' }
+      }
+    })
+
+    expect(html).toContain('viewBox="0.0000 0.0000 33.2500 2.2500"')
+    expect(html).toContain('width:493.4px')
+    expect(html).toContain('height:33.4px')
+  })
+
+  it('preserves gradient, pattern, dashed border, and shadow on vector shapes', async () => {
+    const gradientHtml = await __pptxImporterTestUtils.buildShapeBlock({
+      ...baseBlockArgs,
+      blockId: 'shape-gradient',
+      imagesDir: os.tmpdir(),
+      registry: { index: 0, byKey: new Map() },
+      element: {
+        left: 0,
+        top: 0,
+        width: 100,
+        height: 50,
+        path: 'M 0,0 L 133,0 L 133,67 L 0,67 z',
+        fill: {
+          type: 'gradient',
+          value: {
+            path: 'line',
+            rot: 45,
+            colors: [
+              { pos: '0%', color: '#0079BA' },
+              { pos: '100%', color: '#FFFFFF' }
+            ]
+          }
+        },
+        borderColor: '#112233',
+        borderWidth: 1,
+        borderType: 'dashed',
+        shadow: { h: 2, v: 3, blur: 4, color: '#00000066' }
+      }
+    })
+
+    expect(gradientHtml).toContain('<linearGradient')
+    expect(gradientHtml).toContain('gradientTransform="rotate(45.00 0.5 0.5)"')
+    expect(gradientHtml).toContain('fill="url(#pptx-shape-gradient-gradient)"')
+    expect(gradientHtml).toContain('stroke-dasharray=')
+    expect(gradientHtml).toContain('<feDropShadow')
+
+    const patternHtml = await __pptxImporterTestUtils.buildShapeBlock({
+      ...baseBlockArgs,
+      blockId: 'shape-pattern',
+      imagesDir: os.tmpdir(),
+      registry: { index: 0, byKey: new Map() },
+      element: {
+        left: 0,
+        top: 0,
+        width: 100,
+        height: 50,
+        path: 'M 0,0 L 133,0 L 133,67 L 0,67 z',
+        fill: {
+          type: 'pattern',
+          value: {
+            type: 'cross',
+            foregroundColor: '#0079BA',
+            backgroundColor: '#FFFFFF'
+          }
+        }
+      }
+    })
+
+    expect(patternHtml).toContain('<pattern')
+    expect(patternHtml).toContain('fill="url(#pptx-shape-pattern-pattern)"')
+  })
+
+  it('clips PPTX image fills to their vector paths', async () => {
+    const imagesDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'pptx-vector-fill-'))
+    try {
+      const html = await __pptxImporterTestUtils.buildShapeBlock({
+        ...baseBlockArgs,
+        blockId: 'shape-image',
+        imagesDir,
+        registry: { index: 0, byKey: new Map() },
+        element: {
+          left: 0,
+          top: 0,
+          width: 100,
+          height: 50,
+          path: 'M 0,0 L 133,0 L 66,67 z',
+          fill: {
+            type: 'image',
+            value: {
+              ref: 'pixel',
+              base64:
+                'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+              blob: '',
+              opacity: 0.8
+            }
+          }
+        }
+      })
+
+      expect(html).toContain('<clipPath')
+      expect(html).toContain('<image href="./images/imported-0001.png"')
+      expect(html).toContain('clip-path="url(#pptx-shape-image-clip)"')
+      expect(await fs.promises.stat(path.join(imagesDir, 'imported-0001.png'))).toBeTruthy()
+    } finally {
+      await fs.promises.rm(imagesDir, { recursive: true, force: true })
+    }
+  })
+
+  it('replaces unavailable imported fonts with cross-platform font stacks', () => {
+    expect(
+      __pptxImporterTestUtils.sanitizeContentHtml(
+        '<p><span style="font-family:方正大标宋简体">标题</span></p>',
+        1
+      )
+    ).toContain('font-family:&quot;Songti SC&quot;,&quot;STSong&quot;,&quot;SimSun&quot;,serif')
+
+    expect(
+      __pptxImporterTestUtils.sanitizeContentHtml(
+        '<p><span style="font-family:微软雅黑 Light">正文</span></p>',
+        1
+      )
+    ).toContain('font-family:&quot;PingFang SC&quot;,&quot;Microsoft YaHei&quot;,sans-serif')
+  })
+
+  it('converts imported Wingdings private-use glyphs to Unicode symbols', () => {
+    const html = __pptxImporterTestUtils.sanitizeContentHtml(
+      '<p><span style="font-family:微软雅黑 Light">副标题\uf0c4</span></p>',
+      1
+    )
+
+    expect(html).toContain('副标题➜')
+    expect(html).not.toContain('\uf0c4')
+  })
+
   it('fits 4:3 slides into the 16:9 canvas without stretching', () => {
     const fit = __pptxImporterTestUtils.resolveSlideFit({ width: 720, height: 540 })
 
@@ -35,9 +217,7 @@ describe('pptx importer table and chart blocks', () => {
     )
 
     expect(result.changed).toBe(true)
-    expect(result.xml).toBe(
-      '<a:tblPr><a:tableStyleId>{missing-style}</a:tableStyleId></a:tblPr>'
-    )
+    expect(result.xml).toBe('<a:tblPr><a:tableStyleId>{missing-style}</a:tableStyleId></a:tblPr>')
   })
 
   it('keeps table style flags when the referenced table style exists', () => {

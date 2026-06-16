@@ -1,17 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
+import { Card, CardContent, CardTitle } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/Dialog'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/Tooltip'
-import { FileArchive, FileText, FileUp, FolderOpen, LayoutTemplate, MessageSquare, MessagesSquare, Pencil, Sparkles, Trash2, X, type LucideIcon } from 'lucide-react'
+import { FileArchive, FileText, FileUp, FolderOpen, LayoutTemplate, MessageSquare, MessagesSquare, Pencil, Search, Sparkles, Trash2, X, type LucideIcon } from 'lucide-react'
 import { type Session, useSessionStore, useTemplateStore } from '../store'
 import { useToastStore } from '../store'
-import { ipc, type GenerateRunStateSnapshot } from '../lib/ipc'
+import { ipc, type GenerateRunStateSnapshot, type HtmlThumbnailTask } from '../lib/ipc'
 import { getEditorGate, parseSessionMetadata } from '../lib/sessionMetadata'
 import { useT } from '../i18n'
 import { SaveTemplateDialog } from '../components/templates/SaveTemplateDialog'
+import { useThumbnailUpdates } from '../hooks/useThumbnailUpdates'
+import sessionPlaceholder from '../assets/images/space.webp'
 import dayjs from 'dayjs'
 import duration from 'dayjs/plugin/duration'
 
@@ -20,6 +22,11 @@ dayjs.extend(duration)
 type ActiveGenerateRun = GenerateRunStateSnapshot & {
   status: 'queued' | 'running'
 }
+
+const localAssetUrl = (filePath: string): string =>
+  import.meta.env.MODE === 'test'
+    ? 'about:blank'
+    : `local-asset://${encodeURIComponent(filePath)}`
 
 const getSourceTag = (
   session: Session,
@@ -105,10 +112,19 @@ export function SessionsPage(): React.JSX.Element {
   const [saveTemplateTarget, setSaveTemplateTarget] = useState<Session | null>(null)
   const [savingTemplate, setSavingTemplate] = useState(false)
   const [activeRuns, setActiveRuns] = useState<Record<string, ActiveGenerateRun>>({})
+  const [thumbnailPaths, setThumbnailPaths] = useState<Record<string, string>>({})
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchOpen, setSearchOpen] = useState(false)
+  const searchInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
     void fetchSessions()
   }, [fetchSessions])
+
+  useEffect(() => {
+    if (!searchOpen) return
+    searchInputRef.current?.focus()
+  }, [searchOpen])
 
   useEffect(() => {
     let mounted = true
@@ -186,6 +202,17 @@ export function SessionsPage(): React.JSX.Element {
   }, [fetchSessions])
 
   const sortedSessions = sessions
+  const filteredSessions = useMemo(() => {
+    const query = searchQuery.trim().toLocaleLowerCase()
+    if (!query) return sortedSessions
+    return sortedSessions.filter((session) => session.title.toLocaleLowerCase().includes(query))
+  }, [searchQuery, sortedSessions])
+  const applyThumbnail = useCallback((task: HtmlThumbnailTask): void => {
+    if (task.variant !== 'first-page' || !task.thumbnailPath) return
+    setThumbnailPaths((current) => ({ ...current, [task.resourceId]: task.thumbnailPath! }))
+  }, [])
+
+  useThumbnailUpdates('session', applyThumbnail)
   const canEnterEditor = (session: {
     id: string
     status: string
@@ -322,6 +349,56 @@ export function SessionsPage(): React.JSX.Element {
             <h1 className="organic-serif text-[32px] font-semibold leading-none text-[#3e4a32]">{t('sessions.title')}</h1>
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
+            {sessions.length > 0 ? (
+              searchOpen || searchQuery ? (
+                <div className="relative w-full sm:w-64">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#829071]" />
+                  <Input
+                    ref={searchInputRef}
+                    type="search"
+                    value={searchQuery}
+                    placeholder={t('sessions.searchPlaceholder')}
+                    className="h-9 bg-[#fffaf1] pl-9 pr-10"
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    onBlur={() => {
+                      if (!searchQuery.trim()) setSearchOpen(false)
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    aria-label={t('sessions.clearSearch')}
+                    className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 p-0 text-[#829071] hover:text-[#3e4a32]"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => {
+                      setSearchQuery('')
+                      setSearchOpen(false)
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <TooltipProvider delayDuration={180}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        aria-label={t('sessions.searchButton')}
+                        onClick={() => setSearchOpen(true)}
+                      >
+                        <Search className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" align="end">
+                      {t('sessions.searchButton')}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )
+            ) : null}
             <TooltipProvider delayDuration={180}>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -349,12 +426,19 @@ export function SessionsPage(): React.JSX.Element {
             <FolderOpen className="mb-4 h-12 w-12 text-muted-foreground" />
             <h3 className="mb-2 text-lg font-medium">{t('sessions.emptyTitle')}</h3>
             <p className="mb-4 text-muted-foreground">{t('sessions.emptyDescription')}</p>
-          
+          </CardContent>
+        </Card>
+      ) : filteredSessions.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <Search className="mb-4 h-10 w-10 text-muted-foreground" />
+            <h3 className="mb-2 text-lg font-medium">{t('sessions.noSearchResultsTitle')}</h3>
+            <p className="text-muted-foreground">{t('sessions.noSearchResultsDescription')}</p>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-3">
-          {sortedSessions.map((session) => {
+        <div className="grid grid-cols-2 gap-4">
+          {filteredSessions.map((session) => {
             const editorGate = getEditorGate(session)
             const activeRun = activeRuns[session.id]
             const displayGeneratedCount = activeRun
@@ -400,6 +484,7 @@ export function SessionsPage(): React.JSX.Element {
               template: t('sessions.sourceTemplate')
             })
             const SourceIcon = sourceTag.Icon
+            const thumbnailPath = thumbnailPaths[session.id] || session.thumbnailPath || ''
             const sourceTagBaseClass =
               'inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[11px] font-semibold leading-none'
             const statusClassName = activeRun
@@ -414,110 +499,136 @@ export function SessionsPage(): React.JSX.Element {
             return (
               <Card
                 key={session.id}
-                className="cursor-pointer transition-all hover:translate-y-[-1px] hover:shadow-[0_14px_28px_rgba(90,72,52,0.16)]"
+                data-session-card-id={session.id}
+                className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-[#d8cfbc]/75 bg-white/70 shadow-[0_4px_16px_rgba(93,107,77,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(93,107,77,0.15)]"
                 title={isPartialComplete ? t('sessions.statusPartialCompleteTip') : undefined}
                 onClick={() => navigate(getSessionRoute(session))}
               >
-              <CardHeader className="pb-2">
-                <div className="flex items-start justify-between">
-                  <CardTitle className="truncate text-base">{session.title}</CardTitle>
-                  <div className="flex items-center gap-1">
-                    <TooltipProvider delayDuration={180}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              openRenameDialog(session)
-                            }}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom" align="end">
-                          {t('sessions.editTitleTooltip')}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <TooltipProvider delayDuration={180}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span
-                            className="inline-flex"
-                            onClick={(event) => event.stopPropagation()}
-                          >
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              disabled={editorGate.generatedCount <= 0}
-                              onClick={(event) => {
-                                event.stopPropagation()
-                                setSaveTemplateTarget(session)
-                              }}
-                            >
-                              <LayoutTemplate className="h-4 w-4" />
-                            </Button>
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom" align="end">
-                          {editorGate.generatedCount <= 0
-                            ? t('sessions.saveTemplateTooltipDisabled')
-                            : t('sessions.saveTemplateTooltip')}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setDeleteSessionTarget(session)
-                      }}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className="soft-pill inline-flex items-center gap-1 rounded-lg px-3 py-1 text-secondary-foreground">
+                <div className="relative aspect-video w-full shrink-0 overflow-hidden bg-[#f5f1e8]">
+                  {thumbnailPath ? (
+                    <img
+                      src={localAssetUrl(thumbnailPath)}
+                      loading="lazy"
+                      alt=""
+                      aria-hidden="true"
+                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.015]"
+                    />
+                  ) : (
+                    <img
+                      src={sessionPlaceholder}
+                      alt=""
+                      aria-hidden="true"
+                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.015]"
+                    />
+                  )}
+                  <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/45 via-black/10 to-transparent" />
+                  <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-lg bg-[#fffaf0]/92 px-2.5 py-1 text-xs font-semibold text-[#3e4a32] shadow-[0_4px_12px_rgba(31,38,29,0.16)] backdrop-blur-sm">
                     <MessageSquare className="h-3 w-3" />
                     {actionText}
                   </span>
-                  <span className={`rounded-lg border px-2 py-1 font-semibold ${statusClassName}`}>
-                    {statusText}
-                  </span>
-                  <span className={`${sourceTagBaseClass} ${sourceTag.className}`}>
-                    <SourceIcon className={`h-3.5 w-3.5 ${sourceTag.iconClassName}`} />
-                    {sourceTag.label}
-                  </span>
-                  <span className="rounded-lg border border-[#e1d1b7]/80 bg-[#fff7e8]/75 px-2 py-1 text-[#7c6a4c]">
-                    {t('sessions.pagesCount', { generated: displayGeneratedCount, total: displayTotalCount })}
-                  </span>
-                  {session.generation_duration_sec ? (
-                    <span className="rounded-lg border border-[#d5cfc5]/60 bg-[#f9f6f1] px-2 py-1 text-[#6b6560]">
-                      {(() => {
-                        const d = dayjs.duration(session.generation_duration_sec!, 'second')
-                        const m = Math.floor(d.asMinutes())
-                        const s = d.seconds()
-                        return m > 0 ? `${m}m ${s}s` : `${s}s`
-                      })()}
-                    </span>
-                  ) : null}
-                  <span className="rounded-lg border border-[#d5cfc5]/60 bg-[#f9f6f1] px-2 py-1 text-[#6b6560]">
-                    {dayjs.unix(session.updated_at).format('YYYY/MM/DD HH:mm')}
-                  </span>
-                  {!isFullyComplete && displayFailedCount > 0 && (
-                    <span className="rounded-lg border border-[#d7b5ae]/70 bg-[#fff7f2]/80 px-2 py-1 text-[#93564f]">
-                      {t('sessions.failedCount', { count: displayFailedCount })}
-                    </span>
-                  )}
                 </div>
-              </CardContent>
-            </Card>
+
+                <div className="min-w-0 flex-1 p-4">
+                  <CardTitle className="line-clamp-2 min-h-10 text-base leading-5 text-[#3e4a32]">
+                    {session.title}
+                  </CardTitle>
+                  <p className="mt-1.5 text-xs text-[#847866]">
+                    {dayjs.unix(session.updated_at).format('YYYY/MM/DD HH:mm')}
+                  </p>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                    <span
+                      className={`rounded-lg border px-2 py-1 font-semibold ${statusClassName}`}
+                    >
+                      {statusText}
+                    </span>
+                    <span className={`${sourceTagBaseClass} ${sourceTag.className}`}>
+                      <SourceIcon className={`h-3.5 w-3.5 ${sourceTag.iconClassName}`} />
+                      {sourceTag.label}
+                    </span>
+                    <span className="rounded-lg border border-[#e1d1b7]/80 bg-[#fff7e8]/75 px-2 py-1 text-[#7c6a4c]">
+                      {t('sessions.pagesCount', {
+                        generated: displayGeneratedCount,
+                        total: displayTotalCount
+                      })}
+                    </span>
+                    {session.generation_duration_sec ? (
+                      <span className="rounded-lg border border-[#d5cfc5]/60 bg-[#f9f6f1] px-2 py-1 text-[#6b6560]">
+                        {(() => {
+                          const d = dayjs.duration(session.generation_duration_sec!, 'second')
+                          const m = Math.floor(d.asMinutes())
+                          const s = d.seconds()
+                          return m > 0 ? `${m}m ${s}s` : `${s}s`
+                        })()}
+                      </span>
+                    ) : null}
+                    {!isFullyComplete && displayFailedCount > 0 && (
+                      <span className="rounded-lg border border-[#d7b5ae]/70 bg-[#fff7f2]/80 px-2 py-1 text-[#93564f]">
+                        {t('sessions.failedCount', { count: displayFailedCount })}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex shrink-0 items-center justify-end gap-1 border-t border-[#e7dfd0]/70 bg-[#fffaf0]/45 px-3 py-2">
+                  <TooltipProvider delayDuration={180}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          aria-label={t('sessions.editTitleTooltip')}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            openRenameDialog(session)
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" align="end">
+                        {t('sessions.editTitleTooltip')}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider delayDuration={180}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex" onClick={(event) => event.stopPropagation()}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            aria-label={t('sessions.saveTemplateTooltip')}
+                            disabled={editorGate.generatedCount <= 0}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              setSaveTemplateTarget(session)
+                            }}
+                          >
+                            <LayoutTemplate className="h-4 w-4" />
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" align="end">
+                        {editorGate.generatedCount <= 0
+                          ? t('sessions.saveTemplateTooltipDisabled')
+                          : t('sessions.saveTemplateTooltip')}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label={t('common.delete')}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setDeleteSessionTarget(session)
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </Card>
             )
           })}
         </div>

@@ -1,0 +1,18 @@
+{
+  "style": "neo-brutalism",
+  "name": {
+    "zh": "新野兽派",
+    "en": "Neo Brutalism"
+  },
+  "description": "粗线条硬阴影，用不妥协的姿态说出你的观点",
+  "category": "大胆 · 宣言",
+  "aliases": [
+    "neubrutalism",
+    "brutal",
+    "野兽派",
+    "新野兽派"
+  ],
+  "styleCase": "创业路演、创意比稿、反叛精神演讲、年轻品牌发声",
+  "version": "2.0.0",
+  "source": "builtin"
+}

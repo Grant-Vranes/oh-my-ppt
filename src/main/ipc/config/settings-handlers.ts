@@ -10,6 +10,12 @@ import {
 } from '@shared/model-timeout'
 import { readAppLocale, uiText } from '../config/locale-utils'
 import { runWithModelTemperatureControl } from '../../model-runtime'
+import {
+  OPENAI_RESPONSES_FORMAT_ERROR_EN,
+  OPENAI_RESPONSES_FORMAT_ERROR_ZH,
+  isOpenAIResponsesFormatError
+} from '../../openai-responses-compat'
+import type { ModelUsagePeriod } from '@shared/model-usage'
 
 const readGlobalTimeouts = (
   settings: Record<string, unknown>
@@ -21,13 +27,31 @@ const readGlobalTimeouts = (
     ])
   ) as Record<ConfigurableModelTimeoutProfile, number>
 
-const VALID_PROVIDERS = ['anthropic', 'openai', 'google'] as const
+const VALID_PROVIDERS = ['anthropic', 'openai', 'openai-responses', 'google'] as const
 type Provider = (typeof VALID_PROVIDERS)[number]
 const normalizeProvider = (provider: unknown): Provider =>
   VALID_PROVIDERS.includes(provider as Provider) ? (provider as Provider) : 'openai'
 const normalizeMaxTokens = (value: unknown): number => {
   if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return 4096
   return Math.max(256, Math.min(16384, Math.floor(value)))
+}
+
+const normalizeVerifyErrorMessage = (
+  error: unknown,
+  options: {
+    locale: 'zh' | 'en'
+    provider: unknown
+  }
+): string | null => {
+  const message = error instanceof Error ? error.message : ''
+  if (options.provider === 'openai-responses' && isOpenAIResponsesFormatError(error)) {
+    return uiText(
+      options.locale,
+      OPENAI_RESPONSES_FORMAT_ERROR_ZH,
+      OPENAI_RESPONSES_FORMAT_ERROR_EN
+    )
+  }
+  return message || null
 }
 
 export function registerSettingsHandlers(ctx: IpcContext): void {
@@ -71,6 +95,17 @@ export function registerSettingsHandlers(ctx: IpcContext): void {
       createdAt: config.createdAt,
       updatedAt: config.updatedAt
     }))
+  })
+
+  ipcMain.handle('settings:getModelUsage', async (_event, requestedPeriod) => {
+    const period: ModelUsagePeriod =
+      requestedPeriod === 'today' ||
+      requestedPeriod === '7d' ||
+      requestedPeriod === '30d' ||
+      requestedPeriod === 'all'
+        ? requestedPeriod
+        : '30d'
+    return db.getModelUsageStats(period)
   })
 
   ipcMain.handle('settings:validateUploadPrerequisites', async () => {
@@ -260,9 +295,8 @@ export function registerSettingsHandlers(ctx: IpcContext): void {
         return { valid: true, message: uiText(locale, '连接验证成功。', 'Connection verified.') }
       } catch (error) {
         const message =
-          error instanceof Error && error.message.length > 0
-            ? error.message
-            : uiText(
+          normalizeVerifyErrorMessage(error, { locale, provider }) ||
+          uiText(
                 locale,
                 '连接验证失败，请检查 api_key、model 或 base_url。',
                 'Connection verification failed. Check api_key, model, or base_url.'

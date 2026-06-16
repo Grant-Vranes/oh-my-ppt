@@ -6,14 +6,17 @@ import { registerSessionHandlers } from './session/session-handlers'
 import { registerSessionImportHandlers } from './session/session-import-handlers'
 import { registerSessionSaveAsNewHandler } from './session/session-save-as-new'
 import { registerAssetHandlers, registerLocalAssetProtocol } from './io/assets-handlers'
+import { registerThumbnailHandlers } from './io/thumbnail-handlers'
 import { registerGenerationHandlers } from './engine/generation-handlers'
 import { registerExportHandlers } from './io/export-handlers'
 import { registerStyleHandlers } from './config/style-handlers'
+import { registerStylePreviewHandlers } from './config/style-preview-handlers'
 import { registerFontHandlers } from './config/font-handlers'
 import { registerSettingsHandlers } from './config/settings-handlers'
 import { registerImageModelHandlers } from './config/image-model-handlers'
 import { registerPreviewHandlers } from './session/preview-handlers'
 import { registerPageManagementHandlers } from './session/page-management-handlers'
+import { registerPageMergeHandlers } from './session/page-merge-handlers'
 import { registerFileHandlers } from './io/file-handlers'
 import { registerEditorHandlers } from './editor'
 import { registerDocumentParseHandlers } from './io/document-parse-handlers'
@@ -39,10 +42,13 @@ export function setupIPC(
   registerSessionSaveAsNewHandler(context)
   registerSessionImportHandlers(context)
   registerPageManagementHandlers(context)
+  registerPageMergeHandlers(context)
   registerAssetHandlers(context)
+  registerThumbnailHandlers(context)
   registerGenerationHandlers(context)
   registerExportHandlers(context)
   registerStyleHandlers(context)
+  registerStylePreviewHandlers(context)
   registerFontHandlers(context)
   registerSettingsHandlers(context)
   registerImageModelHandlers(context)

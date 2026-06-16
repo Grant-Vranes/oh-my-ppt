@@ -12,6 +12,8 @@ import {
   EDIT_MODE_CONSOLE_PREFIX,
   type EditableElementSnapshot,
   type EditModeMovePayload,
+  type EditSnapPoints,
+  type EditSnapSettings,
   type EditTextTarget,
   type EditSelectionPayload
 } from './edit-mode-script'
@@ -137,6 +139,8 @@ export interface PreviewIframeHandle {
     insertIndex?: number,
     selectAfterInsert?: boolean
   ) => void
+  setEditSnapSettings: (settings: EditSnapSettings) => Promise<boolean>
+  readEditSnapPoints: () => Promise<EditSnapPoints>
 }
 
 export const PreviewIframe = forwardRef<
@@ -424,6 +428,42 @@ export const PreviewIframe = forwardRef<
           wv,
           `if (window.__pptEditModeSetLayout) window.__pptEditModeSetLayout(${JSON.stringify(selector)}, ${JSON.stringify(layout)});`
         )
+      },
+      async setEditSnapSettings(settings: EditSnapSettings): Promise<boolean> {
+        const wv = webviewRef.current
+        if (!wv || !canExecuteJavaScript(wv)) return false
+        try {
+          return Boolean(
+            await wv.executeJavaScript(
+              `(function(){` +
+                `if (!window.__pptEditModeSetSnapSettings) return false;` +
+                `window.__pptEditModeSetSnapSettings(${JSON.stringify(settings)});` +
+                `return true;` +
+              `})()`
+            )
+          )
+        } catch {
+          return false
+        }
+      },
+      async readEditSnapPoints(): Promise<EditSnapPoints> {
+        const wv = webviewRef.current
+        if (!wv || !canExecuteJavaScript(wv)) return { x: [], y: [] }
+        try {
+          const result = (await wv.executeJavaScript(
+            `(function(){` +
+              `try {` +
+                `return window.__pptEditModeReadSnapPoints ? window.__pptEditModeReadSnapPoints() : { x: [], y: [] };` +
+              `} catch (_error) { return { x: [], y: [] }; }` +
+            `})()`
+          )) as Partial<EditSnapPoints> | null
+          return {
+            x: Array.isArray(result?.x) ? result.x.filter(Number.isFinite) : [],
+            y: Array.isArray(result?.y) ? result.y.filter(Number.isFinite) : []
+          }
+        } catch {
+          return { x: [], y: [] }
+        }
       },
       async restoreEditModeSelection(selector: string): Promise<boolean> {
         const wv = webviewRef.current

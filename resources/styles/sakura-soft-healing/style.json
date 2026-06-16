@@ -1,0 +1,13 @@
+{
+  "style": "sakura-soft-healing",
+  "name": {
+    "zh": "樱花治愈",
+    "en": "Sakura Soft Healing"
+  },
+  "description": "莫兰迪低饱和樱花慢生活",
+  "category": "粉彩 · 治愈",
+  "aliases": ["樱花", "sakura", "莫兰迪", "慢生活", "治愈系", "春日"],
+  "styleCase": "春日赏樱活动、慢生活品牌、文创明信片、女性生活方式、婚礼浪漫、诗歌散文配图、家居软装、治愈系社交媒体",
+  "version": "2.0.0",
+  "source": "builtin"
+}

@@ -1,0 +1,18 @@
+{
+  "style": "news-broadcast",
+  "name": {
+    "zh": "新闻播报",
+    "en": "News Broadcast"
+  },
+  "description": "红色竖条亮起，所有目光聚焦——突发新闻，不容错过",
+  "category": "大胆 · 杂志",
+  "aliases": [
+    "news",
+    "广播",
+    "播报",
+    "突发新闻"
+  ],
+  "styleCase": "突发新闻播报、数据发布、产品公告、季度汇报",
+  "version": "2.0.0",
+  "source": "builtin"
+}

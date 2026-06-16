@@ -15,6 +15,7 @@ import { useTemplateStore, useToastStore } from '../store'
 import { ipc, type TemplateListItem } from '../lib/ipc'
 import { useT } from '../i18n'
 import { useModelAction } from '@renderer/hooks/useModelAction'
+import { useThumbnailUpdates } from '@renderer/hooks/useThumbnailUpdates'
 
 const MAX_PPTX_SIZE_MB = 80
 const MAX_PPTX_SIZE_BYTES = MAX_PPTX_SIZE_MB * 1024 * 1024
@@ -37,6 +38,7 @@ export function TemplatesPage(): React.JSX.Element {
     templates,
     loading,
     fetchTemplates,
+    applyTemplateThumbnail,
     createEditableSessionFromTemplate,
     importPptxAsTemplate,
     updateTemplateMetadata,
@@ -56,6 +58,11 @@ export function TemplatesPage(): React.JSX.Element {
   const pptxImportModelConfigIdRef = useRef<string>('')
   const [importingPptxTemplate, setImportingPptxTemplate] = useState(false)
   const [pptxTemplateProgress, setPptxTemplateProgress] = useState<string | null>(null)
+
+  useThumbnailUpdates('template', (task) => {
+    if (task.variant !== 'cover' || !task.thumbnailPath) return
+    applyTemplateThumbnail(task.resourceId, task.thumbnailPath)
+  })
 
   const load = useCallback(async (): Promise<void> => {
     try {
@@ -264,7 +271,7 @@ export function TemplatesPage(): React.JSX.Element {
       {templates.length === 0 ? (
         <TemplateEmptyState />
       ) : (
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
           {templates.map((template) => (
             <TemplateCard
               key={template.id}

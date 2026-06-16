@@ -2,14 +2,19 @@ import crypto from 'crypto'
 import fs from 'fs'
 import path from 'path'
 import type { FontSelection, GenerateStartPayload, SourceDocumentPlan } from '@shared/generation'
-import { normalizeFontSelection } from '@shared/generation'
+import {
+  MAX_SELECTED_PAGES,
+  MAX_STYLE_SWITCH_PAGES,
+  normalizeFontSelection,
+  normalizeSelectPageIds
+} from '@shared/generation'
 import type { ModelTimeoutProfile } from '@shared/model-timeout'
 import type { IpcContext } from '../context'
 import type { GenerateChatType } from './types'
+import type { SessionStyleSnapshotRow } from '../../db/database'
 
 export { resolveSourceDocuments } from './source-documents'
 import { resolveGlobalModelTimeouts, resolveModelConfigForTask } from '../config/model-config-utils'
-import { loadStyleSkill, resolveUsableStyleId } from '../../utils/style-skills'
 import { extractOutlineTitles, parseJsonObject } from '../utils'
 import { sourcePlanFromSkeletonRows } from './source-plan'
 
@@ -30,8 +35,21 @@ export type CommonGenerationContext = {
   projectDir: string
   abortSignal: AbortSignal
   styleId: string
-  styleSkill: ReturnType<typeof loadStyleSkill>
+  styleSnapshot: SessionStyleSnapshotRow
+  styleSkill: {
+    preset: {
+      id: string
+      label: string
+      aliases: string[]
+      description: string
+      fallbackPrompt: string
+    }
+    prompt: string
+  }
   styleSkillPrompt: string
+  styleKey: string
+  styleName: string
+  styleVersion: string
   topic: string
   deckTitle: string
   appLocale: 'zh' | 'en'
@@ -49,7 +67,10 @@ export type NormalizedGenerateInput = {
   rawVideoPaths: string[]
   rawDocPaths: string[]
   requestedType?: 'deck' | 'page'
+  resetVisualStyle: boolean
+  persistUserMessage: boolean
   selectedPageId?: string
+  selectPageIds: string[]
   htmlPath?: string
   selector?: string
   elementTag?: string
@@ -86,10 +107,16 @@ export function normalizeGeneratePayload(payload: unknown): NormalizedGenerateIn
     : []
   const requestedType =
     input?.type === 'page' ? 'page' : input?.type === 'deck' ? 'deck' : undefined
+  const resetVisualStyle = input?.resetVisualStyle === true
+  const persistUserMessage = input?.persistUserMessage !== false
   const selectedPageId =
     typeof input?.selectedPageId === 'string' && input.selectedPageId.trim().length > 0
       ? input.selectedPageId.trim()
       : undefined
+  const selectPageIds = normalizeSelectPageIds(
+    input?.selectPageIds,
+    resetVisualStyle ? MAX_STYLE_SWITCH_PAGES : MAX_SELECTED_PAGES
+  )
   const htmlPath = typeof input?.htmlPath === 'string' ? input.htmlPath : undefined
   const selector =
     typeof input?.selector === 'string' && input.selector.trim().length > 0
@@ -117,7 +144,10 @@ export function normalizeGeneratePayload(payload: unknown): NormalizedGenerateIn
     rawVideoPaths,
     rawDocPaths,
     requestedType,
+    resetVisualStyle,
+    persistUserMessage,
     selectedPageId,
+    selectPageIds,
     htmlPath,
     selector,
     elementTag,
@@ -152,6 +182,15 @@ export function buildOutlineTitles(rawUserMessage: string): string[] {
   return extractOutlineTitles(rawUserMessage)
 }
 
+function parseJsonArray(value: string): string[] {
+  try {
+    const parsed = JSON.parse(value) as unknown
+    return Array.isArray(parsed) ? parsed.map((item) => String(item || '')).filter(Boolean) : []
+  } catch {
+    return []
+  }
+}
+
 export async function resolveCommonContext(
   ctx: IpcContext,
   sessionId: string,
@@ -180,10 +219,25 @@ export async function resolveCommonContext(
     maxTokens: activeModel.maxTokens
   })
 
-  const styleIdRaw =
-    typeof sessionRecord.styleId === 'string' ? String(sessionRecord.styleId).trim() : ''
-  const styleId = resolveUsableStyleId(styleIdRaw)
-  const styleSkill = loadStyleSkill(styleId)
+  const styleSnapshot = await db.getOrCreateSessionStyleSnapshot(sessionId)
+  const styleId = styleSnapshot.styleId
+  const styleAliases = parseJsonArray(styleSnapshot.aliases)
+  const styleSkill = {
+    preset: {
+      id: styleSnapshot.styleId,
+      label: styleSnapshot.styleName,
+      aliases: styleAliases,
+      description: styleSnapshot.description,
+      fallbackPrompt: styleSnapshot.description
+        ? `Use ${styleSnapshot.styleKey} style: ${styleSnapshot.description}`
+        : `Use ${styleSnapshot.styleKey} style.`
+    },
+    prompt:
+      styleSnapshot.styleSkill?.trim() ||
+      (styleSnapshot.description
+        ? `Use ${styleSnapshot.styleKey} style: ${styleSnapshot.description}`
+        : `Use ${styleSnapshot.styleKey} style.`)
+  }
 
   const existingProject = await db.getProject(sessionId)
   if (!existingProject) {
@@ -239,8 +293,12 @@ export async function resolveCommonContext(
     abortSignal: entry.abortController.signal,
     entry,
     styleId,
+    styleSnapshot,
     styleSkill,
     styleSkillPrompt: styleSkill.prompt,
+    styleKey: styleSnapshot.styleKey,
+    styleName: styleSnapshot.styleName,
+    styleVersion: styleSnapshot.version,
     topic: String(sessionRecord.topic || '当前主题'),
     deckTitle: String(sessionRecord.title || 'OhMyPPT Preview'),
     appLocale,

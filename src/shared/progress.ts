@@ -87,3 +87,12 @@ export const progressLabel = (
   locale: AppLocale | undefined,
   rawLabel: string | undefined
 ): string => progressText(locale, normalizeProgressLabel(rawLabel))
+
+export const progressDisplayLabel = (
+  locale: AppLocale | undefined,
+  rawLabel: string | undefined
+): string => {
+  const label = (rawLabel || '').trim()
+  if (/^(?:P\d+\b|第\s*\d+\s*页)/i.test(label)) return label
+  return progressLabel(locale, label)
+}

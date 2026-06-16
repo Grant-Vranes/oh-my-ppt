@@ -19,6 +19,7 @@ export interface Session {
   generation_duration_sec?: number | null
   generated_count?: number | null
   failed_count?: number | null
+  thumbnailPath?: string | null
 }
 
 export interface Message {
@@ -70,8 +71,12 @@ interface SessionStore {
     fontSelection?: FontSelection
     sourcePlan?: SourceDocumentPlan
   }) => Promise<string>
-  loadSession: (sessionId: string) => Promise<void>
-  loadMessages: (payload: { sessionId: string; chatType: 'main' | 'page'; pageId?: string }) => Promise<void>
+  loadSession: (sessionId: string, guard?: () => boolean) => Promise<void>
+  loadMessages: (payload: {
+    sessionId: string
+    chatType: 'main' | 'page'
+    pageId?: string
+  }) => Promise<void>
   deleteSession: (sessionId: string) => Promise<void>
   updateSessionTitle: (payload: { sessionId: string; title: string }) => Promise<void>
   importSessionFile: () => Promise<{
@@ -144,18 +149,21 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     return sessionId
   },
 
-  loadSession: async (sessionId) => {
+  loadSession: async (sessionId, guard) => {
     set({ loading: true })
     try {
       const { session, generatedPages } = await ipc.getSession(sessionId)
+      if (guard && !guard()) {
+        return
+      }
       set({
-        currentSession: ((session as unknown as Session | null | undefined) ?? null),
-        // 消息由页面上下文决定（main/page），这里不做默认回填，避免覆盖当前页消息。
-        currentMessages: [],
+        currentSession: (session as unknown as Session | null | undefined) ?? null,
+        // 消息由页面上下文独立管理。刷新会话/页面数据时不能清空正在显示的对话。
         currentGeneratedPages: generatedPages,
-        loading: false,
+        loading: false
       })
     } catch {
+      if (guard && !guard()) return
       set({ error: 'Failed to load session', loading: false })
     }
   },
@@ -163,7 +171,9 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   loadMessages: async ({ sessionId, chatType, pageId }) => {
     try {
       const messages = await ipc.getSessionMessages({ sessionId, chatType, pageId })
-      const loadedMessages = messages as unknown as Message[]
+      const loadedMessages = (messages as unknown as Message[]).filter(
+        (message) => message.role === 'user' || message.role === 'assistant'
+      )
       set((state) => {
         const pendingMessages = state.currentMessages.filter((message) =>
           messageMatchesContext(message, sessionId, chatType, pageId)
@@ -225,5 +235,5 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       currentGeneratedPages: [],
       loading: false,
       error: null
-    }),
+    })
 }))

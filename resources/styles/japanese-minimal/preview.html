@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>日式极简 · japanese-minimal</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: #0f1117;
+    display: flex; align-items: center; justify-content: center;
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Georgia, serif;
+  }
+  .slide {
+    width: min(100vw, calc(100vh * 16 / 9));
+    aspect-ratio: 16 / 9;
+    background: #faf8f5;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .enso {
+    position: absolute;
+    right: 15%;
+    top: 50%;
+    transform: translateY(-50%);
+    width: clamp(100px, 18vw, 220px);
+    height: clamp(100px, 18vw, 220px);
+    border: 3px solid #1c1c1c;
+    border-radius: 50%;
+    opacity: 0.08;
+  }
+  .enso::before {
+    content: '';
+    position: absolute;
+    top: -3px; right: 20%;
+    width: 3px;
+    height: 40%;
+    background: #dc2626;
+    opacity: 0.7;
+    transform: rotate(-5deg);
+  }
+  .red-stroke {
+    position: absolute;
+    right: 8%;
+    top: 20%;
+    bottom: 20%;
+    width: 3px;
+    background: linear-gradient(180deg, transparent 0%, #dc2626 20%, #dc2626 80%, transparent 100%);
+    opacity: 0.6;
+  }
+  .content {
+    position: absolute;
+    left: 10%;
+    top: 50%;
+    transform: translateY(-50%);
+    max-width: 55%;
+  }
+  .category {
+    font-size: clamp(7px, 0.7vw, 9px);
+    color: #525252;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    font-weight: 400;
+    margin-bottom: 5%;
+  }
+  h1 {
+    font-size: clamp(40px, 7vw, 84px);
+    font-weight: 300;
+    color: #1c1c1c;
+    line-height: 1.15;
+    letter-spacing: 0.12em;
+    font-family: "Songti SC", Georgia, serif;
+  }
+  .divider {
+    width: 30px;
+    height: 1px;
+    background: #dc2626;
+    margin: 5% 0;
+    opacity: 0.5;
+  }
+  .desc {
+    font-size: clamp(10px, 1.2vw, 14px);
+    color: #525252;
+    line-height: 1.8;
+    font-weight: 300;
+    max-width: 80%;
+  }
+  .uses {
+    display: flex;
+    gap: 16px;
+    margin-top: 6%;
+  }
+  .uses span {
+    font-size: clamp(7px, 0.7vw, 9px);
+    color: #a3a3a3;
+    border-left: 1px solid #d4d4d4;
+    padding-left: 10px;
+    font-weight: 300;
+  }
+  .palette {
+    position: absolute;
+    bottom: 8%;
+    left: 10%;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .palette i {
+    display: block;
+    width: clamp(10px, 1.2vw, 16px);
+    height: clamp(10px, 1.2vw, 16px);
+    border-radius: 50%;
+    background: var(--c);
+  }
+  .en-label {
+    position: absolute;
+    bottom: 8%;
+    right: 10%;
+    font-size: clamp(7px, 0.7vw, 9px);
+    color: #a3a3a3;
+    font-weight: 300;
+    letter-spacing: 0.15em;
+  }
+  .corner-mark {
+    position: absolute;
+    top: 8%;
+    right: 8%;
+    width: 20px;
+    height: 20px;
+    border-top: 1px solid #d4d4d4;
+    border-right: 1px solid #d4d4d4;
+    opacity: 0.5;
+  }
+  @media (max-aspect-ratio: 16/9) {
+    .slide { width: min(100vw, calc(100vh * 16 / 9)); height: auto; }
+  }
+  @media (min-aspect-ratio: 16/9) {
+    .slide { height: min(100vh, calc(100vw * 9 / 16)); width: auto; }
+  }
+</style>
+</head>
+<body>
+  <main class="slide" aria-label="日式极简 style preview">
+    <div class="enso"></div>
+    <div class="red-stroke"></div>
+    <div class="corner-mark"></div>
+    <section class="content">
+      <div class="category">浅色 · 专业 / Japanese Minimal</div>
+      <h1>日式极简</h1>
+      <div class="divider"></div>
+      <p class="desc">象牙白上一笔朱红，万物留白处见匠心</p>
+      <div class="uses">
+        <span>品牌升级</span>
+        <span>匠人故事</span>
+        <span>禅意叙事</span>
+        <span>高端产品发布</span>
+      </div>
+    </section>
+    <div class="palette">
+      <i style="--c:#1c1c1c"></i>
+      <i style="--c:#525252"></i>
+      <i style="--c:#dc2626"></i>
+      <i style="--c:#b91c1c"></i>
+      <i style="--c:#faf8f5; border: 1px solid #d4d4d4"></i>
+    </div>
+    <div class="en-label">japanese-minimal</div>
+  </main>
+</body>
+</html>

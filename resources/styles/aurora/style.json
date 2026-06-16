@@ -1,0 +1,17 @@
+{
+  "style": "aurora",
+  "name": {
+    "zh": "极光",
+    "en": "Aurora"
+  },
+  "description": "极光渐变融化在blur里，封面页天生就该这样梦幻",
+  "category": "效果 · 重",
+  "aliases": [
+    "aurora",
+    "极光",
+    "封面"
+  ],
+  "styleCase": "封面页、CTA 页、结语页、活动开幕",
+  "version": "2.0.0",
+  "source": "builtin"
+}

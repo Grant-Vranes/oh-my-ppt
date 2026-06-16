@@ -1,0 +1,19 @@
+{
+  "style": "macaron-mist",
+  "name": {
+    "zh": "柔雾甜梦",
+    "en": "Macaron Mist"
+  },
+  "description": "薄荷粉珊瑚薰衣草紫的柔雾甜点风",
+  "category": "活力 · 创意",
+  "aliases": [
+    "柔雾甜点",
+    "柔雾",
+    "梦幻",
+    "少女",
+    "甜品"
+  ],
+  "styleCase": "甜品品牌、烘焙教学、少女服饰、护肤彩妆、生日派对、婚礼企划、儿童内容、下午茶营销",
+  "version": "2.0.0",
+  "source": "builtin"
+}

@@ -1,0 +1,22 @@
+{
+  "style": "industrial-kaizen",
+  "name": {
+    "zh": "表格 · 现代周报",
+    "en": "Tabular Business"
+  },
+  "description": "克制的中性色表格驱动商务风",
+  "category": "浅色 · 沉静",
+  "aliases": [
+    "表格",
+    "table",
+    "tabular",
+    "周报",
+    "报表",
+    "商务表格",
+    "kaizen",
+    "grid"
+  ],
+  "styleCase": "经营周报、季度复盘、KPI 看板、销售明细、财务报表、产品矩阵对比、项目进度汇总",
+  "version": "2.0.0",
+  "source": "builtin"
+}

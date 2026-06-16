@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>包豪斯 · Bauhaus</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #0f1117; display: grid; place-items: center; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; }
+
+.slide {
+  position: relative;
+  width: min(100vw, calc(100vh * 16 / 9));
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #fef3c7;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.08);
+  display: grid;
+  grid-template-columns: 3fr 2fr 2fr 3fr;
+  grid-template-rows: 2fr 3fr 2fr;
+  gap: 4px;
+}
+.cell {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(8px, 1.5vw, 20px);
+}
+
+.c-red-big {
+  grid-column: 1 / 3;
+  grid-row: 1 / 3;
+  background: #dc2626;
+  color: #fef3c7;
+  padding: clamp(12px, 2vw, 28px);
+  border-right: 4px solid #1e3a5f;
+  border-bottom: 4px solid #1e3a5f;
+}
+.c-blue {
+  grid-column: 3 / 5;
+  grid-row: 1;
+  background: #2563eb;
+  color: #fef3c7;
+  border-bottom: 4px solid #1e3a5f;
+}
+.c-yellow {
+  grid-column: 3;
+  grid-row: 2;
+  background: #fef3c7;
+  color: #991b1b;
+  border-right: 4px solid #1e3a5f;
+}
+.c-dark {
+  grid-column: 4;
+  grid-row: 2;
+  background: #1e3a5f;
+  color: #fef3c7;
+}
+.c-deep-red {
+  grid-column: 1;
+  grid-row: 3;
+  background: #991b1b;
+  color: #fef3c7;
+  border-right: 4px solid #1e3a5f;
+  border-top: 4px solid #1e3a5f;
+}
+.c-white {
+  grid-column: 2 / 4;
+  grid-row: 3;
+  background: #ffffff;
+  color: #1e3a5f;
+  border-right: 4px solid #1e3a5f;
+  border-top: 4px solid #1e3a5f;
+}
+.c-blue-bottom {
+  grid-column: 4;
+  grid-row: 3;
+  background: #2563eb;
+  color: #fef3c7;
+  border-top: 4px solid #1e3a5f;
+}
+
+.eyebrow {
+  font-size: clamp(6px, 0.8vw, 10px);
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.7;
+  margin-bottom: clamp(4px, 0.6vw, 8px);
+}
+h1 {
+  font-size: clamp(24px, 4.5vw, 52px);
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+.desc {
+  font-size: clamp(8px, 1.1vw, 14px);
+  line-height: 1.6;
+  margin-top: clamp(4px, 0.6vw, 8px);
+  opacity: 0.85;
+}
+.label {
+  font-size: clamp(6px, 0.7vw, 9px);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.55;
+  margin-bottom: clamp(3px, 0.4vw, 6px);
+}
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(3px, 0.4vw, 6px);
+  margin-top: clamp(4px, 0.6vw, 8px);
+}
+.tags span {
+  font-size: clamp(5px, 0.65vw, 8px);
+  font-weight: 700;
+  padding: clamp(2px, 0.3vw, 4px) clamp(4px, 0.5vw, 7px);
+  border: 1.5px solid currentColor;
+  opacity: 0.75;
+}
+.palette {
+  display: flex;
+  gap: clamp(3px, 0.4vw, 6px);
+  margin-top: clamp(4px, 0.5vw, 8px);
+}
+.palette i {
+  display: block;
+  width: clamp(10px, 1.4vw, 18px);
+  height: clamp(10px, 1.4vw, 18px);
+  background: var(--c);
+  border: 1.5px solid rgba(30, 58, 95, 0.3);
+}
+.style-note {
+  font-size: clamp(7px, 0.85vw, 11px);
+  line-height: 1.5;
+  opacity: 0.65;
+  margin-top: clamp(3px, 0.4vw, 6px);
+}
+.circ {
+  width: clamp(16px, 2.5vw, 32px);
+  height: clamp(16px, 2.5vw, 32px);
+  border-radius: 50%;
+  background: #dc2626;
+  margin-top: clamp(4px, 0.6vw, 10px);
+}
+
+@media (max-aspect-ratio: 16/9) { .slide { width: min(100vw, calc(100vh * 16 / 9)); height: auto; } }
+@media (min-aspect-ratio: 16/9) { .slide { height: min(100vh, calc(100vw * 9 / 16)); width: auto; } }
+</style>
+</head>
+<body>
+  <main class="slide" aria-label="包豪斯 style preview">
+    <div class="cell c-red-big">
+      <div class="eyebrow">大胆 · 宣言 · Bauhaus</div>
+      <h1>包豪斯</h1>
+      <p class="desc">原色碰撞的几何宣言，每一页都是蒙德里安式的视觉震动</p>
+      <div class="tags"><span>设计宣言</span><span>艺术史叙事</span><span>产品美学发布</span><span>品牌视觉系统展示</span></div>
+    </div>
+    <div class="cell c-blue">
+      <div class="label">Style DNA</div>
+      <p class="desc">红黄蓝三原色在画布上碰撞出强烈的视觉张力，几何形状大胆切分画面空间。</p>
+      <div class="circ"></div>
+    </div>
+    <div class="cell c-yellow">
+      <div class="palette">
+        <i style="--c:#991b1b"></i>
+        <i style="--c:#1e3a5f"></i>
+        <i style="--c:#dc2626"></i>
+        <i style="--c:#2563eb"></i>
+        <i style="--c:#fef3c7"></i>
+      </div>
+    </div>
+    <div class="cell c-dark">
+      <div class="label">Typography</div>
+      <p class="style-note">粗壮的几何无衬线字体，字重偏重，字间距略宽，工业设计的精确感。</p>
+    </div>
+    <div class="cell c-deep-red">
+      <div class="label">Layout</div>
+      <p class="style-note">圆形、三角形、矩形大胆切分画面，原色色块占据大面积区域。</p>
+    </div>
+    <div class="cell c-white">
+      <div class="label">Applications</div>
+      <p class="style-note">设计宣言 / 艺术史叙事 / 产品美学发布 / 品牌视觉系统展示</p>
+    </div>
+    <div class="cell c-blue-bottom">
+      <div class="label">16:9 preview</div>
+      <p class="style-note">perspective-zoom / cube-rotate-3d / morph-shape</p>
+    </div>
+  </main>
+</body>
+</html>

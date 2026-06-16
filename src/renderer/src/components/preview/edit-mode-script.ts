@@ -145,6 +145,23 @@ export interface EditModeMovePayload {
   }>
 }
 
+export interface EditSnapSettings {
+  enabled: boolean
+  guides: {
+    vertical: number[]
+    horizontal: number[]
+  }
+  grid: {
+    enabled: boolean
+    size: number
+  }
+}
+
+export interface EditSnapPoints {
+  x: number[]
+  y: number[]
+}
+
 export function buildEditModeInjectScript(previewScale = 1): string {
   return `
 (() => {
@@ -152,6 +169,8 @@ export function buildEditModeInjectScript(previewScale = 1): string {
   const STYLE_ID = "ppt-edit-mode-style";
   const OVERLAY_ID = "ppt-edit-mode-resize-overlay";
   const HOVER_OVERLAY_ID = "ppt-edit-mode-hover-overlay";
+  const VERTICAL_GUIDE_ID = "ppt-edit-mode-guide-vertical";
+  const HORIZONTAL_GUIDE_ID = "ppt-edit-mode-guide-horizontal";
   const HOVER_CLASS = "ppt-edit-mode-hover";
   const SELECTED_CLASS = "ppt-edit-mode-selected";
   const HANDLE_CLASS = "ppt-edit-mode-resize-handle";
@@ -205,6 +224,11 @@ export function buildEditModeInjectScript(previewScale = 1): string {
   }
 
   let previewScaleValue = normalizeScale(INITIAL_PREVIEW_SCALE);
+  let snapSettings = {
+    enabled: true,
+    guides: { vertical: [], horizontal: [] },
+    grid: { enabled: false, size: 20 },
+  };
 
   const cssEscape = (value) => {
     if (window.CSS && typeof window.CSS.escape === "function") {
@@ -344,6 +368,10 @@ export function buildEditModeInjectScript(previewScale = 1): string {
 
   const getPageRoot = (element) => {
     return element && element.closest(".ppt-page-root, [data-ppt-guard-root='1']");
+  };
+
+  const getDocumentPageRoot = () => {
+    return document.querySelector("[data-ppt-guard-root='1'], .ppt-page-root");
   };
 
   const isScaffoldBlock = (element) => {
@@ -719,6 +747,21 @@ export function buildEditModeInjectScript(previewScale = 1): string {
         bottom: -9px !important;
         cursor: nwse-resize !important;
       }
+      #\${VERTICAL_GUIDE_ID},
+      #\${HORIZONTAL_GUIDE_ID} {
+        position: fixed !important;
+        z-index: 2147483645 !important;
+        display: none;
+        pointer-events: none !important;
+        background: #4daeff !important;
+        box-shadow: 0 0 0 1px rgba(77, 174, 255, 0.14) !important;
+      }
+      #\${VERTICAL_GUIDE_ID} {
+        width: 1px !important;
+      }
+      #\${HORIZONTAL_GUIDE_ID} {
+        height: 1px !important;
+      }
       html,
       body,
       body * {
@@ -742,6 +785,8 @@ export function buildEditModeInjectScript(previewScale = 1): string {
   let frameId = 0;
   let overlayElement = null;
   let hoverOverlayElement = null;
+  let verticalGuideElement = null;
+  let horizontalGuideElement = null;
   let overlayResizeObserver = null;
   let lastCycleKey = "";
   let lastCycleIndex = -1;
@@ -768,6 +813,7 @@ export function buildEditModeInjectScript(previewScale = 1): string {
         startClientY: pendingAnchorState.startClientY,
         baseX: pendingAnchorState.baseX,
         baseY: pendingAnchorState.baseY,
+        snapTargets: collectSnapTargets(pendingAnchorState.target),
       };
       setSelected(pendingAnchorState.target);
     } else if (pendingAnchorState.mode === 'resize') {
@@ -996,6 +1042,165 @@ export function buildEditModeInjectScript(previewScale = 1): string {
     return pickCycleTarget(origin, clientX, clientY, fallbackTarget);
   };
 
+  const ensureSnapGuide = (axis) => {
+    const isVertical = axis === "vertical";
+    const current = isVertical ? verticalGuideElement : horizontalGuideElement;
+    if (current && current.isConnected) return current;
+    const guide = document.createElement("div");
+    guide.id = isVertical ? VERTICAL_GUIDE_ID : HORIZONTAL_GUIDE_ID;
+    guide.setAttribute("data-ppt-edit-guide", axis);
+    document.body.appendChild(guide);
+    if (isVertical) verticalGuideElement = guide;
+    else horizontalGuideElement = guide;
+    return guide;
+  };
+
+  const hideSnapGuides = () => {
+    if (verticalGuideElement) verticalGuideElement.style.display = "none";
+    if (horizontalGuideElement) horizontalGuideElement.style.display = "none";
+  };
+
+  const removeSnapGuides = () => {
+    if (verticalGuideElement) verticalGuideElement.remove();
+    if (horizontalGuideElement) horizontalGuideElement.remove();
+    verticalGuideElement = null;
+    horizontalGuideElement = null;
+  };
+
+  const showSnapGuides = (snap, rootRect) => {
+    if (snap.x) {
+      const guide = ensureSnapGuide("vertical");
+      guide.style.display = "block";
+      guide.style.left = (snap.x.line - 0.5).toFixed(1) + "px";
+      guide.style.top = rootRect.top.toFixed(1) + "px";
+      guide.style.height = Math.max(1, rootRect.height).toFixed(1) + "px";
+    } else if (verticalGuideElement) {
+      verticalGuideElement.style.display = "none";
+    }
+    if (snap.y) {
+      const guide = ensureSnapGuide("horizontal");
+      guide.style.display = "block";
+      guide.style.left = rootRect.left.toFixed(1) + "px";
+      guide.style.top = (snap.y.line - 0.5).toFixed(1) + "px";
+      guide.style.width = Math.max(1, rootRect.width).toFixed(1) + "px";
+    } else if (horizontalGuideElement) {
+      horizontalGuideElement.style.display = "none";
+    }
+  };
+
+  const collectSnapTargets = (target) => {
+    const root = getPageRoot(target);
+    if (!root) return null;
+    const rootRect = root.getBoundingClientRect();
+    const rects = [rootRect];
+    const seenRects = new Set();
+    seenRects.add([
+      rootRect.left.toFixed(1),
+      rootRect.top.toFixed(1),
+      rootRect.right.toFixed(1),
+      rootRect.bottom.toFixed(1),
+    ].join(":"));
+
+    root.querySelectorAll("[data-block-id]").forEach((candidate) => {
+      if (!(candidate instanceof Element)) return;
+      if (candidate === target || candidate.contains(target) || target.contains(candidate)) return;
+      if (!isUsableElementTarget(candidate) || isScaffoldBlock(candidate)) return;
+      const style = getComputedStyle(candidate);
+      if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity || "1") <= 0.01) return;
+      const rect = candidate.getBoundingClientRect();
+      if (rect.width < 2 || rect.height < 2) return;
+      const key = [
+        rect.left.toFixed(1),
+        rect.top.toFixed(1),
+        rect.right.toFixed(1),
+        rect.bottom.toFixed(1),
+      ].join(":");
+      if (seenRects.has(key)) return;
+      seenRects.add(key);
+      rects.push(rect);
+    });
+
+    const x = [];
+    const y = [];
+    const pushSnapTarget = (items, seen, value, kind) => {
+      const key = kind + ":" + Number(value.toFixed(1)).toFixed(1);
+      if (seen.has(key)) return;
+      seen.add(key);
+      items.push({ value, kind });
+    };
+    const seenX = new Set();
+    const seenY = new Set();
+    rects.forEach((rect) => {
+      pushSnapTarget(x, seenX, rect.left, "edge");
+      pushSnapTarget(x, seenX, rect.left + rect.width / 2, "center");
+      pushSnapTarget(x, seenX, rect.right, "edge");
+      pushSnapTarget(y, seenY, rect.top, "edge");
+      pushSnapTarget(y, seenY, rect.top + rect.height / 2, "center");
+      pushSnapTarget(y, seenY, rect.bottom, "edge");
+    });
+    snapSettings.guides.vertical.forEach((value) => {
+      pushSnapTarget(x, seenX, rootRect.left + value, "any");
+    });
+    snapSettings.guides.horizontal.forEach((value) => {
+      pushSnapTarget(y, seenY, rootRect.top + value, "any");
+    });
+    if (snapSettings.grid.enabled) {
+      const gridSize = Math.max(4, snapSettings.grid.size);
+      for (let value = 0; value <= rootRect.width; value += gridSize) {
+        pushSnapTarget(x, seenX, rootRect.left + value, "any");
+      }
+      for (let value = 0; value <= rootRect.height; value += gridSize) {
+        pushSnapTarget(y, seenY, rootRect.top + value, "any");
+      }
+    }
+    return { rootRect, x, y };
+  };
+
+  const findClosestSnap = (sources, targets) => {
+    const threshold = Math.max(4, Math.min(12, 5 / normalizeScale(previewScaleValue)));
+    let best = null;
+    sources.forEach((source) => {
+      targets.forEach((target) => {
+        if (target.kind !== "any" && source.kind !== target.kind) return;
+        const correction = target.value - source.value;
+        const distance = Math.abs(correction);
+        if (distance > threshold) return;
+        const priority = source.kind === "center" ? 1 : 0;
+        if (
+          !best ||
+          distance < best.distance ||
+          (distance === best.distance && priority > best.priority)
+        ) {
+          best = { correction, distance, line: target.value, priority };
+        }
+      });
+    });
+    return best;
+  };
+
+  const resolveDragSnap = (target, snapTargets) => {
+    if (!snapSettings.enabled || !snapTargets) return { x: null, y: null };
+    const rect = target.getBoundingClientRect();
+    return {
+      x: findClosestSnap(
+        [
+          { value: rect.left, kind: "edge" },
+          { value: rect.left + rect.width / 2, kind: "center" },
+          { value: rect.right, kind: "edge" },
+        ],
+        snapTargets.x
+      ),
+      y: findClosestSnap(
+        [
+          { value: rect.top, kind: "edge" },
+          { value: rect.top + rect.height / 2, kind: "center" },
+          { value: rect.bottom, kind: "edge" },
+        ],
+        snapTargets.y
+      ),
+    };
+  };
+
   const ensureHoverOverlay = () => {
     if (hoverOverlayElement && hoverOverlayElement.isConnected) return hoverOverlayElement;
     const overlay = document.createElement("div");
@@ -1090,6 +1295,7 @@ export function buildEditModeInjectScript(previewScale = 1): string {
     overlayElement = null;
     if (hoverOverlayElement) hoverOverlayElement.remove();
     hoverOverlayElement = null;
+    removeSnapGuides();
   };
 
   // --- Emit helpers ---
@@ -1392,17 +1598,27 @@ export function buildEditModeInjectScript(previewScale = 1): string {
   const applyPendingDrag = () => {
     frameId = 0;
     if (!dragState) return;
+    const delta = getPointerDelta(
+      dragState.target,
+      pendingClientX,
+      pendingClientY,
+      dragState.startClientX,
+      dragState.startClientY
+    );
+    let nextX = dragState.baseX + delta.x;
+    let nextY = dragState.baseY + delta.y;
     // Absolute-converted elements: move via left/top directly
     if (dragState.target.hasAttribute("data-ppt-layout-converted")) {
-      const delta = getPointerDelta(
-        dragState.target,
-        pendingClientX,
-        pendingClientY,
-        dragState.startClientX,
-        dragState.startClientY
-      );
-      dragState.target.style.left = (dragState.baseX + delta.x).toFixed(1) + "px";
-      dragState.target.style.top = (dragState.baseY + delta.y).toFixed(1) + "px";
+      dragState.target.style.left = nextX.toFixed(1) + "px";
+      dragState.target.style.top = nextY.toFixed(1) + "px";
+      const snap = resolveDragSnap(dragState.target, dragState.snapTargets);
+      const renderScale = getElementRenderScale(dragState.target);
+      if (snap.x) nextX += snap.x.correction / renderScale.x;
+      if (snap.y) nextY += snap.y.correction / renderScale.y;
+      dragState.target.style.left = nextX.toFixed(1) + "px";
+      dragState.target.style.top = nextY.toFixed(1) + "px";
+      if (dragState.snapTargets) showSnapGuides(snap, dragState.snapTargets.rootRect);
+      else hideSnapGuides();
       // Sync the viewport tracker so next Inspector edit computes correct delta
       const dragRect = dragState.target.getBoundingClientRect();
       dragState.target.setAttribute("data-ppt-last-vp-x", dragRect.left.toFixed(1));
@@ -1411,18 +1627,18 @@ export function buildEditModeInjectScript(previewScale = 1): string {
       updateOverlay();
       return;
     }
-    const delta = getPointerDelta(
-      dragState.target,
-      pendingClientX,
-      pendingClientY,
-      dragState.startClientX,
-      dragState.startClientY
-    );
-    const nextX = dragState.baseX + delta.x;
-    const nextY = dragState.baseY + delta.y;
     dragState.target.style.setProperty("--ppt-drag-x", nextX.toFixed(1) + "px");
     dragState.target.style.setProperty("--ppt-drag-y", nextY.toFixed(1) + "px");
     ensureDragTranslate(dragState.target);
+    const snap = resolveDragSnap(dragState.target, dragState.snapTargets);
+    const renderScale = getElementRenderScale(dragState.target);
+    if (snap.x) nextX += snap.x.correction / renderScale.x;
+    if (snap.y) nextY += snap.y.correction / renderScale.y;
+    dragState.target.style.setProperty("--ppt-drag-x", nextX.toFixed(1) + "px");
+    dragState.target.style.setProperty("--ppt-drag-y", nextY.toFixed(1) + "px");
+    ensureDragTranslate(dragState.target);
+    if (dragState.snapTargets) showSnapGuides(snap, dragState.snapTargets.rootRect);
+    else hideSnapGuides();
     updateHoverOverlay();
     updateOverlay();
   };
@@ -1516,6 +1732,7 @@ export function buildEditModeInjectScript(previewScale = 1): string {
           startClientY: s.startClientY,
           baseX: s.baseX,
           baseY: s.baseY,
+          snapTargets: collectSnapTargets(s.target),
         };
       } else {
         pendingAnchorState = {
@@ -1540,6 +1757,7 @@ export function buildEditModeInjectScript(previewScale = 1): string {
     }
 
     if (resizeState) {
+      hideSnapGuides();
       pendingClientX = event.clientX;
       pendingClientY = event.clientY;
       if (!frameId) {
@@ -1794,6 +2012,7 @@ export function buildEditModeInjectScript(previewScale = 1): string {
     updateOverlay();
     if (rootHost && rootHost.style) rootHost.style.cursor = "crosshair";
     if (cursorHost && cursorHost.style) cursorHost.style.cursor = "crosshair";
+    hideSnapGuides();
 
     if (Math.abs(deltaX) >= 0.5 || Math.abs(deltaY) >= 0.5) {
       const movedPageBounds = getPageBoundsFor(target);
@@ -1819,6 +2038,7 @@ export function buildEditModeInjectScript(previewScale = 1): string {
 
   const onKeyDown = (event) => {
     if (event.key === "Escape") {
+      hideSnapGuides();
       console.log(LOG_PREFIX + JSON.stringify({ type: "exit" }));
       event.preventDefault();
       event.stopPropagation();
@@ -1836,6 +2056,49 @@ export function buildEditModeInjectScript(previewScale = 1): string {
 
   const setPreviewScale = (value) => {
     previewScaleValue = normalizeScale(value);
+  };
+
+  const normalizeSnapValues = (values, max) => {
+    if (!Array.isArray(values)) return [];
+    return values
+      .map((value) => Number(value))
+      .filter((value) => Number.isFinite(value) && value >= 0 && value <= max);
+  };
+
+  window.__pptEditModeSetSnapSettings = (settings) => {
+    const root = getDocumentPageRoot();
+    const rootRect = root ? root.getBoundingClientRect() : { width: 1600, height: 900 };
+    snapSettings = {
+      enabled: settings?.enabled !== false,
+      guides: {
+        vertical: normalizeSnapValues(settings?.guides?.vertical, rootRect.width),
+        horizontal: normalizeSnapValues(settings?.guides?.horizontal, rootRect.height),
+      },
+      grid: {
+        enabled: Boolean(settings?.grid?.enabled),
+        size: Math.max(4, Math.min(200, Number(settings?.grid?.size) || 20)),
+      },
+    };
+  };
+
+  window.__pptEditModeReadSnapPoints = () => {
+    const root = getDocumentPageRoot();
+    if (!root) return { x: [], y: [] };
+    const rootRect = root.getBoundingClientRect();
+    const x = [0, rootRect.width / 2, rootRect.width];
+    const y = [0, rootRect.height / 2, rootRect.height];
+    root.querySelectorAll("[data-block-id]").forEach((candidate) => {
+      if (!(candidate instanceof Element)) return;
+      if (!isUsableElementTarget(candidate) || isScaffoldBlock(candidate)) return;
+      const style = getComputedStyle(candidate);
+      if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity || "1") <= 0.01) return;
+      const rect = candidate.getBoundingClientRect();
+      if (rect.width < 2 || rect.height < 2) return;
+      x.push(rect.left - rootRect.left, rect.left - rootRect.left + rect.width / 2, rect.right - rootRect.left);
+      y.push(rect.top - rootRect.top, rect.top - rootRect.top + rect.height / 2, rect.bottom - rootRect.top);
+    });
+    const unique = (values) => Array.from(new Set(values.map((value) => Number(value.toFixed(1)))));
+    return { x: unique(x), y: unique(y) };
   };
 
   // --- Live update API (called by host via executeJavaScript) ---
@@ -2096,6 +2359,8 @@ export function buildEditModeInjectScript(previewScale = 1): string {
     delete window.__pptEditModeClearSelection;
     delete window.__pptEditModeInjectElement;
     delete window.__pptEditModeSetPreviewScale;
+    delete window.__pptEditModeSetSnapSettings;
+    delete window.__pptEditModeReadSnapPoints;
     const style = document.getElementById(STYLE_ID);
     if (style) style.remove();
     if (cursorHost && cursorHost.style) {
@@ -2120,7 +2385,7 @@ export function buildEditModeInjectScript(previewScale = 1): string {
 
 export function buildEditModeSetPreviewScaleScript(previewScale: number): string {
   const normalizedScale =
-    Number.isFinite(previewScale) && previewScale > 0 ? Number(previewScale.toFixed(4)) : 1;
+    Number.isFinite(previewScale) && previewScale > 0 ? Number(previewScale.toFixed(4)) : 1
   return `
 (() => {
   const value = ${JSON.stringify(normalizedScale)};
@@ -2133,7 +2398,7 @@ export function buildEditModeSetPreviewScaleScript(previewScale: number): string
     state.setPreviewScale(value);
   }
 })();
-`;
+`
 }
 
 export function buildEditModeCleanupScript(): string {

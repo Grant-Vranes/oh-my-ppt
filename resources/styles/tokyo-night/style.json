@@ -1,0 +1,19 @@
+{
+  "style": "tokyo-night",
+  "name": {
+    "zh": "东京夜",
+    "en": "Tokyo Night"
+  },
+  "description": "深蓝底幕上浮起青色光晕，属于深夜程序员的视觉独白",
+  "category": "冷色 · 深色",
+  "aliases": [
+    "tokyo",
+    "night",
+    "东京",
+    "蓝夜",
+    "tech-dark"
+  ],
+  "styleCase": "技术分享、基础设施演讲、开发者社区 Meetup、深夜编程直播",
+  "version": "2.0.0",
+  "source": "builtin"
+}

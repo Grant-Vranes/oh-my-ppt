@@ -1,0 +1,18 @@
+{
+  "style": "y2k-chrome",
+  "name": {
+    "zh": "Y2K 铬",
+    "en": "Y2k Chrome"
+  },
+  "description": "银铬反射彩虹光斑，千禧年的未来主义从未过时",
+  "category": "效果 · 戏剧",
+  "aliases": [
+    "y2k",
+    "chrome",
+    "千禧",
+    "铬"
+  ],
+  "styleCase": "千禧怀旧主题、时尚品牌展示、Gen-Z 文化分享、潮流音乐发布",
+  "version": "2.0.0",
+  "source": "builtin"
+}

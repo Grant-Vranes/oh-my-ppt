@@ -6,7 +6,7 @@ import {
   resolvePageHtmlPath,
   uiText
 } from './generation-utils'
-import { resolveCommonContext, resolveSourceDocuments } from './context'
+import { resolveCommonContext } from './context'
 import { finalizeGenerationSuccess } from './finalization'
 import { progressText } from '@shared/progress'
 import path from 'path'
@@ -42,6 +42,9 @@ export type AddPageContext = {
   abortSignal: AbortSignal
   styleId: string
   styleSkillPrompt: string
+  styleKey: string
+  styleName: string
+  styleVersion: string
   topic: string
   deckTitle: string
   appLocale: 'zh' | 'en'
@@ -51,7 +54,6 @@ export type AddPageContext = {
   messagePageId?: string
   projectId: string
   effectiveMode: 'addPage'
-  sourceDocumentPaths: string[]
 }
 
 export async function resolveAddPageContext(
@@ -64,15 +66,6 @@ export async function resolveAddPageContext(
   log.info('[generate:addPage] resolving context', { sessionId, insertAfterPageNumber })
   const common = await resolveCommonContext(ctx, sessionId, modelConfigId)
   const { sessionRecord } = common
-  const sourceDocumentPaths = await resolveSourceDocuments(ctx, {
-    sessionId,
-    projectDir: common.projectDir,
-    // Add-page is launched from session state, so use the saved session reference document.
-    // Per-message document attachments are intentionally not consumed by this entry.
-    rawDocPaths: [],
-    mode: 'addPage',
-    sessionRecord
-  })
 
   log.info('[generate:addPage] context resolved', {
     sessionId,
@@ -80,8 +73,7 @@ export async function resolveAddPageContext(
     styleId: common.styleId,
     provider: common.provider,
     model: common.model,
-    insertAfterPageNumber,
-    sourceDocumentCount: sourceDocumentPaths.length
+    insertAfterPageNumber
   })
 
   return {
@@ -92,8 +84,7 @@ export async function resolveAddPageContext(
     sessionRecord,
     messageScope: 'main' as const,
     messagePageId: undefined,
-    effectiveMode: 'addPage' as const,
-    sourceDocumentPaths
+    effectiveMode: 'addPage' as const
   }
 }
 
@@ -153,7 +144,7 @@ export async function executeAddPageGeneration(
     payload: {
       runId: context.runId,
       stage: 'planning',
-      label: progressText(context.appLocale, 'understanding'),
+      label: uiText(context.appLocale, '正在规划新增页面', 'Planning the new page'),
       progress: 2,
       totalPages: 1
     }
@@ -180,7 +171,7 @@ export async function executeAddPageGeneration(
       userDescription,
       topic: context.topic,
       existingTitles,
-      sourceDocumentPaths: context.sourceDocumentPaths,
+      sourceDocumentPaths: [],
       signal: context.abortSignal
     })
   } catch (planError) {
@@ -198,7 +189,7 @@ export async function executeAddPageGeneration(
         userDescription,
         topic: context.topic,
         existingTitles,
-        sourceDocumentPaths: context.sourceDocumentPaths,
+        sourceDocumentPaths: [],
         signal: context.abortSignal
       })
     } catch {
@@ -225,7 +216,7 @@ export async function executeAddPageGeneration(
     payload: {
       runId: context.runId,
       stage: 'rendering',
-      label: progressText(context.appLocale, 'generating'),
+      label: uiText(context.appLocale, '正在生成新增页面', 'Generating the new page'),
       progress: 10,
       totalPages: 1
     }
@@ -276,8 +267,9 @@ export async function executeAddPageGeneration(
     runId: context.runId,
     sessionId: context.sessionId
   })
+  let agentSummary = ''
   try {
-    await generatePagesWithRetry({
+    const generationResult = await generatePagesWithRetry({
       runArgs: {
         sessionId: context.sessionId,
         provider: context.provider,
@@ -289,14 +281,18 @@ export async function executeAddPageGeneration(
         temperature: PAGE_GENERATION_TEMPERATURE,
         styleId: context.styleId,
         styleSkillPrompt: context.styleSkillPrompt,
+        styleKey: context.styleKey,
+        styleName: context.styleName,
+        styleVersion: context.styleVersion,
         appLocale: context.appLocale,
         topic: context.topic,
         deckTitle: context.deckTitle,
         userMessage: userDescription,
         outlineTitles: [planResult.title],
         outlineItems: [planResult],
-        sourceDocumentPaths: context.sourceDocumentPaths,
+        sourceDocumentPaths: [],
         generationMode: 'generate',
+        renderingLabel: uiText(context.appLocale, '正在生成新增页面', 'Generating the new page'),
         pageTasks: [
           {
             pageNumber: newPageNumber,
@@ -326,6 +322,7 @@ export async function executeAddPageGeneration(
         `Page generation failed, retrying...`
       )
     })
+    agentSummary = generationResult.summary.trim()
 
     // ── Step 6: Validate generated page ──
     if (!fs.existsSync(newHtmlPath)) {
@@ -336,9 +333,7 @@ export async function executeAddPageGeneration(
       newPageId
     )
     if (!newPageValidation.valid) {
-      throw new Error(
-        `新页面 HTML 验证失败: ${newPageValidation.errors.join('; ')}`
-      )
+      throw new Error(`新页面 HTML 验证失败: ${newPageValidation.errors.join('; ')}`)
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Page generation failed'
@@ -376,9 +371,7 @@ export async function executeAddPageGeneration(
         fileSlug: pageId,
         candidates: [page.html_path]
       })
-      const html = fs.existsSync(htmlPath)
-        ? await fs.promises.readFile(htmlPath, 'utf-8')
-        : ''
+      const html = fs.existsSync(htmlPath) ? await fs.promises.readFile(htmlPath, 'utf-8') : ''
       return {
         id: page.id,
         pageNumber: page.page_number,
@@ -391,12 +384,8 @@ export async function executeAddPageGeneration(
   )
 
   // Insert new page after insertAfterPageNumber
-  const beforePages = existingPageDescriptors.filter(
-    (p) => p.pageNumber <= insertAfterPageNumber
-  )
-  const afterPages = existingPageDescriptors.filter(
-    (p) => p.pageNumber > insertAfterPageNumber
-  )
+  const beforePages = existingPageDescriptors.filter((p) => p.pageNumber <= insertAfterPageNumber)
+  const afterPages = existingPageDescriptors.filter((p) => p.pageNumber > insertAfterPageNumber)
   const mergedPages = [...beforePages, newPageEntry, ...afterPages]
 
   // Renumber
@@ -449,11 +438,13 @@ export async function executeAddPageGeneration(
 
   // ── Step 10: Finalize ──
   // Persist assistant message
-  const assistantContent = uiText(
-    context.appLocale,
-    `已新增页面「${planResult.title}」并插入到第 ${insertAfterPageNumber} 页之后。`,
-    `Added page "${planResult.title}" after page ${insertAfterPageNumber}.`
-  )
+  const assistantContent =
+    agentSummary ||
+    uiText(
+      context.appLocale,
+      `已新增页面「${planResult.title}」并插入到第 ${insertAfterPageNumber} 页之后。`,
+      `Added page "${planResult.title}" after page ${insertAfterPageNumber}.`
+    )
   await db.addMessage(context.sessionId, {
     role: 'assistant',
     content: assistantContent,

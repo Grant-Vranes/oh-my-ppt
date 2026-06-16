@@ -1,0 +1,18 @@
+{
+  "style": "rose-pine",
+  "name": {
+    "zh": "玫瑰松",
+    "en": "Rose Pine"
+  },
+  "description": "暗紫森林里玫瑰静默绽放，设计感与代码温柔共存",
+  "category": "冷色 · 深色",
+  "aliases": [
+    "rose",
+    "pine",
+    "玫瑰",
+    "柔和暗色"
+  ],
+  "styleCase": "设计技术交叉话题、审美向技术分享、创意编程展示、设计系统介绍",
+  "version": "2.0.0",
+  "source": "builtin"
+}

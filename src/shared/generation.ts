@@ -153,7 +153,10 @@ export interface GenerateStartPayload {
   userMessage: string
   type?: 'deck' | 'page'
   chatType?: 'main' | 'page'
+  resetVisualStyle?: boolean
+  persistUserMessage?: boolean
   chatPageId?: string
+  selectPageIds?: string[]
   selectedPageId?: string
   htmlPath?: string
   selector?: string
@@ -162,6 +165,36 @@ export interface GenerateStartPayload {
   imagePaths?: string[]
   videoPaths?: string[]
   docPaths?: string[]
+}
+
+export interface SwitchSessionStylePayload {
+  sessionId: string
+  styleId: string
+  modelConfigId?: string
+}
+
+export type RetrySessionStylePayload = SwitchSessionStylePayload & {
+  failedRunId?: string
+}
+
+export type RetryDeckEditPayload = GenerateStartPayload & {
+  failedRunId?: string
+}
+
+export const MAX_SELECTED_PAGES = 50
+export const MAX_STYLE_SWITCH_PAGES = 500
+
+export const normalizeSelectPageIds = (value: unknown, limit = MAX_SELECTED_PAGES): string[] => {
+  if (!Array.isArray(value)) return []
+  const normalized = Array.from(
+    new Set(
+      value.map((item) => String(item || '').trim()).filter((item) => /^[a-z0-9_-]+$/i.test(item))
+    )
+  )
+  if (normalized.length > limit) {
+    throw new Error(`一次最多选择 ${limit} 页`)
+  }
+  return normalized
 }
 
 export interface GenerateRetryFailedPayload {
@@ -185,6 +218,7 @@ export interface GenerateRetrySinglePagePayload {
 
 export interface GeneratedPagePayload {
   id?: string
+  focusPage?: boolean
   pageNumber: number
   title: string
   contentOutline?: string | null
@@ -214,6 +248,7 @@ export interface GenerateStagePayload {
   completedPageCount?: number
   failedPageCount?: number
   timestamp?: string
+  activityKind?: 'edit' | 'style-switch' | 'single-page-retry'
 }
 
 export type GenerateChunkEvent =
@@ -239,6 +274,7 @@ export type GenerateChunkEvent =
         chatType?: 'main' | 'page'
         pageId?: string
         timestamp?: string
+        activityKind?: 'edit' | 'style-switch' | 'single-page-retry'
       }
     }
   | {
@@ -266,6 +302,7 @@ export type GenerateChunkEvent =
         completedPageCount?: number
         failedPageCount?: number
         timestamp?: string
+        activityKind?: 'edit' | 'style-switch' | 'single-page-retry'
       }
     }
   | {
@@ -278,5 +315,6 @@ export type GenerateChunkEvent =
         completedPageCount?: number
         failedPageCount?: number
         timestamp?: string
+        activityKind?: 'edit' | 'style-switch' | 'single-page-retry'
       }
     }

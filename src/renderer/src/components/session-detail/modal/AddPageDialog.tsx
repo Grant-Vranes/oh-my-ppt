@@ -105,7 +105,7 @@ export function AddPageDialog({ sessionId }: AddPageDialogProps): React.JSX.Elem
           className="mb-4 h-40 w-full resize-none rounded-xl border border-[#d4e4c1]/60 bg-[#f8f6f0] px-4 py-3 text-sm leading-relaxed text-[#2f3a2a] placeholder:text-[#8a9a7b] focus:border-[#5d6b4d] focus:outline-none"
           autoFocus
           onKeyDown={(event) => {
-            if (event.key === 'Enter' && !event.shiftKey && value.trim()) {
+            if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing && value.trim()) {
               event.preventDefault()
               void handleAddPage()
             }

@@ -46,7 +46,8 @@ export async function resolveTemplateDeckContext(
   if (!isTemplateSession(context.sessionRecord)) {
     throw new Error('当前会话不是模板会话，不能使用模板生成链路')
   }
-  const payloadRecord = payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {}
+  const payloadRecord =
+    payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {}
   const templateRetry = payloadRecord.retry === true
 
   const sessionPages = await ctx.db.listSessionPages(context.sessionId)
@@ -102,7 +103,9 @@ export async function executeTemplateDeckGeneration(
   }
 
   const emitDeckChunk = createDeckProgressEmitter(context.sessionId, context.appLocale)
-  const templateMetadata = parseJsonObject(context.sessionRecord.metadata ?? context.sessionRecord.metadata_json)
+  const templateMetadata = parseJsonObject(
+    context.sessionRecord.metadata ?? context.sessionRecord.metadata_json
+  )
   const templateDesignContract = resolveTemplateDesignContract(
     context.sessionRecord.designContract,
     templateMetadata
@@ -232,24 +235,24 @@ export async function executeTemplateDeckGeneration(
       })
     : shouldUseSourcePlan && context.sourcePlan
       ? mapSourcePlanToOutlineItems(context.sourcePlan)
-    : await planDeckWithLLM({
-        provider: context.provider,
-        apiKey: context.apiKey,
-        model: context.model,
-        baseUrl: context.providerBaseUrl,
-        maxTokens: context.maxTokens,
-        modelTimeoutMs: context.modelTimeouts.planning,
-        temperature: PLANNER_TEMPERATURE,
-        styleId: context.styleId,
-        totalPages: pageRefs.length,
-        appLocale: context.appLocale,
-        topic: context.topic,
-        userMessage: context.userMessage,
-        sourceDocumentPaths: context.sourceDocumentPaths,
-        emit: (chunk) => emitDeckChunk(chunk),
-        runId: context.runId,
-        signal: context.entry.abortController.signal
-      })
+      : await planDeckWithLLM({
+          provider: context.provider,
+          apiKey: context.apiKey,
+          model: context.model,
+          baseUrl: context.providerBaseUrl,
+          maxTokens: context.maxTokens,
+          modelTimeoutMs: context.modelTimeouts.planning,
+          temperature: PLANNER_TEMPERATURE,
+          styleId: context.styleId,
+          totalPages: pageRefs.length,
+          appLocale: context.appLocale,
+          topic: context.topic,
+          userMessage: context.userMessage,
+          sourceDocumentPaths: context.sourceDocumentPaths,
+          emit: (chunk) => emitDeckChunk(chunk),
+          runId: context.runId,
+          signal: context.entry.abortController.signal
+        })
 
   const outlineItems = pageRefs.map((page, index) => {
     const planned = plannedOutlineItems[index]
@@ -260,8 +263,12 @@ export async function executeTemplateDeckGeneration(
     }
   })
   const outlineTitles = outlineItems.map((item) => item.title)
-  const existingSessionPages = await db.listSessionPages(context.sessionId, { includeDeleted: true })
-  const existingSessionPageBySlug = new Map(existingSessionPages.map((page) => [page.file_slug, page]))
+  const existingSessionPages = await db.listSessionPages(context.sessionId, {
+    includeDeleted: true
+  })
+  const existingSessionPageBySlug = new Map(
+    existingSessionPages.map((page) => [page.file_slug, page])
+  )
   for (let index = 0; index < pageRefs.length; index += 1) {
     const page = pageRefs[index]
     page.title = outlineTitles[index] || page.title
@@ -329,10 +336,10 @@ export async function executeTemplateDeckGeneration(
     payload: {
       runId: context.runId,
       stage: 'preflight',
-        label: progressText(context.appLocale, 'generating'),
-        progress: 10,
-        totalPages: fullDeckPageCount,
-        detail: uiText(
+      label: progressText(context.appLocale, 'generating'),
+      progress: 10,
+      totalPages: fullDeckPageCount,
+      detail: uiText(
         context.appLocale,
         context.templateRetry
           ? `已准备继续生成 ${pageRefs.length} 个未完成模板页面`
@@ -343,19 +350,6 @@ export async function executeTemplateDeckGeneration(
       )
     }
   })
-
-  await emitAssistant(
-    context,
-    uiText(
-      context.appLocale,
-      context.templateRetry
-        ? `将继续生成「${context.topic}」中 ${outlineItems.length} 个未完成模板页面，并保留已完成页面。`
-        : `已为「${context.topic}」按模板规划 ${outlineItems.length} 页内容，接下来会逐页替换模板内容并保持设计系统延展。`,
-      context.templateRetry
-        ? `Continuing ${outlineItems.length} unfinished template pages for "${context.topic}" while preserving completed pages.`
-        : `Planned ${outlineItems.length} slides for "${context.topic}" using the template design system. I will replace template content page by page while preserving the system.`
-    )
-  )
 
   const persistedGeneratedPagesById = new Map<
     string,
@@ -455,7 +449,7 @@ export async function executeTemplateDeckGeneration(
     await persistGenerationSnapshotMetadata()
   }
 
-  const { failedPages } = await runDeepAgentDeckGeneration({
+  const { summary: agentSummary, failedPages } = await runDeepAgentDeckGeneration({
     sessionId: context.sessionId,
     provider: context.provider,
     apiKey: context.apiKey,
@@ -466,6 +460,9 @@ export async function executeTemplateDeckGeneration(
     temperature: PAGE_GENERATION_TEMPERATURE,
     styleId: context.styleId,
     styleSkillPrompt: context.styleSkill.prompt,
+    styleKey: context.styleKey,
+    styleName: context.styleName,
+    styleVersion: context.styleVersion,
     appLocale: context.appLocale,
     topic: context.topic,
     deckTitle: context.deckTitle,
@@ -577,10 +574,15 @@ export async function executeTemplateDeckGeneration(
     ...postValidationFailures.filter((item) => item.pageId !== 'index')
   ]
   if (allFailedPages.length > 0 || postValidationFailures.some((item) => item.pageId === 'index')) {
-    const failedDetails = [...allFailedPages, ...postValidationFailures.filter((item) => item.pageId === 'index')]
+    const failedDetails = [
+      ...allFailedPages,
+      ...postValidationFailures.filter((item) => item.pageId === 'index')
+    ]
       .map((item) => `${item.pageId}（${item.title}）：${item.reason}`)
       .join('；')
-    const existingSessionPages = await db.listSessionPages(context.sessionId, { includeDeleted: true })
+    const existingSessionPages = await db.listSessionPages(context.sessionId, {
+      includeDeleted: true
+    })
     const existingBySlug = new Map(existingSessionPages.map((page) => [page.file_slug, page]))
     for (const pageRef of pageRefs) {
       const failed = allFailedPages.find((item) => item.pageId === pageRef.pageId)
@@ -629,18 +631,16 @@ export async function executeTemplateDeckGeneration(
     })
   }
 
-  await emitAssistant(
-    context,
-    uiText(
-      context.appLocale,
-      context.templateRetry
-        ? `未完成模板页已继续生成完成。当前共 ${fullDeckPageCount} 页，主题「${context.topic}」。`
-        : `模板生成已完成。共 ${fullDeckPageCount} 页，主题「${context.topic}」。`,
-      context.templateRetry
-        ? `Unfinished template pages are complete. The deck now has ${fullDeckPageCount} pages for "${context.topic}".`
-        : `Template generation completed. It has ${fullDeckPageCount} pages for "${context.topic}".`
-    )
+  const fallbackCompletionSummary = uiText(
+    context.appLocale,
+    context.templateRetry
+      ? `未完成模板页已继续生成完成。当前共 ${fullDeckPageCount} 页，主题「${context.topic}」。`
+      : `模板生成已完成。共 ${fullDeckPageCount} 页，主题「${context.topic}」。`,
+    context.templateRetry
+      ? `Unfinished template pages are complete. The deck now has ${fullDeckPageCount} pages for "${context.topic}".`
+      : `Template generation completed. It has ${fullDeckPageCount} pages for "${context.topic}".`
   )
+  await emitAssistant(context, agentSummary.trim() || fallbackCompletionSummary)
   await db.updateGenerationRunStatus(context.runId, 'completed', null)
   await finalizeGenerationSuccess(ctx, {
     context,

@@ -1,0 +1,18 @@
+{
+  "style": "memphis-pop",
+  "name": {
+    "zh": "孟菲斯波普",
+    "en": "Memphis Pop"
+  },
+  "description": "霓虹渐变洒满画布，孟菲斯派对永不散场",
+  "category": "大胆 · 宣言",
+  "aliases": [
+    "memphis",
+    "pop",
+    "孟菲斯",
+    "波普"
+  ],
+  "styleCase": "年轻品牌发布、潮流合作、创意工作坊、毕业展示",
+  "version": "2.0.0",
+  "source": "builtin"
+}

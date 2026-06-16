@@ -8,6 +8,7 @@ import {
   DialogFooter
 } from '../ui/Dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/Select'
+import { StyleSelect } from '../style/StyleSelect'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { useT } from '@renderer/i18n'
@@ -36,6 +37,8 @@ interface StyleOption {
   description: string
   aliases?: string[]
   styleCase?: string
+  thumbnailPath?: string | null
+  previewPath?: string | null
 }
 
 const tokenizeStyleText = (value: string): string[] => {
@@ -182,7 +185,9 @@ export function GenerationConfirmDialog({
         label: item.label,
         description: item.description,
         aliases: item.aliases,
-        styleCase: item.styleCase
+        styleCase: item.styleCase,
+        thumbnailPath: item.thumbnailPath,
+        previewPath: item.previewPath
       }))
     )
     const fonts = [...fontRes.userFonts, ...fontRes.googleFonts]
@@ -267,25 +272,13 @@ export function GenerationConfirmDialog({
           <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_6.25rem]">
             <div className="min-w-0">
               <label className="block font-medium">{t('home.style')}</label>
-              <Select value={styleId} onValueChange={setStyleId}>
-                <SelectTrigger className="min-w-0">
-                  <SelectValue placeholder={t('home.stylePlaceholder')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {styleOptions.map((option) => (
-                    <SelectItem key={option.id} value={option.id}>
-                      <span className="flex min-w-0 items-center gap-1.5">
-                        <span className="min-w-0 truncate">{option.label}</span>
-                        {option.styleCase && (
-                          <span className="max-w-[220px] shrink-0 truncate rounded-md border border-[#d6c08d]/80 bg-[#fff7e8] px-1.5 py-px text-[10px] font-medium text-[#7c6a4c]">
-                            {option.styleCase}
-                          </span>
-                        )}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <StyleSelect
+                value={styleId}
+                onChange={setStyleId}
+                options={styleOptions}
+                placeholder={t('home.stylePlaceholder')}
+                className="min-w-0"
+              />
             </div>
 
             <div className="min-w-0">

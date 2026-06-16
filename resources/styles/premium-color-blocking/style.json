@@ -1,0 +1,13 @@
+{
+  "style": "premium-color-blocking",
+  "name": {
+    "zh": "高级撞色",
+    "en": "Premium Color Blocking"
+  },
+  "description": "暖橙撞墨蓝的时尚编辑大片气质",
+  "category": "大胆 · 杂志",
+  "aliases": ["撞色", "高级配色", "色彩对峙", "杂志风", "editorial"],
+  "styleCase": "品牌发布、时尚潮流、年度总结、产品发布会、创意提案、视觉作品集",
+  "version": "2.0.0",
+  "source": "builtin"
+}

@@ -1,16 +1,18 @@
-import { ipcMain } from 'electron'
+import { BrowserWindow, dialog, ipcMain } from 'electron'
 import fs from 'fs'
 import path from 'path'
 import log from 'electron-log/main.js'
 import { customAlphabet } from 'nanoid'
-import { is } from '@electron-toolkit/utils'
 import {
   listStyleCatalog,
   getStyleDetail,
   createStyleSkill,
   updateStyleSkill,
   hasStyleSkill,
-  deleteStyleSkill
+  deleteStyleSkill,
+  exportStylePackageZip,
+  importStylePackageDirectory,
+  importStylePackageZip
 } from '../../utils/style-skills'
 import type { IpcContext } from '../context'
 import { resolveGlobalModelTimeouts, resolveModelConfigForTask } from './model-config-utils'
@@ -18,18 +20,29 @@ import { parseStyleFile } from '../../utils/style-import'
 import { parseStyleImage } from '../../utils/style-image-import'
 import { parseStylePptx } from '../../utils/style-pptx-import'
 import { isSupportedImageMimeType, normalizeImageMimeType } from '@shared/image-mime'
+import { getInstalledStylesPath } from '../../styles'
+import {
+  enqueueHtmlThumbnail,
+  getFreshHtmlThumbnailPath
+} from '../../utils/html-thumbnail-service'
 
 const nanoidLower = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 12)
 const MAX_STYLE_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
 
-function resolvePreviewHtmlPath(styleKey: string): string {
-  return is.dev
-    ? path.join(process.cwd(), 'resources', 'styleHtml', `${styleKey}.html`)
-    : path.join(process.resourcesPath, 'app.asar.unpacked', 'resources', 'styleHtml', `${styleKey}.html`)
-}
-
-function resolvePreviewPath(styleKey: string): string | null {
-  const htmlPath = resolvePreviewHtmlPath(styleKey)
+function resolvePreviewPath(row: {
+  id: string
+  style: string
+  source: string
+  packageDir?: string | null
+}): string | null {
+  const installedRoot = getInstalledStylesPath()
+  if (!installedRoot) return null
+  const dir = row.packageDir
+    ? path.join(installedRoot, row.packageDir)
+    : row.source === 'builtin'
+      ? path.join(installedRoot, 'system', row.style)
+      : path.join(installedRoot, 'user', row.id)
+  const htmlPath = path.join(dir, 'preview.html')
   return fs.existsSync(htmlPath) ? htmlPath : null
 }
 
@@ -46,8 +59,31 @@ type StylePayload = StyleBasePayload & {
   id: string
 }
 
+function parseAliases(value: string): string[] {
+  try {
+    const parsed = JSON.parse(value || '[]')
+    return Array.isArray(parsed) ? parsed.map((item) => String(item)) : []
+  } catch {
+    return []
+  }
+}
+
 export function registerStyleHandlers(ctx: IpcContext): void {
   const { db } = ctx
+  const completeStylePackageImport = async (result: {
+    id: string
+    source: 'custom' | 'override'
+  }): Promise<{ success: true; cancelled: false; id: string; source: 'custom' | 'override' }> => {
+    const importedStyle = await db.getStyleRow(result.id)
+    const previewPath = importedStyle ? resolvePreviewPath(importedStyle) : null
+    if (previewPath) {
+      await enqueueHtmlThumbnail(
+        { resourceType: 'style', resourceId: result.id, sourcePath: previewPath },
+        { force: true }
+      )
+    }
+    return { success: true, cancelled: false, ...result }
+  }
 
   ipcMain.handle('styles:get', async () => {
     log.info('[styles:get] requested')
@@ -84,25 +120,81 @@ export function registerStyleHandlers(ctx: IpcContext): void {
     return getStyleDetail(styleId)
   })
 
-  ipcMain.handle('styles:list', async () => {
+  ipcMain.handle('styles:list', async (_event, payload?: { sessionId?: string }) => {
+    const sessionId = typeof payload?.sessionId === 'string' ? payload.sessionId.trim() : ''
     const rows = (await db.listStyleRows()).filter((row) => row.active !== false)
     rows.sort((a, b) => b.updatedAt - a.updatedAt || b.createdAt - a.createdAt)
-    return {
-      items: rows.map((row) => ({
+    const items = await Promise.all(rows.map(async (row) => {
+      const previewPath = resolvePreviewPath(row)
+      return {
         id: row.id,
         styleKey: row.style,
         label: row.styleName,
+        name: {
+          zh: row.styleNameZh || row.styleName,
+          en: row.styleNameEn || ''
+        },
         description: row.description,
-        aliases: JSON.parse(row.aliases || '[]'),
+        aliases: parseAliases(row.aliases),
         category: row.category || (row.source === 'builtin' ? '内置' : '自定义'),
         source: row.source,
         editable: row.source !== 'builtin',
         version: row.version,
         styleCase: row.styleCase,
-        previewPath: resolvePreviewPath(row.style),
+        packageDir: row.packageDir || '',
+        previewPath,
+        thumbnailPath: previewPath
+          ? await getFreshHtmlThumbnailPath({
+              resourceType: 'style',
+              resourceId: row.id,
+              sourcePath: previewPath
+            })
+          : null,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt
-      }))
+      }
+    }))
+
+    if (sessionId) {
+      const snapshot = await db.getSessionStyleSnapshot(sessionId)
+      if (snapshot && !items.some((item) => item.id === snapshot.styleId)) {
+        const previewPath = resolvePreviewPath({
+          id: snapshot.styleId,
+          style: snapshot.styleKey,
+          source: snapshot.source,
+          packageDir: snapshot.packageDir
+        })
+        items.unshift({
+          id: snapshot.styleId,
+          styleKey: snapshot.styleKey,
+          label: snapshot.styleName,
+          name: {
+            zh: snapshot.styleNameZh || snapshot.styleName,
+            en: snapshot.styleNameEn || ''
+          },
+          description: snapshot.description,
+          aliases: parseAliases(snapshot.aliases),
+          category: snapshot.category || (snapshot.source === 'builtin' ? '内置' : '自定义'),
+          source: snapshot.source,
+          editable: false,
+          version: snapshot.version,
+          styleCase: snapshot.styleCase,
+          packageDir: snapshot.packageDir || '',
+          previewPath,
+          thumbnailPath: previewPath
+            ? await getFreshHtmlThumbnailPath({
+                resourceType: 'style',
+                resourceId: snapshot.styleId,
+                sourcePath: previewPath
+              })
+            : null,
+          createdAt: snapshot.createdAt,
+          updatedAt: snapshot.createdAt
+        })
+      }
+    }
+    return {
+      items
     }
   })
 
@@ -237,6 +329,81 @@ export function registerStyleHandlers(ctx: IpcContext): void {
     })
   })
 
+  ipcMain.handle('styles:importPackageZip', async (event) => {
+    const ownerWindow = BrowserWindow.fromWebContents(event.sender)
+    const openResult = ownerWindow
+      ? await dialog.showOpenDialog(ownerWindow, {
+          title: '导入风格包',
+          buttonLabel: '导入',
+          properties: ['openFile'],
+          filters: [
+            { name: 'Style ZIP', extensions: ['zip'] },
+            { name: '所有文件', extensions: ['*'] }
+          ]
+        })
+      : await dialog.showOpenDialog({
+          title: '导入风格包',
+          buttonLabel: '导入',
+          properties: ['openFile'],
+          filters: [
+            { name: 'Style ZIP', extensions: ['zip'] },
+            { name: '所有文件', extensions: ['*'] }
+          ]
+        })
+    if (openResult.canceled || openResult.filePaths.length === 0) {
+      return { success: false, cancelled: true, id: '', source: 'custom' as const }
+    }
+    const result = await importStylePackageZip(openResult.filePaths[0])
+    return completeStylePackageImport(result)
+  })
+
+  ipcMain.handle('styles:importPackageDirectory', async (event) => {
+    const ownerWindow = BrowserWindow.fromWebContents(event.sender)
+    const openResult = ownerWindow
+      ? await dialog.showOpenDialog(ownerWindow, {
+          title: '导入风格文件夹',
+          buttonLabel: '导入',
+          properties: ['openDirectory']
+        })
+      : await dialog.showOpenDialog({
+          title: '导入风格文件夹',
+          buttonLabel: '导入',
+          properties: ['openDirectory']
+        })
+    if (openResult.canceled || openResult.filePaths.length === 0) {
+      return { success: false, cancelled: true, id: '', source: 'custom' as const }
+    }
+    const result = await importStylePackageDirectory(openResult.filePaths[0])
+    return completeStylePackageImport(result)
+  })
+
+  ipcMain.handle('styles:exportPackageZip', async (event, payload) => {
+    const styleId = typeof payload?.styleId === 'string' ? payload.styleId.trim() : ''
+    if (!styleId) throw new Error('styleId 为空')
+    const detail = getStyleDetail(styleId)
+    const safeName = (detail.styleKey || detail.id).replace(/[^a-z0-9-]/gi, '-').toLowerCase()
+    const ownerWindow = BrowserWindow.fromWebContents(event.sender)
+    const saveResult = ownerWindow
+      ? await dialog.showSaveDialog(ownerWindow, {
+          title: '导出风格包',
+          defaultPath: safeName + '.zip',
+          filters: [{ name: 'Style ZIP', extensions: ['zip'] }]
+        })
+      : await dialog.showSaveDialog({
+          title: '导出风格包',
+          defaultPath: safeName + '.zip',
+          filters: [{ name: 'Style ZIP', extensions: ['zip'] }]
+        })
+    if (saveResult.canceled || !saveResult.filePath) {
+      return { success: false, canceled: true }
+    }
+    const outputPath = saveResult.filePath.toLowerCase().endsWith('.zip')
+      ? saveResult.filePath
+      : saveResult.filePath + '.zip'
+    const result = await exportStylePackageZip(styleId, outputPath)
+    return { success: true, canceled: false, ...result }
+  })
+
   ipcMain.handle('styles:create', async (_event, payload) => {
     const parsed = parseCreatePayload(payload)
     let id = `style-${nanoidLower()}`
@@ -259,14 +426,7 @@ export function registerStyleHandlers(ctx: IpcContext): void {
   ipcMain.handle('styles:delete', async (_event, styleId: string) => {
     const id = String(styleId || '').trim()
     if (!id) return { success: false, deleted: false }
-    if (!hasStyleSkill(id)) {
-      return { success: false, deleted: false, message: 'style 不存在' }
-    }
     const result = await deleteStyleSkill(id)
-    return {
-      success: true,
-      deleted: result.deleted,
-      message: result.deleted ? undefined : '内置风格不可删除'
-    }
+    return { success: result.deleted, deleted: result.deleted }
   })
 }

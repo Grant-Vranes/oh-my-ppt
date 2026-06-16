@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>柔和马卡龙 · soft-pastel</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: #0f1117;
+    display: flex; align-items: center; justify-content: center;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+  }
+  .slide {
+    width: min(100vw, calc(100vh * 16 / 9));
+    aspect-ratio: 16 / 9;
+    background: #fef3c7;
+    position: relative;
+    overflow: hidden;
+  }
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(0px);
+    opacity: 0.5;
+  }
+  .blob-1 {
+    width: 55%; height: 80%;
+    background: radial-gradient(circle, #f472b6 0%, #f9a8d4 60%, transparent 70%);
+    top: -25%; left: -15%;
+    border-radius: 40% 60% 50% 50%;
+  }
+  .blob-2 {
+    width: 45%; height: 65%;
+    background: radial-gradient(circle, #60a5fa 0%, #93c5fd 60%, transparent 70%);
+    bottom: -20%; right: -10%;
+    border-radius: 50% 50% 45% 55%;
+  }
+  .blob-3 {
+    width: 30%; height: 40%;
+    background: radial-gradient(circle, #fbbf24 0%, #fcd34d 60%, transparent 70%);
+    top: 10%; right: 25%;
+    border-radius: 55% 45% 50% 50%;
+    opacity: 0.35;
+  }
+  .blob-4 {
+    width: 20%; height: 25%;
+    background: radial-gradient(circle, #f472b6 0%, transparent 70%);
+    bottom: 15%; left: 30%;
+    border-radius: 50%;
+    opacity: 0.3;
+  }
+  .content {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    z-index: 2;
+  }
+  .category {
+    font-size: clamp(7px, 0.75vw, 10px);
+    color: #9d174d;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    font-weight: 600;
+    background: rgba(255,255,255,0.5);
+    padding: 4px 16px;
+    border-radius: 50px;
+    margin-bottom: 3%;
+  }
+  h1 {
+    font-size: clamp(34px, 6vw, 72px);
+    font-weight: 700;
+    color: #831843;
+    line-height: 1.15;
+  }
+  .desc {
+    font-size: clamp(10px, 1.2vw, 15px);
+    color: #9d174d;
+    line-height: 1.7;
+    margin-top: 2%;
+    max-width: 50%;
+    font-weight: 400;
+    opacity: 0.8;
+  }
+  .tags {
+    display: flex;
+    gap: 10px;
+    margin-top: 4%;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .tags span {
+    font-size: clamp(7px, 0.7vw, 10px);
+    color: #831843;
+    background: rgba(255,255,255,0.55);
+    padding: 5px 14px;
+    border-radius: 50px;
+    font-weight: 500;
+  }
+  .palette {
+    position: absolute;
+    bottom: 7%;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    z-index: 2;
+  }
+  .palette i {
+    display: block;
+    width: clamp(14px, 1.6vw, 22px);
+    height: clamp(14px, 1.6vw, 22px);
+    border-radius: 50%;
+    background: var(--c);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+  .label {
+    position: absolute;
+    bottom: 3%;
+    right: 5%;
+    font-size: clamp(6px, 0.65vw, 8px);
+    color: #d97706;
+    opacity: 0.4;
+    letter-spacing: 0.1em;
+  }
+  @media (max-aspect-ratio: 16/9) {
+    .slide { width: min(100vw, calc(100vh * 16 / 9)); height: auto; }
+  }
+  @media (min-aspect-ratio: 16/9) {
+    .slide { height: min(100vh, calc(100vw * 9 / 16)); width: auto; }
+  }
+</style>
+</head>
+<body>
+  <main class="slide" aria-label="柔和马卡龙 style preview">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+    <div class="blob blob-4"></div>
+    <section class="content">
+      <div class="category">浅色 · 沉静</div>
+      <h1>柔和马卡龙</h1>
+      <p class="desc">马卡龙三色在画布上轻轻晕开，柔软得像一声早安</p>
+      <div class="tags">
+        <span>产品发布</span>
+        <span>消费者展示</span>
+        <span>轻松话题</span>
+        <span>亲子教育</span>
+      </div>
+    </section>
+    <div class="palette">
+      <i style="--c:#831843"></i>
+      <i style="--c:#9d174d"></i>
+      <i style="--c:#f472b6"></i>
+      <i style="--c:#60a5fa"></i>
+      <i style="--c:#fef3c7"></i>
+    </div>
+    <div class="label">soft-pastel</div>
+  </main>
+</body>
+</html>

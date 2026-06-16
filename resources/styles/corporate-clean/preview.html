@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>企业洁净 · corporate-clean</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: #0f1117;
+    display: flex; align-items: center; justify-content: center;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+  }
+  .slide {
+    width: min(100vw, calc(100vh * 16 / 9));
+    aspect-ratio: 16 / 9;
+    background: #ffffff;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+  }
+  .sidebar {
+    width: 25%;
+    height: 100%;
+    background: linear-gradient(180deg, #0f172a 0%, #1e3a8a 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 10% 8%;
+    position: relative;
+  }
+  .sidebar::after {
+    content: '';
+    position: absolute;
+    right: 0; top: 15%; bottom: 15%;
+    width: 1px;
+    background: rgba(255,255,255,0.1);
+  }
+  .sidebar-label {
+    font-size: clamp(7px, 0.7vw, 9px);
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .sidebar-title {
+    font-size: clamp(16px, 2.2vw, 26px);
+    color: #ffffff;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+  .sidebar-palette {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .sidebar-palette span {
+    width: clamp(10px, 1.2vw, 16px);
+    height: clamp(10px, 1.2vw, 16px);
+    border-radius: 3px;
+    background: var(--c);
+  }
+  .main {
+    flex: 1;
+    padding: 8% 7%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .category {
+    font-size: clamp(7px, 0.75vw, 9px);
+    color: #3b82f6;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    font-weight: 600;
+    border-bottom: 2px solid #1e3a8a;
+    padding-bottom: 4px;
+    display: inline-block;
+    align-self: flex-start;
+  }
+  .title-block {
+    margin-top: auto;
+  }
+  h1 {
+    font-size: clamp(28px, 4.5vw, 54px);
+    color: #0f172a;
+    font-weight: 800;
+    line-height: 1.1;
+  }
+  .en-name {
+    font-size: clamp(10px, 1.1vw, 14px);
+    color: #334155;
+    font-weight: 400;
+    margin-top: 1%;
+  }
+  .desc {
+    font-size: clamp(9px, 1vw, 13px);
+    color: #64748b;
+    line-height: 1.6;
+    margin-top: 4%;
+    max-width: 80%;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8%;
+    margin-top: 4%;
+  }
+  .grid-item {
+    border-top: 2px solid #e2e8f0;
+    padding-top: 6%;
+  }
+  .grid-item strong {
+    font-size: clamp(8px, 0.85vw, 11px);
+    color: #1e3a8a;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 4%;
+  }
+  .grid-item span {
+    font-size: clamp(7px, 0.7vw, 9px);
+    color: #64748b;
+    line-height: 1.5;
+  }
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 3%;
+  }
+  .footer span {
+    font-size: clamp(7px, 0.7vw, 9px);
+    color: #94a3b8;
+  }
+  @media (max-aspect-ratio: 16/9) {
+    .slide { width: min(100vw, calc(100vh * 16 / 9)); height: auto; }
+  }
+  @media (min-aspect-ratio: 16/9) {
+    .slide { height: min(100vh, calc(100vw * 9 / 16)); width: auto; }
+  }
+</style>
+</head>
+<body>
+  <main class="slide" aria-label="企业洁净 style preview">
+    <aside class="sidebar">
+      <div>
+        <div class="sidebar-label">Style Preview</div>
+        <div class="sidebar-title" style="margin-top: 12%;">Corporate Clean</div>
+      </div>
+      <div class="sidebar-palette">
+        <span style="--c:#0f172a"></span>
+        <span style="--c:#334155"></span>
+        <span style="--c:#1e3a8a"></span>
+        <span style="--c:#3b82f6"></span>
+        <span style="--c:#ffffff"></span>
+      </div>
+    </aside>
+    <section class="main">
+      <div class="category">浅色 · 专业</div>
+      <div class="grid">
+        <div class="grid-item">
+          <strong>董事会汇报</strong>
+          <span>专业权威的视觉语言</span>
+        </div>
+        <div class="grid-item">
+          <strong>B2B 销售</strong>
+          <span>商务场合最稳妥的选择</span>
+        </div>
+        <div class="grid-item">
+          <strong>金融报告</strong>
+          <span>纯白上海军蓝落笔</span>
+        </div>
+      </div>
+      <div class="title-block">
+        <h1>企业洁净</h1>
+        <div class="en-name">纯白上海军蓝落笔，商务场合最稳妥的选择</div>
+      </div>
+      <div class="footer">
+        <span>corporate-clean</span>
+        <span>16:9</span>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

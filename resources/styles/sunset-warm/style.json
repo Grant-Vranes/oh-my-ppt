@@ -1,0 +1,18 @@
+{
+  "style": "sunset-warm",
+  "name": {
+    "zh": "日落暖",
+    "en": "Sunset Warm"
+  },
+  "description": "橘色珊瑚琥珀三色铺满天际，温度本身就是叙事",
+  "category": "暖色 · 活力",
+  "aliases": [
+    "sunset",
+    "暖",
+    "日落",
+    "生活方式"
+  ],
+  "styleCase": "生活方式分享、奖项颁发、团队庆祝、正向情绪叙事",
+  "version": "2.0.0",
+  "source": "builtin"
+}

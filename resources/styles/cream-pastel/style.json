@@ -1,0 +1,19 @@
+{
+  "style": "cream-pastel",
+  "name": {
+    "zh": "奶油温柔 · 高级感",
+    "en": "Cream Pastel"
+  },
+  "description": "奶油白豆沙粉抹茶绿的温柔高级风",
+  "category": "浅色 · 沉静",
+  "aliases": [
+    "奶油",
+    "温柔",
+    "豆沙粉",
+    "抹茶",
+    "高级"
+  ],
+  "styleCase": "家居生活、护肤美妆、咖啡茶饮、烘焙、母婴、慢生活分享、温柔治愈、北欧风家居、宠物品牌",
+  "version": "2.0.0",
+  "source": "builtin"
+}

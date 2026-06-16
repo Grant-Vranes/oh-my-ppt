@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工程白图 · Engineering Whiteprint</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#0f1117}
+body{display:grid;place-items:center;font-family:"SFMono-Regular",Consolas,"SF Mono",Menlo,monospace}
+.slide{position:relative;width:min(100vw,calc(100vh*16/9));aspect-ratio:16/9;overflow:hidden;background:#fdfdfd;box-shadow:0 0 0 1px rgba(255,255,255,.06)}
+.grid-min{position:absolute;inset:0;background-image:linear-gradient(rgba(30,58,95,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(30,58,95,.04) 1px,transparent 1px);background-size:clamp(8px,1.4vw,18px) clamp(8px,1.4vw,18px)}
+.grid-maj{position:absolute;inset:0;background-image:linear-gradient(rgba(30,58,95,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(30,58,95,.08) 1px,transparent 1px);background-size:clamp(40px,7vw,90px) clamp(40px,7vw,90px)}
+.frame{position:absolute;inset:clamp(8px,1.5vw,20px);border:1.5px solid rgba(30,64,175,.15);pointer-events:none}
+.content{position:absolute;inset:0;padding:clamp(16px,3vw,40px);display:flex;flex-direction:column;z-index:2}
+.head{display:flex;justify-content:space-between;align-items:center;margin-bottom:clamp(8px,1.4vw,18px)}
+.tag{font-size:clamp(7px,.9vw,11px);color:#2563eb;letter-spacing:.15em;text-transform:uppercase;border:1px solid rgba(37,99,235,.25);padding:clamp(2px,.3vw,4px) clamp(6px,1vw,13px)}
+.rev{font-size:clamp(6px,.75vw,9px);color:#9ca3af}
+.title{font-size:clamp(16px,3vw,36px);color:#1e3a5f;font-weight:bold;line-height:1.1;margin-bottom:clamp(2px,.3vw,4px)}
+.subtitle{font-size:clamp(8px,1vw,12px);color:#374151;opacity:.7}
+.diagram{flex:1;display:flex;align-items:center;justify-content:center;gap:clamp(16px,3vw,40px);margin-top:clamp(8px,1.5vw,20px)}
+.node{border-radius:2px;padding:clamp(6px,1.2vw,16px) clamp(8px,1.6vw,22px);text-align:center;position:relative}
+.node-name{font-size:clamp(9px,1.2vw,14px);font-weight:bold;margin-bottom:clamp(2px,.3vw,4px)}
+.node-desc{font-size:clamp(6px,.7vw,9px);opacity:.6}
+.n-client{border:1.5px solid #1e3a5f;color:#1e3a5f}
+.n-gateway{border:1.5px solid #2563eb;color:#2563eb;background:rgba(37,99,235,.03)}
+.n-auth{border:1.2px solid #1e3a5f;color:#1e3a5f}
+.n-core{border:1.5px solid #2563eb;color:#2563eb;background:rgba(37,99,235,.06)}
+.n-queue{border:1.2px solid #1e3a5f;color:#1e3a5f}
+.n-db{border:1.5px dashed #1e3a5f;color:#1e3a5f}
+.col-stack{display:flex;flex-direction:column;gap:clamp(8px,1.4vw,18px)}
+.arrow{display:flex;align-items:center;color:#1e40af;font-size:clamp(8px,1.2vw,14px)}
+.arrow-label{font-size:clamp(5px,.6vw,7px);color:#6b7280;writing-mode:vertical-lr;margin-left:clamp(2px,.3vw,4px)}
+.palette{display:flex;gap:clamp(3px,.4vw,5px);margin-top:clamp(6px,1vw,14px);align-items:center}
+.palette-label{font-size:clamp(6px,.7vw,8px);color:#9ca3af;margin-right:clamp(4px,.8vw,10px)}
+.sw{width:clamp(9px,1.2vw,14px);height:clamp(9px,1.2vw,14px);border-radius:1px;background:var(--c);border:1px solid rgba(0,0,0,.1)}
+.title-block{position:absolute;bottom:clamp(8px,1.5vw,20px);right:clamp(8px,1.5vw,20px);border:1.5px solid rgba(30,64,175,.2);background:#fff;z-index:3}
+.tb-row{display:flex;border-bottom:1px solid rgba(30,64,175,.1)}
+.tb-row:last-child{border-bottom:none}
+.tb-label{padding:clamp(2px,.4vw,5px) clamp(4px,.8vw,10px);color:#6b7280;background:rgba(30,58,95,.04);border-right:1px solid rgba(30,64,175,.1);font-size:clamp(5px,.65vw,7px)}
+.tb-val{padding:clamp(2px,.4vw,5px) clamp(4px,.8vw,10px);color:#1e3a5f;font-weight:bold;font-size:clamp(5px,.65vw,7px)}
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="grid-min"></div>
+  <div class="grid-maj"></div>
+  <div class="frame"></div>
+  <div class="content">
+    <div class="head">
+      <span class="tag">System Architecture</span>
+      <span class="rev">REV. C · 2026-06-13</span>
+    </div>
+    <div class="title">微服务架构拓扑图</div>
+    <div class="subtitle">Microservice Topology — Data Flow & Service Dependencies</div>
+    <div class="diagram">
+      <div class="node n-client"><div class="node-name">Client</div><div class="node-desc">Web / Mobile</div></div>
+      <div class="arrow">→</div>
+      <div class="node n-gateway"><div class="node-name">Gateway</div><div class="node-desc">API · Auth · Rate</div></div>
+      <div class="arrow">→</div>
+      <div class="col-stack">
+        <div class="node n-auth"><div class="node-name">Auth Svc</div><div class="node-desc">JWT · OAuth2</div></div>
+        <div class="node n-core"><div class="node-name">Core Svc</div><div class="node-desc">Business Logic</div></div>
+        <div class="node n-queue"><div class="node-name">Queue Svc</div><div class="node-desc">Redis · RabbitMQ</div></div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="node n-db"><div class="node-name">Database</div><div class="node-desc">PostgreSQL 15</div><div class="node-desc">Primary + Replica</div></div>
+    </div>
+    <div class="palette">
+      <span class="palette-label">PALETTE</span>
+      <i class="sw" style="--c:#1e3a5f"></i>
+      <i class="sw" style="--c:#374151"></i>
+      <i class="sw" style="--c:#1e40af"></i>
+      <i class="sw" style="--c:#2563eb"></i>
+      <i class="sw" style="--c:#fdfdfd"></i>
+    </div>
+  </div>
+  <div class="title-block">
+    <div class="tb-row"><span class="tb-label">DWG No.</span><span class="tb-val">WP-2026-001</span></div>
+    <div class="tb-row"><span class="tb-label">SCALE</span><span class="tb-val">1:1</span></div>
+    <div class="tb-row"><span class="tb-label">UNIT</span><span class="tb-val">mm</span></div>
+    <div class="tb-row"><span class="tb-label">DRAWN</span><span class="tb-val">arc</span></div>
+  </div>
+</div>
+</body>
+</html>

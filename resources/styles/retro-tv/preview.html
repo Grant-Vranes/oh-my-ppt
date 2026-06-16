@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>复古电视 / Retro TV</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden}
+html{display:grid;place-items:center;background:#0f1117}
+body{display:grid;place-items:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:#0f1117}
+.slide{position:relative;width:min(100vw,calc(100vh*16/9));aspect-ratio:16/9;overflow:hidden;background:#78350f;border-radius:6px;box-shadow:0 0 0 1px rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;padding:clamp(14px,2.5vw,32px)}
+.bezel{width:100%;height:100%;background:#92400e;border-radius:clamp(14px,2.5vw,30px);padding:clamp(8px,1.5vw,20px);display:flex;align-items:center;justify-content:center;position:relative}
+.screen{width:100%;height:100%;background:#fef3c7;border-radius:clamp(10px,2vw,24px);position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:clamp(12px,2.5vw,36px)}
+.scanlines{position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(120,53,15,.05) 2px,rgba(120,53,15,.05) 4px);pointer-events:none;border-radius:inherit}
+.glow{position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(245,158,11,.1) 0%,transparent 70%);pointer-events:none;border-radius:inherit}
+.tag{font-family:"SFMono-Regular",Consolas,monospace;font-size:clamp(7px,.95vw,10px);color:#d97706;letter-spacing:2.5px;text-transform:uppercase;margin-bottom:clamp(4px,.8vw,10px);position:relative;z-index:1}
+.title{font-family:Georgia,"Songti SC",serif;font-size:clamp(24px,5vw,60px);color:#451a03;font-weight:bold;line-height:1.2;margin-bottom:clamp(4px,.8vw,10px);position:relative;z-index:1;text-align:center}
+.desc{font-size:clamp(9px,1.2vw,14px);color:#78350f;line-height:1.6;text-align:center;max-width:clamp(160px,32vw,400px);position:relative;z-index:1}
+.palette{display:flex;gap:clamp(4px,.5vw,6px);margin-top:clamp(6px,1.2vw,16px);position:relative;z-index:1}
+.sw{width:clamp(10px,1.5vw,18px);height:clamp(10px,1.5vw,18px);border-radius:50%;background:var(--c);border:1px solid rgba(0,0,0,.1)}
+.knobs{position:absolute;bottom:clamp(2px,.5vw,6px);left:50%;transform:translateX(-50%);display:flex;gap:clamp(4px,.8vw,12px)}
+.knob{width:clamp(6px,1vw,12px);height:clamp(6px,1vw,12px);background:#78350f;border-radius:50%;border:1.5px solid #92400e}
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="bezel">
+    <div class="screen">
+      <div class="scanlines"></div>
+      <div class="glow"></div>
+      <div class="tag">Retro TV</div>
+      <div class="title">复古电视</div>
+      <div class="desc">暖黄屏幕闪烁琥珀光，时间倒流回客厅里的CRT</div>
+      <div class="palette">
+        <i class="sw" style="--c:#78350f"></i>
+        <i class="sw" style="--c:#92400e"></i>
+        <i class="sw" style="--c:#f59e0b"></i>
+        <i class="sw" style="--c:#d97706"></i>
+        <i class="sw" style="--c:#fef3c7"></i>
+      </div>
+    </div>
+    <div class="knobs"><div class="knob"></div><div class="knob"></div><div class="knob"></div></div>
+  </div>
+</div>
+</body>
+</html>

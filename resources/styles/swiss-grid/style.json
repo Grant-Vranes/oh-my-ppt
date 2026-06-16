@@ -1,0 +1,19 @@
+{
+  "style": "swiss-grid",
+  "name": {
+    "zh": "瑞士网格",
+    "en": "Swiss Grid"
+  },
+  "description": "严谨到像素的网格信仰，理性本身就是一种浪漫",
+  "category": "大胆 · 宣言",
+  "aliases": [
+    "swiss",
+    "grid",
+    "瑞士",
+    "网格",
+    "swiss-modernism"
+  ],
+  "styleCase": "设计行业分享、品牌规范发布、严肃的排版展示、建筑设计叙事",
+  "version": "2.0.0",
+  "source": "builtin"
+}

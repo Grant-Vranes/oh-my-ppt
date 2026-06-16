@@ -46,6 +46,23 @@ CREATE INDEX IF NOT EXISTS idx_messages_session_scope ON messages(session_id, ch
 CREATE INDEX IF NOT EXISTS idx_messages_session_only ON messages(session_id);
 `
 
+const MODEL_USAGE_TABLE_SQL = `
+CREATE TABLE IF NOT EXISTS model_usage_events (
+  id TEXT PRIMARY KEY,
+  provider TEXT NOT NULL,
+  model TEXT NOT NULL,
+  model_config_id TEXT,
+  input_tokens INTEGER NOT NULL DEFAULT 0,
+  output_tokens INTEGER NOT NULL DEFAULT 0,
+  total_tokens INTEGER NOT NULL DEFAULT 0,
+  usage_source TEXT NOT NULL DEFAULT 'provider',
+  created_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_model_usage_events_created ON model_usage_events(created_at);
+CREATE INDEX IF NOT EXISTS idx_model_usage_events_model ON model_usage_events(provider, model, created_at);
+`
+
 const INIT_SQL = `
 CREATE TABLE IF NOT EXISTS sessions (
   id TEXT PRIMARY KEY,
@@ -66,6 +83,8 @@ CREATE TABLE IF NOT EXISTS sessions (
 );
 
 ${MESSAGES_TABLE_SQL}
+
+${MODEL_USAGE_TABLE_SQL}
 
 CREATE TABLE IF NOT EXISTS projects (
   id TEXT PRIMARY KEY,
@@ -235,18 +254,60 @@ CREATE TABLE IF NOT EXISTS styles (
   id TEXT PRIMARY KEY,
   style TEXT UNIQUE NOT NULL,
   style_name TEXT NOT NULL,
+  style_name_zh TEXT NOT NULL DEFAULT '',
+  style_name_en TEXT NOT NULL DEFAULT '',
   description TEXT NOT NULL DEFAULT '',
   category TEXT NOT NULL DEFAULT '',
   aliases TEXT NOT NULL DEFAULT '[]',
   source TEXT NOT NULL DEFAULT 'custom',
   style_skill TEXT NOT NULL DEFAULT '',
-  version INTEGER NOT NULL DEFAULT 1,
+  version TEXT NOT NULL DEFAULT '1.0.0',
   style_case TEXT NOT NULL DEFAULT '',
+  package_dir TEXT NOT NULL DEFAULT '',
   active INTEGER NOT NULL DEFAULT 1,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_styles_style ON styles(style);
+
+CREATE TABLE IF NOT EXISTS thumbnails (
+  key TEXT PRIMARY KEY,
+  resource_type TEXT NOT NULL,
+  resource_id TEXT NOT NULL,
+  variant TEXT NOT NULL DEFAULT 'default',
+  source_path TEXT NOT NULL,
+  source_mtime_ms INTEGER NOT NULL DEFAULT 0,
+  signature TEXT NOT NULL DEFAULT '',
+  thumbnail_path TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'queued',
+  error TEXT,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS thumbnails_resource_variant_unique
+  ON thumbnails(resource_type, resource_id, variant);
+CREATE INDEX IF NOT EXISTS thumbnails_status_idx ON thumbnails(status, updated_at);
+
+CREATE TABLE IF NOT EXISTS session_style_snapshots (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+  style_id TEXT NOT NULL,
+  style_key TEXT NOT NULL,
+  style_name TEXT NOT NULL,
+  style_name_zh TEXT NOT NULL DEFAULT '',
+  style_name_en TEXT NOT NULL DEFAULT '',
+  description TEXT NOT NULL DEFAULT '',
+  category TEXT NOT NULL DEFAULT '',
+  aliases TEXT NOT NULL DEFAULT '[]',
+  source TEXT NOT NULL,
+  version TEXT NOT NULL DEFAULT '1.0.0',
+  style_case TEXT NOT NULL DEFAULT '',
+  package_dir TEXT NOT NULL DEFAULT '',
+  style_skill TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS session_style_snapshots_session_id_unique
+  ON session_style_snapshots(session_id);
 
 CREATE TABLE IF NOT EXISTS session_operations (
   id TEXT PRIMARY KEY,
@@ -1245,6 +1306,7 @@ export const runDatabasePatches = async (args: {
   await enforceModelConfigsSchema(client)
   await enforceImageModelConfigsSchema(client)
   await enforceMessagesSchema(client)
+  await client.executeMultiple(MODEL_USAGE_TABLE_SQL)
   await enforceGenerationSchema(client)
   await enforceSessionPagesSchema(client)
   await enforceSessionOperationsSchema(client)

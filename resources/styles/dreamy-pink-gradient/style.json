@@ -1,0 +1,20 @@
+{
+  "style": "dreamy-pink-gradient",
+  "name": {
+    "zh": "渐变美学·樱粉雾蓝",
+    "en": "Dreamy Pink Gradient"
+  },
+  "description": "樱粉雾紫深靛渐变，梦幻浪漫诗意",
+  "category": "活力 · 创意",
+  "aliases": [
+    "渐变",
+    "樱粉",
+    "雾蓝",
+    "dreamy",
+    "gradient",
+    "梦幻"
+  ],
+  "styleCase": "美妆护肤、女性时尚、婚庆浪漫、音乐艺术、青年文化、APP启动页",
+  "version": "2.0.0",
+  "source": "builtin"
+}

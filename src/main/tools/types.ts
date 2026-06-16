@@ -44,12 +44,16 @@ export interface SessionDeckGenerationContext {
   projectDir: string;
   indexPath: string;
   pageFileMap: Record<string, string>;
+  selectPageIds?: string[];
   allowedPageIds?: string[];
   topic: string;
   deckTitle: string;
   styleId: string | null | undefined;
   /** Snapshot of the database styleSkill markdown for this run. */
   styleSkillPrompt?: string;
+  styleKey?: string;
+  styleName?: string;
+  styleVersion?: string;
   appLocale?: "zh" | "en";
   userMessage: string;
   outlineTitles: string[];

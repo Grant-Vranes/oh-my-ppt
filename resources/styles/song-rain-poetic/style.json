@@ -1,0 +1,20 @@
+{
+  "style": "song-rain-poetic",
+  "name": {
+    "zh": "宋人生活·听雨",
+    "en": "Song Rain Poetic"
+  },
+  "description": "雾蓝嫩绿暖黄，宋人听雨新中式",
+  "category": "浅色 · 沉静",
+  "aliases": [
+    "宋人",
+    "听雨",
+    "新中式",
+    "song",
+    "rain",
+    "生活美学"
+  ],
+  "styleCase": "生活美学、茶道香道、节气文化、慢生活品牌、诗词分享",
+  "version": "2.0.0",
+  "source": "builtin"
+}

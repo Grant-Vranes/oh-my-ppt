@@ -8,16 +8,26 @@ import dayjs from 'dayjs'
 import { PPTDatabase } from './db/database'
 import { AgentManager } from './agent'
 import { setupIPC, registerLocalAssetProtocol } from './ipc'
-import { setStyleDb } from './utils/style-skills'
+import { backfillUserStylePackagesFromDatabase, setStyleDb } from './utils/style-skills'
 import {
   initializeSkills,
   resolveBuiltinSkillsSourcePath,
   resolveInstalledSkillsPath,
   setSkillsRuntime,
 } from './skills'
+import {
+  initializeStyles,
+  resolveBundledStylesSourcePath,
+  resolveInstalledStylesPath,
+  setStylesRuntime,
+  warmStyleThumbnails
+} from './styles'
 import { applyProxy } from './utils/proxy'
 import { createTray, destroyTray, showTrayHideBalloon } from './tray'
 import type { UpdateAvailablePayload } from '@shared/app-update'
+import { isRepeatedRendererCrash, shouldRecoverRenderer } from './renderer-recovery'
+import { configureHtmlThumbnailService } from './utils/html-thumbnail-service'
+import { configureModelUsageRecorder } from './model-usage'
 
 let mainWindow: BrowserWindow | null = null
 let db: PPTDatabase | null = null
@@ -262,6 +272,33 @@ function createWindow(): BrowserWindow {
     return { action: 'deny' }
   })
 
+  let lastRendererCrashAt = 0
+  window.webContents.on('render-process-gone', (_event, details) => {
+    log.error('[renderer] process gone', details)
+    if (isShuttingDown || !shouldRecoverRenderer(details.reason)) return
+
+    const now = Date.now()
+    const repeatedCrash = isRepeatedRendererCrash(lastRendererCrashAt, now)
+    lastRendererCrashAt = now
+
+    setTimeout(() => {
+      if (isShuttingDown || window.isDestroyed() || window.webContents.isDestroyed()) return
+      if (!repeatedCrash) {
+        window.webContents.reload()
+        return
+      }
+
+      log.warn('[renderer] repeated crash; recovering at home route')
+      if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+        const rendererUrl = new URL(process.env['ELECTRON_RENDERER_URL'])
+        rendererUrl.hash = '/'
+        void window.loadURL(rendererUrl.toString())
+      } else {
+        void window.loadFile(join(__dirname, '../renderer/index.html'), { hash: '/' })
+      }
+    }, 250)
+  })
+
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     window.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
@@ -291,11 +328,46 @@ if (gotSingleInstanceLock) {
     const dbPath = is.dev ? join(process.cwd(), 'ohmyppt.dev.db') : undefined
     db = new PPTDatabase(dbPath)
     await db.init()
+    configureModelUsageRecorder(db)
+    configureHtmlThumbnailService(db)
+    await db.failInterruptedThumbnailTasks()
     setStyleDb(db)
     log.info('[app] database initialized', {
       env: is.dev ? 'dev' : 'prod',
       dbPath: dbPath || 'userData/ohmyppt.db',
     })
+
+    const installedStylesPath = resolveInstalledStylesPath()
+    const stylesReadyPromise = initializeStyles({
+      bundledSourcePath: resolveBundledStylesSourcePath(),
+      installedRootPath: installedStylesPath,
+      logger: log
+    })
+      .then(async (result) => {
+        await db?.syncInstalledStylesToDatabase(installedStylesPath)
+        const userPackageBackfill = await backfillUserStylePackagesFromDatabase(installedStylesPath)
+        const backfill = await db?.backfillSessionStyleSnapshots()
+        log.info('[styles] initialized', {
+          installedStylesPath,
+          bundledCount: result.bundledCount,
+          copiedCount: result.copiedCount,
+          failedCount: result.failedCount,
+          userPackageBackfill,
+          snapshotBackfill: backfill
+        })
+        return result
+      })
+      .catch((error) => {
+        log.warn('[styles] initialize failed', {
+          message: error instanceof Error ? error.message : String(error)
+        })
+        throw error
+      })
+    setStylesRuntime({
+      installedStylesPath,
+      ready: stylesReadyPromise
+    })
+    await stylesReadyPromise
 
     const installedSkillsPath = resolveInstalledSkillsPath()
     const skillsReadyPromise = initializeSkills({
@@ -327,6 +399,17 @@ if (gotSingleInstanceLock) {
     agentManager = new AgentManager(db)
 
     const window = createWindow()
+
+    window.webContents.on('did-finish-load', () => {
+      void stylesReadyPromise
+        .then(() => db?.listStyleRows() || [])
+        .then((styles) => warmStyleThumbnails(installedStylesPath, styles))
+        .catch((error) => {
+          log.warn('[styles] thumbnail warmup failed', {
+            message: error instanceof Error ? error.message : String(error)
+          })
+        })
+    })
 
     if (process.platform === 'win32') {
       isTrayEnabled = createTray(window)

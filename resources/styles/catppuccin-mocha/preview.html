@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Catppuccin 摩卡 · catppuccin-mocha</title>
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:100%;height:100%;overflow:hidden}
+html{display:grid;place-items:center;background:#0f1117}
+body{display:grid;place-items:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;color:#c6d0f5;background:#0f1117}
+
+.slide {
+  position: relative;
+  width: min(100vw, calc(100vh * 16 / 9));
+  aspect-ratio: 16/9;
+  overflow: hidden;
+  background: #303446;
+  box-shadow: 0 0 0 1px rgba(198,208,245,.06);
+}
+
+/* Soft floating dots - left cluster */
+.slide::before {
+  content: "";
+  position: absolute;
+  width: 35%; height: 50%;
+  top: 5%; left: 5%;
+  background:
+    radial-gradient(circle 20px at 15% 25%, rgba(140,170,238,.15) 0%, transparent 100%),
+    radial-gradient(circle 14px at 55% 60%, rgba(153,209,219,.12) 0%, transparent 100%),
+    radial-gradient(circle 18px at 80% 30%, rgba(198,208,245,.08) 0%, transparent 100%),
+    radial-gradient(circle 10px at 35% 80%, rgba(140,170,238,.1) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+/* Soft floating dots - right cluster */
+.slide::after {
+  content: "";
+  position: absolute;
+  width: 30%; height: 45%;
+  bottom: 10%; right: 8%;
+  background:
+    radial-gradient(circle 16px at 30% 40%, rgba(153,209,219,.12) 0%, transparent 100%),
+    radial-gradient(circle 22px at 70% 20%, rgba(140,170,238,.1) 0%, transparent 100%),
+    radial-gradient(circle 12px at 50% 75%, rgba(198,208,245,.08) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+.content {
+  position: absolute;
+  inset: 8% 7%;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1.1fr .9fr;
+  gap: 6%;
+  align-items: stretch;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.eyebrow {
+  font-size: clamp(7px, .95vw, 11px);
+  font-weight: 700;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: #8caaee;
+  margin-bottom: 3%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.eyebrow::before {
+  content: "";
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #8caaee;
+  box-shadow: 0 0 8px #8caaee;
+}
+
+h1 {
+  font-size: clamp(32px, 5.5vw, 68px);
+  line-height: .92;
+  font-weight: 900;
+  color: #c6d0f5;
+  letter-spacing: -.02em;
+}
+
+.desc {
+  margin-top: 4%;
+  font-size: clamp(10px, 1.35vw, 15px);
+  line-height: 1.7;
+  color: rgba(198,208,245,.65);
+  max-width: 92%;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 5%;
+}
+.tags span {
+  border: 1px solid rgba(140,170,238,.15);
+  background: rgba(140,170,238,.06);
+  border-radius: 14px;
+  padding: 5px 12px;
+  font-size: clamp(7px, .85vw, 10px);
+  font-weight: 600;
+  color: rgba(198,208,245,.8);
+}
+
+.story {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3%;
+  margin-top: 5%;
+}
+.story p {
+  border-left: 2px solid #8caaee;
+  padding-left: 8px;
+  font-size: clamp(8px, .95vw, 11px);
+  line-height: 1.5;
+  color: rgba(198,208,245,.55);
+}
+
+.chips {
+  display: flex;
+  gap: 10px;
+  margin-top: 4%;
+}
+.chips span {
+  font-size: clamp(7px, .85vw, 10px);
+  color: rgba(198,208,245,.45);
+  border-bottom: 1px solid rgba(140,170,238,.12);
+  padding-bottom: 2px;
+}
+
+/* Right panel - cozy rounded card */
+.panel {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(140,170,238,.1);
+  border-radius: 16px;
+  background: rgba(48,52,70,.7);
+  backdrop-filter: blur(12px);
+  padding: 7%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 5%;
+}
+.panel::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #8caaee, #99d1db, #8caaee);
+  border-radius: 16px 16px 0 0;
+}
+
+.kicker {
+  font-size: clamp(8px, 1vw, 11px);
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #8caaee;
+}
+
+.layout {
+  font-size: clamp(9px, 1.05vw, 13px);
+  line-height: 1.6;
+  color: rgba(198,208,245,.6);
+}
+
+/* Scattered color dots decoration */
+.visual {
+  position: relative;
+  min-height: 0;
+  border: 1px solid rgba(140,170,238,.08);
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(0,0,0,.2);
+}
+
+.dot-field {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(8px, 1.5vw, 18px);
+  padding: 8%;
+}
+.dot-field i {
+  display: block;
+  border-radius: 50%;
+  background: var(--c);
+  opacity: .6;
+  box-shadow: 0 0 12px var(--c);
+}
+.dot-field i:nth-child(1) { width: clamp(12px,2vw,22px); height: clamp(12px,2vw,22px) }
+.dot-field i:nth-child(2) { width: clamp(8px,1.2vw,14px); height: clamp(8px,1.2vw,14px); opacity:.4 }
+.dot-field i:nth-child(3) { width: clamp(10px,1.6vw,18px); height: clamp(10px,1.6vw,18px) }
+.dot-field i:nth-child(4) { width: clamp(14px,2.2vw,24px); height: clamp(14px,2.2vw,24px); opacity:.5 }
+.dot-field i:nth-child(5) { width: clamp(6px,1vw,12px); height: clamp(6px,1vw,12px); opacity:.7 }
+.dot-field i:nth-child(6) { width: clamp(10px,1.5vw,16px); height: clamp(10px,1.5vw,16px); opacity:.35 }
+
+.palette {
+  display: flex;
+  gap: 7px;
+}
+.palette i {
+  display: block;
+  width: clamp(14px, 2vw, 22px);
+  height: clamp(14px, 2vw, 22px);
+  border-radius: 50%;
+  background: var(--c);
+  border: 1px solid rgba(255,255,255,.08);
+  box-shadow: 0 0 10px var(--c);
+}
+
+.footer {
+  position: absolute;
+  left: 7%; right: 7%;
+  bottom: 4.5%;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: clamp(7px, .85vw, 10px);
+  font-weight: 700;
+  color: rgba(198,208,245,.35);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.footer b { color: rgba(198,208,245,.7) }
+
+@media(max-aspect-ratio:16/9){.slide{width:min(100vw,calc(100vh*16/9));height:auto}}
+@media(min-aspect-ratio:16/9){.slide{height:min(100vh,calc(100vw*9/16));width:auto}}
+</style>
+</head>
+<body>
+  <main class="slide" aria-label="Catppuccin 摩卡 style preview">
+    <section class="content">
+      <div class="hero">
+        <div>
+          <div class="eyebrow">冷色 · 深色 · catppuccin-mocha</div>
+          <h1>Catppuccin 摩卡</h1>
+          <p class="desc">摩卡柔雾中的粉彩光点，长时间凝视也不会疲倦</p>
+          <div class="tags">
+            <span>开发者内部分享</span>
+            <span>长时间技术培训</span>
+            <span>代码 Review 演示</span>
+          </div>
+          <div class="story">
+            <p>标题 #c6d0f5 柔蓝白、正文 #a5adce 灰蓝，强调色 #8caaee 柔蓝与 #99d1db 浅青是摩卡中的两颗糖果。</p>
+            <p>等宽或开发者友好字体，字重偏轻到中等。柔和护眼。</p>
+          </div>
+        </div>
+        <div class="chips">
+          <span>fade-up</span>
+          <span>stagger-list</span>
+          <span>soft-glow</span>
+        </div>
+      </div>
+      <aside class="panel">
+        <div>
+          <div class="kicker">Style DNA</div>
+          <div class="layout">Catppuccin 摩卡是一杯深色热可可中的粉彩光点——深灰底色如摩卡咖啡的表面，柔和蓝色和青色轻轻浮动。</div>
+        </div>
+        <div class="visual">
+          <div class="dot-field">
+            <i style="--c:#c6d0f5"></i>
+            <i style="--c:#99d1db"></i>
+            <i style="--c:#8caaee"></i>
+            <i style="--c:#a5adce"></i>
+            <i style="--c:#8caaee"></i>
+            <i style="--c:#99d1db"></i>
+          </div>
+        </div>
+        <div class="palette">
+          <i style="--c:#c6d0f5"></i>
+          <i style="--c:#a5adce"></i>
+          <i style="--c:#8caaee"></i>
+          <i style="--c:#99d1db"></i>
+          <i style="--c:#303446"></i>
+        </div>
+      </aside>
+    </section>
+    <div class="footer">
+      <span><b>Layout</b> 暗色卡片在更暗的背景上，层级靠柔和色彩区分而非硬边框。</span>
+      <span>16:9 preview</span>
+    </div>
+  </main>
+</body>
+</html>

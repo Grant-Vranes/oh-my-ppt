@@ -4,6 +4,7 @@ import { normalizePagesForSelection } from '../shared'
 import { PreviewIframe } from '../../preview/PreviewIframe'
 import { ScrollArea } from '../../ui/ScrollArea'
 import { useT } from '@renderer/i18n'
+import { limitBrowsePreviewIds } from './browse-preview-utils'
 
 /** Keep recently-scrolled-past webviews alive as buffer */
 const VISIBLE_CACHE = 20
@@ -66,12 +67,19 @@ export function BrowseView(_props: { sessionId: string }): React.JSX.Element {
   const thumbnailVersions = useSessionDetailUiStore((state) => state.thumbnailVersions)
 
   const pages = useMemo(() => normalizePagesForSelection(currentPages), [currentPages])
-
+  const pageIds = useMemo(() => new Set(pages.map((page) => page.id)), [pages])
   const [visibleIds, setVisibleIds] = useState<Set<string>>(() => new Set())
   const observerRef = useRef<IntersectionObserver | null>(null)
+  const viewportRef = useRef<HTMLDivElement>(null)
   const cardRefsRef = useRef<Map<string, HTMLElement>>(new Map())
 
-  // Build IntersectionObserver that tracks which cards are near the viewport
+  useEffect(() => {
+    setVisibleIds((current) => {
+      const next = new Set(Array.from(current).filter((id) => pageIds.has(id)))
+      return next.size === current.size ? current : next
+    })
+  }, [pageIds])
+
   useEffect(() => {
     if (pages.length === 0) return
 
@@ -88,25 +96,21 @@ export function BrowseView(_props: { sessionId: string }): React.JSX.Element {
                 next.add(id)
                 changed = true
               }
-            } else {
-              if (next.has(id)) {
-                next.delete(id)
-                changed = true
-              }
+            } else if (next.delete(id)) {
+              changed = true
             }
           }
           return changed ? next : prev
         })
       },
       {
-        // Render cards a bit before they scroll into view
+        root: viewportRef.current,
         rootMargin: '200px 100px',
         threshold: 0
       }
     )
     observerRef.current = observer
 
-    // Observe all tracked card elements
     for (const el of cardRefsRef.current.values()) {
       observer.observe(el)
     }
@@ -115,14 +119,12 @@ export function BrowseView(_props: { sessionId: string }): React.JSX.Element {
       observer.disconnect()
       observerRef.current = null
     }
-  }, [pages])
+  }, [pages.length])
 
-  // Enforce cache limit: keep only VISIBLE_CACHE items at most
-  const renderableIds = useMemo(() => {
-    if (visibleIds.size <= VISIBLE_CACHE) return visibleIds
-    // Keep the first VISIBLE_CACHE that are visible (IntersectionObserver order is roughly viewport order)
-    return new Set(Array.from(visibleIds).slice(0, VISIBLE_CACHE))
-  }, [visibleIds])
+  const renderableIds = useMemo(
+    () => limitBrowsePreviewIds(visibleIds, VISIBLE_CACHE),
+    [visibleIds]
+  )
 
   const setCardRef = useCallback(
     (pageId: string) => (el: HTMLElement | null) => {
@@ -150,17 +152,13 @@ export function BrowseView(_props: { sessionId: string }): React.JSX.Element {
   }
 
   return (
-    <ScrollArea className="flex-1">
+    <ScrollArea className="flex-1" viewportRef={viewportRef}>
       <div className="p-6">
         <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">
           {pages.map((page) => {
             const previewVersion = previewKey + (thumbnailVersions[page.pageId] || 0)
             return (
-              <div
-                key={page.id}
-                ref={setCardRef(page.id)}
-                data-browse-card-id={page.id}
-              >
+              <div key={page.id} ref={setCardRef(page.id)} data-browse-card-id={page.id}>
                 <BrowseCard
                   page={page}
                   previewVersion={previewVersion}

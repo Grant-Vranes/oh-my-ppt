@@ -11,14 +11,12 @@ import { TooltipProvider } from '../components/ui/Tooltip'
 import { PageSidebar } from '../components/session-detail/sidebar'
 import { PreviewStage } from '../components/session-detail/preview'
 import { BrowseView } from '../components/session-detail/browse/BrowseView'
+import { StyleView } from '../components/session-detail/style/StyleView'
 import {
   ElementInspectorPanel,
   type ElementEditDraft
 } from '../components/session-detail/element-inspector'
-import {
-  SessionDetailRightPanel,
-  WorkspaceRibbon
-} from '../components/session-detail/workspace'
+import { SessionDetailRightPanel, WorkspaceRibbon } from '../components/session-detail/workspace'
 import { SessionToolbar } from '../components/session-detail/toolbar'
 import {
   AddBlankPageDialog,
@@ -26,8 +24,9 @@ import {
   AssetPickerDialog,
   DeleteElementDialog,
   DeletePageDialog,
+  GenerationActivityDialog,
   HistoryDialog,
-  PageProgressOverlay,
+  MergeSessionPagesDialog,
   PageTitleEditDialog
 } from '../components/session-detail/modal'
 import {
@@ -51,6 +50,7 @@ import {
   editTargetMatchesDeletedSelector,
   useEditHistoryStore,
   useGenerateStore,
+  useGenerationActivityStore,
   useSessionDetailRuntimeStore,
   useSessionDetailUiStore,
   useSessionStore,
@@ -130,7 +130,7 @@ export function SessionDetailPage(): React.JSX.Element {
     addMessage,
     resetRuntimeState
   } = useSessionStore()
-  const { isGenerating, updateProgress, progress, currentPages } = useGenerateStore()
+  const { updateProgress, currentPages } = useGenerateStore()
   const chatType = useSessionDetailUiStore((state) => state.chatType)
   const selectedPageId = useSessionDetailUiStore((state) => state.selectedPageId)
   const setChatType = useSessionDetailUiStore((state) => state.setChatType)
@@ -153,9 +153,7 @@ export function SessionDetailPage(): React.JSX.Element {
   const [pendingDeleteSelector, setPendingDeleteSelector] = useState<string | null>(null)
   const previewIframeRef = useRef<PreviewIframeHandle | null>(null)
   const addElementHandlerRef = useRef<AddSessionElementHandler | null>(null)
-  const setAddElementHandler = useSessionDetailRuntimeStore(
-    (state) => state.setAddElementHandler
-  )
+  const setAddElementHandler = useSessionDetailRuntimeStore((state) => state.setAddElementHandler)
   const invokeAddElement = useCallback<AddSessionElementHandler>(
     async (relativePath, fileName, options) => {
       const handler = addElementHandlerRef.current
@@ -163,11 +161,7 @@ export function SessionDetailPage(): React.JSX.Element {
     },
     []
   )
-  const {
-    success: toastSuccess,
-    error: toastError,
-    info: toastInfo
-  } = useToastStore()
+  const { success: toastSuccess, error: toastError, info: toastInfo } = useToastStore()
 
   const orderedPages = useMemo(
     () => [...currentPages].sort((a, b) => a.pageNumber - b.pageNumber),
@@ -203,6 +197,7 @@ export function SessionDetailPage(): React.JSX.Element {
     let cancelled = false
     setMessages([])
     useGenerateStore.getState().setPages([])
+    useGenerationActivityStore.getState().reset()
     resetForSessionChange()
     void (async () => {
       try {
@@ -211,13 +206,14 @@ export function SessionDetailPage(): React.JSX.Element {
         console.warn('[session] migrate page outlines failed', err)
       }
       if (!cancelled) {
-        await loadSession(id)
+        await loadSession(id, () => !cancelled)
       }
     })()
     // Cleanup on unmount (leaving session-detail)
     return () => {
       cancelled = true
       useGenerateStore.getState().reset()
+      useGenerationActivityStore.getState().reset()
       useSessionDetailUiStore.getState().resetForSessionChange()
       useEditHistoryStore.getState().clear()
     }
@@ -402,7 +398,9 @@ export function SessionDetailPage(): React.JSX.Element {
             status: 'completed',
             error: null
           })
-          useSessionDetailUiStore.getState().setSelectedPageId(entityId)
+          if (payload.focusPage !== false) {
+            useSessionDetailUiStore.getState().setSelectedPageId(entityId)
+          }
           useSessionDetailUiStore.getState().bumpPreviewKey()
         }
       } else if (type === 'page_updated') {
@@ -429,7 +427,9 @@ export function SessionDetailPage(): React.JSX.Element {
           status: 'completed',
           error: null
         })
-        useSessionDetailUiStore.getState().setSelectedPageId(entityId)
+        if (payload.focusPage !== false) {
+          useSessionDetailUiStore.getState().setSelectedPageId(entityId)
+        }
         useSessionDetailUiStore.getState().bumpPreviewKey()
       } else if (type === 'assistant_message') {
         const incomingType = payload.chatType === 'page' && payload.pageId ? 'page' : 'main'
@@ -461,7 +461,11 @@ export function SessionDetailPage(): React.JSX.Element {
         }
       } else if (type === 'run_error') {
         if (!useSessionDetailUiStore.getState().isAddingPage) {
-          useGenerateStore.getState().setError(payload.message)
+          if (payload.cancelled) {
+            useGenerateStore.getState().cancelGeneration(payload.message)
+          } else {
+            useGenerateStore.getState().setError(payload.message)
+          }
           void loadSession(id)
         }
       }
@@ -678,9 +682,7 @@ export function SessionDetailPage(): React.JSX.Element {
       return
     }
     setElementSelection(payload)
-    useSessionDetailUiStore
-      .getState()
-      .setEditSelectedElement(payload.selector)
+    useSessionDetailUiStore.getState().setEditSelectedElement(payload.selector)
     const zValue = payload.zIndex !== undefined ? String(payload.zIndex) : '10'
     const bounds = payload.snapshot.metrics.page
     const computed = payload.snapshot.computed
@@ -1091,7 +1093,8 @@ export function SessionDetailPage(): React.JSX.Element {
     }
     const newSelector = copyResult.selector
     const bounds = elementSelection.pageBounds || elementSelection.bounds
-    const zValue = elementSelection.zIndex !== undefined ? String(elementSelection.zIndex + 1) : '10'
+    const zValue =
+      elementSelection.zIndex !== undefined ? String(elementSelection.zIndex + 1) : '10'
     const nextSnapshot = elementSelection.snapshot
       ? {
           ...elementSelection.snapshot,
@@ -1435,6 +1438,8 @@ export function SessionDetailPage(): React.JSX.Element {
 
           {workspaceTab === 'browse' ? (
             <BrowseView sessionId={id} />
+          ) : workspaceTab === 'style' ? (
+            <StyleView sessionId={id} />
           ) : (
             <div className="flex min-h-0 flex-1">
               <PageSidebar sessionId={id} />
@@ -1444,8 +1449,6 @@ export function SessionDetailPage(): React.JSX.Element {
                   ref={previewIframeRef}
                   selectedPage={selectedPage}
                   sessionTitle={currentSession?.title}
-                  isGenerating={isGenerating}
-                  progressLabel={progress?.label}
                   previewRefreshKey={previewRefreshKey}
                   onElementMoved={handleElementMoved}
                   onElementSelected={handleElementSelected}
@@ -1482,7 +1485,8 @@ export function SessionDetailPage(): React.JSX.Element {
         <HistoryDialog sessionId={id} />
         <AddBlankPageDialog sessionId={id} />
         <AddPageDialog sessionId={id} />
-        <PageProgressOverlay />
+        <MergeSessionPagesDialog sessionId={id} />
+        <GenerationActivityDialog sessionId={id} />
         <PageTitleEditDialog sessionId={id} />
         <DeletePageDialog sessionId={id} />
         <AssetPickerDialog

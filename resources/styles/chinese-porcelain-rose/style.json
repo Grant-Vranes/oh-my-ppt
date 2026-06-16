@@ -1,0 +1,20 @@
+{
+  "style": "chinese-porcelain-rose",
+  "name": {
+    "zh": "中国传统色·凝脂杨妃",
+    "en": "Chinese Porcelain Rose"
+  },
+  "description": "凝脂杨妃双主色，瓷韵典雅国风",
+  "category": "浅色 · 沉静",
+  "aliases": [
+    "凝脂",
+    "杨妃",
+    "瓷器",
+    "porcelain",
+    "rose",
+    "典雅"
+  ],
+  "styleCase": "文化遗产、茶器瓷器品牌、传统节日、高端礼品、艺术展览",
+  "version": "2.0.0",
+  "source": "builtin"
+}

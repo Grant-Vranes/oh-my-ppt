@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>日光浅 · solarized-light</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: #0f1117;
+    display: flex; align-items: center; justify-content: center;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+  }
+  .slide {
+    width: min(100vw, calc(100vh * 16 / 9));
+    aspect-ratio: 16 / 9;
+    background: #fdf6e3;
+    position: relative;
+    overflow: hidden;
+  }
+  .lines {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 11.11%,
+      rgba(88,110,117,0.06) 11.11%,
+      rgba(88,110,117,0.06) 11.2%
+    );
+    pointer-events: none;
+  }
+  .content {
+    position: absolute;
+    top: 10%; left: 9%; right: 9%; bottom: 10%;
+    display: flex;
+    flex-direction: column;
+  }
+  .top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .category {
+    font-size: clamp(7px, 0.75vw, 10px);
+    color: #586e75;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .solar-badge {
+    display: flex; gap: 4px; align-items: center;
+  }
+  .solar-badge span {
+    width: clamp(8px, 0.9vw, 12px);
+    height: clamp(8px, 0.9vw, 12px);
+    border-radius: 2px;
+    background: var(--c);
+  }
+  .title-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-top: 5%;
+  }
+  h1 {
+    font-size: clamp(32px, 5.5vw, 66px);
+    font-weight: 700;
+    color: #073642;
+    line-height: 1.15;
+  }
+  .en-name {
+    font-size: clamp(10px, 1.1vw, 14px);
+    color: #586e75;
+    font-weight: 400;
+    margin-top: 1%;
+    letter-spacing: 0.05em;
+  }
+  .desc {
+    font-size: clamp(10px, 1.1vw, 14px);
+    color: #586e75;
+    line-height: 1.8;
+    margin-top: 3%;
+    max-width: 65%;
+  }
+  .columns {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4%;
+    margin-top: auto;
+    padding-top: 3%;
+    border-top: 1px solid rgba(88,110,117,0.15);
+  }
+  .col-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .col-item strong {
+    font-size: clamp(8px, 0.85vw, 11px);
+    color: #268bd2;
+    font-weight: 700;
+  }
+  .col-item span {
+    font-size: clamp(7px, 0.7vw, 9px);
+    color: #586e75;
+    line-height: 1.5;
+  }
+  .palette {
+    position: absolute;
+    bottom: 4%;
+    left: 9%;
+    display: flex; gap: 6px;
+  }
+  .palette i {
+    width: clamp(10px, 1.2vw, 16px);
+    height: clamp(10px, 1.2vw, 16px);
+    border-radius: 3px;
+    background: var(--c);
+  }
+  .label {
+    position: absolute;
+    bottom: 4%;
+    right: 9%;
+    font-size: clamp(7px, 0.7vw, 9px);
+    color: #93a1a1;
+    letter-spacing: 0.1em;
+  }
+  @media (max-aspect-ratio: 16/9) {
+    .slide { width: min(100vw, calc(100vh * 16 / 9)); height: auto; }
+  }
+  @media (min-aspect-ratio: 16/9) {
+    .slide { height: min(100vh, calc(100vw * 9 / 16)); width: auto; }
+  }
+</style>
+</head>
+<body>
+  <main class="slide" aria-label="日光浅 style preview">
+    <div class="lines"></div>
+    <section class="content">
+      <div class="top-row">
+        <div class="category">浅色 · 沉静</div>
+        <div class="solar-badge">
+          <span style="--c:#073642"></span>
+          <span style="--c:#268bd2"></span>
+          <span style="--c:#2aa198"></span>
+          <span style="--c:#fdf6e3"></span>
+        </div>
+      </div>
+      <div class="title-area">
+        <h1>日光浅</h1>
+        <div class="en-name">Solarized Light</div>
+        <p class="desc">低眩光暖黄抚平视觉疲劳，八小时会议也不刺眼</p>
+      </div>
+      <div class="columns">
+        <div class="col-item">
+          <strong>工作坊</strong>
+          <span>长时间舒适阅读</span>
+        </div>
+        <div class="col-item">
+          <strong>教学培训</strong>
+          <span>低眩光暖黄背景</span>
+        </div>
+        <div class="col-item">
+          <strong>技术教学</strong>
+          <span>经典 Solarized 配色</span>
+        </div>
+        <div class="col-item">
+          <strong>学术讨论</strong>
+          <span>护眼持久演示</span>
+        </div>
+      </div>
+    </section>
+    <div class="palette">
+      <i style="--c:#073642"></i>
+      <i style="--c:#586e75"></i>
+      <i style="--c:#268bd2"></i>
+      <i style="--c:#2aa198"></i>
+      <i style="--c:#fdf6e3; border: 1px solid #e8dcc8"></i>
+    </div>
+    <div class="label">solarized-light</div>
+  </main>
+</body>
+</html>

@@ -296,6 +296,10 @@ export const mapPptxPresetToDataAnimType = (args: {
     if (args.effectFilter?.startsWith('wipe') || args.presetId === '5') return 'exit-wipe'
     if (args.hasScale) {
       if (args.scaleFrom !== undefined && args.scaleTo !== undefined) {
+        // exit-scale/exit-zoom: projection-based bucketing by nearest scale values
+        // External PPTX with scaleTo=80000 will be arbitrarily mapped to either
+        // exit-scale (85000) or exit-zoom (75000). These labels are approximations,
+        // not identity-preserving round-trip values.
         return EXIT_SCALE_PRESETS.reduce(
           (best, preset) => {
             const distance =
@@ -336,6 +340,11 @@ export const mapPptxPresetToDataAnimType = (args: {
     }
     return 'scale-in'
   }
+  // presetID 10: Fade vs Path projection is heuristic-based and not universally safe
+  // hasLinearMotionDelta only checks if motion channels differ, which may incorrectly
+  // classify Fade with minor position drift as 'path'. This mapping is best-effort
+  // and should be validated with representative third-party PPTX samples before
+  // claiming safe import of arbitrary external presentations.
   if (args.presetId === '10') return hasLinearMotionDelta ? 'path' : 'fade'
   if (args.presetId === '2') {
     if (

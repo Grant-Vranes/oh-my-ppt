@@ -2,6 +2,8 @@ import fs from 'fs'
 import path from 'path'
 import type { IpcContext } from '../context'
 
+// INDEX_RUNTIME_MARKER intentionally kept at v2.0.16 (index-runtime.js unchanged in this PR)
+// Only PPT_RUNTIME_MARKER updated to v2.0.17 (ppt-runtime.js modified for animation features)
 export const INDEX_RUNTIME_MARKER = '@ohmyppt-index-runtim:arcsin1:v2.0.16'
 export const PPT_RUNTIME_MARKER = '@ohmyppt-ppt-runtime:arcsin1:v2.0.17'
 

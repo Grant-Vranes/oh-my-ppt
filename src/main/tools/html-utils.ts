@@ -98,6 +98,8 @@ export const PAGE_PLACEHOLDER_TEXT = '等待模型填充这一页内容'
 export const isPlaceholderPageHtml = (html: string): boolean =>
   html.includes(PAGE_PLACEHOLDER_TEXT) || /data-placeholder-page\s*=\s*["']1["']/i.test(html)
 
+// LINEAR_PATH_RE: Synchronized with animation-writer.ts:102 and browser-scripts.ts:532
+// Note: browser-scripts.ts uses serialized version with escaped backslashes
 const LINEAR_PATH_RE = /^M\s+-?\d+(?:\.\d+)?\s+-?\d+(?:\.\d+)?\s+L\s+-?\d+(?:\.\d+)?\s+-?\d+(?:\.\d+)?\s*$/i
 
 const isLinearMotionPathString = (value: string): boolean =>

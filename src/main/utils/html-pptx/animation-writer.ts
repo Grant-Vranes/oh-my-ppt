@@ -99,6 +99,8 @@ const numericAnimXml = (
   </p:tavLst>
 </p:anim>`
 
+// LINEAR_PATH_RE: Synchronized with html-utils.ts:101 and browser-scripts.ts:532
+// Note: browser-scripts.ts uses serialized version with escaped backslashes
 const LINEAR_PATH_RE = /^M\s+-?\d+(?:\.\d+)?\s+-?\d+(?:\.\d+)?\s+L\s+-?\d+(?:\.\d+)?\s+-?\d+(?:\.\d+)?\s*$/i
 
 const parseLinearPathDelta = (

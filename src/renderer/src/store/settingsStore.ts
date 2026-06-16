@@ -23,7 +23,7 @@ interface SettingsStore {
   upsertModelConfig: (config: {
     id?: string
     name: string
-    provider: 'anthropic' | 'openai' | 'google'
+    provider: 'anthropic' | 'openai' | 'openai-responses' | 'google'
     model: string
     apiKey: string
     baseUrl: string

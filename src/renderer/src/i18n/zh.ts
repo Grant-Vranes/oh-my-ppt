@@ -369,6 +369,8 @@ export const zh = {
     imageModelDeleted: '生图模型已删除',
     providerPreset: 'Provider 预设',
     providerPlaceholder: '选择 Provider',
+    providerOpenAIChatCompletions: 'OpenAI / 兼容 Chat Completions',
+    providerOpenAIResponses: 'OpenAI Responses',
     modelHint: '只要该 provider 兼容这个模型名即可，不做限制。',
     imageModelConfigHint: '按 provider 填完整 JSON。',
     imageModelConfigHintJimeng:

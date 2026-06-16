@@ -1,7 +1,7 @@
 import type { PPTDatabase } from './db/database'
 import path from 'path'
 import { ChatAnthropic } from '@langchain/anthropic'
-import { ChatOpenAI } from '@langchain/openai'
+import { ChatOpenAICompletions } from '@langchain/openai'
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai'
 import type { BaseLanguageModel } from '@langchain/core/language_models/base'
 import { createMiddleware } from 'langchain'
@@ -23,9 +23,11 @@ import {
 } from './model-runtime'
 import {
   buildOpenAIModelOptions,
+  isOpenAIResponsesProvider,
   shouldDisableOpenAICompatibleThinking
 } from './openai-model-options'
 import { ModelUsageCallbackHandler } from './model-usage'
+import { CompatibleChatOpenAIResponses } from './openai-responses-compat'
 import { createSessionBoundDeckTools, type SessionDeckGenerationContext } from './tools'
 import { buildDeckAgentSystemPrompt, buildEditAgentSystemPrompt } from './prompt'
 import {
@@ -480,6 +482,9 @@ export function resolveModel(
   const temperatureControl = getCurrentModelTemperatureControl()
   const resolvedBaseUrl = typeof baseUrl === 'string' ? baseUrl.trim() : ''
   const resolvedMaxTokens = maxTokens && maxTokens > 0 ? maxTokens : 4096
+  const useOpenAIResponsesApi = isOpenAIResponsesProvider(provider)
+  const openAIProtocol =
+    provider === 'openai' ? 'chat-completions' : useOpenAIResponsesApi ? 'responses' : undefined
   const disableCompatibleThinking =
     provider === 'openai' && shouldDisableOpenAICompatibleThinking(resolvedBaseUrl)
   const usageCallback = new ModelUsageCallbackHandler({
@@ -497,12 +502,13 @@ export function resolveModel(
     temperatureControlBound: temperatureControl !== undefined,
     modelConfigId: temperatureControl?.modelConfigId ?? null,
     maxTokens: resolvedMaxTokens,
+    openAIProtocol,
     openAICompatibility: disableCompatibleThinking ? ['thinking.type=disabled'] : []
   })
 
   switch (provider) {
     case 'openai':
-      return new ChatOpenAI(
+      return new ChatOpenAICompletions(
         {
           ...buildOpenAIModelOptions({
             model: resolvedModel,
@@ -514,6 +520,18 @@ export function resolveModel(
           callbacks: [usageCallback]
         }
       )
+    case 'openai-responses':
+      return new CompatibleChatOpenAIResponses({
+        ...buildOpenAIModelOptions({
+          model: resolvedModel,
+          apiKey,
+          baseUrl: resolvedBaseUrl,
+          temperatureOptions,
+          maxTokens: resolvedMaxTokens,
+          useResponsesApi: true
+        }),
+        callbacks: [usageCallback]
+      })
     case 'anthropic':
       return new ChatAnthropic({
         model: resolvedModel,

@@ -105,7 +105,12 @@ export function ModelConfigDialog({
                 value={form.provider}
                 onValueChange={(value) =>
                   onFormChange({
-                    provider: value === 'anthropic' || value === 'google' ? value : 'openai'
+                    provider:
+                      value === 'anthropic' ||
+                      value === 'google' ||
+                      value === 'openai-responses'
+                        ? value
+                        : 'openai'
                   })
                 }
               >
@@ -114,7 +119,12 @@ export function ModelConfigDialog({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="anthropic">Claude (Anthropic)</SelectItem>
-                  <SelectItem value="openai">OpenAI</SelectItem>
+                  <SelectItem value="openai">
+                    {t('settings.providerOpenAIChatCompletions')}
+                  </SelectItem>
+                  <SelectItem value="openai-responses">
+                    {t('settings.providerOpenAIResponses')}
+                  </SelectItem>
                   <SelectItem value="google">Google Gemini</SelectItem>
                 </SelectContent>
               </Select>
@@ -188,7 +198,7 @@ export function ModelConfigDialog({
                 type="password"
                 placeholder={t('settings.apiKeyPlaceholder', {
                   provider:
-                    form.provider === 'openai'
+                    form.provider === 'openai' || form.provider === 'openai-responses'
                       ? 'OpenAI'
                       : form.provider === 'google'
                         ? 'Google'

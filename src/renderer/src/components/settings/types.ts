@@ -2,7 +2,7 @@ import type { ConfigurableModelTimeoutProfile } from '@shared/model-timeout.js'
 import type { I18nKey, TranslationParams } from '../../i18n'
 import type { ImageModelProvider } from '../../lib/ipc'
 
-export type ProviderId = 'anthropic' | 'openai' | 'google'
+export type ProviderId = 'anthropic' | 'openai' | 'openai-responses' | 'google'
 
 export type SettingsTranslate = (key: I18nKey, params?: TranslationParams) => string
 

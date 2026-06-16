@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { buildOpenAIModelOptions } from '../../src/main/openai-model-options'
+import {
+  buildOpenAIModelOptions,
+  normalizeOpenAIBaseUrl
+} from '../../src/main/openai-model-options'
 
 describe('buildOpenAIModelOptions', () => {
   it.each(['', 'https://api.openai.com', 'https://api.openai.com/v1', 'https://API.OPENAI.COM/v1/'])(
@@ -18,7 +21,7 @@ describe('buildOpenAIModelOptions', () => {
         apiKey: 'secret',
         temperature: 0.7,
         maxTokens: 4096,
-        configuration: baseUrl ? { baseURL: baseUrl } : undefined,
+        configuration: baseUrl ? { baseURL: baseUrl.replace(/\/+$/, '') } : undefined,
         modelKwargs: {}
       })
     }
@@ -40,5 +43,36 @@ describe('buildOpenAIModelOptions', () => {
       configuration: { baseURL: 'https://api.example-compatible.com/v1' },
       modelKwargs: { thinking: { type: 'disabled' } }
     })
+  })
+
+  it('does not inject Chat Completions compatibility kwargs for Responses API models', () => {
+    expect(
+      buildOpenAIModelOptions({
+        model: 'gpt-5.1',
+        apiKey: 'secret',
+        baseUrl: 'https://api.example-compatible.com/v1',
+        temperatureOptions: {},
+        maxTokens: 2048,
+        useResponsesApi: true
+      })
+    ).toEqual({
+      model: 'gpt-5.1',
+      apiKey: 'secret',
+      maxTokens: 2048,
+      configuration: { baseURL: 'https://api.example-compatible.com/v1' },
+      modelKwargs: {}
+    })
+  })
+
+  it('normalizes accidental /responses suffix only for Responses API models', () => {
+    expect(normalizeOpenAIBaseUrl('https://api.example.com/v1/responses', true)).toBe(
+      'https://api.example.com/v1'
+    )
+    expect(normalizeOpenAIBaseUrl('https://api.example.com/v1/responses/', true)).toBe(
+      'https://api.example.com/v1'
+    )
+    expect(normalizeOpenAIBaseUrl('https://api.example.com/v1/responses', false)).toBe(
+      'https://api.example.com/v1/responses'
+    )
   })
 })

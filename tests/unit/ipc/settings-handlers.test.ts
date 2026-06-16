@@ -249,6 +249,78 @@ describe('registerSettingsHandlers model temperature settings', () => {
       })
     )
   })
+
+  it('accepts the OpenAI Responses provider when saving a model config', async () => {
+    const upsertModelConfig = vi.fn(async () => 'model-1')
+    const { getHandler } = await registerWithDb({ upsertModelConfig })
+
+    const saveModelConfig = getHandler('settings:upsertModelConfig')
+    await saveModelConfig?.(undefined, {
+      name: 'Responses model',
+      provider: 'openai-responses',
+      model: 'gpt-5.1',
+      apiKey: 'secret',
+      baseUrl: 'https://api.openai.com/v1',
+      maxTokens: 4096,
+      disableTemperature: false
+    })
+
+    expect(upsertModelConfig).toHaveBeenCalledWith(
+      expect.objectContaining({
+        provider: 'openai-responses'
+      })
+    )
+  })
+
+  it('explains invalid Responses API payloads during model verification', async () => {
+    settingsHandlersState.localeMock.readAppLocale.mockResolvedValue('zh')
+    settingsHandlersState.resolveModelMock.mockReturnValue({
+      invoke: vi.fn(async () => {
+        throw new TypeError("Cannot read properties of undefined (reading 'map')")
+      })
+    })
+    const { getHandler } = await registerWithDb()
+
+    const verifyApiKey = getHandler('settings:verifyApiKey')
+    const result = await verifyApiKey?.(undefined, {
+      provider: 'openai-responses',
+      model: 'gpt-5.5',
+      apiKey: 'secret',
+      baseUrl: 'https://www.toumingren.xyz/v1',
+      maxTokens: 4096,
+      timeoutMs: 60000
+    })
+
+    expect(result).toEqual({
+      valid: false,
+      message: expect.stringContaining('不是 OpenAI Responses API 格式')
+    })
+  })
+
+  it('explains older undefined map errors during Responses API verification', async () => {
+    settingsHandlersState.localeMock.readAppLocale.mockResolvedValue('zh')
+    settingsHandlersState.resolveModelMock.mockReturnValue({
+      invoke: vi.fn(async () => {
+        throw new TypeError("Cannot read property 'map' of undefined")
+      })
+    })
+    const { getHandler } = await registerWithDb()
+
+    const verifyApiKey = getHandler('settings:verifyApiKey')
+    const result = await verifyApiKey?.(undefined, {
+      provider: 'openai-responses',
+      model: 'gpt-5.5',
+      apiKey: 'secret',
+      baseUrl: 'https://www.toumingren.xyz/v1',
+      maxTokens: 4096,
+      timeoutMs: 60000
+    })
+
+    expect(result).toEqual({
+      valid: false,
+      message: expect.stringContaining('OpenAI Responses API')
+    })
+  })
 })
 
 describe('registerSettingsHandlers model usage', () => {

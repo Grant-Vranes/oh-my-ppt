@@ -388,6 +388,8 @@ export const en = {
     imageModelDeleted: 'Image model deleted',
     providerPreset: 'Provider preset',
     providerPlaceholder: 'Select Provider',
+    providerOpenAIChatCompletions: 'OpenAI / compatible Chat Completions',
+    providerOpenAIResponses: 'OpenAI Responses',
     modelHint: 'Any compatible model name for this provider is accepted.',
     imageModelConfigHint: 'Enter the full provider JSON.',
     imageModelConfigHintJimeng:

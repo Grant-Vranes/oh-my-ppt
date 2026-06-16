@@ -5,6 +5,9 @@ directories:
 files:
   - '!**/.DS_Store'
   - '!**/._*'
+  # ffmpeg is copied by build/after-pack.cjs per platform so unused binaries are not bundled.
+  # Linux currently has no bundled ffmpeg binary in resources/ffmpeg; MP4 export needs a Linux
+  # ffmpeg asset before Linux video export can be enabled in packaged apps.
   - '!resources/ffmpeg/**'
   - '!**/.vscode/*'
   - '!**/.idea/**'
@@ -87,14 +90,34 @@ mac:
 dmg:
   artifactName: ${name}-${version}-${arch}.${ext}
 linux:
+  # Packaging metadata is ready for Linux, but resources/ffmpeg currently only contains
+  # macOS and Windows binaries. build/after-pack.cjs already looks for ffmpeg-linux-x64;
+  # add that binary before advertising MP4 export support for Linux packages.
+  executableName: ohmyppt
   target:
-    - AppImage
-    - deb
-  icon: build/icons/icon.png
+    - target: AppImage
+      arch:
+        - x64
+    - target: deb
+      arch:
+        - x64
+  icon: build/icons
   maintainer: arcsin1
-  category: Utility
+  vendor: arcsin1
+  category: Office
+  synopsis: Local-first AI presentation workbench
+  description: Oh My PPT is a local-first AI presentation generator and editor.
 appImage:
-  artifactName: ${name}-${version}.${ext}
+  artifactName: ${name}-${version}-${arch}.${ext}
+deb:
+  artifactName: ${name}-${version}-${arch}.${ext}
+  depends:
+    - libgtk-3-0
+    - libnotify4
+    - libnss3
+    - libxss1
+    - libxtst6
+    - xdg-utils
 npmRebuild: false
 publish:
   provider: generic

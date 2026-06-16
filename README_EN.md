@@ -124,6 +124,8 @@ After generation, you can enter preview or presentation mode, keep editing by dr
 <a id="style-skills"></a>
 ## 🎨 70+ Built-in Style Skills
 
+To create your own Style Skill, use the official style generation package: [arcsin1/style-generate-skill](https://github.com/arcsin1/style-generate-skill). It helps turn reference designs, palettes, and layout requirements into importable Oh My PPT style packages.
+
 <img src="./docs/images/4.webp" alt="Oh My PPT" width="500" />
 
 <a id="fonts"></a>

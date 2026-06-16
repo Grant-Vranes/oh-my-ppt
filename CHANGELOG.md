@@ -1,5 +1,47 @@
 # 更新日志 / Changelog
 
+## 2026-06-16 · v2.0.17
+
+### 中文
+
+- 新增跨会话添加页面：编辑时可从其他已有会话中选择页面复制到当前演示末尾，适合复用历史内容、合并方案或快速拼接多份稿件。
+- 新增主会话页面范围选择：对整套演示发起 AI 修改时，可选择全部页面或指定页面范围，避免一次改动影响不相关页面。
+- 新增批量编辑进度面板：整套/多页修改会实时展示每页处理状态、失败原因和完成结果，失败页面可单独重试。
+- 新增整套风格切换：可在编辑工作台中选择新风格并重绘整套演示，尽量保留原有文字、数据和页面含义，同时重新设计视觉布局。
+- 新增编辑标尺、网格与辅助线：编辑画布支持吸附、参考线和标尺定位，拖拽排版、对齐元素和统一页面结构更方便。
+- 新增会话搜索：会话列表支持按标题搜索，历史演示较多时更容易定位目标会话。
+- 新增会话与模板封面缩略图生成：会话列表、模板卡片和风格预览的封面加载更完整，并支持缩略图缺失时自动补全。
+- 新增 Token 用量统计：设置中可查看模型调用次数、输入/输出 Token、按天趋势、当天小时趋势和不同模型的用量分布（仅供参考）。
+- 新增 OpenAI Responses Provider：基础模型配置可选择 OpenAI Responses 接口，兼容新的 OpenAI 调用链路。
+- 新增 Linux 打包配置，可自行打包
+- 新增风格包导入导出：支持导入风格 ZIP 或风格文件夹，也可将单个风格导出为 ZIP；风格页新增场景筛选、删除确认和官方风格解析 Skill 入口。
+- 增强PPTX 导入：进一步改进表格、图表和页面结构解析，导入后的页面更容易继续编辑、生成缩略图和复用为风格。
+- 重构：风格系统内置风格从 30+ 扩展到 70+，风格资源改为独立文件夹结构，风格生成skill用：官方技能包[https://github.com/arcsin1/style-generate-skill]。
+- 优化 OpenAI 兼容模型参数处理：官方 OpenAI 端点不再携带非标准 `thinking` 参数，其他兼容端点仍会按需关闭 thinking，减少 `400 Unknown parameter` 和推理字段兼容问题。
+- 优化所有页面的ui风格：所有页面都ui增强，支持预览缩略图以及交互增强。
+- 优化页面生成与修改摘要：生成完成说明会基于已验证页面数据构建，编辑摘要会隔离模型原始输出，减少完成提示与实际页面状态不一致的问题。
+- 优化会话列表 UI 与长列表渲染：页面缩略图按需加载，列表滚动和大量会话展示更顺畅，性能增强。
+
+### English
+
+- Added pages from another session: select slides from an existing session and copy them to the end of the current deck, making it easier to reuse previous work, merge proposals, or assemble decks quickly.
+- Added page range selection for main-session AI edits: apply deck-level instructions to all slides or only selected slides, reducing accidental changes to unrelated pages.
+- Added a batch edit progress panel: track the status, failure reason, and final result for each slide during whole-deck or multi-slide edits, with retry support for failed slides.
+- Added full-deck style switching: choose a new style in the editor and redraw the whole presentation while keeping the original text, data, and slide meaning as much as possible.
+- Added editor rulers, grids, and guides: snapping and reference lines make alignment, layout, and consistent slide structure easier.
+- Added session search: search session titles from the session list to find older decks faster.
+- Added cover thumbnail generation for sessions and templates: session lists, template cards, and style previews now show covers more completely, and missing thumbnails can be filled automatically.
+- Added token usage statistics: view model call counts, input/output tokens, daily trends, today's hourly usage, and usage distribution by model from Settings.
+- Added OpenAI Responses Provider: base model configuration can now choose the OpenAI Responses interface.
+- Added Linux packaging configuration, so Linux builds can be packaged manually.
+- Improved OpenAI-compatible model handling: official OpenAI endpoints no longer receive unsupported `thinking` parameters, while compatible endpoints still request thinking to be disabled when needed, reducing related configuration and call failures.
+- Reworked the style system: built-in styles expanded from 30+ to 70+, with a new style resource structure. Use the official style generation skill at [https://github.com/arcsin1/style-generate-skill].
+- Added style package import/export: import style ZIPs or style folders, export individual styles as ZIP files, filter styles by use case, confirm deletion, and open the official style parser skill from the Styles page.
+- Improved the UI style across all pages: every page has enhanced visuals, preview thumbnails, and interaction details.
+- Enhanced PPTX import: tables, charts, and slide structure are parsed more accurately, making imported slides easier to edit, thumbnail, and reuse as styles.
+- Improved generation and edit summaries: completion messages are now based on confirmed slide results, and edit summaries avoid exposing raw model output, reducing mismatch between messages and actual slide state.
+- Improved the Sessions page and long-list performance: slide thumbnails load as needed, scrolling through many sessions is smoother, and overall performance is better.
+
 ## 2026-06-11 · v2.0.16
 
 ### 中文

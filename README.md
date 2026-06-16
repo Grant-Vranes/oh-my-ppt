@@ -123,6 +123,9 @@
 
 <a id="style-skills"></a>
 ## 🎨 内置 70+ 风格 Skill
+
+想制作自己的风格 Skill，可以使用官方风格生成包：[arcsin1/style-generate-skill](https://github.com/arcsin1/style-generate-skill)。它适合把参考设计、配色和排版要求整理成可导入 Oh My PPT 的风格包。
+
 <img src="./docs/images/4.webp" alt="Oh My PPT" width="500" />
 
 <a id="fonts"></a>

@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Card, CardContent, CardTitle } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/Dialog'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/Tooltip'
-import { FileArchive, FileText, FileUp, FolderOpen, LayoutTemplate, MessageSquare, MessagesSquare, Pencil, Sparkles, Trash2, X, type LucideIcon } from 'lucide-react'
+import { FileArchive, FileText, FileUp, FolderOpen, LayoutTemplate, MessageSquare, MessagesSquare, Pencil, Search, Sparkles, Trash2, X, type LucideIcon } from 'lucide-react'
 import { type Session, useSessionStore, useTemplateStore } from '../store'
 import { useToastStore } from '../store'
 import { ipc, type GenerateRunStateSnapshot, type HtmlThumbnailTask } from '../lib/ipc'
@@ -113,10 +113,18 @@ export function SessionsPage(): React.JSX.Element {
   const [savingTemplate, setSavingTemplate] = useState(false)
   const [activeRuns, setActiveRuns] = useState<Record<string, ActiveGenerateRun>>({})
   const [thumbnailPaths, setThumbnailPaths] = useState<Record<string, string>>({})
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchOpen, setSearchOpen] = useState(false)
+  const searchInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
     void fetchSessions()
   }, [fetchSessions])
+
+  useEffect(() => {
+    if (!searchOpen) return
+    searchInputRef.current?.focus()
+  }, [searchOpen])
 
   useEffect(() => {
     let mounted = true
@@ -194,6 +202,11 @@ export function SessionsPage(): React.JSX.Element {
   }, [fetchSessions])
 
   const sortedSessions = sessions
+  const filteredSessions = useMemo(() => {
+    const query = searchQuery.trim().toLocaleLowerCase()
+    if (!query) return sortedSessions
+    return sortedSessions.filter((session) => session.title.toLocaleLowerCase().includes(query))
+  }, [searchQuery, sortedSessions])
   const applyThumbnail = useCallback((task: HtmlThumbnailTask): void => {
     if (task.variant !== 'first-page' || !task.thumbnailPath) return
     setThumbnailPaths((current) => ({ ...current, [task.resourceId]: task.thumbnailPath! }))
@@ -336,6 +349,56 @@ export function SessionsPage(): React.JSX.Element {
             <h1 className="organic-serif text-[32px] font-semibold leading-none text-[#3e4a32]">{t('sessions.title')}</h1>
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
+            {sessions.length > 0 ? (
+              searchOpen || searchQuery ? (
+                <div className="relative w-full sm:w-64">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#829071]" />
+                  <Input
+                    ref={searchInputRef}
+                    type="search"
+                    value={searchQuery}
+                    placeholder={t('sessions.searchPlaceholder')}
+                    className="h-9 bg-[#fffaf1] pl-9 pr-10"
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    onBlur={() => {
+                      if (!searchQuery.trim()) setSearchOpen(false)
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    aria-label={t('sessions.clearSearch')}
+                    className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 p-0 text-[#829071] hover:text-[#3e4a32]"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => {
+                      setSearchQuery('')
+                      setSearchOpen(false)
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <TooltipProvider delayDuration={180}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        aria-label={t('sessions.searchButton')}
+                        onClick={() => setSearchOpen(true)}
+                      >
+                        <Search className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" align="end">
+                      {t('sessions.searchButton')}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )
+            ) : null}
             <TooltipProvider delayDuration={180}>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -365,9 +428,17 @@ export function SessionsPage(): React.JSX.Element {
             <p className="mb-4 text-muted-foreground">{t('sessions.emptyDescription')}</p>
           </CardContent>
         </Card>
+      ) : filteredSessions.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <Search className="mb-4 h-10 w-10 text-muted-foreground" />
+            <h3 className="mb-2 text-lg font-medium">{t('sessions.noSearchResultsTitle')}</h3>
+            <p className="text-muted-foreground">{t('sessions.noSearchResultsDescription')}</p>
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid grid-cols-2 gap-4">
-          {sortedSessions.map((session) => {
+          {filteredSessions.map((session) => {
             const editorGate = getEditorGate(session)
             const activeRun = activeRuns[session.id]
             const displayGeneratedCount = activeRun

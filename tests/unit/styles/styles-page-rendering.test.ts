@@ -207,16 +207,7 @@ describe('StylesPage rendering', () => {
         styleId: 'style-without-preview'
       })
 
-      await act(async () => {
-        importMenuButton?.dispatchEvent(
-          new PointerEvent('pointerdown', { bubbles: true, cancelable: true })
-        )
-        importMenuButton?.dispatchEvent(
-          new MouseEvent('mousedown', { bubbles: true, cancelable: true })
-        )
-        importMenuButton?.click()
-        await new Promise((resolve) => window.setTimeout(resolve, 5))
-      })
+      await openMenu()
       const importFolderItem = Array.from(document.body.querySelectorAll('[role="menuitem"]')).find(
         (item) => item.textContent?.includes('styles.importPackageDirectory')
       )

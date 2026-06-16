@@ -77,6 +77,12 @@ vi.mock('../../../src/renderer/src/components/templates/SaveTemplateDialog', () 
   SaveTemplateDialog: () => null
 }))
 
+const setInputValue = (input: HTMLInputElement, value: string): void => {
+  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+  setter?.call(input, value)
+  input.dispatchEvent(new Event('input', { bubbles: true }))
+}
+
 describe('SessionsPage rendering', () => {
   beforeEach(() => vi.clearAllMocks())
 
@@ -112,6 +118,62 @@ describe('SessionsPage rendering', () => {
       container.querySelector('button[aria-label="sessions.saveTemplateTooltip"]')
     ).toBeTruthy()
     expect(container.querySelector('button[aria-label="common.delete"]')).toBeTruthy()
+
+    await act(async () => root.unmount())
+  })
+
+  it('filters sessions by title from the page search field', async () => {
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+    await act(async () => {
+      root.render(React.createElement(MemoryRouter, null, React.createElement(SessionsPage)))
+      await Promise.resolve()
+    })
+
+    const searchButton = container.querySelector(
+      'button[aria-label="sessions.searchButton"]'
+    ) as HTMLButtonElement | null
+    expect(searchButton).toBeTruthy()
+
+    await act(async () => {
+      searchButton!.click()
+    })
+
+    const searchInput = container.querySelector(
+      'input[placeholder="sessions.searchPlaceholder"]'
+    ) as HTMLInputElement | null
+    expect(searchInput).toBeTruthy()
+
+    await act(async () => {
+      setInputValue(searchInput!, 'quarter')
+    })
+
+    expect(container.textContent).toContain('Quarterly Review')
+    expect(container.querySelector('[data-session-card-id="session-2"]')).toBeNull()
+
+    await act(async () => {
+      setInputValue(searchInput!, 'missing')
+    })
+
+    expect(container.querySelector('[data-session-card-id="session-1"]')).toBeNull()
+    expect(container.querySelector('[data-session-card-id="session-2"]')).toBeNull()
+    expect(container.textContent).toContain('sessions.noSearchResultsTitle')
+
+    const clearButton = container.querySelector(
+      'button[aria-label="sessions.clearSearch"]'
+    ) as HTMLButtonElement | null
+    expect(clearButton).toBeTruthy()
+
+    await act(async () => {
+      clearButton!.click()
+    })
+
+    expect(container.querySelector('input[placeholder="sessions.searchPlaceholder"]')).toBeNull()
+    expect(container.querySelector('[data-session-card-id="session-1"]')).toBeTruthy()
+    expect(container.querySelector('[data-session-card-id="session-2"]')).toBeTruthy()
+    expect(container.textContent).toContain('Quarterly Review')
+    expect(container.textContent).toContain('Draft Session')
 
     await act(async () => root.unmount())
   })

@@ -268,7 +268,7 @@ export function StylesPage(): React.JSX.Element {
                     rel="noopener noreferrer"
                     className="font-medium text-[#5a7a4e] underline underline-offset-2 hover:text-[#3e5a34]"
                   >
-                    官方风格解析 Skill：arcsin1/style-generate-skill
+                    {t('styles.officialSkillLabel')}
                   </a>
                 </div>
               </DropdownMenuContent>

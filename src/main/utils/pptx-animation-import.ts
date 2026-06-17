@@ -168,6 +168,16 @@ export const parsePptxSlideAnimationPlan = (
   const animations: ImportedElementAnimation[] = []
   let id = 0
 
+  // Collect grpId values from clickEffect nodes to validate withEffect grouping.
+  // External PPTX files may assign grpId to withEffect for unrelated reasons,
+  // so we only promote withEffect→click when the same grpId appears on a
+  // clickEffect sibling in the same slide.
+  const clickGrpIds = new Set<string>()
+  $('[nodeType="clickEffect"][grpId]').each((_, node) => {
+    const gid = $(node).attr('grpId')
+    if (gid && gid !== '0') clickGrpIds.add(gid)
+  })
+
   $('[presetID]').each((_, node) => {
     const ctn = $(node)
     const nodeType = ctn.attr('nodeType')
@@ -209,7 +219,8 @@ export const parsePptxSlideAnimationPlan = (
       motionYTo
     })
     const trigger: ImportedAnimationTrigger =
-      nodeType === 'clickEffect' || (nodeType === 'withEffect' && grpId && grpId !== '0')
+      nodeType === 'clickEffect' ||
+      (nodeType === 'withEffect' && grpId && grpId !== '0' && clickGrpIds.has(grpId))
         ? 'click'
         : 'load'
     const delay = parseNumericDelay(

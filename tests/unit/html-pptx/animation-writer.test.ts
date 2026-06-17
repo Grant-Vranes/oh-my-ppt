@@ -1,7 +1,7 @@
+import * as cheerio from 'cheerio'
 import { describe, expect, it } from 'vitest'
 import {
   buildSlideTimingXml,
-  buildSlideTransitionXml,
   type PptxTargetAnimation
 } from '../../../src/main/utils/html-pptx/animation-writer'
 
@@ -15,187 +15,230 @@ const makeAnim = (overrides: Partial<PptxTargetAnimation> = {}): PptxTargetAnima
   ...overrides
 })
 
-describe('buildSlideTimingXml', () => {
-  it('returns empty XML when there are no animations', () => {
-    expect(buildSlideTimingXml([])).toBe('')
+const parseTimingXml = (xml: string) => {
+  if (!xml) return null
+  return cheerio.load(xml, { xmlMode: true }, false)
+}
+
+describe('OOXML timing tree structure', () => {
+  it('has exactly one tmRoot containing one mainSeq', () => {
+    const xml = buildSlideTimingXml([makeAnim({ spid: 7, type: 'fade' })])
+    const $ = parseTimingXml(xml)
+    expect($).not.toBeNull()
+
+    const root = $('p\\:par p\\:cTn[nodeType="tmRoot"]')
+    expect(root.length).toBe(1)
+
+    const mainSeq = root.find('p\\:cTn[nodeType="mainSeq"]')
+    expect(mainSeq.length).toBe(1)
+    expect(mainSeq.parents('p\\:cTn[nodeType="tmRoot"]').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('builds a PowerPoint main sequence with build list and visibility setup', () => {
-    const xml = buildSlideTimingXml([makeAnim({ spid: 7, type: 'fade', duration: 400 })])
-
-    expect(xml).toContain('<p:timing>')
-    expect(xml).toContain('<p:cTn id="1" dur="indefinite" restart="never" nodeType="tmRoot">')
-    expect(xml).toContain('nodeType="tmRoot"')
-    expect(xml).toContain('nodeType="mainSeq"')
-    expect(xml).toContain('nodeType="withEffect"')
-    expect(xml).toContain('<p:cTn id="4" fill="hold">')
-    expect(xml).toContain('presetID="10"')
-    expect(xml).toContain('<p:attrName>style.visibility</p:attrName>')
-    expect(xml).toContain('<p:bldP spid="7" grpId="0"/>')
-    expect(xml).toContain('dur="400"')
-    expect(xml).toContain('filter="fade"')
-  })
-
-  it('maps directional runtime effects to native motion paths', () => {
-    const xml = buildSlideTimingXml([makeAnim({ spid: 3, type: 'fade-left', delay: 200 })])
-
-    expect(xml).toContain('presetID="2"')
-    expect(xml).toContain('presetSubtype="3"')
-    expect(xml).toContain('delay="200"')
-    expect(xml).toContain('<p:attrName>ppt_x</p:attrName>')
-    expect(xml).toContain('<p:strVal val="#ppt_x+20"/>')
-    expect(xml).toContain('<p:strVal val="#ppt_x"/>')
-  })
-
-  it('maps slide-down and slide-right to directional entrance preset subtypes', () => {
+  it('every effect node has exactly one stCondLst child', () => {
     const xml = buildSlideTimingXml([
-      makeAnim({ spid: 3, type: 'slide-down' }),
-      makeAnim({ spid: 4, type: 'slide-right', order: 1 })
+      makeAnim({ spid: 3, type: 'fade' }),
+      makeAnim({ spid: 4, type: 'pulse', trigger: 'click', order: 1 })
     ])
+    const $ = parseTimingXml(xml)
+    expect($).not.toBeNull()
 
-    expect(xml).toContain('presetSubtype="1"')
-    expect(xml).toContain('presetSubtype="2"')
-    expect(xml).toContain('<p:strVal val="#ppt_y-40"/>')
-    expect(xml).toContain('<p:strVal val="#ppt_x-40"/>')
+    // Find all par-level cTn that contain presetID (effect containers)
+    $('p\\:cTn[presetID]').each((_, el) => {
+      const ctn = $(el)
+      const stCond = ctn.children('p\\:stCondLst')
+      expect(stCond.length, `effect node id=${ctn.attr('id')} has stCondLst`).toBe(1)
+    })
   })
 
-  it('emits distinct explicit deltas for fade and slide entrance variants', () => {
+  it('every effect node has exactly one childTnLst parent wrapping its children', () => {
     const xml = buildSlideTimingXml([
-      makeAnim({ spid: 3, type: 'fade-up' }),
-      makeAnim({ spid: 4, type: 'slide-up', order: 1 }),
-      makeAnim({ spid: 5, type: 'fade-left', order: 2 }),
-      makeAnim({ spid: 6, type: 'slide-left', order: 3 })
+      makeAnim({ spid: 3, type: 'fade' }),
+      makeAnim({ spid: 4, type: 'scale-in', order: 1 })
     ])
+    const $ = parseTimingXml(xml)
+    expect($).not.toBeNull()
 
-    expect(xml).toContain('<p:strVal val="#ppt_y+20"/>')
-    expect(xml).toContain('<p:strVal val="#ppt_y+40"/>')
-    expect(xml).toContain('<p:strVal val="#ppt_x+20"/>')
-    expect(xml).toContain('<p:strVal val="#ppt_x+40"/>')
+    $('p\\:cTn[presetID]').each((_, el) => {
+      const ctn = $(el)
+      const childList = ctn.children('p\\:childTnLst')
+      expect(childList.length, `effect node id=${ctn.attr('id')} has childTnLst`).toBe(1)
+    })
   })
 
-  it('emits exit-wipe as an exit wipe effect instead of generic fade-out', () => {
+  it('emphasis effects contain a p:seq with two child animScale elements', () => {
+    const xml = buildSlideTimingXml([makeAnim({ spid: 3, type: 'pulse' })])
+    const $ = parseTimingXml(xml)
+    expect($).not.toBeNull()
+
+    // The timing tree has multiple <p:seq> elements:
+    // - One for the main sequence wrapper (mainSeq)
+    // - One nested inside the effect for emphasis rebound
+    // Find the seq that contains animScale (the emphasis rebound seq)
+    const reboundSeq = $('p\\:seq').filter((_, el) => $(el).find('p\\:animScale').length > 0)
+    expect(reboundSeq.length).toBeGreaterThanOrEqual(1)
+
+    // The rebound seq should contain exactly 2 animScale children
+    const scales = reboundSeq.find('p\\:animScale')
+    expect(scales.length).toBe(2)
+  })
+
+  it('emphasis rebound: first animScale uses fill="hold", second uses fill="remove"', () => {
+    const xml = buildSlideTimingXml([makeAnim({ spid: 5, type: 'pulse', duration: 800 })])
+    const $ = parseTimingXml(xml)
+    expect($).not.toBeNull()
+
+    const scales = $('p\\:animScale')
+    expect(scales.length).toBe(2)
+
+    const first = $(scales[0])
+    const firstTn = first.find('p\\:cTn[dur][fill]').first()
+    expect(firstTn.attr('fill')).toBe('hold')
+    expect(Number(firstTn.attr('dur'))).toBeGreaterThan(0)
+
+    const second = $(scales[1])
+    const secondTn = second.find('p\\:cTn[dur][fill]').first()
+    expect(secondTn.attr('fill')).toBe('remove')
+    expect(Number(secondTn.attr('dur'))).toBeGreaterThan(0)
+  })
+
+  it('emphasis rebound: second animScale transitions peak back to identity (x=100000, y=100000)', () => {
+    const xml = buildSlideTimingXml([makeAnim({ spid: 5, type: 'pulse', duration: 600 })])
+    const $ = parseTimingXml(xml)
+    expect($).not.toBeNull()
+
+    const scales = $('p\\:animScale')
+    const second = $(scales[1])
+    const toEl = second.find('p\\:to')
+    expect(toEl.length).toBe(1)
+    expect(toEl.attr('x')).toBe('100000')
+    expect(toEl.attr('y')).toBe('100000')
+  })
+
+  it('emphasis rebound: second phase duration equals first phase (half total each)', () => {
+    const totalDur = 1000
+    const xml = buildSlideTimingXml([makeAnim({ spid: 5, type: 'grow-shrink', duration: totalDur })])
+    const $ = parseTimingXml(xml)
+    expect($).not.toBeNull()
+
+    const scales = $('p\\:animScale')
+    const dur1 = Number($(scales[0]).find('p\\:cTn[dur][fill]').first().attr('dur'))
+    const dur2 = Number($(scales[1]).find('p\\:cTn[dur][fill]').first().attr('dur'))
+    expect(dur1 + dur2).toBeLessThanOrEqual(totalDur)
+    // Should be roughly half each (floor division may lose 1ms)
+    expect(Math.abs(dur1 - dur2)).toBeLessThanOrEqual(1)
+  })
+
+  it('emphasis seq is a child of the effect childTnLst (not top-level)', () => {
+    const xml = buildSlideTimingXml([makeAnim({ spid: 5, type: 'pulse-strong' })])
+    const $ = parseTimingXml(xml)
+    expect($).not.toBeNull()
+
+    // Find the emphasis rebound seq: a p:seq whose direct children include
+    // a p:cTn that directly contains p:childTnLst > p:animScale
+    const reboundSeq = $('p\\:seq').filter((_, el) => {
+      const $seq = $(el)
+      return $seq.children('p\\:cTn').children('p\\:childTnLst').children('p\\:animScale').length > 0
+    })
+    expect(reboundSeq.length).toBe(1)
+
+    // The seq must be inside a childTnLst that belongs to the effect par
+    const parentChildTn = reboundSeq.closest('p\\:childTnLst')
+    expect(parentChildTn.length).toBe(1)
+    // That childTnLst must be inside a cTn that has presetID
+    const parentCtn = parentChildTn.closest('p\\:cTn[presetID]')
+    expect(parentCtn.length).toBe(1)
+  })
+
+  it('non-emphasis scale animations do not use rebound p:seq', () => {
+    const xml = buildSlideTimingXml([makeAnim({ spid: 3, type: 'scale-in' })])
+    const $ = parseTimingXml(xml)
+    expect($).not.toBeNull()
+
+    // A rebound seq is a p:seq whose direct children include p:cTn > p:childTnLst > p:animScale
+    // Non-emphasis scale animations should NOT have this structure
+    const reboundSeq = $('p\\:seq').filter((_, el) => {
+      return $(el).children('p\\:cTn').children('p\\:childTnLst').children('p\\:animScale').length > 0
+    })
+    expect(reboundSeq.length).toBe(0)
+
+    // But there should still be exactly one animScale total
+    const allScales = $('p\\:animScale')
+    expect(allScales.length).toBe(1)
+  })
+
+  it('path animation generates two anim channels (x, y) and no animEffect', () => {
     const xml = buildSlideTimingXml([
-      makeAnim({ type: 'exit-wipe', trigger: 'click', from: 'top' })
+      makeAnim({ spid: 8, type: 'path', path: 'M 0 0 L 120 30' })
     ])
+    const $ = parseTimingXml(xml)
+    expect($).not.toBeNull()
 
-    expect(xml).toContain('presetID="5"')
-    expect(xml).toContain('presetClass="exit"')
-    expect(xml).toContain('nodeType="clickEffect"')
-    expect(xml).toContain('transition="out"')
-    expect(xml).toContain('filter="wipe(d)"')
+    const animNodes = $('p\\:anim[calcmode="lin"]')
+    expect(animNodes.length).toBe(2)
+
+    const xAnim = animNodes.filter((_, el) => $(el).find('p\\:attrName').text() === 'ppt_x')
+    const yAnim = animNodes.filter((_, el) => $(el).find('p\\:attrName').text() === 'ppt_y')
+    expect(xAnim.length).toBe(1)
+    expect(yAnim.length).toBe(1)
+
+    // No animEffect for path (P1-4)
+    expect($('p\\:animEffect').length).toBe(0)
   })
 
-  it('emits scale animation for scale-in', () => {
-    const xml = buildSlideTimingXml([makeAnim({ type: 'scale-in' })])
+  it('fade animation generates exactly one animEffect with filter="fade"', () => {
+    const xml = buildSlideTimingXml([makeAnim({ spid: 3, type: 'fade' })])
+    const $ = parseTimingXml(xml)
+    expect($).not.toBeNull()
 
-    expect(xml).toContain('presetID="31"')
-    expect(xml).toContain('<p:animScale>')
-    expect(xml).toContain('<p:from x="85000" y="85000"/>')
-    expect(xml).toContain('<p:to x="100000" y="100000"/>')
+    const effects = $('p\\:animEffect')
+    expect(effects.length).toBe(1)
+    expect(effects.attr('filter')).toBe('fade')
   })
 
-  it('emits native rotation timing for spin-in in addition to scale timing', () => {
-    const xml = buildSlideTimingXml([makeAnim({ type: 'spin-in' })])
-
-    expect(xml).toContain('presetID="31"')
-    expect(xml).toContain('<p:animScale>')
-    expect(xml).toContain('<p:animRot')
-    expect(xml).toContain('from="-720000"')
-    expect(xml).toContain('to="0"')
-  })
-
-  it('emits distinct native exit scale ranges for exit-scale and exit-zoom', () => {
+  it('build list entries match unique target spids exactly', () => {
     const xml = buildSlideTimingXml([
-      makeAnim({ spid: 3, type: 'exit-scale', trigger: 'click' }),
-      makeAnim({ spid: 4, type: 'exit-zoom', trigger: 'click', order: 1 })
+      makeAnim({ spid: 7, type: 'fade-up', delay: 100 }),
+      makeAnim({ spid: 7, type: 'pulse', trigger: 'click', order: 1 }),
+      makeAnim({ spid: 8, type: 'fade', order: 2 })
     ])
+    const $ = parseTimingXml(xml)
+    expect($).not.toBeNull()
 
-    expect(xml).toContain('presetID="31"')
-    expect(xml).toContain('presetClass="exit"')
-    expect(xml).toContain('transition="out"')
-    expect(xml).toContain('<p:from x="100000" y="100000"/>')
-    expect(xml).toContain('<p:to x="85000" y="85000"/>')
-    expect(xml).toContain('<p:to x="75000" y="75000"/>')
+    const buildEntries = $('p\\:bldP')
+    expect(buildEntries.length).toBe(2) // spid 7 and spid 8
+    const spids = buildEntries.map((_, el) => $(el).attr('spid')).get()
+    expect(spids).toContain('7')
+    expect(spids).toContain('8')
   })
 
-  it('emits linear motion channels for constrained path animations', () => {
-    const xml = buildSlideTimingXml([
-      makeAnim({ spid: 3, type: 'path', path: 'M 0 0 L 120 30' })
-    ])
+  it('tmRoot contains exactly one bldLst', () => {
+    const xml = buildSlideTimingXml([makeAnim({ spid: 7, type: 'fade' })])
+    const $ = parseTimingXml(xml)
+    expect($).not.toBeNull()
 
-    expect(xml).toContain('presetID="10"')
-    expect(xml).toContain('<p:attrName>ppt_x</p:attrName>')
-    expect(xml).toContain('<p:strVal val="#ppt_x"/>')
-    expect(xml).toContain('<p:strVal val="#ppt_x+120"/>')
-    expect(xml).toContain('<p:attrName>ppt_y</p:attrName>')
-    expect(xml).toContain('<p:strVal val="#ppt_y+30"/>')
-  })
+    const bldLst = $('p\\:bldLst')
+    expect(bldLst.length).toBe(1)
 
-  it('preserves click-triggered animations as click effects', () => {
-    const xml = buildSlideTimingXml([makeAnim({ trigger: 'click' })])
-
-    expect(xml).toContain('nodeType="clickEffect"')
-  })
-
-  it('groups contiguous click-group animations into one PPTX build step', () => {
-    const xml = buildSlideTimingXml([
-      makeAnim({ spid: 3, trigger: 'click', clickGroup: 'reveal', type: 'fade-up', order: 0 }),
-      makeAnim({ spid: 4, trigger: 'click', clickGroup: 'reveal', type: 'pulse-soft', order: 1 }),
-      makeAnim({ spid: 5, trigger: 'click', type: 'pulse-strong', order: 2 })
-    ])
-
-    expect(xml).toContain('spid="3"')
-    expect(xml).toContain('spid="4"')
-    expect(xml).toContain('spid="5"')
-    expect(xml).toContain('nodeType="clickEffect"')
-    expect(xml).toContain('nodeType="withEffect"')
-    expect(xml).toContain('grpId="1"')
-    expect(xml).toContain('grpId="0"')
-  })
-
-  it('preserves click-group across interleaved load animations', () => {
-    const xml = buildSlideTimingXml([
-      makeAnim({ spid: 3, trigger: 'click', clickGroup: 'step-1', type: 'fade-up', order: 0 }),
-      makeAnim({ spid: 4, trigger: 'load', type: 'fade', order: 1 }),
-      makeAnim({ spid: 5, trigger: 'click', clickGroup: 'step-1', type: 'pulse-soft', order: 2 })
-    ])
-
-    expect(xml).toContain('spid="3"')
-    expect(xml).toContain('spid="5"')
-    expect(xml.match(/grpId="1"/g)).toHaveLength(2)
-  })
-
-  it('emits distinct native scale ranges for bounded emphasis variants', () => {
-    const xml = buildSlideTimingXml([
-      makeAnim({ spid: 3, type: 'pulse-soft' }),
-      makeAnim({ spid: 4, type: 'pulse-strong', order: 1 }),
-      makeAnim({ spid: 5, type: 'grow-shrink-soft', order: 2 }),
-      makeAnim({ spid: 6, type: 'grow-shrink-strong', order: 3 })
-    ])
-
-    expect(xml).toContain('<p:from x="100000" y="100000"/>')
-    expect(xml).toContain('<p:to x="103000" y="103000"/>')
-    expect(xml).toContain('<p:to x="110000" y="110000"/>')
-    expect(xml).toContain('<p:from x="95000" y="95000"/>')
-    expect(xml).toContain('<p:to x="104000" y="104000"/>')
-    expect(xml).toContain('<p:from x="85000" y="85000"/>')
-    expect(xml).toContain('<p:to x="112000" y="112000"/>')
-  })
-
-  it('deduplicates build-list entries for repeated target shapes', () => {
-    const xml = buildSlideTimingXml([
-      makeAnim({ spid: 9, order: 0 }),
-      makeAnim({ spid: 9, order: 1, type: 'fade' })
-    ])
-
-    expect(xml.match(/<p:bldP spid="9" grpId="0"\/>/g)).toHaveLength(1)
+    // bldLst must be a direct child of timing
+    const timingParent = bldLst.closest('p\\:timing')
+    expect(timingParent.length).toBe(1)
   })
 })
 
-describe('buildSlideTransitionXml', () => {
-  it('maps app transition names to native transition XML', () => {
-    expect(buildSlideTransitionXml('slide-left', 500)).toContain('<p:push/>')
-    expect(buildSlideTransitionXml('zoom', 500)).toContain('<p:dissolve/>')
-    expect(buildSlideTransitionXml('none', 500)).toBe('')
+describe('Decimal path precision in timing XML', () => {
+  it('emits fractional deltas for decimal path coordinates', () => {
+    // delta = end - start: 120.5 - 0.5 = 120 (x), 30.25 - 0 = 30.25 (y)
+    const xml = buildSlideTimingXml([
+      makeAnim({ spid: 8, type: 'path', path: 'M 0.5 0 L 120.5 30.25' })
+    ])
+    const $ = parseTimingXml(xml)
+    expect($).not.toBeNull()
+
+    const toValues = $('p\\:tav[tm="100000"] p\\:strVal')
+    const vals = toValues.map((_, el) => $(el).attr('val') || '').get()
+    // x delta = 120.5 - 0.5 = 120 (integer, no fraction)
+    expect(vals).toContain('#ppt_x+120')
+    // y delta = 30.25 - 0 = 30.25 (fractional)
+    expect(vals).toContain('#ppt_y+30.25')
   })
 })

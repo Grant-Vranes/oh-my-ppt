@@ -180,7 +180,13 @@ Two levels of chart animation, each handled by a different system:
 `data-anim-from="center"` cannot roundtrip reliably with trace-based motions (`fly-in`, `wipe`, `exit-fly`, `exit-wipe`). The validator will reject these incompatible combinations. Use `center` only with fade/zoom/path animations that don't depend on directional motion paths.
 
 ### Click-group token identity
-`data-anim-click-group` values preserve grouping structure and click timing when roundtripping through PPTX, but the token text itself may change (e.g., `reveal` → `1`). The semantic behavior (elements grouped into the same click step) is preserved.
+`data-anim-click-group` values preserve **grouping structure and click timing** when roundtripping through PPTX, but the token text itself may change (e.g., `reveal` → `1`). The semantic behavior (elements grouped into the same click step) is preserved. **Do not rely on token name identity** across export/import — only structural grouping is guaranteed.
+
+### Sequence roundtrip boundary
+`data-anim-sequence="with|after"` controls HTML→PPTX export timing, but PPTX import does **not** reconstruct this attribute. Sequence semantics are **HTML→PPTX only**, not roundtrip. Imported animations use trigger/delay to express timing.
+
+### Scale value approximation
+External PPTX files with custom animation scale values (e.g., `scaleTo=80000`) are projected to the nearest built-in preset bucket via distance-based matching. The resulting `data-anim` type (e.g., `exit-scale` vs `exit-zoom`) is a best-fit approximation, not an identity-preserving roundtrip value. This applies to both entrance (zoom-in/scale-in/spin-in) and exit (exit-scale/exit-zoom) scale animations.
 
 ### Path animation constraints
 `data-anim="path"` requires `data-anim-path` with a constrained linear path format: `M x y L dx dy` (integer or decimal coordinates). More complex SVG path commands are not supported in the editable contract.

@@ -34,11 +34,8 @@ import {
 import { useT } from '../i18n'
 import { useThumbnailUpdates } from '../hooks/useThumbnailUpdates'
 import { useVisibleItemIds } from '../hooks/useVisibleItemIds'
-import {
-  buildStyleCaseOptions,
-  filterByStyleCase,
-  parseStyleCases
-} from '@renderer/lib/style-case'
+import { filterByStyleCase, parseStyleCases } from '@renderer/lib/style-case'
+import { StyleCaseFilter } from '../components/style/StyleCaseFilter'
 
 type StyleSummary = {
   id: string
@@ -75,14 +72,6 @@ export function StylesPage(): React.JSX.Element {
   const generatePreview = useStylePreviewStore((state) => state.generatePreview)
   const t = useT()
 
-  const styleCaseOptions = useMemo(() => buildStyleCaseOptions(styles), [styles])
-  const visibleStyleCaseOptions = useMemo(() => {
-    const popular = styleCaseOptions.filter((option) => option.count > 1)
-    const selected = styleCaseOptions.find((option) => option.label === selectedStyleCase)
-    return selected && !popular.some((option) => option.label === selected.label)
-      ? [...popular, selected]
-      : popular
-  }, [selectedStyleCase, styleCaseOptions])
   const filteredStyles = useMemo(
     () => filterByStyleCase(styles, selectedStyleCase),
     [selectedStyleCase, styles]
@@ -289,38 +278,14 @@ export function StylesPage(): React.JSX.Element {
         <p className="mt-2 text-[12px] text-muted-foreground">{t('styles.description')}</p>
       </div>
 
-      {styleCaseOptions.length > 0 && (
-        <div className="mb-5 rounded-lg border border-[#d8ccb5]/75 bg-[#fff9ef]/76 p-3">
-          <p className="mb-2 text-xs font-medium text-[#3e4a32]">{t('styles.styleCaseFilter')}</p>
-          <div className="flex flex-wrap gap-1.5">
-            <button
-              type="button"
-              className={`rounded-md border px-2 py-1 text-xs font-medium transition-colors ${
-                selectedStyleCase === ''
-                  ? 'border-[#97aa7c] bg-[#dbe7ca] text-[#2f3b28]'
-                  : 'border-[#d6c08d]/80 bg-white/70 text-[#7c6a4c] hover:bg-[#fff3d8]'
-              }`}
-              onClick={() => setSelectedStyleCase('')}
-            >
-              {t('styles.allStyleCases')} · {styles.length}
-            </button>
-            {visibleStyleCaseOptions.map((option) => (
-              <button
-                key={option.label}
-                type="button"
-                className={`rounded-md border px-2 py-1 text-xs font-medium transition-colors ${
-                  selectedStyleCase === option.label
-                    ? 'border-[#97aa7c] bg-[#dbe7ca] text-[#2f3b28]'
-                    : 'border-[#d6c08d]/80 bg-white/70 text-[#7c6a4c] hover:bg-[#fff3d8]'
-                }`}
-                onClick={() => setSelectedStyleCase(option.label)}
-              >
-                {option.label} · {option.count}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      <StyleCaseFilter
+        className="mb-5 rounded-lg border border-[#d8ccb5]/75 bg-[#fff9ef]/76 p-3"
+        items={styles}
+        selected={selectedStyleCase}
+        onSelect={setSelectedStyleCase}
+        allLabel={t('styles.allStyleCases')}
+        title={t('styles.styleCaseFilter')}
+      />
 
       <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">
         {filteredStyles.map((style) => (

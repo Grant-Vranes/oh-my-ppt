@@ -496,6 +496,8 @@ export const zh = {
     styleCaseFilter: '按适用场景筛选',
     allStyleCases: '全部',
     noMatchingStyles: '没有符合该场景的风格',
+    searchPlaceholder: '搜索风格名称、用途…',
+    clearSearch: '清空搜索',
     pagesCount: '页面 · {count}'
   },
   styleEditor: {

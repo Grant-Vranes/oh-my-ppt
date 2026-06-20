@@ -522,6 +522,8 @@ export const en = {
     styleCaseFilter: 'Filter by use case',
     allStyleCases: 'All',
     noMatchingStyles: 'No styles match this use case',
+    searchPlaceholder: 'Search by name or use case…',
+    clearSearch: 'Clear search',
     pagesCount: 'Pages · {count}'
   },
   styleEditor: {

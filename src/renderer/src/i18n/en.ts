@@ -362,6 +362,8 @@ export const en = {
     modelHelpTitle: 'Recommended cloud models',
     addModel: 'Add model',
     addImageModel: 'Add image model',
+    imageModelUsageHint:
+      'Image models are not used for visuals during generation yet. After pages are generated, add visuals separately as needed.',
     editModel: 'Edit model',
     editImageModel: 'Edit image model',
     modelName: 'Alias',

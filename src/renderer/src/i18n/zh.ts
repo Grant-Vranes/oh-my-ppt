@@ -343,6 +343,7 @@ export const zh = {
     modelHelpTitle: '推荐的云上模型',
     addModel: '添加模型',
     addImageModel: '添加生图模型',
+    imageModelUsageHint: '生图模型暂不参与生成过程中的配图；页面生成完成后，如有需要可再单独配图。',
     editModel: '编辑模型',
     editImageModel: '编辑生图模型',
     modelName: '别名',

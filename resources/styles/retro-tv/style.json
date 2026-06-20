@@ -5,14 +5,14 @@
     "en": "Retro Tv"
   },
   "description": "暖黄屏幕闪烁琥珀光，时间倒流回客厅里的CRT",
-  "category": "大胆 · 杂志",
+  "category": "杂志 · 编辑",
   "aliases": [
     "retro",
     "tv",
     "复古",
     "CRT"
   ],
-  "styleCase": "怀旧叙事、八零九零年代主题、复古品牌故事、回忆录式的演讲",
-  "version": "2.0.0",
+  "styleCase": "杂志编辑、品牌营销、生活方式",
+  "version": "2.0.1",
   "source": "builtin"
 }

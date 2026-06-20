@@ -5,7 +5,7 @@
     "en": "Handdrawn Watercolor"
   },
   "description": "低饱和暖色与海洋蓝交织，治愈感从纸面上流淌而出",
-  "category": "自然 · 有机",
+  "category": "插画 · 手绘",
   "aliases": [
     "水彩绘本风",
     "治愈插画风",
@@ -13,7 +13,7 @@
     "手绘",
     "水彩"
   ],
-  "styleCase": "青少年教育、心理成长叙事、教育科普、温暖型故事分享",
-  "version": "2.0.0",
+  "styleCase": "教学科普、疗愈冥想、亲子儿童",
+  "version": "2.0.1",
   "source": "builtin"
 }

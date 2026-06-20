@@ -5,13 +5,13 @@
     "en": "Gruvbox Dark"
   },
   "description": "琥珀与苔绿在暖灰中燃烧，终端美学从未如此温暖",
-  "category": "冷色 · 深色",
+  "category": "深色 · 科技",
   "aliases": [
     "gruvbox",
     "复古深色",
     "terminal"
   ],
-  "styleCase": "Terminal/vim/*nix 社群分享、DevOps 技术演讲、命令行工具展示、复古计算文化",
-  "version": "2.0.0",
+  "styleCase": "技术分享、教学科普、产品发布",
+  "version": "2.0.1",
   "source": "builtin"
 }

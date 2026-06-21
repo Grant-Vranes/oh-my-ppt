@@ -4,6 +4,7 @@ import { useT } from '@renderer/i18n'
 import { ipc } from '@renderer/lib/ipc'
 import {
   useGenerateStore,
+  resetSessionDetailEditingStores,
   useSessionDetailUiStore,
   useSessionStore,
   useToastStore
@@ -83,6 +84,7 @@ export function HistoryDialog({ sessionId }: HistoryDialogProps): React.JSX.Elem
     setRollbackConfirmVersion(null)
     try {
       await ipc.rollbackToHistoryVersion({ sessionId, versionId: version.id })
+      resetSessionDetailEditingStores()
       await loadSession(sessionId)
       useGenerateStore.getState().setPages(useSessionStore.getState().currentGeneratedPages)
       useSessionDetailUiStore.getState().bumpPreviewKey()

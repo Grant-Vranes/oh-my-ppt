@@ -6,6 +6,7 @@ import {
   FilePlus2,
   Files,
   Image as ImageIcon,
+  Loader2,
   Move,
   PanelLeft,
   PanelRight,
@@ -16,7 +17,7 @@ import {
   Trash2,
   X
 } from 'lucide-react'
-import { useSessionDetailUiStore } from '@renderer/store'
+import { useEditHistoryStore, useEditSessionStore, useSessionDetailUiStore } from '@renderer/store'
 import {
   DndContext,
   PointerSensor,
@@ -34,6 +35,14 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { ScrollArea } from '../../ui/ScrollArea'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/Tooltip'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle
+} from '../../ui/AlertDialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -173,10 +182,23 @@ export const PageSidebar = memo(function PageSidebar({
   const [editingOutlinePageId, setEditingOutlinePageId] = useState<string | null>(null)
   const [outlineDraft, setOutlineDraft] = useState('')
   const [savingOutlinePageId, setSavingOutlinePageId] = useState<string | null>(null)
+  const [pendingSwitchPageId, setPendingSwitchPageId] = useState<string | null>(null)
+  const [savingBeforeSwitch, setSavingBeforeSwitch] = useState(false)
   const wasAddingRef = useRef(false)
   const copyResetTimerRef = useRef<number | null>(null)
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
   const sortableIds = useMemo(() => pages.map((p) => p.id), [pages])
+  const selectedPage = useMemo(
+    () => pages.find((page) => page.id === selectedPageId) ?? pages[0] ?? null,
+    [pages, selectedPageId]
+  )
+  const currentPageHasPendingEdits = useEditHistoryStore((state) =>
+    state.hasPendingEdits(selectedPage?.pageId)
+  )
+  const pendingSwitchPage = useMemo(
+    () => pages.find((page) => page.id === pendingSwitchPageId) ?? null,
+    [pages, pendingSwitchPageId]
+  )
   const {
     activePreviewIds: thumbnailPreviewIds,
     viewportRef,
@@ -226,6 +248,36 @@ export const PageSidebar = memo(function PageSidebar({
     )
   }
 
+  const requestSelectPage = (pageId: string): boolean => {
+    if (!pageId || disabled) return false
+    if (pageId === selectedPageId) {
+      setSelectedPageId(pageId)
+      return true
+    }
+    if (currentPageHasPendingEdits) {
+      setPendingSwitchPageId(pageId)
+      return false
+    }
+    setSelectedPageId(pageId)
+    return true
+  }
+
+  const handleConfirmSaveAndSwitch = async (): Promise<void> => {
+    const targetPageId = pendingSwitchPageId
+    if (!targetPageId || savingBeforeSwitch) return
+    setSavingBeforeSwitch(true)
+    try {
+      const result = await useEditSessionStore.getState().save()
+      const stillPending = useEditHistoryStore.getState().hasPendingEdits(selectedPage?.pageId)
+      if (result.saved || !stillPending) {
+        setSelectedPageId(targetPageId)
+        setPendingSwitchPageId(null)
+      }
+    } finally {
+      setSavingBeforeSwitch(false)
+    }
+  }
+
   const handleCopyOutline = async (
     page: SessionPreviewPage,
     outlineText: string
@@ -244,6 +296,10 @@ export const PageSidebar = memo(function PageSidebar({
   }
 
   const handleStartEditOutline = (page: SessionPreviewPage, outlineText: string): void => {
+    if (page.id !== selectedPageId && currentPageHasPendingEdits) {
+      setPendingSwitchPageId(page.id)
+      return
+    }
     setSelectedPageId(page.id)
     setEditingOutlinePageId(page.id)
     setOutlineDraft(outlineText)
@@ -297,7 +353,7 @@ export const PageSidebar = memo(function PageSidebar({
                     key={page.id}
                     type="button"
                     data-page-id={page.id}
-                    onClick={() => !disabled && setSelectedPageId(page.id)}
+                    onClick={() => requestSelectPage(page.id)}
                     className={`flex h-8 w-full items-center justify-center rounded-xl text-xs font-semibold transition-all ${selectedPageId === page.id ? 'bg-[#d4e4c1]/86 text-[#3e4a32] shadow-[0_4px_12px_rgba(93,107,77,0.15)]' : 'text-[#5c6c47] hover:bg-[#e8e0d0]/50'}`}
                   >
                     P{page.pageNumber}
@@ -474,12 +530,12 @@ export const PageSidebar = memo(function PageSidebar({
                             role="button"
                             tabIndex={disabled ? -1 : 0}
                             aria-disabled={disabled}
-                            onClick={() => setSelectedPageId(page.id)}
+                            onClick={() => requestSelectPage(page.id)}
                             onKeyDown={(event) => {
                               if (disabled) return
                               if (event.key !== 'Enter' && event.key !== ' ') return
                               event.preventDefault()
-                              setSelectedPageId(page.id)
+                              requestSelectPage(page.id)
                             }}
                             className={`relative block w-full min-w-0 rounded-[1rem] text-left ${
                               disabled ? 'cursor-not-allowed' : 'cursor-pointer'
@@ -583,7 +639,7 @@ export const PageSidebar = memo(function PageSidebar({
                                 isSelected={selectedPageId === page.id}
                                 previewVersion={previewKey + (thumbnailVersions[page.pageId] || 0)}
                                 renderPreview={thumbnailPreviewIds.has(page.id)}
-                                onSelect={disabled ? undefined : setSelectedPageId}
+                                onSelect={disabled ? undefined : requestSelectPage}
                                 actions={
                                   <div className="absolute inset-x-1 top-1 z-10 flex items-start justify-between opacity-0 transition-opacity group-hover:opacity-100">
                                     <button
@@ -700,8 +756,7 @@ export const PageSidebar = memo(function PageSidebar({
                               type="button"
                               disabled={disabled}
                               onClick={() => {
-                                setSelectedPageId(page.id)
-                                onRetryFailedPage(page)
+                                if (requestSelectPage(page.id)) onRetryFailedPage(page)
                               }}
                               className="group mt-1 block w-full rounded-[1.1rem] bg-[#f3e4df]/85 p-1.5 text-left shadow-[0_8px_18px_rgba(142,90,83,0.08)] transition-all duration-200 hover:bg-[#f1ddd7] hover:shadow-[0_10px_22px_rgba(142,90,83,0.12)] disabled:cursor-not-allowed disabled:opacity-45"
                             >
@@ -773,6 +828,37 @@ export const PageSidebar = memo(function PageSidebar({
           </>
         )}
       </div>
+      <AlertDialog
+        open={Boolean(pendingSwitchPageId)}
+        onOpenChange={(open) => {
+          if (!open && !savingBeforeSwitch) setPendingSwitchPageId(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogTitle>{t('sessionDetail.pageSwitchSaveConfirmTitle')}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {t('sessionDetail.pageSwitchSaveConfirmDescription', {
+              page: pendingSwitchPage?.title || t('sessionDetail.untitledPage')
+            })}
+          </AlertDialogDescription>
+          <div className="flex justify-end gap-2">
+            <AlertDialogCancel disabled={savingBeforeSwitch}>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={savingBeforeSwitch}
+              className="bg-[#5d6b4d] text-white hover:bg-[#4d5a40] disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={(event) => {
+                event.preventDefault()
+                void handleConfirmSaveAndSwitch()
+              }}
+            >
+              {savingBeforeSwitch ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : null}
+              {t('sessionDetail.pageSwitchSaveConfirmAction')}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </aside>
   )
 })

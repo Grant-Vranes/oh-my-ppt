@@ -226,6 +226,33 @@ describe('preview text hit selection', () => {
     expect(payload.selector).toBe('body[data-page-id="page"] [data-block-id="text-6"]')
   })
 
+  it('edit mode does not treat a long pointer release as a selection click', () => {
+    const { window, paragraph, logs } = setupInlineTextPage(buildEditModeInjectScript())
+
+    paragraph.dispatchEvent(
+      new window.PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        button: 0,
+        clientX: 190,
+        clientY: 115,
+        pointerId: 1
+      })
+    )
+    paragraph.dispatchEvent(
+      new window.PointerEvent('pointerup', {
+        bubbles: true,
+        cancelable: true,
+        button: 0,
+        clientX: 240,
+        clientY: 115,
+        pointerId: 1
+      })
+    )
+
+    expect(logs.some((item) => item.startsWith(EDIT_MODE_CONSOLE_PREFIX))).toBe(false)
+  })
+
   it('inspector follows the browser hit-test stack before geometry size', () => {
     const { window, eventTarget, logs } = setupOverlappingPage(buildInspectorInjectScript())
 

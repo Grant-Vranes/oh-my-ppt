@@ -815,7 +815,7 @@ export function buildEditModeInjectScript(previewScale = 1): string {
         baseY: pendingAnchorState.baseY,
         snapTargets: collectSnapTargets(pendingAnchorState.target),
       };
-      setSelected(pendingAnchorState.target);
+      if (pendingAnchorState.wasSelected) setSelected(pendingAnchorState.target);
     } else if (pendingAnchorState.mode === 'resize') {
       resizeState = {
         target: pendingAnchorState.target,
@@ -1535,6 +1535,39 @@ export function buildEditModeInjectScript(previewScale = 1): string {
     };
   };
 
+  const readElementLayoutFromDom = (target) => {
+    if (!(target instanceof Element)) return null;
+    const isAbs = target.hasAttribute("data-ppt-layout-converted");
+    let x;
+    let y;
+    if (isAbs) {
+      x = parseFloat(target.style.left || "0");
+      y = parseFloat(target.style.top || "0");
+    } else {
+      const computed = getComputedStyle(target);
+      x = parsePx(
+        target.style.getPropertyValue("--ppt-drag-x") ||
+          computed.getPropertyValue("--ppt-drag-x")
+      );
+      y = parsePx(
+        target.style.getPropertyValue("--ppt-drag-y") ||
+          computed.getPropertyValue("--ppt-drag-y")
+      );
+    }
+    const width = parsePx(target.style.width);
+    const height = parsePx(target.style.height);
+    const pageBounds = getPageBoundsFor(target);
+    return {
+      isAbsoluteMode: isAbs,
+      x: Number(x.toFixed(1)),
+      y: Number(y.toFixed(1)),
+      width: Number(width.toFixed(1)),
+      height: Number(height.toFixed(1)),
+      visualX: pageBounds ? pageBounds.x : undefined,
+      visualY: pageBounds ? pageBounds.y : undefined,
+    };
+  };
+
   const emitSelected = (target, selector, textTarget) => {
     const snapshot = collectElementSnapshot(target, selector);
     if (!snapshot) {
@@ -1722,7 +1755,7 @@ export function buildEditModeInjectScript(previewScale = 1): string {
       pendingClientX = event.clientX;
       pendingClientY = event.clientY;
       if (s.selector.indexOf('[data-block-id=') !== -1) {
-        setSelected(s.target);
+        if (s.wasSelected) setSelected(s.target);
         dragState = {
           target: s.target,
           selector: s.selector,
@@ -1745,6 +1778,7 @@ export function buildEditModeInjectScript(previewScale = 1): string {
           startClientY: s.startClientY,
           baseX: s.baseX,
           baseY: s.baseY,
+          wasSelected: s.wasSelected,
         };
         console.log(LOG_PREFIX + JSON.stringify({ type: "pre-anchor", selector: s.selector, elementTag: s.elementTag }));
       }
@@ -1880,6 +1914,7 @@ export function buildEditModeInjectScript(previewScale = 1): string {
       clickTextTarget: clickTarget
         ? buildTextTargetAtPoint(clickTarget, clickSelector, event.clientX, event.clientY)
         : undefined,
+      wasSelected: selectedElement === dragTarget,
       baseX,
       baseY,
     };
@@ -1892,6 +1927,13 @@ export function buildEditModeInjectScript(previewScale = 1): string {
     if (dragPendingState) {
       const s = dragPendingState;
       dragPendingState = null;
+      const dx = event.clientX - s.startClientX;
+      const dy = event.clientY - s.startClientY;
+      if (Math.abs(dx) >= 3 || Math.abs(dy) >= 3) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
       const clickTarget = s.clickTarget || s.target;
       const clickSelector = s.clickSelector || s.selector;
       setSelected(clickTarget);
@@ -2143,6 +2185,16 @@ export function buildEditModeInjectScript(previewScale = 1): string {
     }
   };
 
+  window.__pptEditModeReadLayout = (selector) => {
+    try {
+      const el = document.querySelector(selector);
+      if (!el) return null;
+      return readElementLayoutFromDom(el);
+    } catch (_error) {
+      return null;
+    }
+  };
+
   window.__pptEditModeApplyProperties = (selector, patch) => {
     try {
       const el = document.querySelector(selector);
@@ -2354,6 +2406,7 @@ export function buildEditModeInjectScript(previewScale = 1): string {
     delete window.__pptResolveEditModeAnchor;
     delete window.__pptEditModeLiveUpdate;
     delete window.__pptEditModeReadSnapshot;
+    delete window.__pptEditModeReadLayout;
     delete window.__pptEditModeApplyProperties;
     delete window.__pptEditModeSetLayout;
     delete window.__pptEditModeClearSelection;

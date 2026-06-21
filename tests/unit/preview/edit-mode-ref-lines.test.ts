@@ -107,6 +107,7 @@ describe('preview edit mode reference lines', () => {
     dragFromTo(110, 306)
 
     expect(drag.style.getPropertyValue('--ppt-drag-x')).toBe('200.0px')
+    expect(drag.classList.contains('ppt-edit-mode-selected')).toBe(false)
     expect(document.querySelector('[data-ppt-edit-guide="vertical"]')).not.toBeNull()
     expect(
       (document.querySelector('[data-ppt-edit-guide="vertical"]') as HTMLElement).style.display

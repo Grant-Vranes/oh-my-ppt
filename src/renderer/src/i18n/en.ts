@@ -842,6 +842,14 @@ Business presentations, product introductions, project summaries — formal but 
     previewMode: 'Preview',
     browseMode: 'Browse',
     browseRequiresSavedEdits: 'Save or discard unsaved edits before entering Browse.',
+    pageSwitchSaveConfirmTitle: 'Save current page edits first?',
+    pageSwitchSaveConfirmDescription:
+      'Save unsaved edits on the current page before switching to “{page}”.',
+    pageSwitchSaveConfirmAction: 'Save and switch',
+    workspaceSwitchSaveConfirmTitle: 'Save current page edits first?',
+    workspaceSwitchSaveConfirmDescription:
+      'Save unsaved edits on the current page before switching to “{mode}”.',
+    workspaceSwitchSaveConfirmAction: 'Save and switch',
     styleMode: 'Style',
     styleRequiresSavedEdits: 'Save or discard unsaved edits before switching styles.',
     styleTitle: 'Switch deck style',

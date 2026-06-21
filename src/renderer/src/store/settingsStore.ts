@@ -1,6 +1,12 @@
 import { create } from 'zustand'
-import { ipc, type ImageModelConfig, type ImageModelProvider, type ModelConfig } from '@renderer/lib/ipc'
+import {
+  ipc,
+  type ImageModelConfig,
+  type ImageModelProvider,
+  type ModelConfig
+} from '@renderer/lib/ipc'
 import type { ConfigurableModelTimeoutProfile } from '@shared/model-timeout.js'
+import type { ThinkingParameterMode } from '@shared/model-config.js'
 
 interface Settings {
   theme: string
@@ -29,6 +35,7 @@ interface SettingsStore {
     baseUrl: string
     maxTokens?: number
     disableTemperature?: boolean
+    thinkingParameterMode?: ThinkingParameterMode
     active?: boolean
   }) => Promise<string | null>
   upsertImageModelConfig: (config: {
@@ -50,6 +57,7 @@ interface SettingsStore {
     baseUrl: string,
     maxTokens: number,
     disableTemperature: boolean,
+    thinkingParameterMode: ThinkingParameterMode,
     timeoutMs: number
   ) => Promise<boolean>
   verifyImageModel: (
@@ -215,6 +223,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     baseUrl,
     maxTokens,
     disableTemperature,
+    thinkingParameterMode,
     timeoutMs
   ) => {
     try {
@@ -225,6 +234,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         baseUrl,
         maxTokens,
         disableTemperature,
+        thinkingParameterMode,
         timeoutMs
       })
       set({ verificationMessage: message || null })

@@ -42,6 +42,7 @@ import type {
   ImageModelConfig,
   ImageModelProvider
 } from '@shared/image-generation.js'
+import type { ThinkingParameterMode } from '@shared/model-config.js'
 import type { ExportProgressPayload } from '@shared/export-progress.js'
 import type { PageMergeDisabledReason } from '@shared/page-merge'
 import type { ModelUsagePeriod, ModelUsageStats } from '@shared/model-usage'
@@ -298,6 +299,7 @@ export interface ModelConfig {
   baseUrl: string
   maxTokens: number
   disableTemperature: boolean
+  thinkingParameterMode: ThinkingParameterMode
   active: boolean
   createdAt: number
   updatedAt: number
@@ -733,6 +735,7 @@ export const ipc = {
     baseUrl: string
     maxTokens?: number
     disableTemperature?: boolean
+    thinkingParameterMode?: ThinkingParameterMode
     active?: boolean
   }) =>
     getIpc().invoke('settings:upsertModelConfig', payload) as Promise<{
@@ -770,6 +773,7 @@ export const ipc = {
     baseUrl: string
     maxTokens?: number
     disableTemperature?: boolean
+    thinkingParameterMode?: ThinkingParameterMode
     timeoutMs: number
   }) =>
     getIpc().invoke('settings:verifyApiKey', payload) as Promise<{

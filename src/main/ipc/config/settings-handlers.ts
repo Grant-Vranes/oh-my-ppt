@@ -16,6 +16,7 @@ import {
   isOpenAIResponsesFormatError
 } from '../../openai-responses-compat'
 import type { ModelUsagePeriod } from '@shared/model-usage'
+import { normalizeThinkingParameterMode } from '@shared/model-config'
 
 const readGlobalTimeouts = (
   settings: Record<string, unknown>
@@ -44,11 +45,25 @@ const normalizeVerifyErrorMessage = (
   }
 ): string | null => {
   const message = error instanceof Error ? error.message : ''
+  const unsupportedThinkingPattern = [
+    /(?:unsupported|unknown|unrecognized|invalid|unexpected).*(?:argument|parameter|field).*thinking/i,
+    /thinking.*(?:unsupported|unknown|unrecognized|invalid)/i
+  ]
+  const isThinkingParameterError =
+    unsupportedThinkingPattern.some((pattern) => pattern.test(message)) ||
+    (/(?:argument|parameter|field)/i.test(message) && /thinking/i.test(message))
   if (options.provider === 'openai-responses' && isOpenAIResponsesFormatError(error)) {
     return uiText(
       options.locale,
       OPENAI_RESPONSES_FORMAT_ERROR_ZH,
       OPENAI_RESPONSES_FORMAT_ERROR_EN
+    )
+  }
+  if (options.provider === 'openai' && isThinkingParameterError) {
+    return uiText(
+      options.locale,
+      '当前模型不支持 thinking 参数，请在模型设置中改为“不发送 thinking 参数”。',
+      'This model does not support the thinking parameter. In model settings, choose "Do not send thinking".'
     )
   }
   return message || null
@@ -91,6 +106,7 @@ export function registerSettingsHandlers(ctx: IpcContext): void {
       baseUrl: config.baseUrl,
       maxTokens: config.maxTokens || 4096,
       disableTemperature: config.disableTemperature === 1,
+      thinkingParameterMode: normalizeThinkingParameterMode(config.thinkingParameterMode),
       active: config.active === 1,
       createdAt: config.createdAt,
       updatedAt: config.updatedAt
@@ -200,6 +216,7 @@ export function registerSettingsHandlers(ctx: IpcContext): void {
     if (!model) throw new Error(uiText(locale, '请填写 model。', 'Enter model.'))
     if (!apiKey) throw new Error(uiText(locale, '请填写 api_key。', 'Enter api_key.'))
     const maxTokens = normalizeMaxTokens(record.maxTokens)
+    const thinkingParameterMode = normalizeThinkingParameterMode(record.thinkingParameterMode)
     const savedId = await db.upsertModelConfig({
       id,
       name,
@@ -209,6 +226,7 @@ export function registerSettingsHandlers(ctx: IpcContext): void {
       baseUrl,
       maxTokens,
       disableTemperature: record.disableTemperature === true,
+      thinkingParameterMode,
       active: record.active === true
     })
     return { success: true, id: savedId }
@@ -251,17 +269,28 @@ export function registerSettingsHandlers(ctx: IpcContext): void {
     'settings:verifyApiKey',
     async (
       _event,
-      { provider, apiKey, model, baseUrl, maxTokens, disableTemperature, timeoutMs }
+      {
+        provider,
+        apiKey,
+        model,
+        baseUrl,
+        maxTokens,
+        disableTemperature,
+        thinkingParameterMode,
+        timeoutMs
+      }
     ) => {
       const locale = await readAppLocale(ctx)
       const resolvedTimeoutMs = resolveModelTimeoutMs(timeoutMs, 'verify')
       const resolvedMaxTokens = normalizeMaxTokens(maxTokens)
+      const resolvedThinkingParameterMode = normalizeThinkingParameterMode(thinkingParameterMode)
       log.info('[settings:verifyApiKey] received', {
         provider,
         model,
         hasApiKey: typeof apiKey === 'string' && apiKey.trim().length > 0,
         baseUrl: typeof baseUrl === 'string' ? baseUrl : '',
         maxTokens: resolvedMaxTokens,
+        thinkingParameterMode: resolvedThinkingParameterMode,
         timeoutMs: resolvedTimeoutMs
       })
 
@@ -277,7 +306,10 @@ export function registerSettingsHandlers(ctx: IpcContext): void {
 
       try {
         const client = runWithModelTemperatureControl(
-          { disableTemperature: disableTemperature === true },
+          {
+            disableTemperature: disableTemperature === true,
+            thinkingParameterMode: resolvedThinkingParameterMode
+          },
           () =>
             resolveModel(
               provider,

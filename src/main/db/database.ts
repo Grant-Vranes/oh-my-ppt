@@ -22,6 +22,7 @@ import type {
   ModelUsageStats,
   ModelUsageTotals
 } from '@shared/model-usage'
+import { normalizeThinkingParameterMode } from '@shared/model-config'
 
 type SessionStatus = 'active' | 'completed' | 'failed' | 'archived'
 type MessageRole = 'user' | 'assistant' | 'system' | 'tool'
@@ -286,6 +287,7 @@ export interface ModelConfigRow {
   baseUrl: string
   maxTokens: number
   disableTemperature: number
+  thinkingParameterMode: string
   active: number
   createdAt: number
   updatedAt: number
@@ -2097,12 +2099,14 @@ export class PPTDatabase {
     baseUrl: string
     maxTokens?: number
     disableTemperature?: boolean
+    thinkingParameterMode?: string
     active?: boolean
   }): Promise<string> {
     const id = data.id || crypto.randomUUID()
     const now = Math.floor(Date.now() / 1000)
     const maxTokens = data.maxTokens || 4096
     const disableTemperature = data.disableTemperature ? 1 : 0
+    const thinkingParameterMode = normalizeThinkingParameterMode(data.thinkingParameterMode)
     if (data.active) {
       await this.db
         .update(schema.modelConfigs)
@@ -2121,6 +2125,7 @@ export class PPTDatabase {
         baseUrl: data.baseUrl,
         maxTokens,
         disableTemperature,
+        thinkingParameterMode,
         active: data.active ? 1 : 0,
         createdAt: now,
         updatedAt: now
@@ -2135,6 +2140,7 @@ export class PPTDatabase {
           baseUrl: data.baseUrl,
           maxTokens,
           disableTemperature,
+          thinkingParameterMode,
           active: data.active ? 1 : 0,
           updatedAt: now
         }

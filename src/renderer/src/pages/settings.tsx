@@ -44,6 +44,17 @@ const normalizeModelMaxTokens = (value: string): number => {
   return Math.max(256, Math.min(16384, Math.floor(parsed)))
 }
 
+const createModelVerificationSignature = (form: ModelForm): string =>
+  JSON.stringify({
+    provider: form.provider,
+    model: form.model.trim(),
+    apiKey: form.apiKey.trim(),
+    baseUrl: form.baseUrl.trim(),
+    maxTokens: normalizeModelMaxTokens(form.maxTokens),
+    disableTemperature: form.disableTemperature,
+    thinkingParameterMode: form.thinkingParameterMode
+  })
+
 export function SettingsPage(): React.JSX.Element {
   const {
     modelConfigs,
@@ -76,6 +87,7 @@ export function SettingsPage(): React.JSX.Element {
     Record<ConfigurableModelTimeoutProfile, string>
   >(() => createTimeoutSeconds(useSettingsStore.getState().settings?.timeouts))
   const [savingModel, setSavingModel] = useState(false)
+  const [verifiedModelSignature, setVerifiedModelSignature] = useState<string | null>(null)
   const [savingTimeouts, setSavingTimeouts] = useState(false)
   const [proxyUrl, setProxyUrl] = useState(
     () => useSettingsStore.getState().settings?.proxyUrl || ''
@@ -118,6 +130,8 @@ export function SettingsPage(): React.JSX.Element {
 
   const activeModelConfig = modelConfigs.find((config) => config.active)
   const activeImageModelConfig = imageModelConfigs.find((config) => config.active)
+  const modelVerificationSignature = createModelVerificationSignature(modelForm)
+  const modelVerified = verifiedModelSignature === modelVerificationSignature
   const timeoutFields: Array<{
     profile: ConfigurableModelTimeoutProfile
     label: string
@@ -155,12 +169,14 @@ export function SettingsPage(): React.JSX.Element {
 
   const openCreateModelDialog = (): void => {
     setModelForm(createEmptyModelForm(modelConfigs.length === 0))
+    setVerifiedModelSignature(null)
     setVerificationMessage(null)
     setModelDialogOpen(true)
   }
 
   const openEditModelDialog = (config: ModelConfig): void => {
     setModelForm(createModelForm(config))
+    setVerifiedModelSignature(null)
     setVerificationMessage(null)
     setModelDialogOpen(true)
   }
@@ -217,6 +233,10 @@ export function SettingsPage(): React.JSX.Element {
       warning(t('settings.fillApiKey'))
       return
     }
+    if (!modelVerified) {
+      warning(t('settings.verifyBeforeSave'))
+      return
+    }
 
     setSavingModel(true)
     setVerificationMessage(null)
@@ -230,6 +250,7 @@ export function SettingsPage(): React.JSX.Element {
         baseUrl: modelForm.baseUrl.trim(),
         maxTokens: normalizeModelMaxTokens(modelForm.maxTokens),
         disableTemperature: modelForm.disableTemperature,
+        thinkingParameterMode: modelForm.thinkingParameterMode,
         active: modelForm.active
       })
       const saveError = useSettingsStore.getState().verificationMessage
@@ -238,6 +259,7 @@ export function SettingsPage(): React.JSX.Element {
         return
       }
       setModelDialogOpen(false)
+      setVerifiedModelSignature(null)
       success(t('settings.modelSaved'), { description: t('settings.modelSavedDescription') })
     } finally {
       setSavingModel(false)
@@ -335,6 +357,8 @@ export function SettingsPage(): React.JSX.Element {
 
     setVerifying(true)
     setVerificationMessage(null)
+    setVerifiedModelSignature(null)
+    const nextVerifiedSignature = createModelVerificationSignature(modelForm)
     try {
       const valid = await verifyApiKey(
         modelForm.provider,
@@ -343,10 +367,12 @@ export function SettingsPage(): React.JSX.Element {
         modelForm.baseUrl,
         normalizeModelMaxTokens(modelForm.maxTokens),
         modelForm.disableTemperature,
+        modelForm.thinkingParameterMode,
         resolveModelTimeoutMs(undefined, 'verify')
       )
       const verifyMessage = useSettingsStore.getState().verificationMessage
       if (valid) {
+        setVerifiedModelSignature(nextVerifiedSignature)
         success(t('settings.verifyPassed'), {
           description: verifyMessage || t('settings.verifyPassedDescription')
         })
@@ -554,6 +580,7 @@ export function SettingsPage(): React.JSX.Element {
         open={modelDialogOpen}
         saving={savingModel}
         verifying={verifying}
+        verified={modelVerified}
         t={t}
         onClose={() => setModelDialogOpen(false)}
         onFormChange={updateModelForm}

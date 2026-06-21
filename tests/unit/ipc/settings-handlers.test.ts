@@ -198,6 +198,7 @@ describe('registerSettingsHandlers model temperature settings', () => {
     settingsHandlersState.handlers.clear()
     settingsHandlersState.ipcMainMock.handle.mockClear()
     settingsHandlersState.localeMock.readAppLocale.mockResolvedValue('zh')
+    settingsHandlersState.resolveModelMock.mockReset()
   })
 
   it('returns disableTemperature in the model config list', async () => {
@@ -212,6 +213,7 @@ describe('registerSettingsHandlers model temperature settings', () => {
           baseUrl: '',
           maxTokens: 4096,
           disableTemperature: 1,
+          thinkingParameterMode: 'omit',
           active: 1,
           createdAt: 1,
           updatedAt: 2
@@ -223,12 +225,13 @@ describe('registerSettingsHandlers model temperature settings', () => {
     await expect(listModelConfigs?.()).resolves.toEqual([
       expect.objectContaining({
         id: 'model-1',
-        disableTemperature: true
+        disableTemperature: true,
+        thinkingParameterMode: 'omit'
       })
     ])
   })
 
-  it('persists disableTemperature when saving a model config', async () => {
+  it('persists parameter controls when saving a model config', async () => {
     const upsertModelConfig = vi.fn(async () => 'model-1')
     const { getHandler } = await registerWithDb({ upsertModelConfig })
 
@@ -240,12 +243,14 @@ describe('registerSettingsHandlers model temperature settings', () => {
       apiKey: 'secret',
       baseUrl: '',
       maxTokens: 4096,
-      disableTemperature: true
+      disableTemperature: true,
+      thinkingParameterMode: 'omit'
     })
 
     expect(upsertModelConfig).toHaveBeenCalledWith(
       expect.objectContaining({
-        disableTemperature: true
+        disableTemperature: true,
+        thinkingParameterMode: 'omit'
       })
     )
   })
@@ -262,12 +267,14 @@ describe('registerSettingsHandlers model temperature settings', () => {
       apiKey: 'secret',
       baseUrl: 'https://api.openai.com/v1',
       maxTokens: 4096,
-      disableTemperature: false
+      disableTemperature: false,
+      thinkingParameterMode: 'not-valid'
     })
 
     expect(upsertModelConfig).toHaveBeenCalledWith(
       expect.objectContaining({
-        provider: 'openai-responses'
+        provider: 'openai-responses',
+        thinkingParameterMode: 'auto'
       })
     )
   })
@@ -294,6 +301,58 @@ describe('registerSettingsHandlers model temperature settings', () => {
     expect(result).toEqual({
       valid: false,
       message: expect.stringContaining('不是 OpenAI Responses API 格式')
+    })
+  })
+
+  it('explains unsupported thinking parameter errors during model verification', async () => {
+    settingsHandlersState.localeMock.readAppLocale.mockResolvedValue('zh')
+    settingsHandlersState.resolveModelMock.mockReturnValue({
+      invoke: vi.fn(async () => {
+        throw new Error('Unsupported parameter: thinking')
+      })
+    })
+    const { getHandler } = await registerWithDb()
+
+    const verifyApiKey = getHandler('settings:verifyApiKey')
+    const result = await verifyApiKey?.(undefined, {
+      provider: 'openai',
+      model: 'compatible-model',
+      apiKey: 'secret',
+      baseUrl: 'https://api.example-compatible.com/v1',
+      maxTokens: 4096,
+      thinkingParameterMode: 'auto',
+      timeoutMs: 60000
+    })
+
+    expect(result).toEqual({
+      valid: false,
+      message: expect.stringContaining('不发送 thinking 参数')
+    })
+  })
+
+  it('explains unrecognized thinking argument errors during model verification', async () => {
+    settingsHandlersState.localeMock.readAppLocale.mockResolvedValue('zh')
+    settingsHandlersState.resolveModelMock.mockReturnValue({
+      invoke: vi.fn(async () => {
+        throw new Error('Unrecognized request argument supplied: thinking')
+      })
+    })
+    const { getHandler } = await registerWithDb()
+
+    const verifyApiKey = getHandler('settings:verifyApiKey')
+    const result = await verifyApiKey?.(undefined, {
+      provider: 'openai',
+      model: 'compatible-model',
+      apiKey: 'secret',
+      baseUrl: 'https://api.example-compatible.com/v1',
+      maxTokens: 4096,
+      thinkingParameterMode: 'auto',
+      timeoutMs: 60000
+    })
+
+    expect(result).toEqual({
+      valid: false,
+      message: expect.stringContaining('不发送 thinking 参数')
     })
   })
 

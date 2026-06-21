@@ -361,6 +361,7 @@ export const en = {
     imageModelAccess: 'Image models',
     modelHelpTitle: 'Recommended cloud models',
     addModel: 'Add model',
+    modelHelpDocs: 'Help docs',
     addImageModel: 'Add image model',
     imageModelUsageHint:
       'Image models are not used for visuals during generation yet. After pages are generated, add visuals separately as needed.',
@@ -414,6 +415,11 @@ export const en = {
     disableTemperature: 'Disable temperature',
     disableTemperatureHint:
       'Keeping temperature enabled is recommended. Disable it only when unsupported, as this may affect generation results.',
+    thinkingParameterMode: 'thinking parameter',
+    thinkingParameterModeHint:
+      'Compatibility setting for OpenAI-compatible services. If the service reports unsupported parameter: thinking, choose omit.',
+    thinkingParameterModeAuto: 'Auto (recommended)',
+    thinkingParameterModeOmit: 'Do not send thinking',
     timeoutSection: 'Model timeouts (seconds)',
     timeoutPlanning: 'Outline planning',
     timeoutDesign: 'Design contract',
@@ -467,6 +473,7 @@ export const en = {
     fillModelName: 'Enter an alias first',
     fillApiKey: 'Enter api_key first',
     fillModel: 'Enter model first',
+    verifyBeforeSave: 'Verify the model before saving.',
     verifyPassed: 'API Key verified',
     verifyPassedDescription: 'The current configuration can call the model',
     verifyFailed: 'API Key verification failed',

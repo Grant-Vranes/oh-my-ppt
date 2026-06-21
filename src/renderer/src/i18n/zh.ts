@@ -342,6 +342,7 @@ export const zh = {
     imageModelAccess: '生图模型',
     modelHelpTitle: '推荐的云上模型',
     addModel: '添加模型',
+    modelHelpDocs: '帮助文档',
     addImageModel: '添加生图模型',
     imageModelUsageHint: '生图模型暂不参与生成过程中的配图；页面生成完成后，如有需要可再单独配图。',
     editModel: '编辑模型',
@@ -393,6 +394,11 @@ export const zh = {
     disableTemperature: '关闭temperature',
     disableTemperatureHint:
       '建议不要关闭! 仅当模型(比如：kimi2.6)明确不支持 temperature 参数时使用，关闭后可能影响生成效果。',
+    thinkingParameterMode: 'thinking 参数',
+    thinkingParameterModeHint:
+      '用于 OpenAI 兼容服务的参数兼容性。遇到 unsupported parameter: thinking 时，改为不发送。',
+    thinkingParameterModeAuto: '自动处理（推荐）',
+    thinkingParameterModeOmit: '不发送 thinking 参数',
     timeoutSection: '模型超时设置（秒）',
     timeoutPlanning: '大纲规划',
     timeoutDesign: '设计契约',
@@ -442,6 +448,7 @@ export const zh = {
     fillModelName: '请先填写别名',
     fillApiKey: '请先填写 api_key',
     fillModel: '请先填写 model',
+    verifyBeforeSave: '请先验证通过，再保存模型设置',
     verifyPassed: 'API Key 验证通过',
     verifyPassedDescription: '当前配置可正常调用模型',
     verifyFailed: 'API Key 验证失败',

@@ -65,7 +65,7 @@ export function ModelSettingsTab({
                       key={item.url}
                       href={item.url}
                       target="_blank"
-                      rel="noreferrer"
+                      rel="noopener noreferrer"
                       className="rounded-md border border-[#d8cfbc]/80 bg-[#f5efe2]/60 px-2 py-1 text-[11px] text-[#5b6b4d] transition-colors hover:border-[#96b77f]/60 hover:bg-[#e8f0de] hover:text-[#3e4a32]"
                     >
                       {item.label}
@@ -74,6 +74,14 @@ export function ModelSettingsTab({
                 </div>
               </PopoverContent>
             </Popover>
+            <a
+              href="https://www.ohmyppt.cc/#/model-doc"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ml-1 text-xs font-medium text-[#2f7f8f] underline-offset-4 transition-colors hover:text-[#1f6472] hover:underline"
+            >
+              {t('settings.modelHelpDocs')}
+            </a>
           </CardTitle>
           {activeModelConfig && (
             <span className="mt-2 inline-flex max-w-full truncate rounded-full border border-[#96b77f]/55 bg-[#eef6e8] px-2.5 py-1 text-xs font-medium text-[#4f6b45]">

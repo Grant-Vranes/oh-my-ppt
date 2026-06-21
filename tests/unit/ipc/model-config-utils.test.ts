@@ -1,12 +1,16 @@
 import { describe, expect, it, vi } from 'vitest'
-import {
-  isCurrentModelTemperatureEnabled,
-  resolveCurrentModelTemperature
-} from '../../../src/main/model-runtime'
+
+const modelRuntimeState = vi.hoisted(() => ({
+  bindCurrentModelTemperatureControl: vi.fn()
+}))
 
 vi.mock('../../../src/main/ipc/config/locale-utils', () => ({
   readAppLocale: vi.fn(async () => 'zh'),
   uiText: vi.fn((_locale: string, zh: string) => zh)
+}))
+
+vi.mock('../../../src/main/model-runtime', () => ({
+  bindCurrentModelTemperatureControl: modelRuntimeState.bindCurrentModelTemperatureControl
 }))
 
 vi.mock('@shared/model-timeout', () => ({
@@ -16,6 +20,7 @@ vi.mock('@shared/model-timeout', () => ({
 
 describe('resolveModelConfigForTask temperature control', () => {
   it('binds the selected model temperature setting to the current async task', async () => {
+    modelRuntimeState.bindCurrentModelTemperatureControl.mockClear()
     const { resolveModelConfigForTask } =
       await import('../../../src/main/ipc/config/model-config-utils')
     const ctx = {
@@ -28,7 +33,8 @@ describe('resolveModelConfigForTask temperature control', () => {
           apiKey: 'secret',
           baseUrl: '',
           maxTokens: 4096,
-          disableTemperature: 1
+          disableTemperature: 1,
+          thinkingParameterMode: 'omit'
         }))
       },
       decryptApiKey: vi.fn((value: unknown) => String(value))
@@ -41,7 +47,13 @@ describe('resolveModelConfigForTask temperature control', () => {
     await Promise.resolve()
 
     expect(config.disableTemperature).toBe(true)
-    expect(isCurrentModelTemperatureEnabled()).toBe(false)
-    expect(resolveCurrentModelTemperature(0.3)).toBeUndefined()
+    expect(config.thinkingParameterMode).toBe('omit')
+    expect(modelRuntimeState.bindCurrentModelTemperatureControl).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'model-1',
+        disableTemperature: true,
+        thinkingParameterMode: 'omit'
+      })
+    )
   })
 })

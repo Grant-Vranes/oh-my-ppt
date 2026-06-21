@@ -22,6 +22,7 @@ interface ModelConfigDialogProps {
   form: ModelForm
   open: boolean
   saving: boolean
+  verified: boolean
   verifying: boolean
   t: SettingsTranslate
   onClose: () => void
@@ -34,6 +35,7 @@ export function ModelConfigDialog({
   form,
   open,
   saving,
+  verified,
   verifying,
   t,
   onClose,
@@ -49,8 +51,8 @@ export function ModelConfigDialog({
         if (event.target === event.currentTarget && !saving) onClose()
       }}
     >
-      <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-lg border border-[#d8ccb5]/85 bg-[#fffaf1] shadow-[0_24px_70px_rgba(53,44,32,0.28)]">
-        <div className="flex items-center justify-between border-b border-[#e3d8c5] px-5 py-4">
+      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg border border-[#d8ccb5]/85 bg-[#fffaf1] shadow-[0_24px_70px_rgba(53,44,32,0.28)]">
+        <div className="flex items-center justify-between border-b border-[#e3d8c5] px-5 py-3.5">
           <h2 className="flex items-center gap-1.5 text-base font-semibold text-[#33402a]">
             {form.id ? t('settings.editModel') : t('settings.addModel')}
             <Popover>
@@ -62,7 +64,7 @@ export function ModelConfigDialog({
                 align="start"
                 className="w-auto max-w-xs border-[#d8cfbc]/80 bg-[#fffdf8] p-3"
               >
-                <p className="mb-2 text-[11px] font-semibold text-[#3e4a32]">
+                <p className="mb-2 text-xs font-semibold text-[#3e4a32]">
                   {t('settings.modelHelpTitle')}
                 </p>
                 <div className="flex flex-wrap gap-1.5">
@@ -71,8 +73,8 @@ export function ModelConfigDialog({
                       key={item.url}
                       href={item.url}
                       target="_blank"
-                      rel="noreferrer"
-                      className="rounded-md border border-[#d8cfbc]/80 bg-[#f5efe2]/60 px-2 py-1 text-[11px] text-[#5b6b4d] transition-colors hover:border-[#96b77f]/60 hover:bg-[#e8f0de] hover:text-[#3e4a32]"
+                      rel="noopener noreferrer"
+                      className="rounded-md border border-[#d8cfbc]/80 bg-[#f5efe2]/60 px-2 py-1 text-xs text-[#5b6b4d] transition-colors hover:border-[#96b77f]/60 hover:bg-[#e8f0de] hover:text-[#3e4a32]"
                     >
                       {item.label}
                     </a>
@@ -88,15 +90,6 @@ export function ModelConfigDialog({
 
         <div className="space-y-3 p-5">
           <div className="grid gap-2 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm font-medium">{t('settings.modelName')}</label>
-              <Input
-                value={form.name}
-                onChange={(e) => onFormChange({ name: e.target.value })}
-                placeholder={t('settings.modelNamePlaceholder')}
-                className="h-8"
-              />
-            </div>
             <div>
               <label className="mb-1 block text-sm font-medium">
                 {t('settings.providerPreset')}
@@ -129,33 +122,64 @@ export function ModelConfigDialog({
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">{t('settings.modelName')}</label>
+              <Input
+                value={form.name}
+                onChange={(e) => onFormChange({ name: e.target.value })}
+                placeholder={t('settings.modelNamePlaceholder')}
+                className="h-8"
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-sm font-medium">model</label>
+              <Input
+                placeholder={t('settings.modelPlaceholder')}
+                value={form.model}
+                onChange={(e) => onFormChange({ model: e.target.value })}
+                className="h-8"
+              />
+              <p className="mt-1 text-[12px] text-muted-foreground/50">
+                {t('settings.modelHint')}
+              </p>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">base_url</label>
+              <Input
+                placeholder={t('settings.baseUrlPlaceholder')}
+                value={form.baseUrl}
+                onChange={(e) => onFormChange({ baseUrl: e.target.value })}
+                className="h-8"
+              />
+              <p className="mt-1 text-[12px] text-muted-foreground/50">
+                {form.provider === 'google'
+                  ? t('settings.baseUrlHintGoogle')
+                  : t('settings.baseUrlHint')}
+              </p>
+            </div>
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">model</label>
+            <label className="mb-1 block text-sm font-medium">api_key</label>
             <Input
-              placeholder={t('settings.modelPlaceholder')}
-              value={form.model}
-              onChange={(e) => onFormChange({ model: e.target.value })}
+              type="password"
+              placeholder={t('settings.apiKeyPlaceholder', {
+                provider:
+                  form.provider === 'openai' || form.provider === 'openai-responses'
+                    ? 'OpenAI'
+                    : form.provider === 'google'
+                      ? 'Google'
+                      : 'Claude'
+              })}
+              value={form.apiKey}
+              onChange={(e) => onFormChange({ apiKey: e.target.value })}
               className="h-8"
             />
             <p className="mt-1 text-[12px] text-muted-foreground/50">
-              {t('settings.modelHint')}
-            </p>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium">base_url</label>
-            <Input
-              placeholder={t('settings.baseUrlPlaceholder')}
-              value={form.baseUrl}
-              onChange={(e) => onFormChange({ baseUrl: e.target.value })}
-              className="h-8"
-            />
-            <p className="mt-1 text-[12px] text-muted-foreground/50">
-              {form.provider === 'google'
-                ? t('settings.baseUrlHintGoogle')
-                : t('settings.baseUrlHint')}
+              {t('settings.verifyHint')}
             </p>
           </div>
 
@@ -173,7 +197,7 @@ export function ModelConfigDialog({
             </p>
           </div>
 
-          <div className="flex items-center justify-between gap-4 border-y border-[#e3d8c5] py-2.5">
+          <div className="flex items-center justify-between gap-4 rounded-lg border border-[#e3d8c5] bg-[#fffdf8]/70 p-3">
             <span className="min-w-0">
               <span className="block text-sm font-medium">{t('settings.disableTemperature')}</span>
               <span className="mt-0.5 block text-[12px] text-muted-foreground/50">
@@ -191,44 +215,66 @@ export function ModelConfigDialog({
             />
           </div>
 
-          <div>
-            <label className="mb-1 block text-sm font-medium">api_key</label>
-            <div className="flex gap-2">
-              <Input
-                type="password"
-                placeholder={t('settings.apiKeyPlaceholder', {
-                  provider:
-                    form.provider === 'openai' || form.provider === 'openai-responses'
-                      ? 'OpenAI'
-                      : form.provider === 'google'
-                        ? 'Google'
-                        : 'Claude'
-                })}
-                value={form.apiKey}
-                onChange={(e) => onFormChange({ apiKey: e.target.value })}
-                className="h-8 min-w-0 flex-1"
-              />
-              <Button
-                variant="secondary"
-                onClick={onVerify}
-                disabled={verifying}
-                className="h-8 min-w-[80px] shrink-0 rounded-lg border border-[#7ea06f]/45 px-3 text-xs"
-              >
-                <ShieldCheck className="mr-1 h-3.5 w-3.5" />
-                {verifying ? t('settings.verifying') : t('settings.verify')}
-              </Button>
+          {form.provider === 'openai' && (
+            <div className="rounded-lg border border-[#e3d8c5] bg-[#fffdf8]/70 p-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium">
+                    {t('settings.thinkingParameterMode')}
+                  </span>
+                  <span className="mt-0.5 block text-[12px] text-muted-foreground/50">
+                    {t('settings.thinkingParameterModeHint')}
+                  </span>
+                </span>
+                <Select
+                  value={form.thinkingParameterMode}
+                  onValueChange={(value) =>
+                    onFormChange({
+                      thinkingParameterMode: value === 'omit' ? 'omit' : 'auto'
+                    })
+                  }
+                >
+                  <SelectTrigger className="h-8 w-full shrink-0 sm:w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">
+                      {t('settings.thinkingParameterModeAuto')}
+                    </SelectItem>
+                    <SelectItem value="omit">
+                      {t('settings.thinkingParameterModeOmit')}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <p className="mt-1 text-[12px] text-muted-foreground/50">
-              {t('settings.verifyHint')}
-            </p>
-          </div>
+          )}
         </div>
 
-        <div className="flex justify-end gap-2 border-t border-[#e3d8c5] px-5 py-4">
-          <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>
+        <div className="flex justify-end gap-2 border-t border-[#e3d8c5] px-5 py-3.5">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onClose}
+            disabled={saving}
+            className="h-8 px-3 text-xs"
+          >
             {t('common.cancel')}
           </Button>
-          <Button onClick={onSave} disabled={saving}>
+          <Button
+            variant="secondary"
+            onClick={onVerify}
+            disabled={saving || verifying}
+            className="h-8 border border-[#7ea06f]/45 px-3 text-xs"
+          >
+            <ShieldCheck className="mr-1 h-3.5 w-3.5" />
+            {verifying ? t('settings.verifying') : t('settings.verify')}
+          </Button>
+          <Button
+            onClick={onSave}
+            disabled={saving || verifying || !verified}
+            className="h-8 px-3 text-xs"
+          >
             {saving ? t('common.saving') : t('settings.saveModel')}
           </Button>
         </div>

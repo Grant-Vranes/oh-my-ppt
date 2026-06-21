@@ -1,5 +1,6 @@
 import type { ImageModelConfig, ImageModelProvider, ModelConfig } from '../../lib/ipc'
 import type { ImageModelForm, ModelForm } from './types'
+import { DEFAULT_THINKING_PARAMETER_MODE } from '@shared/model-config.js'
 
 export const IMAGE_PROVIDER_OPTIONS: Array<{ value: ImageModelProvider; label: string }> = [
   { value: 'agnes', label: 'Agnes AI' },
@@ -94,6 +95,7 @@ export const createEmptyModelForm = (active = false): ModelForm => ({
   baseUrl: '',
   maxTokens: '4096',
   disableTemperature: false,
+  thinkingParameterMode: DEFAULT_THINKING_PARAMETER_MODE,
   active
 })
 
@@ -106,6 +108,7 @@ export const createModelForm = (config: ModelConfig): ModelForm => ({
   baseUrl: config.baseUrl,
   maxTokens: String(config.maxTokens || 4096),
   disableTemperature: config.disableTemperature,
+  thinkingParameterMode: config.thinkingParameterMode || DEFAULT_THINKING_PARAMETER_MODE,
   active: config.active
 })
 

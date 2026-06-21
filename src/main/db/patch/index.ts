@@ -8,6 +8,7 @@ import type { GenerationPageStatus, GenerationRunStatus } from '../schema'
 import { defaultModelTimeoutMs } from '@shared/model-timeout'
 import { patchModelConfigMaxTokens } from './add-model-max-tokens'
 import { patchModelConfigDisableTemperature } from './add-model-disable-temperature'
+import { patchModelConfigThinkingParameterMode } from './add-model-thinking-parameter-mode'
 import { patchStylesColumns } from './add-styles-columns'
 import { patchDesignContractFonts } from './backfill-design-contract-fonts'
 
@@ -110,6 +111,7 @@ CREATE TABLE IF NOT EXISTS model_configs (
   base_url TEXT NOT NULL DEFAULT '',
   max_tokens INTEGER NOT NULL DEFAULT 4096,
   disable_temperature INTEGER NOT NULL DEFAULT 0,
+  thinking_parameter_mode TEXT NOT NULL DEFAULT 'auto',
   active INTEGER NOT NULL DEFAULT 0,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
@@ -1321,4 +1323,5 @@ export const runDatabasePatches = async (args: {
   await patchSessionPagesFromGenerationPages({ client, db, resolveStoragePath })
   await patchModelConfigMaxTokens(client)
   await patchModelConfigDisableTemperature(client)
+  await patchModelConfigThinkingParameterMode(client)
 }

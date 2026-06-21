@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildOpenAIModelOptions,
-  normalizeOpenAIBaseUrl
+  normalizeOpenAIBaseUrl,
+  resolveOpenAIThinkingModelKwargs
 } from '../../src/main/openai-model-options'
 
 describe('buildOpenAIModelOptions', () => {
@@ -45,6 +46,25 @@ describe('buildOpenAIModelOptions', () => {
     })
   })
 
+  it('omits thinking parameters for custom endpoints when configured', () => {
+    expect(
+      buildOpenAIModelOptions({
+        model: 'test-model',
+        apiKey: 'secret',
+        baseUrl: 'https://api.example-compatible.com/v1',
+        temperatureOptions: {},
+        maxTokens: 2048,
+        thinkingParameterMode: 'omit'
+      })
+    ).toEqual({
+      model: 'test-model',
+      apiKey: 'secret',
+      maxTokens: 2048,
+      configuration: { baseURL: 'https://api.example-compatible.com/v1' },
+      modelKwargs: {}
+    })
+  })
+
   it('does not inject Chat Completions compatibility kwargs for Responses API models', () => {
     expect(
       buildOpenAIModelOptions({
@@ -74,5 +94,20 @@ describe('buildOpenAIModelOptions', () => {
     expect(normalizeOpenAIBaseUrl('https://api.example.com/v1/responses', false)).toBe(
       'https://api.example.com/v1/responses'
     )
+  })
+
+  it('centralizes thinking model kwargs resolution', () => {
+    expect(
+      resolveOpenAIThinkingModelKwargs({
+        baseUrl: 'https://api.example-compatible.com/v1',
+        thinkingParameterMode: 'auto'
+      })
+    ).toEqual({ thinking: { type: 'disabled' } })
+    expect(
+      resolveOpenAIThinkingModelKwargs({
+        baseUrl: 'https://api.example-compatible.com/v1',
+        thinkingParameterMode: 'omit'
+      })
+    ).toEqual({})
   })
 })

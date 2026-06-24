@@ -32,8 +32,8 @@ Do not discover, infer, or guess source document paths. Use only the `sourceDocu
 4. Use the DeepAgents filesystem tool `glob(pattern, path)` only if the provided path points to a directory or the host prompt explicitly says multiple matching source files may exist.
 5. Use `read_file` only on targeted sections or line ranges found by snippets/grep. Do not read an entire long document into context at once.
 6. If the initial grep/read did not yield enough source-grounded evidence, refine search terms and repeat grep -> targeted read. Try synonyms, broader or narrower scope, adjacent section headings, and known entities/metrics.
-7. Build slide content only from inspected snippets and targeted source passages.
-8. If the needed evidence is still missing after reasonable attempts, omit the unsupported claim or state uncertainty in neutral terms. Do not fill gaps with plausible-sounding content.
+7. Base every exact fact, metric, date, name, and quoted conclusion on the inspected snippets and source passages — then build the slide into a full argument around them (analytical structure, reading conclusion), not just the bare evidence.
+8. If an exact fact/metric/date/name is still missing after reasonable attempts, do not invent it — omit that specific claim or state it qualitatively. Do not leave the page sparse: expand it with analysis derived from the inspected material instead (see "When the inspected material is thin").
 
 ### Example
 
@@ -43,7 +43,7 @@ Content points: "YoY growth rate", "top product contribution", "regional breakdo
 1. Snippet mentions "revenue grew 15% YoY" -> search terms: `revenue`, `15%`, `YoY`, `Q3`.
 2. Call `grep(pattern="revenue", path="/source.md")`, then `grep(pattern="15%", path="/source.md")`, then `grep(pattern="Q3", path="/source.md")` -> matches near the Q3 finance section and regional table.
 3. Call `read_file(path="/source.md", offset=118, limit=60)` only around those matches -> confirms the exact growth and regional values.
-4. Build the slide with confirmed facts; omit "top product contribution" if no inspected source passage supports it.
+4. Build the slide with the confirmed facts. If "top product contribution" has no source backing, omit that exact claim (do not invent the product) — but keep the page full by expanding the angles you did confirm (see "When the inspected material is thin").
 
 ## Evidence rules
 
@@ -52,6 +52,23 @@ Content points: "YoY growth rate", "top product contribution", "regional breakdo
 - Do not invent exact facts, metrics, dates, system names, status claims, examples, risks, decisions, or conclusions.
 - If a retrieved snippet conflicts with the source passage you inspected, trust the inspected source passage over the snippet.
 - If the source conflicts with the page outline, follow the source facts. If the source conflicts with an explicit user instruction, follow the user instruction but avoid unsupported source claims.
+
+## When the inspected material is thin — expand into a full argument
+
+A half-empty slide is a failure, not fidelity. When the inspected source for a slide is sparse (one number, one chart, a few facts), do not just render that bare evidence and leave the rest of the canvas blank. Expand the slide into a complete argument with analytical and presentational structure DERIVED FROM the inspected material:
+
+- context or background the source implies
+- comparison dimensions (vs baseline, vs other groups, vs a prior period)
+- cause/effect or mechanism
+- implications, consequences, or a "so what"
+- evidence grouping, annotations, or a one-line reading conclusion
+
+This is interpretation grounded in the source, NOT fabrication. The boundary:
+
+- ✅ Allowed and expected: reasoning, structure, framing, and presentation derived from what you inspected — use it to make the slide feel complete and balanced (a complete argument, not more modules or a filled canvas).
+- ❌ Forbidden: inventing exact facts, metrics, dates, names, quotes, or conclusions the source does not contain.
+
+If an exact value is missing, state it qualitatively or omit that specific claim — but keep building the argument with the structure above so the slide feels complete and balanced.
 
 ## Long-document discipline
 
@@ -62,7 +79,7 @@ Content points: "YoY growth rate", "top product contribution", "regional breakdo
 
 ## Output discipline
 
-- Do not rewrite the reference document into a generic storyline, marketing narrative, consulting framework, or inspirational theme unless the user explicitly asks for that transformation.
+- Do not rewrite the reference document into a generic storyline, marketing narrative, consulting framework, or inspirational theme unless the user explicitly asks for that transformation. (This prevents drifting off the source's topic or genre — it does not forbid the analytical expansion above: comparison, implications, and a so-what that stay on-topic are expected.)
 - Slide text should be concise and presentation-ready, but still traceable to source evidence.
 - Compress long source passages; do not paste long verbatim excerpts.
 - Preserve exact numbers and names only when they appear in the source passage you inspected.

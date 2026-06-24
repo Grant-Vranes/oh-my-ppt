@@ -50,7 +50,6 @@ export {
 export type { SessionDeckGenerationContext } from './tools'
 export {
   buildPlanningSystemPrompt,
-  buildDeckGenerationPrompt,
   buildSinglePageGenerationPrompt
 } from './prompt'
 

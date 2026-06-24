@@ -10,6 +10,11 @@ import {
   DATA_ANIM_SKILL_NAME,
   formatSkillUsageRequirement,
 } from '../skills/skill-contract'
+import {
+  CHART_FRAME_HEIGHT_COMMENT_MARKER,
+  parseChartHeightClass,
+  resolveChartHeightFromNearbyComment
+} from './chart-height'
 
 // ── HTML parsing ──
 
@@ -83,15 +88,101 @@ const STRICT_TAGS = [
 ]
 
 const SCRIPT_SRC_RE = /<script[^>]*\bsrc\s*=\s*["']([^"']+)["'][^>]*>/gi
+const INLINE_SCRIPT_RE = /<script\b(?![^>]*\bsrc\s*=)([^>]*)>([\s\S]*?)<\/script>/gi
 const REMOTE_SCRIPT_OR_LINK_RE =
   /<(script|link)\b[^>]*(?:src|href)\s*=\s*["'](?:https?:)?\/\/[^"']+["'][^>]*>/i
 const HIDDEN_STYLE_RULE_RE =
   /(?:^|[;}])\s*[^{}]+\{\s*[^{}]*(?:opacity\s*:\s*0(?:\.0+)?|visibility\s*:\s*hidden)[^{}]*\}/i
+const CHART_LABELS_ARRAY_RE = /\blabels\s*:\s*\[([\s\S]*?)\]/gi
+const HTML_TAG_IN_STRING_RE = /<\s*\/?\s*[a-z][^>]*>/i
 export const PAGE_PLACEHOLDER_TEXT = '等待模型填充这一页内容'
 
 export const isPlaceholderPageHtml = (html: string): boolean =>
   html.includes(PAGE_PLACEHOLDER_TEXT) || /data-placeholder-page\s*=\s*["']1["']/i.test(html)
 
+const getInlineScriptSyntaxErrors = (html: string): string[] => {
+  const errors: string[] = []
+  let scriptIndex = 0
+  for (const match of html.matchAll(INLINE_SCRIPT_RE)) {
+    const attrs = match[1] || ''
+    const type = attrs.match(/\btype\s*=\s*["']([^"']+)["']/i)?.[1]?.trim().toLowerCase()
+    if (type && type !== 'text/javascript' && type !== 'application/javascript') {
+      continue
+    }
+    const scriptBody = (match[2] || '').trim()
+    if (!scriptBody) continue
+    scriptIndex += 1
+    try {
+      new Function(scriptBody)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      errors.push(`第 ${scriptIndex} 个内联 script 语法错误：${message}`)
+    }
+  }
+  return errors
+}
+
+// All explicit h-[Npx] heights on the frame, as positive pixel values. Deliberately
+// NOT range-clamped: the marker/class contract is "must match", so an out-of-range
+// class (e.g. h-[100px]) still counts and is compared against the marker instead of
+// being silently dropped as "missing".
+const getFixedChartHeightClasses = (classRaw: string): number[] =>
+  classRaw
+    .split(/\s+/)
+    .map((cls) => cls.split(':').pop() || cls)
+    .map(parseChartHeightClass)
+    .filter((value): value is number => value !== null)
+
+const getChartHeightMarkerMismatchErrors = (html: string): string[] => {
+  const errors: string[] = []
+  try {
+    const $ = cheerio.load(html, { scriptingEnabled: false })
+    $('canvas').each((index, node) => {
+      const parent = $(node).parent()
+      if (!parent.length) return
+      const markerHeight = resolveChartHeightFromNearbyComment(parent)
+      if (!markerHeight) return
+      const classHeights = getFixedChartHeightClasses(parent.attr('class') || '')
+      if (classHeights.length === 0 || classHeights.includes(markerHeight)) return
+      const actual = classHeights.map((height) => `h-[${height}px]`).join(', ')
+      errors.push(
+        `第 ${index + 1} 个图表高度标记 ${CHART_FRAME_HEIGHT_COMMENT_MARKER}=${markerHeight} 与图表框 class 不一致：${actual}`
+      )
+    })
+  } catch {
+    // Structural parse errors are reported by the existing HTML parser checks.
+  }
+  return errors
+}
+
+const getVisibleChartHeightMarkerErrors = (html: string): string[] => {
+  const withoutComments = html.replace(/<!--[\s\S]*?-->/g, '')
+  if (!new RegExp(`${CHART_FRAME_HEIGHT_COMMENT_MARKER}\\s*=`, 'i').test(withoutComments)) {
+    return []
+  }
+  return [
+    `图表高度标记 ${CHART_FRAME_HEIGHT_COMMENT_MARKER}=N 必须写在 HTML 注释中，不能作为可见文本放进图表框。`
+  ]
+}
+
+const getChartHtmlLabelErrors = (html: string): string[] => {
+  const errors: string[] = []
+  let scriptIndex = 0
+  for (const match of html.matchAll(INLINE_SCRIPT_RE)) {
+    scriptIndex += 1
+    const scriptBody = match[2] || ''
+    if (!/PPT\.createChart\s*\(|new\s+Chart\s*\(/i.test(scriptBody)) continue
+    for (const labelsMatch of scriptBody.matchAll(CHART_LABELS_ARRAY_RE)) {
+      const labelsSource = labelsMatch[1] || ''
+      if (!HTML_TAG_IN_STRING_RE.test(labelsSource)) continue
+      errors.push(
+        `第 ${scriptIndex} 个图表 labels 包含 HTML 标签。Chart.js 不会渲染 <br>/<span>，请使用纯文本标签、字符串数组换行，或 tooltip/注释承载补充信息。`
+      )
+      break
+    }
+  }
+  return errors
+}
 
 const isAllowedRuntimeAsset = (src: string): boolean => {
   const normalized = src.trim().toLowerCase()
@@ -180,6 +271,10 @@ export const validateHtmlContent = (html: string): { valid: boolean; errors: str
     const preview = disallowedScriptSrc.slice(0, 3).join(', ')
     errors.push(`检测到不允许的 script src：${preview}。页面片段禁止引入脚本资源，运行时已预注入。`)
   }
+  errors.push(...getInlineScriptSyntaxErrors(html))
+  errors.push(...getVisibleChartHeightMarkerErrors(html))
+  errors.push(...getChartHeightMarkerMismatchErrors(html))
+  errors.push(...getChartHtmlLabelErrors(html))
   if (/anime\s*\(\s*\{[\s\S]{0,240}?targets\s*:/im.test(html)) {
     errors.push(`检测到旧版 anime({ targets, ... }) 写法；修改动画前请先 ${formatSkillUsageRequirement(DATA_ANIM_SKILL_NAME)}`)
   }
@@ -270,6 +365,10 @@ export const validatePersistedPageHtml = (
     errors.push('仍包含页面占位文案')
   }
   const $ = cheerio.load(html, { scriptingEnabled: false })
+  errors.push(...getInlineScriptSyntaxErrors(html))
+  errors.push(...getVisibleChartHeightMarkerErrors(html))
+  errors.push(...getChartHeightMarkerMismatchErrors(html))
+  errors.push(...getChartHtmlLabelErrors(html))
   if (REMOTE_SCRIPT_OR_LINK_RE.test(html)) {
     errors.push('包含远程资源引用（字体已改为本地加载，禁止 CDN 链接）')
   }

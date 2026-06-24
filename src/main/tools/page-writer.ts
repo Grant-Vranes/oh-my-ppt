@@ -3,9 +3,14 @@ import { tool } from '@langchain/core/tools'
 import { z } from 'zod'
 import * as cheerio from 'cheerio'
 import log from 'electron-log/main.js'
+import type { AnyNode } from 'domhandler'
 import { buildFontHeadTags } from './font-registry'
 import type { SessionDeckGenerationContext } from './types'
 import { validateHtmlContent, validatePersistedPageHtml } from './html-utils'
+import {
+  parseChartHeightClass,
+  resolveChartHeightFromNearbyComment
+} from './chart-height'
 import { buildSessionAssetHeadTags } from '../ipc/engine/page-assets'
 import { normalizeCreativePageFragment } from './page-fragment-normalizer'
 import { validateTemplateSkeletonPreserved } from '../ipc/templates/template-skeleton-validator'
@@ -519,17 +524,14 @@ function isMarginUtilityClass(cls: string): boolean {
 }
 
 function hasFixedChartHeightClass(classes: Iterable<string>): boolean {
-  return Array.from(classes).some((cls) => {
-    const base = classBaseName(cls)
-    return /^h-\[\s*(?!0+(?:\.0+)?px\b)\d+(?:\.\d+)?px\s*\]$/.test(base)
-  })
+  return Array.from(classes).some((cls) => parseChartHeightClass(classBaseName(cls)) !== null)
 }
 
 function isUnstableChartFrameLayoutClass(cls: string): boolean {
   const base = classBaseName(cls)
   return (
     base === 'flex-1' ||
-    (/^h-/.test(base) && !/^h-\[\s*(?!0+(?:\.0+)?px\b)\d+(?:\.\d+)?px\s*\]$/.test(base)) ||
+    (/^h-/.test(base) && parseChartHeightClass(base) === null) ||
     /^min-h-/.test(base) ||
     /^max-h-/.test(base)
   )
@@ -539,6 +541,13 @@ function hasFixedChartHeightStyle(styleRaw: string): boolean {
   return /(?:^|;)\s*height\s*:\s*(?!\s*(?:auto|0(?:px|rem|em|%)?|100%|inherit|initial|unset)\b)[^;]+/i.test(
     styleRaw
   )
+}
+
+function resolveChartFrameHeightClassFromNearbyComment(
+  parent: cheerio.Cheerio<AnyNode>
+): string | null {
+  const height = resolveChartHeightFromNearbyComment(parent)
+  return height === null ? null : `h-[${height}px]`
 }
 
 function hasDataAnim(html: string): boolean {
@@ -557,7 +566,7 @@ function hasCustomPageAnimation(html: string): boolean {
  * Merged single-pass cheerio preprocessing: canvas lock styles, chart stabilization,
  * and unsafe hidden states. Replaces 3 separate cheerio.load calls with one.
  */
-function preprocessPageHtml(html: string): string {
+export function preprocessPageHtml(html: string): string {
   try {
     const $ = cheerio.load(html.trim(), { scriptingEnabled: false })
 
@@ -612,7 +621,9 @@ function preprocessPageHtml(html: string): string {
       )
 
       if (!hasFixedHeightClass && !hasFixedHeightStyle) {
-        parentClassSet.add(CHART_FRAME_DEFAULT_HEIGHT_CLASS)
+        parentClassSet.add(
+          resolveChartFrameHeightClassFromNearbyComment(parent) || CHART_FRAME_DEFAULT_HEIGHT_CLASS
+        )
       }
 
       if (!parentClassSet.has('ppt-chart-frame')) parentClassSet.add('ppt-chart-frame')

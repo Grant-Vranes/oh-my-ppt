@@ -1151,7 +1151,6 @@ export const runDeepAgentDeckGeneration = async (args: {
                   referenceDocumentSnippets,
                   isRetryMode: args.generationMode === 'retry',
                   writeToolName,
-                  designContract: args.designContract,
                   retryContext
                 })
               ]

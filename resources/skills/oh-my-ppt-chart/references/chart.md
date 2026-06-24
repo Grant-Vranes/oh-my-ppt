@@ -7,8 +7,8 @@ Deep-dive examples, layout integration patterns, and Chart.js options that work 
 Copy this pattern for every chart. Adapt the type, data, and options.
 
 ```html
-<!-- height calc: available slot = 900 - 64(p-8) - 80(title/subtitle) - 24(gap-6) - 32(reserve) = 700; chart height = compact example = 320 -->
-<div class="ppt-chart-frame relative h-[320px] w-full overflow-hidden">
+<!-- height calc @ppt-chart-height=560: content slot = 900 - 64(p-8) - 80(title/subtitle) - 24(gap-6) - 32(reserve) = 700; support note = 140; chart slot = 700 - 140 = 560; chart height = hero/main = 560 -->
+<div class="ppt-chart-frame relative h-[560px] w-full overflow-hidden">
   <canvas id="chart-sales" class="h-full w-full"></canvas>
 </div>
 
@@ -55,16 +55,16 @@ The `.ppt-chart-frame` parent must have an explicit `h-[Npx]` height. Chart.js r
 
 ### Mandatory: calculate slot, choose chart height, then write — numbers must match
 
-Before writing the chart frame, calculate the available slot, choose the actual chart frame height for the slide role, and write both in the comment. The final chart-height number MUST equal `h-[Npx]`.
+Before writing the chart frame, calculate the chart slot, choose the actual chart frame height for the slide role, and write both in an HTML comment immediately before the chart frame. The comment MUST include the dedicated marker `@ppt-chart-height=N`, and the marker value MUST equal `h-[Npx]`. Never put `@ppt-chart-height=...` as visible text inside `.ppt-chart-frame`. Two terms: **content slot** = 900 − padding − title − gaps − reserve (the area for the chart plus its support modules); **chart slot** = content slot − support modules. The final `h-[Npx]` MUST equal the chart slot, never the content slot.
 
 ```html
-<!-- height calc: available slot = 900 - 64(p-8) - 60(title) - 20(gap-5) - 100(metrics) - 40(h3) - 16(p-4) - 40(reserve) = 560; chart height = min(560, 380 standard cap) = 380 -->
-<div class="ppt-chart-frame relative h-[380px] w-full overflow-hidden">
+<!-- height calc @ppt-chart-height=520: content slot = 900 - 48(p-6) - 80(title+subtitle) - 24(gap) - 40(reserve) = 708 (chart + support area); support cards below = 188; chart slot = 708 - 188 = 520 -> h-[520px] -->
+<div class="ppt-chart-frame relative h-[520px] w-full overflow-hidden">
   <canvas id="my-chart" class="h-full w-full"></canvas>
 </div>
 ```
 
-The final number in the comment and `h-[Npx]` MUST match. Do NOT leave a comment such as `= 584` and then use `h-[380px]`; write the cap decision explicitly.
+The final number in the comment and `h-[Npx]` MUST match. Do NOT leave a comment such as `chart height = 420` and then use `h-[240px]`; write the final chart-height decision explicitly and copy that exact number into `h-[Npx]`.
 
 Calculation steps:
 1. Start from **900px** (full slide height; runtime page root has no default padding)
@@ -72,12 +72,23 @@ Calculation steps:
 3. Subtract all modules above the chart: title, subtitle, metrics row, legends
 4. Subtract all gaps between modules
 5. If chart is inside a card: subtract card padding and card title/heading
-6. Subtract sibling modules below or beside the chart: metric cards, support cards, footer/notes
-7. Subtract a 24-40px safety reserve
-8. Choose chart height by role: hero 340-420px, standard 280-360px, compact supporting 220-280px.
-9. If available space is below 220px, redesign the chart/support relationship and run the layout width/height self-check again.
+6. Subtract a 24-40px safety reserve
+7. This gives the **content slot** for the chart zone.
+8. Subtract only sibling modules stacked above/below the chart inside the same column or vertical zone. Side-by-side modules in other columns share width, not height; do **not** divide the content slot by column count, and do not subtract a left metric rail from a right-column chart height.
+9. Choose chart height from the chart slot without creating a dense wall of content: hero/main 380–560px only when the chart is the primary evidence, standard 280–360px with 1–2 support items, compact supporting 220–280px. If the computed chart slot is 600px+ and the chart is the primary evidence, use the top of the hero/main range (usually 520–560px). Do not calculate a 600+ slot and then choose 340px for the primary chart.
+10. If the chart slot is below 220px, redesign the chart/support relationship and run the layout width/height self-check again.
 
-Never place a two-row bottom card grid under a standard/tall chart. Additional facts should use a density-appropriate structure such as an evidence rail, annotated chart, metric band, small multiples, or compact table.
+Column budget rule: columns share width, not height. If the page uses `grid-cols-2`, the chart column still receives the full post-title vertical content slot. A bad calc is `content slot = 732; left metrics = 732/2; right side = 366`; the correct calc is `right column content slot = 732`, then subtract only the right-column heading, insight card, gaps, padding, and reserve.
+
+Never place a two-row bottom card grid under a standard/tall chart. Additional facts should use a density-appropriate structure such as in-chart annotations, one short evidence rail, grouped labels, or a compact table.
+
+### Data semantics — one axis, one meaning
+
+Each numeric dataset/value axis must use one unit and one meaning. Do not mix headcounts, percentages, money, scores, or "new role" sentinel values in the same bar/line dataset. If the source table contains both 2022/2026 counts and change rates, use grouped bars for the counts and put change rates in tooltips/annotations; or use a percent-change chart and move "0 → 850 / new role" to a callout instead of plotting `850` on a percent axis.
+
+### Chart slides need interpretation
+
+A chart is evidence, not the whole slide. A main chart should be paired with one visible takeaway sentence and, when the content needs it, 1-2 compact annotations, an insight rail, or a source/note line. Use this support area for the interpretation: baseline, "so what", caveat, implication, or the reason the chart matters. Do not repeat every category as equal-weight cards below/beside the chart.
 
 ### What not to use for height
 
@@ -92,13 +103,13 @@ Canvas sizing rule: the `<canvas>` should only use `class="h-full w-full"`. Do n
 
 ### Height role guide
 
-Use these as caps, not automatic targets:
+The chart fills its computed slot — these ranges guide the role and proportion; they are NOT a reason to stop short and leave the zone empty:
 
-- Hero/full-width chart: 340-420px. Use for the main evidence of the slide.
-- Standard chart: 280-360px. Use when the slide also has metrics, comparison cards, or an annotation rail.
-- Compact supporting chart: 220-280px. Use when the chart is one module inside a dense layout.
+- Hero/main chart: the chart is the slide's primary module (it lives in the dominant zone). Size the frame to the computed chart slot, typically 380–560px. Do not cap it at 240/340 and leave the rest empty.
+- Standard chart: 280–360px, when the chart shares the slide with 1–2 support modules that sit beside/below it with breathing room.
+- Compact supporting chart: 220–280px, when the chart is one small module inside a dense layout and other modules stay concise.
 
-If the available slot is larger than the role cap, keep the chosen cap and use the spare space for breathing room, annotation, or simply leave it empty. If the available slot is smaller than the role minimum, reduce text/modules before shrinking the chart further.
+Size the chart frame so the zone feels intentional. Do NOT cap the chart at a tiny height and leave a large accidental empty band below it — if the chart is the main module, it should be visually dominant. Exception: if the chart's cell/zone is much taller than the chart needs (e.g. a 5-bar chart in a ~600px grid cell), do not stretch the chart to an awkward height and do not fill the rest with multiple cards — keep it readable and add only the support the content actually needs, in the form that best serves the reading path. If the slot is smaller than the role minimum, reduce text/modules before shrinking the chart further.
 
 ### Bad examples
 
@@ -296,7 +307,7 @@ PPT.updateChart('#my-chart', function(chart) {
 
 ## Category axis labels
 
-Put category labels in `data.labels`:
+Put category labels in `data.labels` as plain strings or string arrays:
 
 ```js
 data: {
@@ -304,6 +315,17 @@ data: {
   datasets: [{ data: [12, 18, 26] }]
 }
 ```
+
+For multi-line labels, use Chart.js string-array labels:
+
+```js
+data: {
+  labels: [['AI调校师', '约80→1,400'], ['中割/补间', '9,300→5,600']],
+  datasets: [{ label: '2026人数', data: [1400, 5600] }]
+}
+```
+
+Do not put HTML in labels. Chart.js does not render `<br>`, `<span>`, or inline style strings inside axis labels.
 
 The runtime auto-injects `ticks.callback` for category axes. If you need a custom callback:
 
@@ -322,10 +344,11 @@ ticks: {
 - Place charts as dedicated visual modules in the grid, not nested inside cards with other content.
 - Always set `responsive: true` and `maintainAspectRatio: false` — they work with the explicit-height frame.
 - For a chart + metric cards layout, use `grid grid-cols-[1fr_1fr]` or `grid grid-cols-3` with the chart spanning 2 columns.
-- Keep support modules to 1-3 compact blocks around a standard/tall chart. Do not add a second row of summary cards below it.
+- Keep support modules to 0-2 compact blocks around a standard/tall chart. Do not add a second row of summary cards below it.
+- Axis-heavy horizontal bars (6+ categories, long y labels, negative+positive x ranges, or wide percentage ticks) need 40-60px of internal axis/tick budget. Use `layout.padding.bottom`, tick padding, and a modest `maxTicksLimit`; if the chart still needs more room, recompose the support content into a side rail, annotation band, compact table, or in-chart callouts.
 
 ## Common patterns
 
-- **Hero metric + chart**: `grid grid-cols-[1fr_2fr]` — metric card on the left with `text-5xl` number, chart on the right. Chart height ~300px.
-- **Two charts side by side**: `grid grid-cols-2` — each chart in its own column with a small heading above. Chart height ~260px.
+- **Hero metric + chart**: `grid grid-cols-[1fr_2fr]` — metric card on the left with `text-5xl` number, chart on the right. Size the right-column chart to its chart slot (post-heading vertical space) so the zone feels intentional; do not cap it so short that it leaves an accidental empty band, and do not stretch it beyond a readable hero height.
+- **Two charts side by side**: `grid grid-cols-2` — each chart in its own column with a small heading above. Each chart fills its own column's chart slot; columns share width, not height.
 - **Metrics row + chart below**: compact `grid-cols-4` metric cards (p-3) on top, single chart spanning full width below.

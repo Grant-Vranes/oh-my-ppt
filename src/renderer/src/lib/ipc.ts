@@ -105,6 +105,7 @@ export interface StyleListItem {
   version?: string
   styleCase?: string
   packageDir?: string
+  favoriteAt?: number | null
   previewPath?: string | null
   thumbnailPath?: string | null
   createdAt?: number
@@ -828,6 +829,12 @@ export const ipc = {
       success: boolean
       previewPath: string
       thumbnailPath: string
+    }>,
+  setStyleFavorite: (payload: { styleId: string; favorite: boolean }) =>
+    getIpc().invoke('styles:setFavorite', payload) as Promise<{
+      success: boolean
+      styleId: string
+      favoriteAt: number | null
     }>,
   onHtmlThumbnailChanged: (callback: (task: HtmlThumbnailTask) => void): (() => void) => {
     const channel = 'thumbnails:changed'

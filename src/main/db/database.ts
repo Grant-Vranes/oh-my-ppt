@@ -255,6 +255,7 @@ export interface StyleRow {
   styleCase: string
   packageDir: string
   active: boolean
+  favoriteAt: number | null
   createdAt: number
   updatedAt: number
 }
@@ -2715,6 +2716,20 @@ export class PPTDatabase {
     if (data.active !== undefined) set.active = data.active
     await this.db.update(schema.styles).set(set).where(eq(schema.styles.id, styleId)).run()
     await this._refreshStylesCache()
+  }
+
+  async setStyleFavorite(styleId: string, favoriteAt: number | null): Promise<number | null> {
+    const existing = await this.getStyleRow(styleId)
+    if (!existing) {
+      throw new Error(`Style not found: ${styleId}`)
+    }
+    await this.db
+      .update(schema.styles)
+      .set({ favoriteAt })
+      .where(eq(schema.styles.id, styleId))
+      .run()
+    await this._refreshStylesCache()
+    return favoriteAt
   }
 
   async deleteStyleRow(styleId: string): Promise<boolean> {

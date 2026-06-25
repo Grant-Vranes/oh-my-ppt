@@ -11,6 +11,7 @@ import { useStylePreviewStore } from '../../../src/renderer/src/store/stylePrevi
 const ipcMocks = vi.hoisted(() => ({
   listStyles: vi.fn(),
   generateStylePreview: vi.fn(),
+  setStyleFavorite: vi.fn(),
   exportStylePackageZip: vi.fn(),
   deleteStyle: vi.fn(),
   importStylePackageDirectory: vi.fn(),
@@ -94,6 +95,8 @@ describe('StylesPage rendering', () => {
           styleCase: 'Pitch, Report',
           previewPath: '/styles/preview/preview.html',
           thumbnailPath: '/thumbnail-cache/style-with-preview.png',
+          favoriteAt: 10,
+          createdAt: 1,
           updatedAt: 2
         },
         {
@@ -103,6 +106,7 @@ describe('StylesPage rendering', () => {
           category: 'deck',
           source: 'custom',
           previewPath: '/styles/pending/preview.html',
+          createdAt: 1,
           updatedAt: 1
         },
         {
@@ -111,11 +115,17 @@ describe('StylesPage rendering', () => {
           description: 'Needs a generated preview',
           category: 'deck',
           source: 'builtin',
+          createdAt: 1,
           updatedAt: 0
         }
       ]
     })
     ipcMocks.generateStylePreview.mockResolvedValue({ previewPath: '/styles/fresh/preview.html' })
+    ipcMocks.setStyleFavorite.mockResolvedValue({
+      success: true,
+      styleId: 'style-with-preview',
+      favoriteAt: null
+    })
     ipcMocks.importStylePackageDirectory.mockResolvedValue({
       success: true,
       id: 'folder-style',
@@ -220,6 +230,62 @@ describe('StylesPage rendering', () => {
         await new Promise((resolve) => window.setTimeout(resolve, 10))
       })
       expect(ipcMocks.importStylePackageDirectory).toHaveBeenCalledTimes(1)
+    } finally {
+      await act(async () => root.unmount())
+      container.remove()
+    }
+  })
+
+  it('filters by keyword and favorite chip while toggling favorite state', async () => {
+    const { container, root } = await renderStylesPage()
+    try {
+      expect(container.querySelectorAll('[data-style-card-id]')).toHaveLength(3)
+      const searchInput = container.querySelector(
+        'input[placeholder="styles.searchPlaceholder"]'
+      ) as HTMLInputElement | null
+      await act(async () => {
+        if (!searchInput) throw new Error('Expected style search input')
+        const valueSetter = Object.getOwnPropertyDescriptor(
+          HTMLInputElement.prototype,
+          'value'
+        )?.set
+        valueSetter?.call(searchInput, 'Fresh')
+        searchInput.dispatchEvent(new Event('input', { bubbles: true }))
+        searchInput.dispatchEvent(new Event('change', { bubbles: true }))
+      })
+      expect(container.querySelectorAll('[data-style-card-id]')).toHaveLength(1)
+      expect(container.textContent).toContain('Fresh Style')
+      expect(container.textContent).not.toContain('Preview Style')
+
+      const clearSearch = container.querySelector(
+        'button[aria-label="styles.clearSearch"]'
+      ) as HTMLButtonElement | null
+      await act(async () => {
+        clearSearch?.click()
+      })
+
+      const favoriteChip = Array.from(container.querySelectorAll('button')).find((button) =>
+        button.textContent?.includes('styles.favoriteStyles')
+      ) as HTMLButtonElement | undefined
+      await act(async () => {
+        favoriteChip?.click()
+      })
+      expect(container.querySelectorAll('[data-style-card-id]')).toHaveLength(1)
+      expect(container.textContent).toContain('Preview Style')
+      expect(container.querySelector('button[aria-label="styles.unfavoriteStyle"]')).not.toBeNull()
+
+      const unfavoriteButton = container.querySelector(
+        'button[aria-label="styles.unfavoriteStyle"]'
+      ) as HTMLButtonElement | null
+      await act(async () => {
+        unfavoriteButton?.click()
+        await Promise.resolve()
+      })
+      expect(ipcMocks.setStyleFavorite).toHaveBeenCalledWith({
+        styleId: 'style-with-preview',
+        favorite: false
+      })
+      expect(container.textContent).toContain('styles.noFavoriteStyles')
     } finally {
       await act(async () => root.unmount())
       container.remove()

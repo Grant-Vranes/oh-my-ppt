@@ -533,6 +533,13 @@ export const en = {
     noMatchingStyles: 'No styles match this use case',
     searchPlaceholder: 'Search by name or use case…',
     clearSearch: 'Clear search',
+    favoriteStyles: 'Favorites',
+    favoriteStyle: 'Favorite style',
+    unfavoriteStyle: 'Remove favorite',
+    favoriteStyleTooltip: 'Favorite this style',
+    unfavoriteStyleTooltip: 'Remove this style from favorites',
+    favoriteFailed: 'Failed to update favorite',
+    noFavoriteStyles: 'No favorite styles yet',
     pagesCount: 'Pages · {count}'
   },
   styleEditor: {

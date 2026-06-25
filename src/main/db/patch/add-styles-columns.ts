@@ -31,6 +31,9 @@ export const patchStylesColumns = async (client: LibSqlClient): Promise<void> =>
   if (!nextColumnNames.has('active')) {
     await client.execute('ALTER TABLE styles ADD COLUMN active INTEGER NOT NULL DEFAULT 1')
   }
+  if (!nextColumnNames.has('favorite_at')) {
+    await client.execute('ALTER TABLE styles ADD COLUMN favorite_at INTEGER')
+  }
   await client.execute(`
     CREATE TABLE IF NOT EXISTS session_style_snapshots (
       id TEXT PRIMARY KEY,
@@ -124,6 +127,7 @@ const migrateStyleVersionToText = async (
       style_case TEXT NOT NULL DEFAULT '',
       package_dir TEXT NOT NULL DEFAULT '',
       active INTEGER NOT NULL DEFAULT 1,
+      favorite_at INTEGER,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
     )
@@ -131,7 +135,7 @@ const migrateStyleVersionToText = async (
   await client.execute(`
     INSERT INTO styles (
       id, style, style_name, description, category, aliases, source, style_skill,
-      version, style_case, style_name_zh, style_name_en, package_dir, active, created_at, updated_at
+      version, style_case, style_name_zh, style_name_en, package_dir, active, favorite_at, created_at, updated_at
     )
     SELECT
       id, style, style_name,
@@ -146,6 +150,7 @@ const migrateStyleVersionToText = async (
       '',
       '',
       ${legacyColumn('active', '1')},
+      ${legacyColumn('favorite_at', 'NULL')},
       created_at,
       updated_at
     FROM styles_legacy_version

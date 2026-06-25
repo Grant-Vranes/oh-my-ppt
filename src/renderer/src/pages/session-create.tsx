@@ -95,6 +95,7 @@ export function SessionCreatePage(): ReactElement {
       styleCase?: string
       thumbnailPath?: string | null
       previewPath?: string | null
+      favoriteAt?: number | null
     }>
   >([])
   const [fontOptions, setFontOptions] = useState<FontListItem[]>([])
@@ -160,7 +161,10 @@ export function SessionCreatePage(): ReactElement {
         const { items } = await ipc.listStyles()
         const sorted = [...items].sort(
           (a, b) =>
-            (b.updatedAt || 0) - (a.updatedAt || 0) || (b.createdAt || 0) - (a.createdAt || 0)
+            (b.favoriteAt || 0) - (a.favoriteAt || 0) ||
+            (b.updatedAt || 0) - (a.updatedAt || 0) ||
+            (b.createdAt || 0) - (a.createdAt || 0) ||
+            a.id.localeCompare(b.id)
         )
         const options = sorted.map((item) => ({
           id: item.id,
@@ -168,7 +172,8 @@ export function SessionCreatePage(): ReactElement {
           description: item.description,
           styleCase: item.styleCase,
           thumbnailPath: item.thumbnailPath,
-          previewPath: item.previewPath
+          previewPath: item.previewPath,
+          favoriteAt: item.favoriteAt
         }))
         setStyleOptions(options)
         setSelectedStyleId((current) => {

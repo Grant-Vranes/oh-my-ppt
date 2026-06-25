@@ -267,6 +267,7 @@ CREATE TABLE IF NOT EXISTS styles (
   style_case TEXT NOT NULL DEFAULT '',
   package_dir TEXT NOT NULL DEFAULT '',
   active INTEGER NOT NULL DEFAULT 1,
+  favorite_at INTEGER,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 );

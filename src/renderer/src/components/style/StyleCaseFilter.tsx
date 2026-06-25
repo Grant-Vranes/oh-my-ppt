@@ -6,6 +6,8 @@ import { cn } from '@renderer/lib/utils'
 export type StyleCaseFilterProps = {
   /** 任意带 styleCase 字段的条目数组（风格列表 / 下拉选项均适用） */
   items: StyleCaseItem[]
+  /** 可选候选集：用于禁用当前搜索/收藏条件下不会产生结果的 chip，不影响展示计数 */
+  availableItems?: StyleCaseItem[]
   /** 当前选中的用途标签，空串表示"全部" */
   selected: string
   onSelect: (label: string) => void
@@ -19,7 +21,7 @@ export type StyleCaseFilterProps = {
 
 const chipClassName = (active: boolean): string =>
   cn(
-    'rounded-md border px-2 py-1 text-xs font-medium transition-colors',
+    'rounded-md border px-2 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-45',
     active
       ? 'border-[#97aa7c] bg-[#dbe7ca] text-[#2f3b28]'
       : 'border-[#d6c08d]/80 bg-white/70 text-[#7c6a4c] hover:bg-[#fff3d8]'
@@ -31,6 +33,7 @@ const chipClassName = (active: boolean): string =>
  */
 export function StyleCaseFilter({
   items,
+  availableItems,
   selected,
   onSelect,
   allLabel,
@@ -38,6 +41,10 @@ export function StyleCaseFilter({
   className
 }: StyleCaseFilterProps): React.JSX.Element | null {
   const options = useMemo(() => buildStyleCaseOptions(items), [items])
+  const availableLabels = useMemo(() => {
+    if (!availableItems) return null
+    return new Set(buildStyleCaseOptions(availableItems).map((option) => option.label))
+  }, [availableItems])
   const visible = useMemo(() => {
     const popular = options.filter((option) => option.count > 1)
     const matched = options.find((option) => option.label === selected)
@@ -60,6 +67,7 @@ export function StyleCaseFilter({
             key={option.label}
             type="button"
             className={chipClassName(selected === option.label)}
+            disabled={selected !== option.label && availableLabels ? !availableLabels.has(option.label) : false}
             onClick={() => onSelect(option.label)}
           >
             {`${option.label} · ${option.count}`}

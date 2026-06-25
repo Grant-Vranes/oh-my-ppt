@@ -123,7 +123,9 @@ export function registerStyleHandlers(ctx: IpcContext): void {
   ipcMain.handle('styles:list', async (_event, payload?: { sessionId?: string }) => {
     const sessionId = typeof payload?.sessionId === 'string' ? payload.sessionId.trim() : ''
     const rows = (await db.listStyleRows()).filter((row) => row.active !== false)
-    rows.sort((a, b) => b.updatedAt - a.updatedAt || b.createdAt - a.createdAt)
+    rows.sort(
+      (a, b) => b.updatedAt - a.updatedAt || b.createdAt - a.createdAt || a.id.localeCompare(b.id)
+    )
     const items = await Promise.all(rows.map(async (row) => {
       const previewPath = resolvePreviewPath(row)
       return {
@@ -142,6 +144,7 @@ export function registerStyleHandlers(ctx: IpcContext): void {
         version: row.version,
         styleCase: row.styleCase,
         packageDir: row.packageDir || '',
+        favoriteAt: row.favoriteAt ?? null,
         previewPath,
         thumbnailPath: previewPath
           ? await getFreshHtmlThumbnailPath({
@@ -180,6 +183,7 @@ export function registerStyleHandlers(ctx: IpcContext): void {
           version: snapshot.version,
           styleCase: snapshot.styleCase,
           packageDir: snapshot.packageDir || '',
+          favoriteAt: null,
           previewPath,
           thumbnailPath: previewPath
             ? await getFreshHtmlThumbnailPath({
@@ -195,6 +199,19 @@ export function registerStyleHandlers(ctx: IpcContext): void {
     }
     return {
       items
+    }
+  })
+
+  ipcMain.handle('styles:setFavorite', async (_event, payload) => {
+    const record = payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {}
+    const styleId = String(record.styleId || '').trim()
+    if (!styleId) return { success: false, styleId: '', favoriteAt: null }
+    const nextFavoriteAt = record.favorite ? Math.floor(Date.now() / 1000) : null
+    try {
+      const favoriteAt = await db.setStyleFavorite(styleId, nextFavoriteAt)
+      return { success: true, styleId, favoriteAt }
+    } catch {
+      return { success: false, styleId, favoriteAt: null }
     }
   })
 

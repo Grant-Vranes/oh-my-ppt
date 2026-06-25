@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { ChevronDown, Search, X } from 'lucide-react'
+import { ChevronDown, Search, Star, X } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { useThumbnailUpdates } from '../../hooks/useThumbnailUpdates'
 import type { HtmlThumbnailTask } from '../../lib/ipc'
@@ -14,6 +14,7 @@ export type StyleSelectOption = {
   description?: string
   styleCase?: string
   thumbnailPath?: string | null
+  favoriteAt?: number | null
 }
 
 export type StyleSelectProps = {
@@ -30,6 +31,16 @@ const thumbnailUrl = (filePath: string): string =>
   import.meta.env.MODE === 'test'
     ? 'about:blank'
     : `local-asset://${encodeURIComponent(filePath)}`
+
+const compareFavoriteOptions = (
+  a: StyleSelectOption,
+  b: StyleSelectOption,
+  order: Map<string, number>
+): number => {
+  const favoriteDiff = (b.favoriteAt || 0) - (a.favoriteAt || 0)
+  if (favoriteDiff !== 0) return favoriteDiff
+  return (order.get(a.id) || 0) - (order.get(b.id) || 0)
+}
 
 export function StyleSelect({
   value,
@@ -55,9 +66,19 @@ export function StyleSelect({
   useThumbnailUpdates('style', applyThumbnail)
 
   const selected = useMemo(() => options.find((option) => option.id === value), [options, value])
+  const optionOrder = useMemo(
+    () => new Map(options.map((option, index) => [option.id, index])),
+    [options]
+  )
 
   // 搜索框按名称/描述/用途过滤（用途也命中，所以不再需要单独的 tag 栏）。
-  const filtered = useMemo(() => filterByStyleKeyword(options, query), [options, query])
+  const filtered = useMemo(
+    () =>
+      [...filterByStyleKeyword(options, query)].sort((a, b) =>
+        compareFavoriteOptions(a, b, optionOrder)
+      ),
+    [optionOrder, options, query]
+  )
 
   const handleOpenChange = useCallback((next: boolean) => {
     setOpen(next)
@@ -88,6 +109,9 @@ export function StyleSelect({
             {selected ? (
               <>
                 <span className="truncate font-medium">{selected.label}</span>
+                {selected.favoriteAt != null && (
+                  <Star className="h-3.5 w-3.5 shrink-0 fill-[#d6a942] text-[#d6a942]" />
+                )}
                 {selected.styleCase && !compact && (
                   <span className="hidden shrink-0 truncate rounded-md border border-[#d6c08d]/80 bg-[#fff7e8] px-1.5 py-px text-[10px] font-medium leading-tight text-[#7c6a4c] sm:inline-block">
                     {parseStyleCases(selected.styleCase)[0]}
@@ -168,6 +192,9 @@ export function StyleSelect({
                         <span className="shrink-0 truncate rounded-md border border-[#d6c08d]/80 bg-[#fff7e8] px-1.5 py-px text-[10px] font-medium leading-tight text-[#7c6a4c]">
                           {option.styleCase}
                         </span>
+                      )}
+                      {option.favoriteAt != null && (
+                        <Star className="h-3.5 w-3.5 shrink-0 fill-[#d6a942] text-[#d6a942]" />
                       )}
                     </span>
                     {option.description && (

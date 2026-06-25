@@ -280,6 +280,7 @@ export const styles = sqliteTable('styles', {
   styleCase: text('style_case').notNull().default(''),
   packageDir: text('package_dir').notNull().default(''),
   active: integer('active', { mode: 'boolean' }).notNull().default(true),
+  favoriteAt: integer('favorite_at'),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull()
 })

@@ -506,6 +506,13 @@ export const zh = {
     noMatchingStyles: '没有符合该场景的风格',
     searchPlaceholder: '搜索风格名称、用途…',
     clearSearch: '清空搜索',
+    favoriteStyles: '收藏',
+    favoriteStyle: '收藏风格',
+    unfavoriteStyle: '取消收藏风格',
+    favoriteStyleTooltip: '收藏这个风格',
+    unfavoriteStyleTooltip: '取消收藏这个风格',
+    favoriteFailed: '更新收藏失败',
+    noFavoriteStyles: '还没有收藏的风格',
     pagesCount: '页面 · {count}'
   },
   styleEditor: {

@@ -13,6 +13,7 @@ export function GenerationPreviewGrid({
         {pages.map((page, index) => (
           <div
             key={page.id}
+            className="min-w-0 w-full"
             style={{
               animation: `gen-page-rise 420ms ease ${Math.min(index * 55, 440)}ms both`
             }}

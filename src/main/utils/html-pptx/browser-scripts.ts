@@ -529,8 +529,9 @@ export const COLLECT_PPTX_ANIMATION_TRACES_SCRIPT = `
   let lastSequenceStart = 0;
   let lastSequenceEnd = 0;
   const traces = [];
-  // LINEAR_PATH_RE must be duplicated here (cannot import from Node modules in serialized browser context)
-  // Synchronized with html-utils.ts:101 and animation-writer.ts:102
+  // LINEAR_PATH_RE must be duplicated here (cannot import from Node modules in serialized browser context).
+  // Keep in sync with the duplicated definitions in src/main/tools/html-utils.ts
+  // and src/main/utils/html-pptx/animation-writer.ts (those use unescaped backslashes).
   const LINEAR_PATH_RE = /^M\\s+-?\\d+(?:\\.\\d+)?\\s+-?\\d+(?:\\.\\d+)?\\s+L\\s+-?\\d+(?:\\.\\d+)?\\s+-?\\d+(?:\\.\\d+)?\\s*$/i;
   const parseLinearPathDelta = (value) => {
     const raw = String(value || '').trim();

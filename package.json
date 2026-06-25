@@ -102,7 +102,6 @@
     "@electron-toolkit/eslint-config-ts": "^3.1.0",
     "@electron-toolkit/tsconfig": "^2.0.0",
         "@tailwindcss/postcss": "^4.2.2",
-    "@types/domhandler": "^3.1.0",
     "@types/mdast": "^4.0.4",
     "@types/node": "^22.19.1",
     "@types/react": "^19.2.7",

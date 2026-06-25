@@ -95,4 +95,28 @@ describe('session detail editing reset', () => {
       speechScriptDialogOpen: false
     })
   })
+
+  it('keeps the active workspace tab when page-scoped selection state resets', () => {
+    useSessionDetailUiStore.setState({
+      interactionMode: 'edit',
+      workspaceTab: 'browse',
+      selectedSelector: '[data-block-id="b1"]',
+      editSelectedSelector: '[data-block-id="b1"]',
+      selectorLabel: 'b1',
+      elementTag: 'p',
+      elementText: 'text'
+    })
+
+    useSessionDetailUiStore.getState().resetForPageChange()
+
+    expect(useSessionDetailUiStore.getState()).toMatchObject({
+      interactionMode: 'preview',
+      workspaceTab: 'browse',
+      selectedSelector: null,
+      editSelectedSelector: null,
+      selectorLabel: '',
+      elementTag: '',
+      elementText: ''
+    })
+  })
 })

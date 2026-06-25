@@ -393,7 +393,6 @@ export const useSessionDetailUiStore = create<SessionDetailUiStore>((set) => ({
   resetForPageChange: () =>
     set({
       interactionMode: 'preview' as InteractionMode,
-      workspaceTab: 'preview' as SessionWorkspaceTab,
       selectedSelector: null,
       editSelectedSelector: null,
       selectorLabel: '',

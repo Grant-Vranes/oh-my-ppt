@@ -1034,7 +1034,7 @@ Business presentations, product introductions, project summaries — formal but 
     history: 'Version History',
     historyTooltip: 'View saved versions from page saves, AI edits, and page management',
     historyTitle: 'History versions',
-    historyRecent: 'Latest 10',
+    historyRecent: 'Latest 20',
     historyLoading: 'Loading history...',
     historyEmptyTitle: 'No history yet',
     historyEmptyDescription: 'A version is recorded after generation or editing completes.',

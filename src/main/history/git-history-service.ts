@@ -10,12 +10,13 @@ import type {
   SessionPageRecord,
   SessionStyleSnapshotRow
 } from '../db/database'
-import type {
-  ChangedHistoryFile,
-  HistoryOperationKind,
-  HistoryOperationScope,
-  HistoryVersion,
-  RollbackHistoryResult
+import {
+  HISTORY_VERSION_LIMIT,
+  type ChangedHistoryFile,
+  type HistoryOperationKind,
+  type HistoryOperationScope,
+  type HistoryVersion,
+  type RollbackHistoryResult
 } from '@shared/history'
 
 const GITIGNORE_ENTRIES = [
@@ -336,7 +337,7 @@ export class GitHistoryService {
     }
   }
 
-  async listVersions(sessionId: string, limit = 10): Promise<HistoryVersion[]> {
+  async listVersions(sessionId: string, limit = HISTORY_VERSION_LIMIT): Promise<HistoryVersion[]> {
     const session = await this.db.getSession(sessionId)
     const currentCommit = typeof session?.currentCommit === 'string' ? session.currentCommit : null
     const currentOperationId =
@@ -345,7 +346,7 @@ export class GitHistoryService {
       currentOperationId ||
       (await this.findOperationIdByCommit(sessionId, currentCommit)) ||
       null
-    const maxCount = Math.max(1, Math.min(50, Math.floor(limit)))
+    const maxCount = Math.max(1, Math.min(HISTORY_VERSION_LIMIT, Math.floor(limit)))
     const operations = await this.collectVisibleChainOperations(startOperationId, maxCount)
 
     return operations

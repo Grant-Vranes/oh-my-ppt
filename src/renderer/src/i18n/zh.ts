@@ -984,7 +984,7 @@ export const zh = {
     history: '版本历史',
     historyTooltip: '查看已保存、AI 修改和页面管理产生的历史版本',
     historyTitle: '历史版本',
-    historyRecent: '最近 10 条',
+    historyRecent: '最近 20 条',
     historyLoading: '正在加载历史版本...',
     historyEmptyTitle: '暂无历史版本',
     historyEmptyDescription: '完成一次生成或编辑后会自动记录。',

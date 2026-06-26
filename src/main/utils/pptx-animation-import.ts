@@ -226,13 +226,17 @@ export const parsePptxSlideAnimationPlan = (
     const delay = parseNumericDelay(
       ctn.children('p\\:stCondLst').find('p\\:cond').first().attr('delay')
     )
-    const duration =
-      ctn
-        .find('p\\:cTn[dur]')
-        .map((__, child) => $(child).attr('dur'))
-        .get()
-        .map((value) => Number(value))
-        .find((value) => Number.isFinite(value) && value > 1) ?? 500
+    const allDurs = ctn
+      .find('p\\:cTn[dur]')
+      .map((__, child) => Number($(child).attr('dur')))
+      .get()
+      .filter((value) => Number.isFinite(value) && value > 1)
+    // Emphasis animations export two half-duration phases (rebound).
+    // Sum all dur values to recover the total duration for roundtrip fidelity.
+    const isEmphasis = presetClass === 'emph'
+    const duration = isEmphasis
+      ? allDurs.reduce((sum, d) => sum + d, 0) || 500
+      : allDurs[0] ?? 500
     const spids = [
       ...new Set(
         ctn

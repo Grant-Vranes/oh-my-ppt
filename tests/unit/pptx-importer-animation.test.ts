@@ -364,6 +364,42 @@ describe('parsePptxSlideAnimationPlan', () => {
     expect(plan.animations[1]).toMatchObject({ type: 'grow-shrink-strong', trigger: 'load', duration: 420 })
   })
 
+  it('sums two-phase emphasis rebound durations for full roundtrip fidelity', () => {
+    // animation-writer.ts generates two half-duration phases for emphasis rebound:
+    // <p:seq><p:cTn><p:childTnLst>
+    //   <p:animScale>...<p:cTn dur="400" fill="hold"/>...<p:from x="100000"/><p:to x="106000"/></p:animScale>
+    //   <p:animScale>...<p:cTn dur="400" fill="remove"/>...<p:from x="106000"/><p:to x="100000"/></p:animScale>
+    // </p:childTnLst></p:cTn></p:seq>
+    // Total duration = 400 + 400 = 800
+    const xml = `<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+  <p:cSld><p:spTree>
+    <p:sp><p:nvSpPr><p:cNvPr id="10" name="Pulse Rebound"/></p:nvSpPr></p:sp>
+    <p:sp><p:nvSpPr><p:cNvPr id="11" name="Grow Rebound"/></p:nvSpPr></p:sp>
+  </p:spTree></p:cSld>
+  <p:timing><p:tnLst>
+    <p:par><p:cTn id="60" presetID="6" presetClass="emph" nodeType="withEffect">
+      <p:childTnLst><p:seq><p:cTn id="61" fill="hold"><p:childTnLst>
+        <p:animScale><p:cBhvr additive="base"><p:cTn id="62" dur="400" fill="hold"/><p:tgtEl><p:spTgt spid="10"/></p:tgtEl></p:cBhvr><p:from x="100000" y="100000"/><p:to x="106000" y="106000"/></p:animScale>
+        <p:animScale><p:cBhvr additive="base"><p:cTn id="63" dur="400" fill="remove"/><p:tgtEl><p:spTgt spid="10"/></p:tgtEl></p:cBhvr><p:from x="106000" y="106000"/><p:to x="100000" y="100000"/></p:animScale>
+      </p:childTnLst></p:cTn></p:seq></p:childTnLst>
+    </p:cTn></p:par>
+    <p:par><p:cTn id="70" presetID="6" presetClass="emph" nodeType="withEffect">
+      <p:childTnLst><p:seq><p:cTn id="71" fill="hold"><p:childTnLst>
+        <p:animScale><p:cBhvr additive="base"><p:cTn id="72" dur="450" fill="hold"/><p:tgtEl><p:spTgt spid="11"/></p:tgtEl></p:cBhvr><p:from x="95000" y="95000"/><p:to x="104000" y="104000"/></p:animScale>
+        <p:animScale><p:cBhvr additive="base"><p:cTn id="73" dur="450" fill="remove"/><p:tgtEl><p:spTgt spid="11"/></p:tgtEl></p:cBhvr><p:from x="104000" y="104000"/><p:to x="100000" y="100000"/></p:animScale>
+      </p:childTnLst></p:cTn></p:seq></p:childTnLst>
+    </p:cTn></p:par>
+  </p:tnLst></p:timing>
+</p:sld>`
+
+    const plan = parsePptxSlideAnimationPlan(xml, null, { width: 960, height: 540 })
+
+    // Two-phase rebound: 400+400=800, not 400
+    expect(plan.animations[0]).toMatchObject({ type: 'pulse', trigger: 'load', duration: 800 })
+    // Two-phase rebound: 450+450=900, not 450
+    expect(plan.animations[1]).toMatchObject({ type: 'grow-shrink-soft', trigger: 'load', duration: 900 })
+  })
+
   it('roundtrips fade and slide entrance variants without collapsing their semantic distance', () => {
     const slide: HtmlToPptxSlide = {
       texts: [

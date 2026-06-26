@@ -82,6 +82,12 @@ export interface PreviewIframeHandle {
       html?: string
       text?: string
       textTarget?: EditTextTarget
+      formula?: {
+        latex: string
+        html: string
+        displayMode: boolean
+        originalLatex?: string
+      }
       style?: { color?: string; fontSize?: string; fontWeight?: string; textAlign?: string }
     }
   ) => void
@@ -275,6 +281,7 @@ export const PreviewIframe = forwardRef<
     elementTag?: string
     elementText?: string
     reason: 'inspect' | 'drag' | 'text-edit'
+    formula?: EditableElementSnapshot['formula']
   }): Promise<{ selector: string; blockId?: string }> => {
     if (!pageHtmlPath || !pageId) {
       throw new Error('Cannot anchor element without page path and page id')
@@ -288,14 +295,39 @@ export const PreviewIframe = forwardRef<
         selector: args.selector,
         elementTag: args.elementTag,
         elementText: args.elementText,
-        reason: args.reason
+        reason: args.reason,
+        formula: args.formula
       })
       if (result.changed && result.blockId) {
         const webview = webviewRef.current
         if (webview) {
           safeExecuteJavaScript(
             webview,
-            `(() => { var __el = document.querySelector(${JSON.stringify(args.selector)}); if (__el && !__el.getAttribute('data-block-id')) __el.setAttribute('data-block-id', ${JSON.stringify(result.blockId)}); })();`
+            `(() => {
+              var __selector = ${JSON.stringify(args.selector)};
+              var __blockId = ${JSON.stringify(result.blockId)};
+              var __latex = ${JSON.stringify(args.formula?.latex || '')};
+              var __normalize = function(value) { return String(value || '').replace(/\\s+/g, ' ').trim(); };
+              var __nodes = [];
+              try { __nodes = Array.prototype.slice.call(document.querySelectorAll(__selector)); } catch (_error) {}
+              var __el = __nodes.length === 1 ? __nodes[0] : null;
+              if (!__el && __latex) {
+                var __formulaNodes = Array.prototype.slice.call(document.querySelectorAll('.katex'));
+                var __matches = __formulaNodes.filter(function(node) {
+                  if (!(node instanceof Element) || node.getAttribute('data-block-id')) return false;
+                  var annotation = node.querySelector('annotation[encoding="application/x-tex"]');
+                  var latex = node.getAttribute('data-ppt-formula-latex') || (annotation ? annotation.textContent : '');
+                  return __normalize(latex) === __normalize(__latex);
+                });
+                if (__matches.length === 1) __el = __matches[0];
+              }
+              if (__el instanceof Element) {
+                var __target = __el.classList.contains('katex-display') && !__el.classList.contains('katex')
+                  ? (__el.querySelector('.katex') || __el)
+                  : __el;
+                if (!__target.getAttribute('data-block-id')) __target.setAttribute('data-block-id', __blockId);
+              }
+            })();`
           )
         }
       }
@@ -310,6 +342,7 @@ export const PreviewIframe = forwardRef<
     elementTag?: string
     elementText?: string
     reason: 'inspect' | 'drag' | 'text-edit'
+    formula?: EditableElementSnapshot['formula']
   }): Promise<string> => {
     const result = await ensureAnchoredAnchor(args)
     return result.selector
@@ -386,6 +419,12 @@ export const PreviewIframe = forwardRef<
           html?: string
           text?: string
           textTarget?: EditTextTarget
+          formula?: {
+            latex: string
+            html: string
+            displayMode: boolean
+            originalLatex?: string
+          }
           style?: { color?: string; fontSize?: string; fontWeight?: string; textAlign?: string }
           zIndex?: number
         }
@@ -1002,7 +1041,8 @@ export const PreviewIframe = forwardRef<
               selector: parsed.selector || '',
               elementTag: parsed.elementTag,
               elementText: parsed.elementText,
-              reason: 'inspect'
+              reason: 'inspect',
+              formula: parsed.snapshot?.formula
             })
             // Page-instance guard: drop events whose emitting webview has since been
             // replaced (page switch, or the remount triggered by save/undo/redo/
@@ -1028,7 +1068,8 @@ export const PreviewIframe = forwardRef<
               selector: parsed.selector || '',
               elementTag: parsed.elementTag,
               elementText: parsed.elementText,
-              reason: 'drag'
+              reason: 'drag',
+              formula: parsed.snapshot?.formula
             })
             if (webviewRef.current !== webview) return
             const textTarget =
@@ -1073,7 +1114,8 @@ export const PreviewIframe = forwardRef<
               anchorResult = await ensureAnchoredAnchor({
                 selector: parsed.selector || '',
                 elementTag: parsed.elementTag,
-                reason: 'drag'
+                reason: 'drag',
+                formula: parsed.snapshot?.formula
               })
             } catch {
               return
@@ -1096,7 +1138,8 @@ export const PreviewIframe = forwardRef<
             const anchor = await ensureAnchoredAnchor({
               selector: parsed.selector || '',
               elementTag: parsed.elementTag,
-              reason: 'drag'
+              reason: 'drag',
+              formula: parsed.snapshot?.formula
             })
             if (webviewRef.current !== webview) return
             onElementMovedRef.current?.({

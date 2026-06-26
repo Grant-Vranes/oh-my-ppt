@@ -45,6 +45,12 @@ type ElementPropertyPatch = {
   html?: string
   text?: string
   textTarget?: EditSelectionPayload['textTarget']
+  formula?: {
+    latex: string
+    html: string
+    displayMode: boolean
+    originalLatex?: string
+  }
   style?: ElementPropertyStylePatch
   attrs?: ElementPropertyAttrsPatch
 }
@@ -83,6 +89,11 @@ function getCommitFieldsForSelection(selection: EditSelectionPayload): Set<keyof
     fields.add('fontWeight')
     fields.add('textAlign')
   }
+  if (capabilities.includes('formula')) {
+    fields.add('formulaLatex')
+    fields.add('formulaHtml')
+    fields.add('formulaDisplayMode')
+  }
   return fields
 }
 
@@ -100,6 +111,7 @@ function buildElementPropertyPatch(
   const attrs: ElementPropertyAttrsPatch = {}
   let text: string | undefined
   let html: string | undefined
+  let formula: ElementPropertyPatch['formula'] | undefined
 
   if (commitFields.has('layoutZIndex')) {
     const value = parseInt(draft.layoutZIndex, 10)
@@ -130,6 +142,30 @@ function buildElementPropertyPatch(
   const initialText = selection.textTarget?.text ?? initial.text?.value ?? ''
   if (!html && commitFields.has('text') && draft.text.trim() && draft.text.trim() !== initialText) {
     text = draft.text.trim()
+  }
+  if (
+    (commitFields.has('formulaLatex') ||
+      commitFields.has('formulaHtml') ||
+      commitFields.has('formulaDisplayMode')) &&
+    draft.formulaLatex.trim() &&
+    draft.formulaHtml.trim()
+  ) {
+    const initialFormula = initial.formula
+    const nextLatex = draft.formulaLatex.trim()
+    const nextHtml = draft.formulaHtml.trim()
+    const nextDisplayMode = draft.formulaDisplayMode
+    if (
+      nextLatex !== (initialFormula?.latex || '') ||
+      nextHtml !== (initialFormula?.html || '') ||
+      nextDisplayMode !== Boolean(initialFormula?.displayMode)
+    ) {
+      formula = {
+        latex: nextLatex,
+        html: nextHtml,
+        displayMode: nextDisplayMode,
+        originalLatex: initialFormula?.latex || ''
+      }
+    }
   }
   if (commitFields.has('color') && draft.color !== rgbToHex(initial.computed.color)) {
     style.color = draft.color
@@ -181,6 +217,7 @@ function buildElementPropertyPatch(
   if (
     html === undefined &&
     text === undefined &&
+    formula === undefined &&
     Object.keys(style).length === 0 &&
     Object.keys(attrs).length === 0
   ) {
@@ -190,6 +227,7 @@ function buildElementPropertyPatch(
   return {
     html,
     text,
+    formula,
     textTarget: text !== undefined ? selection.textTarget : undefined,
     style: Object.keys(style).length > 0 ? style : undefined,
     attrs: Object.keys(attrs).length > 0 ? attrs : undefined
@@ -275,6 +313,7 @@ export const useEditSessionStore = create<EditSessionState>((set, get) => ({
     const bounds = payload.snapshot.metrics.page
     const computed = payload.snapshot.computed
     const attrs = payload.snapshot.attrs
+    const formula = payload.snapshot.formula
     if (payload.isText) {
       set({
         draft: {
@@ -300,7 +339,10 @@ export const useEditSessionStore = create<EditSessionState>((set, get) => ({
           autoplay: Boolean(attrs.autoplay),
           playsInline: attrs.playsInline !== false,
           preload: attrs.preload || 'metadata',
-          artTextTemplateId: attrs.artTextTemplate || ''
+          artTextTemplateId: attrs.artTextTemplate || '',
+          formulaLatex: formula?.latex || '',
+          formulaHtml: formula?.html || '',
+          formulaDisplayMode: Boolean(formula?.displayMode)
         }
       })
     } else {
@@ -323,7 +365,10 @@ export const useEditSessionStore = create<EditSessionState>((set, get) => ({
           autoplay: Boolean(attrs.autoplay),
           playsInline: attrs.playsInline !== false,
           preload: attrs.preload || 'metadata',
-          artTextTemplateId: attrs.artTextTemplate || ''
+          artTextTemplateId: attrs.artTextTemplate || '',
+          formulaLatex: formula?.latex || '',
+          formulaHtml: formula?.html || '',
+          formulaDisplayMode: Boolean(formula?.displayMode)
         }
       })
     }
@@ -400,6 +445,10 @@ export const useEditSessionStore = create<EditSessionState>((set, get) => ({
     if (draft.autoplay !== prevDraft.autoplay) liveAttrs.autoplay = draft.autoplay
     if (draft.playsInline !== prevDraft.playsInline) liveAttrs.playsInline = draft.playsInline
     if (draft.preload !== prevDraft.preload) liveAttrs.preload = draft.preload
+    const formulaChanged =
+      draft.formulaLatex !== prevDraft.formulaLatex ||
+      draft.formulaHtml !== prevDraft.formulaHtml ||
+      draft.formulaDisplayMode !== prevDraft.formulaDisplayMode
 
     set({ draft })
 
@@ -424,6 +473,15 @@ export const useEditSessionStore = create<EditSessionState>((set, get) => ({
             color: draft.color,
             fontSize: draft.fontSize ? `${draft.fontSize}px` : undefined,
             fontWeight: draft.fontWeight
+          }
+        })
+      }
+      if (selection.capabilities?.includes('formula') && formulaChanged && draft.formulaHtml) {
+        iframe?.liveUpdateElement(selection.selector, {
+          formula: {
+            latex: draft.formulaLatex.trim(),
+            html: draft.formulaHtml,
+            displayMode: draft.formulaDisplayMode
           }
         })
       }
@@ -545,6 +603,7 @@ export const useEditSessionStore = create<EditSessionState>((set, get) => ({
         attrs: p.patch.attrs
       })
       if (
+        p.patch.formula ||
         p.patch.html ||
         p.patch.text ||
         p.patch.style?.color ||
@@ -554,6 +613,7 @@ export const useEditSessionStore = create<EditSessionState>((set, get) => ({
         iframe.liveUpdateElement(p.selector, {
           text: p.patch.text,
           html: p.patch.html,
+          formula: p.patch.formula,
           textTarget: p.patch.textTarget,
           style: {
             color: p.patch.style?.color,

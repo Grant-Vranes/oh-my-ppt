@@ -428,3 +428,78 @@ describe('editSessionStore flush captures an in-flight first drag (P1: drag-once
     expect(useEditHistoryStore.getState().getSnapshotForPage(PAGE_ID).dragEdits).toHaveLength(0)
   })
 })
+
+describe('editSessionStore formula edits', () => {
+  beforeEach(() => {
+    useEditHistoryStore.getState().clear()
+    useEditSessionStore.getState().reset()
+  })
+
+  it('commits formula changes as property edits', () => {
+    const liveUpdateElement = vi.fn()
+    primeStore(
+      async () => ({ isAbsoluteMode: false, x: 0, y: 0, width: 100, height: 100 }),
+      { liveUpdateElement }
+    )
+    useEditSessionStore.getState().selectElement({
+      selector: SELECTOR,
+      label: 'Formula',
+      elementTag: 'div',
+      elementText: '',
+      kind: 'formula',
+      capabilities: ['layout', 'layer', 'appearance', 'formula'],
+      isText: false,
+      text: '',
+      style: {},
+      translateX: 0,
+      translateY: 0,
+      snapshot: {
+        selector: SELECTOR,
+        label: 'Formula',
+        elementTag: 'div',
+        elementText: '',
+        kind: 'formula',
+        capabilities: ['layout', 'layer', 'appearance', 'formula'],
+        metrics: {
+          page: { x: 0, y: 0, width: 100, height: 100 },
+          viewport: { x: 0, y: 0, width: 100, height: 100 },
+          translateX: 0,
+          translateY: 0
+        },
+        computed: {},
+        inline: {},
+        attrs: {},
+        formula: {
+          latex: 'x^2',
+          html: '<span class="katex">old</span>',
+          displayMode: false
+        }
+      }
+    } as unknown as EditSelectionPayload)
+
+    useEditSessionStore.getState().updateDraft(
+      {
+        ...useEditSessionStore.getState().draft,
+        formulaLatex: 'x^3',
+        formulaHtml: '<span class="katex">new</span>',
+        formulaDisplayMode: false
+      },
+      { commit: true, fields: ['formulaLatex', 'formulaHtml', 'formulaDisplayMode'] }
+    )
+
+    const snapshot = useEditHistoryStore.getState().getSnapshotForPage(PAGE_ID)
+    expect(liveUpdateElement).toHaveBeenCalledWith(
+      SELECTOR,
+      expect.objectContaining({
+        formula: expect.objectContaining({ latex: 'x^3', html: '<span class="katex">new</span>' })
+      })
+    )
+    expect(snapshot.propertyEdits).toHaveLength(1)
+    expect(snapshot.propertyEdits[0].patch.formula).toMatchObject({
+      latex: 'x^3',
+      html: '<span class="katex">new</span>',
+      displayMode: false,
+      originalLatex: 'x^2'
+    })
+  })
+})

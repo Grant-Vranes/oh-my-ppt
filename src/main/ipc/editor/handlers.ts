@@ -33,12 +33,14 @@ export function registerEditorHandlers(ctx: IpcContext): void {
       pageId?: unknown
       selector?: unknown
       elementTag?: unknown
+      formula?: unknown
     }
     const sessionId = normalizeSessionId(record.sessionId)
     const htmlPath = typeof record.htmlPath === 'string' ? record.htmlPath : ''
     const pageId = typeof record.pageId === 'string' ? record.pageId.trim() : ''
     const selector = typeof record.selector === 'string' ? record.selector.trim() : ''
     const elementTag = typeof record.elementTag === 'string' ? record.elementTag.trim() : ''
+    const formula = record.formula && typeof record.formula === 'object' ? record.formula : undefined
     if (!htmlPath) throw new Error('页面路径不能为空')
     if (!pageId) throw new Error('pageId 不能为空')
     if (!selector) throw new Error('元素 selector 不能为空')
@@ -51,7 +53,12 @@ export function registerEditorHandlers(ctx: IpcContext): void {
     })
     return await withHtmlFileLock(safeHtmlPath, async () => {
       const html = await fs.promises.readFile(safeHtmlPath, 'utf-8')
-      const result = ensureElementAnchorInHtml(html, { pageId, selector, elementTag })
+      const result = ensureElementAnchorInHtml(html, {
+        pageId,
+        selector,
+        elementTag,
+        formula: formula as Parameters<typeof ensureElementAnchorInHtml>[1]['formula']
+      })
       if (result.changed) {
         await fs.promises.writeFile(safeHtmlPath, result.html, 'utf-8')
       }
@@ -285,10 +292,12 @@ export function registerEditorHandlers(ctx: IpcContext): void {
         const patch = e.patch && typeof e.patch === 'object' ? (e.patch as Record<string, unknown>) : {}
         const style = patch.style && typeof patch.style === 'object' ? patch.style : undefined
         const attrs = patch.attrs && typeof patch.attrs === 'object' ? patch.attrs : undefined
+        const formula = patch.formula && typeof patch.formula === 'object' ? patch.formula : undefined
         try {
           html = patchGenericElementProperties(html, resolvedSelector, {
             text: typeof patch.text === 'string' ? patch.text : undefined,
             html: typeof patch.html === 'string' ? patch.html : undefined,
+            formula: formula as Parameters<typeof patchGenericElementProperties>[2]['formula'],
             textTarget: patch.textTarget,
             style: style as Parameters<typeof patchGenericElementProperties>[2]['style'],
             attrs: attrs as Parameters<typeof patchGenericElementProperties>[2]['attrs']
@@ -433,6 +442,7 @@ export function registerEditorHandlers(ctx: IpcContext): void {
         ? (record.patch as {
             text?: unknown
             html?: unknown
+            formula?: unknown
             textTarget?: unknown
             style?: unknown
           })

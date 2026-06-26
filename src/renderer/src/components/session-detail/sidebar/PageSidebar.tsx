@@ -172,6 +172,7 @@ export const PageSidebar = memo(function PageSidebar({
   const previewKey = useSessionDetailUiStore((state) => state.previewKey)
   const thumbnailVersions = useSessionDetailUiStore((state) => state.thumbnailVersions)
   const setSelectedPageId = useSessionDetailUiStore((state) => state.setSelectedPageId)
+  const setWorkspaceTab = useSessionDetailUiStore((state) => state.setWorkspaceTab)
   const isAddingPage = useSessionDetailUiStore((state) => state.isAddingPage)
   const isExportingPptx = useSessionDetailUiStore((state) => state.isExportingPptx)
   const mergeSessionPagesDialogOpen = useSessionDetailUiStore(
@@ -252,6 +253,7 @@ export const PageSidebar = memo(function PageSidebar({
     if (!pageId || disabled) return false
     if (pageId === selectedPageId) {
       setSelectedPageId(pageId)
+      setWorkspaceTab('preview')
       return true
     }
     if (currentPageHasPendingEdits) {
@@ -259,6 +261,7 @@ export const PageSidebar = memo(function PageSidebar({
       return false
     }
     setSelectedPageId(pageId)
+    setWorkspaceTab('preview')
     return true
   }
 
@@ -271,6 +274,7 @@ export const PageSidebar = memo(function PageSidebar({
       const stillPending = useEditHistoryStore.getState().hasPendingEdits(selectedPage?.pageId)
       if (result.saved || !stillPending) {
         setSelectedPageId(targetPageId)
+        setWorkspaceTab('preview')
         setPendingSwitchPageId(null)
       }
     } finally {

@@ -215,6 +215,11 @@ export interface EnsureElementAnchorPayload {
   elementTag?: string
   elementText?: string
   reason?: 'inspect' | 'drag' | 'text-edit'
+  formula?: {
+    latex: string
+    html: string
+    displayMode: boolean
+  }
 }
 
 export interface EnsureElementAnchorResult {

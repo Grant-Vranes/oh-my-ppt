@@ -24,6 +24,9 @@ export interface ElementEditDraft {
   playsInline: boolean
   preload: string
   artTextTemplateId: string
+  formulaLatex: string
+  formulaHtml: string
+  formulaDisplayMode: boolean
 }
 
 export interface ElementEditorProps {

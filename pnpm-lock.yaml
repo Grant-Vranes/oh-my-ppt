@@ -222,9 +222,6 @@ importers:
       '@tailwindcss/postcss':
         specifier: ^4.2.2
         version: 4.2.2
-      '@types/domhandler':
-        specifier: ^3.1.0
-        version: 3.1.0
       '@types/mdast':
         specifier: ^4.0.4
         version: 4.0.4
@@ -2114,10 +2111,6 @@ packages:
 
   '@types/deep-eql@4.0.2':
     resolution: {integrity: sha512-c9h9dVVMigMPc4bwTvC5dxqtqJZwQPePsWjPlpSOnojbor6pGqdk541lfA7AqFQr5pB1BRdq0juY9db81BwyFw==}
-
-  '@types/domhandler@3.1.0':
-    resolution: {integrity: sha512-3AOfYUR/uv83OKeNzeJimXt6NRk/eCHkfOPp5Q8yX7ceE/WxxyDgEWnKb+b54bqVZmgjxMZLtWKDdmmREpZjTA==}
-    deprecated: This is a stub types definition. domhandler provides its own type definitions, so you do not need this installed.
 
   '@types/estree-jsx@1.0.5':
     resolution: {integrity: sha512-52CcUVNFyfb1A2ALocQw/Dd1BQFNmSdkuC3BkZ6iqhdMfQz7JWOFRuJFloOzjk+6WijU56m9oKXFAXc7o3Towg==}
@@ -7097,10 +7090,6 @@ snapshots:
       '@types/ms': 2.1.0
 
   '@types/deep-eql@4.0.2': {}
-
-  '@types/domhandler@3.1.0':
-    dependencies:
-      domhandler: 5.0.3
 
   '@types/estree-jsx@1.0.5':
     dependencies:

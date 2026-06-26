@@ -2,6 +2,7 @@ import { X } from 'lucide-react'
 import type { EditSelectionPayload } from '../../preview/edit-mode-script'
 import { AppearanceInspector } from './AppearanceInspector'
 import { ArtTextInspector } from './ArtTextInspector'
+import { FormulaInspector } from './FormulaInspector'
 import { InspectorActions } from './InspectorActions'
 import { LayerInspector } from './LayerInspector'
 import { LayoutInspector } from './LayoutInspector'
@@ -81,6 +82,9 @@ export function ElementInspectorPanel({
             )}
             {!isArtText && hasCapability(selection, 'text') && (
               <TextInspector selection={selection} draft={draft} onDraftChange={onDraftChange} />
+            )}
+            {hasCapability(selection, 'formula') && (
+              <FormulaInspector selection={selection} draft={draft} onDraftChange={onDraftChange} />
             )}
             {hasCapability(selection, 'appearance') && (
               <AppearanceInspector

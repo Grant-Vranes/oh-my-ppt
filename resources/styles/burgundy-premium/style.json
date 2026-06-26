@@ -6,8 +6,14 @@
   },
   "description": "沉稳奢华的红金黑配色",
   "category": "深色 · 奢华",
-  "aliases": ["勃艮第红", "burgundy", "酒红", "高级感", "红金"],
-  "styleCase": "品牌VI设计、奢侈品包装、艺术展览海报、高端餐饮酒店、时尚杂志、年终汇报、品牌发布会",
-  "version": "2.0.0",
+  "aliases": [
+    "勃艮第红",
+    "burgundy",
+    "酒红",
+    "高级感",
+    "红金"
+  ],
+  "styleCase": "时尚潮流、品牌营销、艺术视觉",
+  "version": "2.0.2",
   "source": "builtin"
 }

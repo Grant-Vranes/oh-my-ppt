@@ -42,6 +42,7 @@ import type {
   ImageModelConfig,
   ImageModelProvider
 } from '@shared/image-generation.js'
+import type { ThinkingParameterMode } from '@shared/model-config.js'
 import type { ExportProgressPayload } from '@shared/export-progress.js'
 import type { PageMergeDisabledReason } from '@shared/page-merge'
 import type { ModelUsagePeriod, ModelUsageStats } from '@shared/model-usage'
@@ -104,6 +105,7 @@ export interface StyleListItem {
   version?: string
   styleCase?: string
   packageDir?: string
+  favoriteAt?: number | null
   previewPath?: string | null
   thumbnailPath?: string | null
   createdAt?: number
@@ -213,6 +215,11 @@ export interface EnsureElementAnchorPayload {
   elementTag?: string
   elementText?: string
   reason?: 'inspect' | 'drag' | 'text-edit'
+  formula?: {
+    latex: string
+    html: string
+    displayMode: boolean
+  }
 }
 
 export interface EnsureElementAnchorResult {
@@ -298,6 +305,7 @@ export interface ModelConfig {
   baseUrl: string
   maxTokens: number
   disableTemperature: boolean
+  thinkingParameterMode: ThinkingParameterMode
   active: boolean
   createdAt: number
   updatedAt: number
@@ -733,6 +741,7 @@ export const ipc = {
     baseUrl: string
     maxTokens?: number
     disableTemperature?: boolean
+    thinkingParameterMode?: ThinkingParameterMode
     active?: boolean
   }) =>
     getIpc().invoke('settings:upsertModelConfig', payload) as Promise<{
@@ -770,6 +779,7 @@ export const ipc = {
     baseUrl: string
     maxTokens?: number
     disableTemperature?: boolean
+    thinkingParameterMode?: ThinkingParameterMode
     timeoutMs: number
   }) =>
     getIpc().invoke('settings:verifyApiKey', payload) as Promise<{
@@ -824,6 +834,12 @@ export const ipc = {
       success: boolean
       previewPath: string
       thumbnailPath: string
+    }>,
+  setStyleFavorite: (payload: { styleId: string; favorite: boolean }) =>
+    getIpc().invoke('styles:setFavorite', payload) as Promise<{
+      success: boolean
+      styleId: string
+      favoriteAt: number | null
     }>,
   onHtmlThumbnailChanged: (callback: (task: HtmlThumbnailTask) => void): (() => void) => {
     const channel = 'thumbnails:changed'

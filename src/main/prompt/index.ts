@@ -2,7 +2,6 @@ export { buildDesignContractSystemPrompt, buildPlanningSystemPrompt } from "./pl
 export { buildDeckAgentSystemPrompt } from "./deck-system";
 export { buildEditAgentSystemPrompt } from "./edit-system";
 export {
-  buildDeckGenerationPrompt,
   buildSinglePageGenerationPrompt,
 } from "./generation-user";
 export {

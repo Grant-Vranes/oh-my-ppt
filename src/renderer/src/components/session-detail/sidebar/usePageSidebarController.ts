@@ -10,11 +10,13 @@ import { useT } from '@renderer/i18n'
 import { useModelAction } from '@renderer/hooks/useModelAction'
 import { normalizePagesForSelection } from '../shared/pageUtils'
 import type { SessionPreviewPage } from '../shared/types'
-import { useSessionExportActions } from '../hooks/useSessionExportActions'
+import { useSessionPageActions } from '../hooks/useSessionPageActions'
+import { useSessionReorderPages } from '../hooks/useSessionReorderPages'
 
 export function usePageSidebarController(sessionId: string) {
   const t = useT()
   const modelAction = useModelAction()
+  const { reorder: reorderSessionPages } = useSessionReorderPages(sessionId)
   const currentPages = useGenerateStore((state) => state.currentPages)
   const isGenerating = useGenerateStore((state) => state.isGenerating)
   const selectedPageId = useSessionDetailUiStore((state) => state.selectedPageId)
@@ -29,11 +31,9 @@ export function usePageSidebarController(sessionId: string) {
     (state) => state.setMergeSessionPagesDialogOpen
   )
   const openBlankPageDialog = useSessionDetailUiStore((state) => state.openBlankPageDialog)
-  const openPageTitleEdit = useSessionDetailUiStore((state) => state.openPageTitleEdit)
-  const setDeleteConfirmPageId = useSessionDetailUiStore((state) => state.setDeleteConfirmPageId)
   const loadSession = useSessionStore((state) => state.loadSession)
   const toastError = useToastStore((state) => state.error)
-  const exportActions = useSessionExportActions(sessionId)
+  const pageActions = useSessionPageActions(sessionId)
   const pages = useMemo(() => normalizePagesForSelection(currentPages), [currentPages])
   const selectedPage = useMemo(
     () => pages.find((page) => page.id === selectedPageId) ?? pages[0] ?? null,
@@ -63,25 +63,7 @@ export function usePageSidebarController(sessionId: string) {
     orderedPageIds: string[],
     selectedForKeep?: string
   ): Promise<void> => {
-    if (!sessionId) return
-    useSessionDetailUiStore.getState().setIsManagingPages(true)
-    try {
-      const result = await ipc.reorderSessionPages({
-        sessionId,
-        orderedPageIds,
-        selectedPageId: selectedForKeep
-      })
-      useGenerateStore.getState().setPages(result.generatedPages)
-      useSessionDetailUiStore.getState().setSelectedPageId(result.selectedPageId)
-      useSessionDetailUiStore.getState().bumpPreviewKey()
-      void ipc
-        .clearSpeechScript(sessionId)
-        .catch((err) => console.warn('[speech] clearSpeechScript failed', err))
-    } catch (error) {
-      toastError(error instanceof Error ? error.message : t('pageManagement.reorderFailed'))
-    } finally {
-      useSessionDetailUiStore.getState().setIsManagingPages(false)
-    }
+    await reorderSessionPages(orderedPageIds, selectedForKeep)
   }
 
   const handleUpdatePageOutline = async (
@@ -121,12 +103,11 @@ export function usePageSidebarController(sessionId: string) {
     onMergeSessionPages: () => setMergeSessionPagesDialogOpen(true),
     onRetryFailedPage: (page: SessionPreviewPage) => void handleRetryFailedPage(page),
     onReorderPages: handleReorderPages,
-    onDeletePage: (page: SessionPreviewPage) => setDeleteConfirmPageId(page.id),
-    onRenamePage: (page: SessionPreviewPage) => openPageTitleEdit(page.id, page.title || ''),
+    onDeletePage: pageActions.deletePage,
+    onRenamePage: pageActions.renamePage,
     onUpdatePageOutline: handleUpdatePageOutline,
-    onExportPagePptx: (page: SessionPreviewPage, options?: { imageOnly?: boolean }) =>
-      void exportActions.exportPptx({ pageId: page.id, ...options }),
-    onDownloadAllOutlines: () => void exportActions.exportOutlinesMarkdown(),
+    onExportPagePptx: pageActions.exportPagePptx,
+    onDownloadAllOutlines: pageActions.exportOutlinesMarkdown,
     onToggleCollapsed: toggleSidebarCollapsed
   }
 }

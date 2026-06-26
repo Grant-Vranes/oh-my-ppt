@@ -5,7 +5,7 @@
     "en": "Amber Aurora"
   },
   "description": "暖紫橙渐变的黄昏国风治愈",
-  "category": "自然 · 有机",
+  "category": "效果 · 戏剧",
   "aliases": [
     "扁豆紫",
     "蜜陀僧",
@@ -13,7 +13,7 @@
     "暖紫橙",
     "黄昏"
   ],
-  "styleCase": "文创品牌发布、国风节日企划、心理疗愈讲座、生活方式分享、二十四节气主题、古典文学赏析",
-  "version": "2.0.0",
+  "styleCase": "传统文化、疗愈冥想、年度庆典",
+  "version": "2.0.1",
   "source": "builtin"
 }

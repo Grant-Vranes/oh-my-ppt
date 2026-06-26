@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   useGenerateStore,
+  useEditHistoryStore,
   useSessionDetailUiStore,
   useSessionStore,
   useTemplateStore,
@@ -36,6 +37,9 @@ export function useSessionToolbarController(sessionId: string) {
   const selectedPage = useMemo(
     () => pages.find((page) => page.id === selectedPageId) ?? pages[0] ?? null,
     [pages, selectedPageId]
+  )
+  const selectedPageHasPendingEdits = useEditHistoryStore((state) =>
+    state.hasPendingEdits(selectedPage?.pageId)
   )
   const sessionStatus =
     currentSession && typeof (currentSession as { status?: unknown }).status === 'string'
@@ -104,6 +108,7 @@ export function useSessionToolbarController(sessionId: string) {
     hasPages: pages.length > 0,
     isGenerating,
     historyDisabled,
+    selectedPageHasPendingEdits,
     canPreview: Boolean(selectedPage?.htmlPath || pages[0]?.htmlPath),
     canRevealFile: Boolean(selectedPage?.htmlPath),
     sessionTitle: currentSession?.title || '',

@@ -1,21 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ipc } from '@renderer/lib/ipc'
-import type {
-  EditableElementSnapshot,
-  EditModeMovePayload,
-  EditSelectionPayload
-} from '../components/preview/edit-mode-script'
+import type { EditableElementSnapshot } from '../components/preview/edit-mode-script'
 import type { PreviewIframeHandle } from '../components/preview/PreviewIframe'
 import { TooltipProvider } from '../components/ui/Tooltip'
 import { PageSidebar } from '../components/session-detail/sidebar'
 import { PreviewStage } from '../components/session-detail/preview'
 import { BrowseView } from '../components/session-detail/browse/BrowseView'
 import { StyleView } from '../components/session-detail/style/StyleView'
-import {
-  ElementInspectorPanel,
-  type ElementEditDraft
-} from '../components/session-detail/element-inspector'
+import { ElementInspectorPanel } from '../components/session-detail/element-inspector'
 import { SessionDetailRightPanel, WorkspaceRibbon } from '../components/session-detail/workspace'
 import { SessionToolbar } from '../components/session-detail/toolbar'
 import {
@@ -37,18 +30,10 @@ import {
   type ChatType
 } from '../components/session-detail/shared'
 import { useWorkspaceRibbonActionsRegistration } from '../components/session-detail/hooks/useWorkspaceRibbonController'
+import { buildSelectedElementFromSnapshot } from '../components/session-detail/element-inspector/elementEditUtils'
 import {
-  buildSelectedElementFromSnapshot,
-  EMPTY_ELEMENT_DRAFT,
-  fontSizeToNumber,
-  normalizeFontWeight,
-  normalizeTextAlign,
-  opacityToInput,
-  rgbToHex
-} from '../components/session-detail/element-inspector/elementEditUtils'
-import {
-  editTargetMatchesDeletedSelector,
   useEditHistoryStore,
+  useEditSessionStore,
   useGenerateStore,
   useGenerationActivityStore,
   useSessionDetailRuntimeStore,
@@ -76,36 +61,6 @@ const ADDED_TEXT_OFFSET_STEP = 28
 const ADDED_ART_TEXT_WIDTH = 560
 const ADDED_ART_TEXT_MIN_HEIGHT = 130
 const ADDED_MEDIA_OFFSET_STEP = 30
-
-type ElementPropertyStylePatch = {
-  zIndex?: number
-  opacity?: number
-  backgroundColor?: string
-  color?: string
-  fontSize?: string
-  fontWeight?: string
-  textAlign?: string
-  objectFit?: string
-}
-
-type ElementPropertyAttrsPatch = {
-  alt?: string
-  poster?: string
-  controls?: boolean
-  muted?: boolean
-  loop?: boolean
-  autoplay?: boolean
-  playsInline?: boolean
-  preload?: string
-}
-
-type ElementPropertyPatch = {
-  html?: string
-  text?: string
-  textTarget?: EditSelectionPayload['textTarget']
-  style?: ElementPropertyStylePatch
-  attrs?: ElementPropertyAttrsPatch
-}
 
 function escapeCssString(value: string): string {
   return value
@@ -145,9 +100,9 @@ export function SessionDetailPage(): React.JSX.Element {
   const workspaceTab = useSessionDetailUiStore((state) => state.workspaceTab)
   const activeChatRef = useRef<{ chatType: ChatType; pageId?: string }>({ chatType: 'page' })
   const editHistory = useEditHistoryStore()
-  const [isSavingEdits, setIsSavingEdits] = useState(false)
-  const [elementSelection, setElementSelection] = useState<EditSelectionPayload | null>(null)
-  const [elementDraft, setElementDraft] = useState<ElementEditDraft>(EMPTY_ELEMENT_DRAFT)
+  const isSavingEdits = useEditSessionStore((state) => state.isSavingEdits)
+  const elementSelection = useEditSessionStore((state) => state.selection)
+  const elementDraft = useEditSessionStore((state) => state.draft)
   const [previewRefreshKey, setPreviewRefreshKey] = useState(0)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [pendingDeleteSelector, setPendingDeleteSelector] = useState<string | null>(null)
@@ -161,7 +116,7 @@ export function SessionDetailPage(): React.JSX.Element {
     },
     []
   )
-  const { success: toastSuccess, error: toastError, info: toastInfo } = useToastStore()
+  const toastError = useToastStore((state) => state.error)
 
   const orderedPages = useMemo(
     () => [...currentPages].sort((a, b) => a.pageNumber - b.pageNumber),
@@ -181,10 +136,35 @@ export function SessionDetailPage(): React.JSX.Element {
     [normalizedOrderedPages, selectedPageId]
   )
 
+  const selectedPageRef = useRef(selectedPage)
+  selectedPageRef.current = selectedPage
+  const sessionIdRef = useRef(id)
+  sessionIdRef.current = id
+  const translateRef = useRef(t)
+  translateRef.current = t
+
+  useEffect(() => {
+    useEditSessionStore.getState().attach({
+      t: (key, params) => translateRef.current(key, params),
+      requestRefresh: () => setPreviewRefreshKey((key) => key + 1),
+      bumpThumbnail: (pageId) => useSessionDetailUiStore.getState().bumpThumbnailVersion(pageId),
+      getPageContext: () => {
+        const page = selectedPageRef.current
+        const sessionId = sessionIdRef.current
+        if (!page?.pageId || !page.htmlPath || !sessionId) return null
+        return { pageId: page.pageId, htmlPath: page.htmlPath, sessionId }
+      }
+    })
+  }, [])
+
+  const handlePreviewIframe = useCallback((handle: PreviewIframeHandle | null): void => {
+    previewIframeRef.current = handle
+    useEditSessionStore.getState().setIframeHandle(handle)
+  }, [])
+
   useEffect(() => {
     resetForPageChange()
-    setElementSelection(null)
-    setElementDraft(EMPTY_ELEMENT_DRAFT)
+    useEditSessionStore.getState().resetForPage()
     clearEditSelectedElement()
   }, [clearEditSelectedElement, resetForPageChange, selectedPage?.pageId])
 
@@ -216,6 +196,7 @@ export function SessionDetailPage(): React.JSX.Element {
       useGenerationActivityStore.getState().reset()
       useSessionDetailUiStore.getState().resetForSessionChange()
       useEditHistoryStore.getState().clear()
+      useEditSessionStore.getState().resetForPage()
     }
   }, [id, loadSession, resetForSessionChange, setMessages])
 
@@ -487,596 +468,6 @@ export function SessionDetailPage(): React.JSX.Element {
     return () => unsubscribe()
   }, [id])
 
-  const handleElementMoved = (payload: EditModeMovePayload): void => {
-    if (!id || !selectedPage?.htmlPath || !selectedPage.pageId) return
-
-    // Sync inspector panel layout fields when the selected element is dragged
-    // payload.x/y are translate offsets (--ppt-drag-x/y), convert to visual position for display
-    if (elementSelection && payload.selector === elementSelection.selector) {
-      const visualX =
-        payload.visualX ??
-        (elementSelection.pageBounds?.x ?? elementSelection.bounds?.x ?? 0) +
-          (payload.layoutMode === 'translate' ? payload.x : payload.deltaX)
-      const visualY =
-        payload.visualY ??
-        (elementSelection.pageBounds?.y ?? elementSelection.bounds?.y ?? 0) +
-          (payload.layoutMode === 'translate' ? payload.y : payload.deltaY)
-      setElementDraft((prev) => ({
-        ...prev,
-        layoutX: String(Math.round(visualX)),
-        layoutY: String(Math.round(visualY)),
-        ...(payload.width !== undefined ? { layoutWidth: String(Math.round(payload.width)) } : {}),
-        ...(payload.height !== undefined
-          ? { layoutHeight: String(Math.round(payload.height)) }
-          : {})
-      }))
-    }
-
-    const draftZIndex = parseInt(elementDraft.layoutZIndex, 10)
-    const nextEdit = {
-      pageId: selectedPage.pageId,
-      htmlPath: selectedPage.htmlPath,
-      selector: payload.selector,
-      x: payload.x,
-      y: payload.y,
-      width: payload.width ?? null,
-      height: payload.height ?? null,
-      childUpdates: payload.childUpdates ?? [],
-      isAbsoluteMode: payload.layoutMode === 'absolute',
-      zIndex: Number.isFinite(draftZIndex) ? draftZIndex : undefined
-    }
-    editHistory.upsertDragEdit(nextEdit)
-  }
-
-  // Unified save: persist both drag edits and text edits for the current page
-  const handleSaveAllEdits = async (): Promise<void> => {
-    if (!id || !selectedPage?.pageId || !selectedPage.htmlPath) return
-    commitCurrentElementEdit()
-    const snapshot = editHistory.getSnapshotForPage(selectedPage.pageId)
-    const hasEdits =
-      snapshot.dragEdits.length > 0 ||
-      snapshot.textEdits.length > 0 ||
-      snapshot.propertyEdits.length > 0 ||
-      snapshot.deletes.length > 0 ||
-      snapshot.addElements.length > 0
-    if (!hasEdits) {
-      previewIframeRef.current?.clearEditModeSelection()
-      setElementSelection(null)
-      setElementDraft(EMPTY_ELEMENT_DRAFT)
-      clearEditSelectedElement()
-      setPreviewRefreshKey((key) => key + 1)
-      return
-    }
-    setIsSavingEdits(true)
-    try {
-      // Fill htmlFragment for copied elements (empty at copy time, read from webview now)
-      const filledAddElements = await Promise.all(
-        snapshot.addElements.map(async (el) => {
-          if (el.htmlFragment) return el
-          const selector = el.assignedBlockId
-            ? `body[data-page-id="${el.pageId}"] [data-block-id="${el.assignedBlockId}"]`
-            : ''
-          if (!selector || !previewIframeRef.current) return el
-          try {
-            const html = await (previewIframeRef.current as any).readElementHtml?.(selector)
-            return html ? { ...el, htmlFragment: html } : el
-          } catch {
-            return el
-          }
-        })
-      )
-      // Filter out edits for elements that are also pending deletion.
-      const isDeletedTarget = (selector: string, blockId?: string): boolean =>
-        snapshot.deletes.some((d) =>
-          editTargetMatchesDeletedSelector(selector, d.selector, blockId)
-        )
-      const safeDragEdits = snapshot.dragEdits.filter((e) => !isDeletedTarget(e.selector))
-      const safeTextEdits = snapshot.textEdits.filter((e) => !isDeletedTarget(e.selector))
-      const safePropertyEdits = snapshot.propertyEdits.filter(
-        (e) => !isDeletedTarget(e.selector, e.blockId)
-      )
-      // Build descriptive prompt for history
-      const parts: string[] = []
-      const ac = snapshot.addElements.length
-      const dc = snapshot.deletes.length
-      const rc = safeDragEdits.length
-      const tc = safeTextEdits.length
-      const pc = safePropertyEdits.length
-      if (ac > 0) parts.push(`添加 ${ac} 个元素`)
-      if (dc > 0) parts.push(`删除 ${dc} 个元素`)
-      if (rc > 0) parts.push(`调整 ${rc} 个元素位置`)
-      if (tc > 0) parts.push(`编辑 ${tc} 个元素文字`)
-      if (pc > 0) parts.push(`编辑 ${pc} 个元素属性`)
-      const prompt = parts.join('、') || '手动调整'
-      const result = await ipc.saveEditBatch({
-        sessionId: id,
-        htmlPath: selectedPage.htmlPath,
-        pageId: selectedPage.pageId,
-        dragEdits: safeDragEdits,
-        textEdits: safeTextEdits,
-        propertyEdits: safePropertyEdits,
-        deletes: snapshot.deletes,
-        addElements: filledAddElements,
-        prompt
-      })
-      if (!result.success) throw new Error(t('sessionDetail.layoutSaveFailed'))
-      editHistory.markPageSaved(selectedPage.pageId)
-      previewIframeRef.current?.clearEditModeSelection()
-      setElementSelection(null)
-      setElementDraft(EMPTY_ELEMENT_DRAFT)
-      clearEditSelectedElement()
-      useSessionDetailUiStore.getState().bumpThumbnailVersion(selectedPage.pageId)
-      setPreviewRefreshKey((key) => key + 1)
-      const totalCount =
-        result.dragCount +
-        result.textCount +
-        (result.propertyCount || 0) +
-        result.deleteCount +
-        result.addCount
-      toastSuccess(t('sessionDetail.adjustmentsSaved', { count: totalCount }))
-    } catch (error) {
-      toastError(error instanceof Error ? error.message : t('sessionDetail.layoutSaveFailed'))
-    } finally {
-      setIsSavingEdits(false)
-    }
-  }
-
-  const handleDiscardAllEdits = (): void => {
-    if (!selectedPage?.pageId) return
-    const snapshot = editHistory.getSnapshotForPage(selectedPage.pageId)
-    const hadPending =
-      snapshot.dragEdits.length > 0 ||
-      snapshot.textEdits.length > 0 ||
-      snapshot.propertyEdits.length > 0 ||
-      snapshot.deletes.length > 0 ||
-      snapshot.addElements.length > 0
-    editHistory.clearPage(selectedPage.pageId)
-    previewIframeRef.current?.clearEditModeSelection()
-    setElementSelection(null)
-    setElementDraft(EMPTY_ELEMENT_DRAFT)
-    clearEditSelectedElement()
-    if (hadPending) setPreviewRefreshKey((k) => k + 1)
-    if (hadPending) toastInfo(t('sessionDetail.discardedAdjustments'))
-  }
-
-  const handleDeleteElement = (): void => {
-    if (!selectedPage?.htmlPath || !selectedPage.pageId || !elementSelection) return
-    const selector = elementSelection.selector
-    editHistory.addDelete({
-      pageId: selectedPage.pageId,
-      htmlPath: selectedPage.htmlPath,
-      selector
-    })
-    previewIframeRef.current?.hideElement(selector)
-    previewIframeRef.current?.clearEditModeSelection()
-    setElementSelection(null)
-    setElementDraft(EMPTY_ELEMENT_DRAFT)
-    clearEditSelectedElement()
-  }
-
-  const handleDeleteBySelector = (selector: string): void => {
-    if (!selectedPage?.htmlPath || !selectedPage.pageId || !selector) return
-    // Commit any pending inspector edit for the element being deleted.
-    if (elementSelection && elementSelection.selector === selector) {
-      commitCurrentElementEdit()
-    }
-    editHistory.addDelete({
-      pageId: selectedPage.pageId,
-      htmlPath: selectedPage.htmlPath,
-      selector
-    })
-    previewIframeRef.current?.hideElement(selector)
-    previewIframeRef.current?.clearEditModeSelection()
-    setElementSelection(null)
-    setElementDraft(EMPTY_ELEMENT_DRAFT)
-    clearEditSelectedElement()
-  }
-
-  const handleElementSelected = (payload: EditSelectionPayload): void => {
-    // Commit previous edit before switching to new element.
-    commitCurrentElementEdit()
-    if (!payload.snapshot) {
-      setElementSelection(null)
-      setElementDraft(EMPTY_ELEMENT_DRAFT)
-      clearEditSelectedElement()
-      return
-    }
-    setElementSelection(payload)
-    useSessionDetailUiStore.getState().setEditSelectedElement(payload.selector)
-    const zValue = payload.zIndex !== undefined ? String(payload.zIndex) : '10'
-    const bounds = payload.snapshot.metrics.page
-    const computed = payload.snapshot.computed
-    const attrs = payload.snapshot.attrs
-    if (payload.isText) {
-      setElementDraft({
-        text: payload.textTarget?.text ?? payload.text,
-        html: payload.html || payload.snapshot.text?.html || '',
-        color: rgbToHex(computed.color),
-        fontSize: fontSizeToNumber(computed.fontSize),
-        fontWeight: normalizeFontWeight(computed.fontWeight),
-        textAlign: normalizeTextAlign(computed.textAlign),
-        layoutX: String(Math.round(bounds.x)),
-        layoutY: String(Math.round(bounds.y)),
-        layoutWidth: String(Math.round(bounds.width)),
-        layoutHeight: String(Math.round(bounds.height)),
-        layoutZIndex: zValue,
-        opacity: opacityToInput(computed.opacity),
-        backgroundColor: rgbToHex(computed.backgroundColor),
-        objectFit: computed.objectFit || 'contain',
-        alt: attrs.alt || '',
-        poster: attrs.poster || '',
-        controls: Boolean(attrs.controls),
-        muted: Boolean(attrs.muted),
-        loop: Boolean(attrs.loop),
-        autoplay: Boolean(attrs.autoplay),
-        playsInline: attrs.playsInline !== false,
-        preload: attrs.preload || 'metadata',
-        artTextTemplateId: attrs.artTextTemplate || ''
-      })
-    } else {
-      setElementDraft({
-        ...EMPTY_ELEMENT_DRAFT,
-        layoutX: String(Math.round(bounds.x)),
-        layoutY: String(Math.round(bounds.y)),
-        layoutWidth: String(Math.round(bounds.width)),
-        layoutHeight: String(Math.round(bounds.height)),
-        layoutZIndex: zValue,
-        opacity: opacityToInput(computed.opacity),
-        backgroundColor: rgbToHex(computed.backgroundColor),
-        objectFit: computed.objectFit || 'contain',
-        alt: attrs.alt || '',
-        poster: attrs.poster || '',
-        controls: Boolean(attrs.controls),
-        muted: Boolean(attrs.muted),
-        loop: Boolean(attrs.loop),
-        autoplay: Boolean(attrs.autoplay),
-        playsInline: attrs.playsInline !== false,
-        preload: attrs.preload || 'metadata',
-        artTextTemplateId: attrs.artTextTemplate || ''
-      })
-    }
-  }
-
-  const getCommitFieldsForSelection = (
-    selection: EditSelectionPayload
-  ): Set<keyof ElementEditDraft> => {
-    const fields = new Set<keyof ElementEditDraft>()
-    const capabilities = selection.capabilities || []
-    if (capabilities.includes('layer')) fields.add('layoutZIndex')
-    if (capabilities.includes('appearance')) {
-      fields.add('opacity')
-      fields.add('backgroundColor')
-    }
-    if (capabilities.includes('media')) {
-      fields.add('objectFit')
-      fields.add('alt')
-      fields.add('poster')
-      fields.add('controls')
-      fields.add('muted')
-      fields.add('loop')
-      fields.add('autoplay')
-      fields.add('playsInline')
-      fields.add('preload')
-    }
-    if (capabilities.includes('text')) {
-      fields.add('html')
-      fields.add('text')
-      fields.add('color')
-      fields.add('fontSize')
-      fields.add('fontWeight')
-      fields.add('textAlign')
-    }
-    return fields
-  }
-
-  const buildElementPropertyPatch = (
-    draft: ElementEditDraft,
-    fields?: Array<keyof ElementEditDraft>
-  ): ElementPropertyPatch | null => {
-    if (!elementSelection?.snapshot) return null
-
-    const commitFields =
-      fields && fields.length > 0 ? new Set(fields) : getCommitFieldsForSelection(elementSelection)
-    const initial = elementSelection.snapshot
-    const style: ElementPropertyStylePatch = {}
-    const attrs: ElementPropertyAttrsPatch = {}
-    let text: string | undefined
-    let html: string | undefined
-
-    if (commitFields.has('layoutZIndex')) {
-      const value = parseInt(draft.layoutZIndex, 10)
-      const initialValue = elementSelection.zIndex ?? 10
-      if (Number.isFinite(value) && value !== initialValue) style.zIndex = value
-    }
-    if (commitFields.has('opacity')) {
-      const value = Number(draft.opacity)
-      const initialValue = Number(opacityToInput(initial.computed.opacity))
-      if (Number.isFinite(value) && value !== initialValue) style.opacity = value
-    }
-    if (
-      commitFields.has('backgroundColor') &&
-      draft.backgroundColor !== rgbToHex(initial.computed.backgroundColor)
-    ) {
-      style.backgroundColor = draft.backgroundColor
-    }
-    if (
-      commitFields.has('objectFit') &&
-      draft.objectFit !== (initial.computed.objectFit || 'contain')
-    ) {
-      style.objectFit = draft.objectFit
-    }
-    const initialHtml = initial.text?.html || ''
-    if (commitFields.has('html') && draft.html.trim() && draft.html.trim() !== initialHtml.trim()) {
-      html = draft.html.trim()
-    }
-    const initialText = elementSelection.textTarget?.text ?? initial.text?.value ?? ''
-    if (
-      !html &&
-      commitFields.has('text') &&
-      draft.text.trim() &&
-      draft.text.trim() !== initialText
-    ) {
-      text = draft.text.trim()
-    }
-    if (commitFields.has('color') && draft.color !== rgbToHex(initial.computed.color)) {
-      style.color = draft.color
-    }
-    if (
-      commitFields.has('fontSize') &&
-      draft.fontSize !== fontSizeToNumber(initial.computed.fontSize)
-    ) {
-      style.fontSize = draft.fontSize ? `${draft.fontSize}px` : undefined
-    }
-    if (
-      commitFields.has('fontWeight') &&
-      draft.fontWeight !== normalizeFontWeight(initial.computed.fontWeight)
-    ) {
-      style.fontWeight = draft.fontWeight
-    }
-    if (
-      commitFields.has('textAlign') &&
-      draft.textAlign !== normalizeTextAlign(initial.computed.textAlign)
-    ) {
-      style.textAlign = draft.textAlign
-    }
-    if (commitFields.has('alt') && draft.alt !== (initial.attrs.alt || '')) attrs.alt = draft.alt
-    if (commitFields.has('poster') && draft.poster !== (initial.attrs.poster || '')) {
-      attrs.poster = draft.poster
-    }
-    if (commitFields.has('controls') && draft.controls !== Boolean(initial.attrs.controls)) {
-      attrs.controls = draft.controls
-    }
-    if (commitFields.has('muted') && draft.muted !== Boolean(initial.attrs.muted)) {
-      attrs.muted = draft.muted
-    }
-    if (commitFields.has('loop') && draft.loop !== Boolean(initial.attrs.loop)) {
-      attrs.loop = draft.loop
-    }
-    if (commitFields.has('autoplay') && draft.autoplay !== Boolean(initial.attrs.autoplay)) {
-      attrs.autoplay = draft.autoplay
-    }
-    if (
-      commitFields.has('playsInline') &&
-      draft.playsInline !== (initial.attrs.playsInline !== false)
-    ) {
-      attrs.playsInline = draft.playsInline
-    }
-    if (commitFields.has('preload') && draft.preload !== (initial.attrs.preload || 'metadata')) {
-      attrs.preload = draft.preload
-    }
-
-    if (
-      html === undefined &&
-      text === undefined &&
-      Object.keys(style).length === 0 &&
-      Object.keys(attrs).length === 0
-    ) {
-      return null
-    }
-    return {
-      html,
-      text,
-      textTarget: text !== undefined ? elementSelection.textTarget : undefined,
-      style: Object.keys(style).length > 0 ? style : undefined,
-      attrs: Object.keys(attrs).length > 0 ? attrs : undefined
-    }
-  }
-
-  const commitElementDraft = (
-    draft: ElementEditDraft,
-    fields?: Array<keyof ElementEditDraft>
-  ): boolean => {
-    if (!elementSelection || !selectedPage?.pageId || !selectedPage.htmlPath) return false
-    const patch = buildElementPropertyPatch(draft, fields)
-    if (!patch) return false
-    editHistory.upsertPropertyEdit({
-      pageId: selectedPage.pageId,
-      htmlPath: selectedPage.htmlPath,
-      selector: elementSelection.selector,
-      blockId: elementSelection.blockId,
-      patch
-    })
-    return true
-  }
-
-  const commitCurrentElementEdit = (): boolean => commitElementDraft(elementDraft)
-
-  const handleTextDraftChange = (
-    draft: ElementEditDraft,
-    options?: { commit?: boolean; fields?: Array<keyof ElementEditDraft> }
-  ): void => {
-    const liveStyle: {
-      zIndex?: number
-      opacity?: number
-      backgroundColor?: string
-      objectFit?: string
-      textAlign?: string
-    } = {}
-    const liveAttrs: {
-      alt?: string
-      poster?: string
-      controls?: boolean
-      muted?: boolean
-      loop?: boolean
-      autoplay?: boolean
-      playsInline?: boolean
-      preload?: string
-    } = {}
-
-    if (
-      elementSelection &&
-      selectedPage?.htmlPath &&
-      selectedPage?.pageId &&
-      draft.layoutZIndex !== elementDraft.layoutZIndex
-    ) {
-      const zNum = parseInt(draft.layoutZIndex, 10)
-      if (Number.isFinite(zNum)) liveStyle.zIndex = zNum
-    }
-    if (draft.opacity !== elementDraft.opacity) {
-      const opacity = Number(draft.opacity)
-      if (Number.isFinite(opacity)) liveStyle.opacity = opacity
-    }
-    if (draft.backgroundColor !== elementDraft.backgroundColor) {
-      liveStyle.backgroundColor = draft.backgroundColor
-    }
-    if (draft.objectFit !== elementDraft.objectFit) {
-      liveStyle.objectFit = draft.objectFit
-    }
-    if (draft.textAlign !== elementDraft.textAlign) {
-      liveStyle.textAlign = draft.textAlign
-    }
-    if (draft.alt !== elementDraft.alt) liveAttrs.alt = draft.alt
-    if (draft.poster !== elementDraft.poster) liveAttrs.poster = draft.poster
-    if (draft.controls !== elementDraft.controls) liveAttrs.controls = draft.controls
-    if (draft.muted !== elementDraft.muted) liveAttrs.muted = draft.muted
-    if (draft.loop !== elementDraft.loop) liveAttrs.loop = draft.loop
-    if (draft.autoplay !== elementDraft.autoplay) liveAttrs.autoplay = draft.autoplay
-    if (draft.playsInline !== elementDraft.playsInline) liveAttrs.playsInline = draft.playsInline
-    if (draft.preload !== elementDraft.preload) liveAttrs.preload = draft.preload
-
-    setElementDraft(draft)
-    // Live preview in iframe
-    if (elementSelection && selectedPage?.pageId) {
-      // Z-index: use dedicated function to avoid clearing element content
-      const zNum = parseInt(draft.layoutZIndex, 10)
-      if (Number.isFinite(zNum) && draft.layoutZIndex !== elementDraft.layoutZIndex) {
-        previewIframeRef.current?.applyZIndex(elementSelection.selector, zNum)
-      }
-      if (Object.keys(liveStyle).length > 0 || Object.keys(liveAttrs).length > 0) {
-        previewIframeRef.current?.applyElementProperties(elementSelection.selector, {
-          style: liveStyle,
-          attrs: liveAttrs
-        })
-      }
-      // Text & style: only for text elements
-      if (elementSelection.isText) {
-        previewIframeRef.current?.liveUpdateElement(elementSelection.selector, {
-          html: draft.html,
-          text: draft.text,
-          textTarget: elementSelection.textTarget,
-          style: {
-            color: draft.color,
-            fontSize: draft.fontSize ? `${draft.fontSize}px` : undefined,
-            fontWeight: draft.fontWeight
-          }
-        })
-      }
-
-      if (options?.commit) {
-        commitElementDraft(draft, options.fields)
-      }
-    }
-  }
-
-  const replayPendingEdits = (): void => {
-    if (!selectedPage?.pageId) return
-    const snapshot = editHistory.getSnapshotForPage(selectedPage.pageId)
-    const iframe = previewIframeRef.current
-    if (!iframe) return
-    for (const d of snapshot.deletes) {
-      iframe.hideElement(d.selector)
-    }
-    for (const a of snapshot.addElements) {
-      iframe.injectElement(a.parentSelector, a.htmlFragment, a.insertIndex)
-    }
-    for (const d of snapshot.dragEdits) {
-      iframe.applyDragStyle(d.selector, {
-        x: d.x,
-        y: d.y,
-        width: d.width ?? undefined,
-        height: d.height ?? undefined,
-        isAbsoluteMode: d.isAbsoluteMode
-      })
-      if (d.zIndex !== undefined) {
-        iframe.applyZIndex(d.selector, d.zIndex)
-      }
-      if (d.childUpdates.length > 0) {
-        iframe.applyChildUpdates(d.selector, d.childUpdates)
-      }
-    }
-    for (const t of snapshot.textEdits) {
-      iframe.liveUpdateElement(t.selector, {
-        text: t.patch.text,
-        textTarget: undefined,
-        style: t.patch.style
-      })
-    }
-    for (const p of snapshot.propertyEdits) {
-      iframe.applyElementProperties(p.selector, {
-        style: p.patch.style,
-        attrs: p.patch.attrs
-      })
-      if (
-        p.patch.html ||
-        p.patch.text ||
-        p.patch.style?.color ||
-        p.patch.style?.fontSize ||
-        p.patch.style?.fontWeight
-      ) {
-        iframe.liveUpdateElement(p.selector, {
-          text: p.patch.text,
-          html: p.patch.html,
-          textTarget: p.patch.textTarget,
-          style: {
-            color: p.patch.style?.color,
-            fontSize: p.patch.style?.fontSize,
-            fontWeight: p.patch.style?.fontWeight
-          }
-        })
-      }
-    }
-  }
-
-  const handleUndo = (): void => {
-    if (!selectedPage?.pageId) return
-    commitCurrentElementEdit()
-    if (!editHistory.undo(selectedPage.pageId)) return
-    previewIframeRef.current?.clearEditModeSelection()
-    setElementSelection(null)
-    setElementDraft(EMPTY_ELEMENT_DRAFT)
-    clearEditSelectedElement()
-    setPreviewRefreshKey((key) => key + 1)
-  }
-
-  const handleRedo = (): void => {
-    if (!selectedPage?.pageId) return
-    if (!editHistory.redo(selectedPage.pageId)) return
-    previewIframeRef.current?.clearEditModeSelection()
-    setElementSelection(null)
-    setElementDraft(EMPTY_ELEMENT_DRAFT)
-    clearEditSelectedElement()
-    setPreviewRefreshKey((key) => key + 1)
-  }
-
-  const handleCancelElementEdit = (): void => {
-    // Commit current inspector edit before closing panel.
-    commitCurrentElementEdit()
-    previewIframeRef.current?.clearEditModeSelection()
-    setElementSelection(null)
-    setElementDraft(EMPTY_ELEMENT_DRAFT)
-    clearEditSelectedElement()
-  }
-
   const handleCopyElement = async (): Promise<void> => {
     if (!elementSelection || !selectedPage?.pageId || !selectedPage.htmlPath) return
     const blockId = 'select-arcsin1-' + nanoid(8)
@@ -1122,7 +513,7 @@ export function SessionDetailPage(): React.JSX.Element {
       assignedBlockId: blockId,
       insertIndex: -1
     })
-    handleElementSelected({
+    useEditSessionStore.getState().selectElement({
       selector: newSelector,
       blockId,
       label: newSelector,
@@ -1200,7 +591,7 @@ export function SessionDetailPage(): React.JSX.Element {
     ].join('; ')
     const htmlFragment = `<p data-block-id="${blockId}" style="${textStyle};">${escapeHtmlText(defaultText)}</p>`
 
-    commitCurrentElementEdit()
+    useEditSessionStore.getState().commitCurrentDraft()
     editHistory.addElement({
       pageId: selectedPage.pageId,
       htmlPath: selectedPage.htmlPath,
@@ -1215,7 +606,7 @@ export function SessionDetailPage(): React.JSX.Element {
     if (useSessionDetailUiStore.getState().selectedPageId !== selectedPage.id) return
     const snapshot = await readElementSnapshotWithRetry(selector)
     if (!snapshot) return
-    handleElementSelected(
+    useEditSessionStore.getState().selectElement(
       buildSelectedElementFromSnapshot({
         selector,
         blockId,
@@ -1252,7 +643,7 @@ export function SessionDetailPage(): React.JSX.Element {
       zIndex: zIdx
     })
 
-    commitCurrentElementEdit()
+    useEditSessionStore.getState().commitCurrentDraft()
     editHistory.addElement({
       pageId: selectedPage.pageId,
       htmlPath: selectedPage.htmlPath,
@@ -1267,7 +658,7 @@ export function SessionDetailPage(): React.JSX.Element {
     if (useSessionDetailUiStore.getState().selectedPageId !== selectedPage.id) return
     const snapshot = await readElementSnapshotWithRetry(selector)
     if (!snapshot) return
-    handleElementSelected(
+    useEditSessionStore.getState().selectElement(
       buildSelectedElementFromSnapshot({
         selector,
         blockId,
@@ -1310,7 +701,7 @@ export function SessionDetailPage(): React.JSX.Element {
       : isVideo
         ? `<video src="${safeRelativePath}" data-block-id="${blockId}" style="position:absolute; left:${left}px; top:${top}px; width:${w}px; height:${h}px; z-index:${zIdx}; object-fit:${objectFit};" controls playsinline preload="metadata"></video>`
         : `<img src="${safeRelativePath}" alt="" data-block-id="${blockId}" style="position:absolute; left:${left}px; top:${top}px; width:${w}px; height:${h}px; z-index:${zIdx}; object-fit:${objectFit};" />`
-    commitCurrentElementEdit()
+    useEditSessionStore.getState().commitCurrentDraft()
     const addElementItem = {
       pageId: selectedPage.pageId,
       htmlPath: selectedPage.htmlPath,
@@ -1363,7 +754,7 @@ export function SessionDetailPage(): React.JSX.Element {
     if (useSessionDetailUiStore.getState().selectedPageId !== selectedPage.id) return true
     const snapshot = await readElementSnapshotWithRetry(selector)
     if (snapshot) {
-      handleElementSelected(
+      useEditSessionStore.getState().selectElement(
         buildSelectedElementFromSnapshot({
           selector,
           blockId,
@@ -1403,10 +794,10 @@ export function SessionDetailPage(): React.JSX.Element {
   }
 
   useWorkspaceRibbonActionsRegistration({
-    onUndo: handleUndo,
-    onRedo: handleRedo,
-    onSaveCurrentPage: () => void handleSaveAllEdits(),
-    onDiscardAllEdits: handleDiscardAllEdits,
+    onUndo: () => useEditSessionStore.getState().undo(),
+    onRedo: () => useEditSessionStore.getState().redo(),
+    onSaveCurrentPage: () => void useEditSessionStore.getState().save(),
+    onDiscardAllEdits: () => useEditSessionStore.getState().discardAll(),
     onBackToSessions: handleBackToSessions,
     onAddFromLibrary: handleAddFromLibrary,
     onAddFromLocal: (type) => void handleAddFromLocal(type),
@@ -1446,17 +837,19 @@ export function SessionDetailPage(): React.JSX.Element {
 
               <div className="flex min-h-0 flex-1">
                 <PreviewStage
-                  ref={previewIframeRef}
+                  ref={handlePreviewIframe}
                   selectedPage={selectedPage}
                   sessionTitle={currentSession?.title}
                   previewRefreshKey={previewRefreshKey}
-                  onElementMoved={handleElementMoved}
-                  onElementSelected={handleElementSelected}
-                  onCancelElementEdit={handleCancelElementEdit}
-                  onDiscardAllEdits={handleDiscardAllEdits}
-                  onUndo={handleUndo}
-                  onRedo={handleRedo}
-                  onReplayPendingEdits={replayPendingEdits}
+                  onElementMoved={(payload) => useEditSessionStore.getState().handleMoved(payload)}
+                  onElementSelected={(payload) =>
+                    useEditSessionStore.getState().selectElement(payload)
+                  }
+                  onCancelElementEdit={() => useEditSessionStore.getState().cancelEdit()}
+                  onDiscardAllEdits={() => useEditSessionStore.getState().discardAll()}
+                  onUndo={() => useEditSessionStore.getState().undo()}
+                  onRedo={() => useEditSessionStore.getState().redo()}
+                  onReplayPendingEdits={() => useEditSessionStore.getState().replayPending()}
                   onDeleteRequest={(selector) => {
                     setPendingDeleteSelector(selector)
                     setDeleteConfirmOpen(true)
@@ -1469,10 +862,12 @@ export function SessionDetailPage(): React.JSX.Element {
                       <ElementInspectorPanel
                         selection={elementSelection}
                         draft={elementDraft}
-                        onDraftChange={handleTextDraftChange}
-                        onClose={handleCancelElementEdit}
+                        onDraftChange={(draft, options) =>
+                          useEditSessionStore.getState().updateDraft(draft, options)
+                        }
+                        onClose={() => useEditSessionStore.getState().cancelEdit()}
                         onCopy={handleCopyElement}
-                        onDelete={handleDeleteElement}
+                        onDelete={() => useEditSessionStore.getState().deleteSelected()}
                       />
                     ) : undefined
                   }
@@ -1504,9 +899,9 @@ export function SessionDetailPage(): React.JSX.Element {
           }}
           onConfirm={() => {
             if (pendingDeleteSelector) {
-              handleDeleteBySelector(pendingDeleteSelector)
+              useEditSessionStore.getState().deleteBySelector(pendingDeleteSelector)
             } else {
-              handleDeleteElement()
+              useEditSessionStore.getState().deleteSelected()
             }
             setPendingDeleteSelector(null)
             setDeleteConfirmOpen(false)

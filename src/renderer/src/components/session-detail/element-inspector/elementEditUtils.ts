@@ -27,7 +27,10 @@ export const EMPTY_ELEMENT_DRAFT: ElementEditDraft = {
   autoplay: false,
   playsInline: true,
   preload: 'metadata',
-  artTextTemplateId: ''
+  artTextTemplateId: '',
+  formulaLatex: '',
+  formulaHtml: '',
+  formulaDisplayMode: false
 }
 
 export function rgbToHex(value: string | undefined): string {

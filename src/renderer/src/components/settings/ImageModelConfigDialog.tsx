@@ -143,7 +143,7 @@ export function ImageModelConfigDialog({
                   <a
                     href={providerDocs.url}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 rounded-md border border-[#cbbfa8]/80 bg-[#fffaf1]/75 px-2 py-0.5 font-medium text-[#5d6b4d] transition-colors hover:border-[#aebd9a] hover:text-[#3e4a32]"
                   >
                     {t('settings.imageProviderOfficialDocs')}

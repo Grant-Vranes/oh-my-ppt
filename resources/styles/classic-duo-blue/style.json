@@ -5,7 +5,7 @@
     "en": "Classic Duo Blue"
   },
   "description": "暖米黄配深海蓝，高级沉稳书卷气",
-  "category": "浅色 · 沉静",
+  "category": "浅色 · 专业",
   "aliases": [
     "双色",
     "米黄",
@@ -14,7 +14,7 @@
     "duo",
     "高级"
   ],
-  "styleCase": "高端品牌、金融咨询、学术报告、年度总结、企业年报、典籍文化",
-  "version": "2.0.0",
+  "styleCase": "商业汇报、学术研究、传统文化",
+  "version": "2.0.1",
   "source": "builtin"
 }

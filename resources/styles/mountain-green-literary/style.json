@@ -5,9 +5,17 @@
     "en": "Mountain Green Literary"
   },
   "description": "深绿山峦黄草地的文艺夏日",
-  "category": "自然 · 文艺",
-  "aliases": ["山野", "夏天", "深绿", "文艺", "奔跑", "mountain", "山峦"],
-  "styleCase": "自然户外环保主题、童年回忆、文艺诗歌散文配图、手账素材、夏令营拓展、乡村旅游生态推广、青少年成长内容",
-  "version": "2.0.0",
+  "category": "插画 · 手绘",
+  "aliases": [
+    "山野",
+    "夏天",
+    "深绿",
+    "文艺",
+    "奔跑",
+    "mountain",
+    "山峦"
+  ],
+  "styleCase": "旅游出行、教学科普、生活方式",
+  "version": "2.0.2",
   "source": "builtin"
 }

@@ -5,7 +5,7 @@
     "en": "Soft Pastel"
   },
   "description": "马卡龙三色在画布上轻轻晕开，柔软得像一声早安",
-  "category": "浅色 · 沉静",
+  "category": "浅色 · 柔和",
   "aliases": [
     "pastel",
     "soft",
@@ -13,7 +13,7 @@
     "柔和",
     "soft-pastel"
   ],
-  "styleCase": "产品发布、面向消费者的展示、轻松话题分享、亲子教育",
-  "version": "2.0.0",
+  "styleCase": "产品发布、生活方式、亲子儿童",
+  "version": "2.0.1",
   "source": "builtin"
 }

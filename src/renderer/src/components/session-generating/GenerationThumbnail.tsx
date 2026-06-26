@@ -13,7 +13,7 @@ export function GenerationThumbnail({
   return (
     <div
       className={cn(
-        'group relative overflow-hidden rounded-xl border bg-[#fffaf1]/78 shadow-[0_16px_34px_rgba(70,82,58,0.12)] transition-all duration-500',
+        'group relative flex w-full min-w-0 flex-col overflow-hidden rounded-xl border bg-[#fffaf1]/78 p-1.5 shadow-[0_16px_34px_rgba(70,82,58,0.12)] transition-all duration-500',
         page.status === 'completed' && 'border-[#b8d3a6] translate-y-0 opacity-100',
         page.status === 'generating' &&
           'border-[#8fb873] bg-[#f6fbef]/88 shadow-[0_18px_40px_rgba(95,132,72,0.22)]',
@@ -21,7 +21,10 @@ export function GenerationThumbnail({
         page.status === 'pending' && 'border-[#dfd4bf]/72 opacity-72'
       )}
     >
-      <div className="relative aspect-video overflow-hidden rounded-t-[0.72rem] bg-[#efe6d6]">
+      <div
+        className="relative w-full min-w-0 shrink-0 overflow-hidden bg-[#f5f1e8]/88 shadow-[0_5px_14px_rgba(93,107,77,0.08)]"
+        style={{ aspectRatio: '16/9', contain: 'paint' }}
+      >
         {hasPreview ? (
           <PreviewIframe
             key={`generating-thumb-${page.id}-${page.previewVersion ?? 0}`}
@@ -75,7 +78,7 @@ export function GenerationThumbnail({
         )}
       </div>
 
-      <div className="flex items-center justify-between gap-2 px-2 py-2">
+      <div className="flex w-full min-w-0 items-center justify-between gap-2 px-0.5 pb-0.5 pt-2">
         <span className="shrink-0 rounded-md bg-[#5d6b4d]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[#4f613f]">
           P{page.pageNumber}
         </span>

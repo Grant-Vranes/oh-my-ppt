@@ -1,60 +1,22 @@
-import type { DesignContract, SessionDeckGenerationContext } from '../tools/types'
+import type { SessionDeckGenerationContext } from '../tools/types'
 import { formatLayoutIntentPrompt } from '@shared/layout-intent'
 import { CHART_SKILL_NAME, formatSkillUsageRequirement } from '../skills/skill-contract'
 import {
   CANVAS_CONSTRAINTS,
+  CONTENT_EXPANSION_RULES,
   CONTENT_LANGUAGE_RULES,
   FRONTEND_CAPABILITIES,
   LAYOUT_COLLISION_RULES,
+  LAYOUT_DELIVERY_GUARD,
   PAGE_SEMANTIC_STRUCTURE,
+  SLIDE_THESIS_RULES,
   SOURCE_DOCUMENT_FACT_RULE,
   SOURCE_DOCUMENT_LOCATE_THEN_READ_RULE,
   SOURCE_DOCUMENT_READ_STRATEGY,
+  SOURCE_GROUNDED_EXPANSION_RULES,
   SOURCE_UNSUPPORTED_CLAIMS,
-  STABLE_HTML_FRAGMENT_PROTOCOL,
-  buildOutlinePageList,
-  formatDesignContract
+  STABLE_HTML_FRAGMENT_PROTOCOL
 } from './shared'
-
-export function buildDeckGenerationPrompt(context: SessionDeckGenerationContext): string {
-  const pageList = buildOutlinePageList(context)
-  const sourceDocumentPaths = (context.sourceDocumentPaths || []).filter(Boolean)
-  const sourceDocumentRequirements =
-    sourceDocumentPaths.length > 0
-      ? [
-          '',
-          'Source document requirements:',
-          '- Source documents are the highest-priority content evidence. Do not rely only on the summary or page outline.',
-          `- Source document paths: ${sourceDocumentPaths.join(', ')}`,
-          SOURCE_DOCUMENT_READ_STRATEGY,
-          `- Preserve source facts, terminology, hierarchy, and conclusions. Do not add unsupported ${SOURCE_UNSUPPORTED_CLAIMS} or generic narrative pages.`
-        ]
-      : []
-  return [
-    'Use the tools to write the deck content into each /<pageId>.html according to the user requirements and page outline below:',
-    '',
-    `Topic: ${context.topic}`,
-    `Deck title: ${context.deckTitle}`,
-    'Page outline:',
-    pageList,
-    '',
-    'Additional user requirements:',
-    context.userMessage,
-    ...sourceDocumentRequirements,
-    '',
-    CONTENT_LANGUAGE_RULES,
-    '',
-    CANVAS_CONSTRAINTS,
-    '',
-    LAYOUT_COLLISION_RULES,
-    '',
-    FRONTEND_CAPABILITIES,
-    '',
-    PAGE_SEMANTIC_STRUCTURE,
-    '',
-    'Fill each slide strictly according to the content points in the page outline above.'
-  ].join('\n')
-}
 
 export function buildSinglePageGenerationPrompt(args: {
   topic: string
@@ -68,7 +30,6 @@ export function buildSinglePageGenerationPrompt(args: {
   referenceDocumentSnippets?: string
   isRetryMode?: boolean
   writeToolName?: 'update_single_page_file' | 'update_template_page_file'
-  designContract?: DesignContract
   retryContext?: {
     attempt: number
     maxRetries: number
@@ -120,6 +81,7 @@ export function buildSinglePageGenerationPrompt(args: {
             `- Source document paths: ${args.sourceDocumentPaths.join(', ')}`,
             SOURCE_DOCUMENT_READ_STRATEGY,
             SOURCE_DOCUMENT_FACT_RULE,
+            SOURCE_GROUNDED_EXPANSION_RULES,
             args.isRetryMode
               ? '- This is a failed-slide retry. Match source material only around this slide title and content points; do not reconstruct the whole deck outline.'
               : ''
@@ -133,6 +95,7 @@ export function buildSinglePageGenerationPrompt(args: {
             '- First extract keywords, business objects, time points, system names, and metrics from this slide title and content points; then match relevant source passages.',
             '- Do not copy the whole document indiscriminately.',
             SOURCE_DOCUMENT_FACT_RULE,
+            SOURCE_GROUNDED_EXPANSION_RULES,
             args.isRetryMode
               ? '- This is a failed-slide retry. Match source material only around this slide title and content points; do not reconstruct the whole deck outline.'
               : ''
@@ -152,6 +115,8 @@ export function buildSinglePageGenerationPrompt(args: {
   return [
     'Generate and write only this slide. Do not modify other slides.',
     '',
+    SLIDE_THESIS_RULES,
+    '',
     `Topic: ${args.topic}`,
     `Deck title: ${args.deckTitle}`,
     `Target page: ${args.pageId} (slide ${args.pageNumber})`,
@@ -169,23 +134,23 @@ export function buildSinglePageGenerationPrompt(args: {
     '',
     LAYOUT_COLLISION_RULES,
     '',
+    LAYOUT_DELIVERY_GUARD,
+    '',
     FRONTEND_CAPABILITIES,
     '',
     STABLE_HTML_FRAGMENT_PROTOCOL,
-    '',
-    'Deck-wide design contract. Follow it to keep pages visually consistent:',
-    formatDesignContract(args.designContract),
     ...retryInstructions,
     '',
-    'Expansion rules:',
-    '- Treat content points as short seed phrases. Expand each seed into presentable modules such as headings, explanations, lists, charts, comparisons, or conclusions.',
-    '- When source documents are present, expansion must be source-grounded: elaborate only from the source passages you inspected and the retrieved snippets.',
-    `- Do not add new arguments, generic industry framing, unsupported ${SOURCE_UNSUPPORTED_CLAIMS}, or polished-sounding conclusions that are absent from the source document.`,
-    '- If there are 2-10 points, the final slide should cover all of them. You may add 1-2 supporting information blocks by priority.',
-    '- When the user provided an explicit list of same-level topics, keep them as distinct visible topics where the layout allows; merge only when required to avoid overflow.',
-    '- You may complete reasonable data framing, examples, and structure, but do not drift away from the slide title and points.',
+    CONTENT_EXPANSION_RULES,
+    '',
+    'Expansion selection guardrails:',
+    '- Treat content points as short seed phrases, not as a checklist that must become one visible card/row per point. Decide which points are primary, grouped support, compact annotations, or lower-priority detail based on the slide title, source range, and available space.',
+    '- When source documents are present, expansion must be source-grounded through SOURCE_GROUNDED_EXPANSION_RULES: if inspected material is thin, enrich the slide from inspected material; if it is dense, summarize and group.',
+    `- Do not add generic industry framing, unsupported ${SOURCE_UNSUPPORTED_CLAIMS}, or polished-sounding conclusions that are absent from the source document.`,
+    '- Do not duplicate the same source facts in multiple large modules. If a fact appears in a timeline/table/chart, do not repeat it again as a separate summary card unless it is the single hero message of the slide.',
+    '- When there are many same-level points, preserve the main meaning by grouping related points and surfacing only the amount that fits a real slide with breathing room.',
+    '- When the user provided an explicit list of same-level topics, keep them distinct only where the layout allows; otherwise group under shared headings instead of creating equal-weight modules for every item.',
     '- Prefer visualization-friendly expression. When points involve trends, comparisons, or proportions, use charts or data cards when appropriate.',
-    '- Expansion must still fit one slide. If expanded content would exceed the 1600×900 canvas, reorganize the composition, merge repeated wording, and express lower-priority details as concise labels/annotations instead of adding more cards or long paragraphs.',
     '',
     'Single-slide tool constraints:',
     `- Required action: call ${writeToolName}(pageId="${args.pageId}", content=complete creative page fragment).`,

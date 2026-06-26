@@ -4,13 +4,18 @@ import { INDEX_TRANSITION_TYPES } from '../../shared/index-transition'
 import {
   CANVAS_CONSTRAINTS,
   CONTENT_LANGUAGE_RULES,
+  CONTENT_EXPANSION_RULES,
   CONTENT_WRITING_RULES,
   FRONTEND_CAPABILITIES,
   LAYOUT_COLLISION_RULES,
+  LAYOUT_DELIVERY_GUARD,
   PAGE_SEMANTIC_STRUCTURE,
+  SLIDE_THESIS_RULES,
   SOURCE_DOCUMENT_FACT_RULE,
   SOURCE_DOCUMENT_READ_STRATEGY,
+  SOURCE_GROUNDED_EXPANSION_RULES,
   STABLE_HTML_FRAGMENT_PROTOCOL,
+  STYLE_FIDELITY_RULES,
   buildOutlinePageList,
   formatDesignContract,
   resolveContextStylePrompt
@@ -44,17 +49,27 @@ export function buildEditAgentSystemPrompt(
   return buildSinglePageEditPrompt(styleId, context)
 }
 
-function buildSourceDocumentEditInstructions(context: SessionDeckGenerationContext): string {
+function buildSourceDocumentEditInstructions(
+  context: SessionDeckGenerationContext,
+  options?: { includeExpansion?: boolean }
+): string {
   const sourceDocumentPaths = (context.sourceDocumentPaths || []).filter(Boolean)
   if (sourceDocumentPaths.length === 0) return ''
-  return [
+  const lines = [
     '## Source documents (content evidence)',
     'The session has user-imported reference documents. When the edit changes slide facts, examples, metrics, terminology, conclusions, or source-backed page content, use the source document as the authority.',
     `- sourceDocumentPaths: ${sourceDocumentPaths.join(', ')}`,
     SOURCE_DOCUMENT_READ_STRATEGY,
     '- For pure visual/style-only edits, do not reread the source document unless the user asks for source-backed content changes.',
     SOURCE_DOCUMENT_FACT_RULE
-  ].join('\n')
+  ]
+  // Whole-page "enrich the slide" expansion belongs only to edits that can rewrite
+  // a page (single-page / deck). Selector / container edits are scoped to one
+  // element or index.html, so they keep only the source fact/read boundary.
+  if (options?.includeExpansion) {
+    lines.push(SOURCE_GROUNDED_EXPANSION_RULES)
+  }
+  return lines.join('\n')
 }
 
 /**
@@ -242,11 +257,15 @@ function buildSinglePageEditPrompt(
   const existingInfo = context.existingPageIds?.length
     ? `Existing page IDs: ${context.existingPageIds.join(', ')}`
     : ''
-  const sourceDocumentInstructions = buildSourceDocumentEditInstructions(context)
+  const sourceDocumentInstructions = buildSourceDocumentEditInstructions(context, {
+    includeExpansion: true
+  })
 
   return [
     'You are a PPT incremental editing expert focused on modifying a single target page.',
     `Your responsibility is to modify only the target page: ${targetPageId}. Keep other pages and index.html unchanged.`,
+    '',
+    SLIDE_THESIS_RULES,
     '',
     CONTENT_LANGUAGE_RULES,
     '',
@@ -265,21 +284,18 @@ function buildSinglePageEditPrompt(
     '',
     STABLE_HTML_FRAGMENT_PROTOCOL,
     '',
+    CONTENT_EXPANSION_RULES,
+    '',
     '## 编辑策略',
     '- 如果用户只要求小范围修改（加插画、改标题颜色、删除某个模块、调整局部文案），保留当前布局意图，只改必要的局部内容。',
     '- 如果用户要求重新布局、整体重做、换版式、简化、重构或明确说当前布局不合理，可以重写整页 fragment。',
     '- 整页重写时也必须遵守 Stable HTML fragment protocol：一个根 div、浅层 grid/flex、不要重建 page shell、不要用深层 wrapper chain。',
     '',
-    '## 风格与视觉',
-    `风格预设：${presetLabel} (${presetId})`,
-    '风格规则：',
-    stylePrompt,
-    context.designContract ? '\n设计契约（本次演示的统一视觉参考，修改时保持协调即可）：' : '',
-    context.designContract ? formatDesignContract(context.designContract) : '',
-    '',
     CANVAS_CONSTRAINTS,
     '',
     LAYOUT_COLLISION_RULES,
+    '',
+    LAYOUT_DELIVERY_GUARD,
     '',
     PAGE_SEMANTIC_STRUCTURE,
     '',
@@ -302,7 +318,16 @@ function buildSinglePageEditPrompt(
     targetPagePath ? `Target file: ${targetPagePath}` : '',
     existingInfo,
     'Full page outline:',
-    pageList
+    pageList,
+    '',
+    '## 最终风格校准（写入前）',
+    `风格预设：${presetLabel} (${presetId})`,
+    '风格规则：',
+    stylePrompt,
+    context.designContract ? '\n设计契约（本次演示的统一视觉参考，修改时保持协调即可）：' : '',
+    context.designContract ? formatDesignContract(context.designContract) : '',
+    '',
+    STYLE_FIDELITY_RULES
   ].join('\n')
 }
 
@@ -326,11 +351,15 @@ function buildDeckEditPrompt(
     context.selectPageIds?.length
       ? `Selected page ids from UI (hard target): ${context.selectPageIds.join(', ')}`
       : 'Target pages: all relevant /<pageId>.html files'
-  const sourceDocumentInstructions = buildSourceDocumentEditInstructions(context)
+  const sourceDocumentInstructions = buildSourceDocumentEditInstructions(context, {
+    includeExpansion: true
+  })
 
   return [
     'You are a PPT incremental editing expert focused on modifying multiple pages across the deck.',
     "Your responsibility is to modify the relevant /<pageId>.html files according to the user's main-session instruction. You must keep index.html unchanged.",
+    '',
+    SLIDE_THESIS_RULES,
     '',
     CONTENT_LANGUAGE_RULES,
     '',
@@ -348,20 +377,17 @@ function buildDeckEditPrompt(
     '',
     STABLE_HTML_FRAGMENT_PROTOCOL,
     '',
+    CONTENT_EXPANSION_RULES,
+    '',
     '## 编辑策略',
     '- 对每个相关页面判断用户意图：小范围修改时保留页面原有结构；要求重新布局/重构/整体重做时才重写整页 fragment。',
     '- 整页重写必须使用稳定、扁平的 fragment：一个根 div、浅层 grid/flex、无 section/main/page shell、无深层装饰 wrapper。',
     '',
-    '## 风格与视觉',
-    `风格预设：${presetLabel} (${presetId})`,
-    '风格规则：',
-    stylePrompt,
-    context.designContract ? '\n设计契约（本次演示的统一视觉参考，修改时保持协调即可）：' : '',
-    context.designContract ? formatDesignContract(context.designContract) : '',
-    '',
     CANVAS_CONSTRAINTS,
     '',
     LAYOUT_COLLISION_RULES,
+    '',
+    LAYOUT_DELIVERY_GUARD,
     '',
     PAGE_SEMANTIC_STRUCTURE,
     '',
@@ -382,6 +408,15 @@ function buildDeckEditPrompt(
     explicitTargetInfo,
     existingInfo,
     'Full page outline:',
-    pageList
+    pageList,
+    '',
+    '## 最终风格校准（写入前）',
+    `风格预设：${presetLabel} (${presetId})`,
+    '风格规则：',
+    stylePrompt,
+    context.designContract ? '\n设计契约（本次演示的统一视觉参考，修改时保持协调即可）：' : '',
+    context.designContract ? formatDesignContract(context.designContract) : '',
+    '',
+    STYLE_FIDELITY_RULES
   ].join('\n')
 }

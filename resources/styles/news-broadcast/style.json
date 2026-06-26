@@ -5,14 +5,14 @@
     "en": "News Broadcast"
   },
   "description": "红色竖条亮起，所有目光聚焦——突发新闻，不容错过",
-  "category": "大胆 · 杂志",
+  "category": "杂志 · 编辑",
   "aliases": [
     "news",
     "广播",
     "播报",
     "突发新闻"
   ],
-  "styleCase": "突发新闻播报、数据发布、产品公告、季度汇报",
-  "version": "2.0.0",
+  "styleCase": "商业汇报、品牌营销、杂志编辑",
+  "version": "2.0.1",
   "source": "builtin"
 }

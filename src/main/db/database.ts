@@ -22,6 +22,7 @@ import type {
   ModelUsageStats,
   ModelUsageTotals
 } from '@shared/model-usage'
+import { normalizeThinkingParameterMode } from '@shared/model-config'
 
 type SessionStatus = 'active' | 'completed' | 'failed' | 'archived'
 type MessageRole = 'user' | 'assistant' | 'system' | 'tool'
@@ -254,6 +255,7 @@ export interface StyleRow {
   styleCase: string
   packageDir: string
   active: boolean
+  favoriteAt: number | null
   createdAt: number
   updatedAt: number
 }
@@ -286,6 +288,7 @@ export interface ModelConfigRow {
   baseUrl: string
   maxTokens: number
   disableTemperature: number
+  thinkingParameterMode: string
   active: number
   createdAt: number
   updatedAt: number
@@ -2097,12 +2100,14 @@ export class PPTDatabase {
     baseUrl: string
     maxTokens?: number
     disableTemperature?: boolean
+    thinkingParameterMode?: string
     active?: boolean
   }): Promise<string> {
     const id = data.id || crypto.randomUUID()
     const now = Math.floor(Date.now() / 1000)
     const maxTokens = data.maxTokens || 4096
     const disableTemperature = data.disableTemperature ? 1 : 0
+    const thinkingParameterMode = normalizeThinkingParameterMode(data.thinkingParameterMode)
     if (data.active) {
       await this.db
         .update(schema.modelConfigs)
@@ -2121,6 +2126,7 @@ export class PPTDatabase {
         baseUrl: data.baseUrl,
         maxTokens,
         disableTemperature,
+        thinkingParameterMode,
         active: data.active ? 1 : 0,
         createdAt: now,
         updatedAt: now
@@ -2135,6 +2141,7 @@ export class PPTDatabase {
           baseUrl: data.baseUrl,
           maxTokens,
           disableTemperature,
+          thinkingParameterMode,
           active: data.active ? 1 : 0,
           updatedAt: now
         }
@@ -2709,6 +2716,20 @@ export class PPTDatabase {
     if (data.active !== undefined) set.active = data.active
     await this.db.update(schema.styles).set(set).where(eq(schema.styles.id, styleId)).run()
     await this._refreshStylesCache()
+  }
+
+  async setStyleFavorite(styleId: string, favoriteAt: number | null): Promise<number | null> {
+    const existing = await this.getStyleRow(styleId)
+    if (!existing) {
+      throw new Error(`Style not found: ${styleId}`)
+    }
+    await this.db
+      .update(schema.styles)
+      .set({ favoriteAt })
+      .where(eq(schema.styles.id, styleId))
+      .run()
+    await this._refreshStylesCache()
+    return favoriteAt
   }
 
   async deleteStyleRow(styleId: string): Promise<boolean> {

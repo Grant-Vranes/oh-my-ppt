@@ -4,11 +4,12 @@ import { useT } from '@renderer/i18n'
 import { ipc } from '@renderer/lib/ipc'
 import {
   useGenerateStore,
+  resetSessionDetailEditingStores,
   useSessionDetailUiStore,
   useSessionStore,
   useToastStore
 } from '@renderer/store'
-import type { HistoryVersion } from '@shared/history.js'
+import { HISTORY_VERSION_LIMIT, type HistoryVersion } from '@shared/history.js'
 import { Button } from '../../ui/Button'
 import {
   Dialog,
@@ -46,6 +47,7 @@ export function HistoryDialog({ sessionId }: HistoryDialogProps): React.JSX.Elem
   const [loading, setLoading] = useState(false)
   const [rollbackId, setRollbackId] = useState<string | null>(null)
   const [rollbackConfirmVersion, setRollbackConfirmVersion] = useState<HistoryVersion | null>(null)
+  const visibleVersions = versions.slice(0, HISTORY_VERSION_LIMIT)
 
   const sessionStatus =
     currentSession && typeof (currentSession as { status?: unknown }).status === 'string'
@@ -63,7 +65,10 @@ export function HistoryDialog({ sessionId }: HistoryDialogProps): React.JSX.Elem
     if (!sessionId) return
     setLoading(true)
     try {
-      const nextVersions = await ipc.listHistoryVersions({ sessionId, limit: 10 })
+      const nextVersions = await ipc.listHistoryVersions({
+        sessionId,
+        limit: HISTORY_VERSION_LIMIT
+      })
       setVersions(nextVersions)
     } catch (err) {
       toastError(err instanceof Error ? err.message : t('sessionDetail.historyLoadFailed'))
@@ -83,6 +88,7 @@ export function HistoryDialog({ sessionId }: HistoryDialogProps): React.JSX.Elem
     setRollbackConfirmVersion(null)
     try {
       await ipc.rollbackToHistoryVersion({ sessionId, versionId: version.id })
+      resetSessionDetailEditingStores()
       await loadSession(sessionId)
       useGenerateStore.getState().setPages(useSessionStore.getState().currentGeneratedPages)
       useSessionDetailUiStore.getState().bumpPreviewKey()
@@ -105,7 +111,7 @@ export function HistoryDialog({ sessionId }: HistoryDialogProps): React.JSX.Elem
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="flex max-h-[78vh] w-[560px] flex-col rounded-2xl bg-white shadow-2xl">
+      <div className="flex max-h-[min(640px,78vh)] w-[560px] flex-col rounded-2xl bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-[#e8e0d0] px-5 py-4">
           <div>
             <h3 className="text-base font-semibold text-[#2f3a2a]">
@@ -122,13 +128,13 @@ export function HistoryDialog({ sessionId }: HistoryDialogProps): React.JSX.Elem
             {t('common.cancel')}
           </button>
         </div>
-        <div className="min-h-[220px] overflow-y-auto px-5 py-4">
+        <div className="min-h-0 overflow-y-auto px-5 py-4">
           {loading ? (
-            <div className="flex h-40 items-center justify-center text-sm text-[#8a9a7b]">
+            <div className="flex min-h-[220px] items-center justify-center text-sm text-[#8a9a7b]">
               {t('sessionDetail.historyLoading')}
             </div>
           ) : versions.length === 0 ? (
-            <div className="flex h-40 flex-col items-center justify-center text-center">
+            <div className="flex min-h-[220px] flex-col items-center justify-center text-center">
               <p className="text-sm font-medium text-[#3e4a32]">
                 {t('sessionDetail.historyEmptyTitle')}
               </p>
@@ -138,7 +144,7 @@ export function HistoryDialog({ sessionId }: HistoryDialogProps): React.JSX.Elem
             </div>
           ) : (
             <div className="space-y-2">
-              {versions.map((version) => {
+              {visibleVersions.map((version) => {
                 const rollbackDisabled =
                   version.isCurrent ||
                   !version.isRestorable ||

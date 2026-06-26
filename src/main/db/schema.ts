@@ -203,6 +203,7 @@ export const modelConfigs = sqliteTable('model_configs', {
   baseUrl: text('base_url').notNull().default(''),
   maxTokens: integer('max_tokens').notNull().default(4096),
   disableTemperature: integer('disable_temperature').notNull().default(0),
+  thinkingParameterMode: text('thinking_parameter_mode').notNull().default('auto'),
   active: integer('active').notNull().default(0),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull()
@@ -279,6 +280,7 @@ export const styles = sqliteTable('styles', {
   styleCase: text('style_case').notNull().default(''),
   packageDir: text('package_dir').notNull().default(''),
   active: integer('active', { mode: 'boolean' }).notNull().default(true),
+  favoriteAt: integer('favorite_at'),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull()
 })

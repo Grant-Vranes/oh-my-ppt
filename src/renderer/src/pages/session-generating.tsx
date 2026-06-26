@@ -320,6 +320,7 @@ export function SessionGeneratingPage({
     buildPagePlaceholders(1, lang)
   )
   const [presentationTitle, setPresentationTitle] = useState<string>('')
+  const [cancelPending, setCancelPending] = useState(false)
   const generatingPath =
     generationKind === 'template' && id
       ? `/sessions/${id}/template-generating`
@@ -395,6 +396,7 @@ export function SessionGeneratingPage({
         setStatus('running')
         setProgress(0)
         setError(null)
+        setCancelPending(false)
         setCurrentStage('preflight')
         setEvents([{ text: t('generating.created'), time: new Date().toISOString() }])
       }, 0)
@@ -906,6 +908,12 @@ export function SessionGeneratingPage({
     t
   ])
 
+  useEffect(() => {
+    if (status !== 'queued' && status !== 'running') {
+      setCancelPending(false)
+    }
+  }, [status])
+
   const displayProgress = Math.max(0, Math.min(100, Math.round(progress)))
   const fullyGenerated = isSessionFullyGenerated(editorGate)
   const hasGeneratedPages = editorGate.generatedCount > 0
@@ -968,6 +976,20 @@ export function SessionGeneratingPage({
       }
     })
   }
+  const handleCancelGeneration = (): void => {
+    if (!id || cancelPending || (status !== 'queued' && status !== 'running')) return
+    setCancelPending(true)
+    void ipc
+      .cancelGenerate(id)
+      .then((result) => {
+        if (!result?.success) {
+          setCancelPending(false)
+        }
+      })
+      .catch(() => {
+        setCancelPending(false)
+      })
+  }
 
   return (
     <div className="relative flex h-full flex-col overflow-hidden bg-[#edf3e8]">
@@ -1027,6 +1049,7 @@ export function SessionGeneratingPage({
             continueRemainingLabel={t('generating.continueRemaining')}
             regenerateLabel={t('generating.regenerate')}
             cancelLabel={t('generating.cancelGeneration')}
+            isCancelling={cancelPending}
             hasGeneratedPages={canContinueRemaining}
             canEnterEditor={canEnterEditor}
             showEditorShortcut={showProgressEditorShortcut}
@@ -1034,10 +1057,7 @@ export function SessionGeneratingPage({
             onEnterEditor={() => navigate(`/sessions/${id}`)}
             onContinueRemaining={handleContinueRemaining}
             onRegenerate={handleRegenerate}
-            onCancel={() => {
-              if (!id) return
-              void ipc.cancelGenerate(id)
-            }}
+            onCancel={handleCancelGeneration}
           />
 
           <GenerationPreviewGrid pages={previewPages} />

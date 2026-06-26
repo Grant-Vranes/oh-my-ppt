@@ -5,7 +5,7 @@
     "en": "Gold Ivory"
   },
   "description": "鎏金棕与象牙白的古典奢华风",
-  "category": "浅色 · 沉静",
+  "category": "深色 · 奢华",
   "aliases": [
     "鎏金",
     "象牙白",
@@ -13,7 +13,7 @@
     "古典",
     "高级"
   ],
-  "styleCase": "奢华品牌发布、高端地产、香水与珠宝、私人银行、艺术收藏、古典文学、高端酒店、米其林餐厅企划",
-  "version": "2.0.0",
+  "styleCase": "餐饮美食、品牌营销、艺术视觉",
+  "version": "2.0.2",
   "source": "builtin"
 }

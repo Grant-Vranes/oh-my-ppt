@@ -19,6 +19,14 @@ const previewIframeSource = readFileSync(
   path.join(projectRoot, 'src/renderer/src/components/preview/PreviewIframe.tsx'),
   'utf-8'
 )
+const generationThumbnailSource = readFileSync(
+  path.join(projectRoot, 'src/renderer/src/components/session-generating/GenerationThumbnail.tsx'),
+  'utf-8'
+)
+const generationPreviewGridSource = readFileSync(
+  path.join(projectRoot, 'src/renderer/src/components/session-generating/GenerationPreviewGrid.tsx'),
+  'utf-8'
+)
 
 describe('page runtime frame padding', () => {
   it('does not add default padding to the page root', () => {
@@ -44,6 +52,17 @@ describe('page runtime frame padding', () => {
     expect(previewIframeSource).toContain('Math.min(width / 1600, height / 900)')
     expect(previewIframeSource).not.toContain('Math.max(width / 1600, height / 900)')
     expect(previewIframeSource).toContain('Math.max(0, (width - 1600 * nextScale) / 2)')
+  })
+
+  it('keeps generation thumbnail card surfaces aligned with their grid cell', () => {
+    expect(generationPreviewGridSource).toContain('className="min-w-0 w-full"')
+    expect(generationThumbnailSource).toContain('flex w-full min-w-0 flex-col')
+    expect(generationThumbnailSource).toContain('p-1.5')
+    expect(generationThumbnailSource).toContain('w-full min-w-0 shrink-0')
+    expect(generationThumbnailSource).not.toContain('rounded-[0.9rem]')
+    expect(generationThumbnailSource).toContain("aspectRatio: '16/9'")
+    expect(generationThumbnailSource).toContain("contain: 'paint'")
+    expect(generationThumbnailSource).toContain('flex w-full min-w-0 items-center')
   })
 
   it('uses black letterbox bars in presentation mode', () => {

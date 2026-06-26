@@ -5,7 +5,7 @@
     "en": "Tabular Business"
   },
   "description": "克制的中性色表格驱动商务风",
-  "category": "浅色 · 沉静",
+  "category": "浅色 · 专业",
   "aliases": [
     "表格",
     "table",
@@ -16,7 +16,7 @@
     "kaizen",
     "grid"
   ],
-  "styleCase": "经营周报、季度复盘、KPI 看板、销售明细、财务报表、产品矩阵对比、项目进度汇总",
-  "version": "2.0.0",
+  "styleCase": "商业汇报、年度庆典、技术分享",
+  "version": "2.0.1",
   "source": "builtin"
 }

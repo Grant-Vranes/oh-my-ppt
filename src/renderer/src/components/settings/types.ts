@@ -1,4 +1,5 @@
 import type { ConfigurableModelTimeoutProfile } from '@shared/model-timeout.js'
+import type { ThinkingParameterMode } from '@shared/model-config.js'
 import type { I18nKey, TranslationParams } from '../../i18n'
 import type { ImageModelProvider } from '../../lib/ipc'
 
@@ -15,6 +16,7 @@ export interface ModelForm {
   baseUrl: string
   maxTokens: string
   disableTemperature: boolean
+  thinkingParameterMode: ThinkingParameterMode
   active: boolean
 }
 

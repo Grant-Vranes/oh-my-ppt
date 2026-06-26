@@ -12,7 +12,7 @@
     "白图",
     "坐标纸"
   ],
-  "styleCase": "系统设计文档、API 文档、架构白皮书、工程方案评审",
-  "version": "2.0.0",
+  "styleCase": "技术分享、商业汇报、产品发布",
+  "version": "2.0.1",
   "source": "builtin"
 }

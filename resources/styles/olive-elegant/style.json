@@ -5,7 +5,7 @@
     "en": "Olive Elegant"
   },
   "description": "深橄榄绿与奶白绿的古典奢华风",
-  "category": "浅色 · 沉静",
+  "category": "深色 · 奢华",
   "aliases": [
     "橄榄绿",
     "奶白绿",
@@ -13,7 +13,7 @@
     "稳重",
     "古典"
   ],
-  "styleCase": "奢华品牌发布、古典文学赏析、高端杂志企划、艺术展览、酒店与地产、香水与珠宝、传统文化复兴",
-  "version": "2.0.0",
+  "styleCase": "艺术视觉、传统文化、杂志编辑",
+  "version": "2.0.1",
   "source": "builtin"
 }

@@ -1,3 +1,5 @@
+export const HISTORY_VERSION_LIMIT = 20
+
 export type HistoryOperationKind =
   | 'generate'
   | 'edit'

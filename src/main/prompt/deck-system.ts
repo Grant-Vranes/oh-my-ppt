@@ -18,6 +18,7 @@ import {
   formatDesignContract,
   resolveContextStylePrompt
 } from './shared'
+import { formatAnimationPreferencesForPageWriting } from './animation-preferences'
 
 export function buildDeckAgentSystemPrompt(
   styleId: string | null | undefined,
@@ -54,6 +55,9 @@ export function buildDeckAgentSystemPrompt(
     : '3. Call update_page_file(content) page by page. For multi-page generation, write each target page file in order. You may pass pageId to override automatic targeting.'
   const sourceDocumentPaths = (context.sourceDocumentPaths || []).filter(Boolean)
   const isRetryMode = context.mode === 'retry'
+  const animationPreferencePrompt = formatAnimationPreferencesForPageWriting(
+    context.animationPreferences
+  )
   const sourceDocumentInstructions =
     sourceDocumentPaths.length > 0
       ? [
@@ -119,6 +123,7 @@ export function buildDeckAgentSystemPrompt(
     '',
     FRONTEND_CAPABILITIES,
     '',
+    ...(animationPreferencePrompt ? [animationPreferencePrompt, ''] : []),
     CONTENT_WRITING_RULES,
     '',
     STABLE_HTML_FRAGMENT_PROTOCOL,

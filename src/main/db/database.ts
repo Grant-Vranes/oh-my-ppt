@@ -22,6 +22,7 @@ import type {
   ModelUsageStats,
   ModelUsageTotals
 } from '@shared/model-usage'
+import type { AnimationPreferencesPayload } from '@shared/generation'
 import { normalizeThinkingParameterMode } from '@shared/model-config'
 
 type SessionStatus = 'active' | 'completed' | 'failed' | 'archived'
@@ -127,6 +128,7 @@ export interface GenerationRunRecord {
   total_pages: number
   error: string | null
   metadata: string | null
+  animation_preferences: string | null
   model_config_id: string | null
   created_at: number
   updated_at: number
@@ -654,6 +656,10 @@ export class PPTDatabase {
       total_pages: Number(row.totalPages ?? row.total_pages ?? 0) || 0,
       error: typeof row.error === 'string' ? String(row.error) : null,
       metadata: typeof row.metadata === 'string' ? String(row.metadata) : null,
+      animation_preferences:
+        typeof (row.animationPreferences ?? row.animation_preferences) === 'string'
+          ? String(row.animationPreferences ?? row.animation_preferences)
+          : null,
       model_config_id:
         typeof (row.modelConfigId ?? row.model_config_id) === 'string'
           ? String(row.modelConfigId ?? row.model_config_id)
@@ -771,10 +777,14 @@ export class PPTDatabase {
     mode: GenerationRunMode
     totalPages: number
     metadata?: unknown
+    animationPreferences?: AnimationPreferencesPayload | null
     modelConfigId?: string | null
   }): Promise<string> {
     const id = data.id || crypto.randomUUID()
     const now = Math.floor(Date.now() / 1000)
+    const animationPreferences = data.animationPreferences
+      ? JSON.stringify(data.animationPreferences)
+      : null
     await this.db
       .insert(schema.generationRuns)
       .values({
@@ -785,6 +795,7 @@ export class PPTDatabase {
         totalPages: Math.max(0, Math.floor(data.totalPages || 0)),
         error: null,
         metadata: data.metadata ? JSON.stringify(data.metadata) : null,
+        animationPreferences,
         modelConfigId:
           typeof data.modelConfigId === 'string' && data.modelConfigId.trim().length > 0
             ? data.modelConfigId.trim()
@@ -801,6 +812,7 @@ export class PPTDatabase {
           totalPages: Math.max(0, Math.floor(data.totalPages || 0)),
           error: null,
           metadata: data.metadata ? JSON.stringify(data.metadata) : null,
+          animationPreferences,
           modelConfigId:
             typeof data.modelConfigId === 'string' && data.modelConfigId.trim().length > 0
               ? data.modelConfigId.trim()

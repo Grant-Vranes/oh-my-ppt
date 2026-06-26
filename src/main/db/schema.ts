@@ -82,6 +82,7 @@ export const generationRuns = sqliteTable('generation_runs', {
   totalPages: integer('total_pages').notNull().default(0),
   error: text('error'),
   metadata: text('metadata'),
+  animationPreferences: text('animation_preferences'),
   modelConfigId: text('model_config_id'),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull()

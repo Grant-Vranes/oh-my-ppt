@@ -4,7 +4,6 @@ import { Button } from '../ui/Button'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle
@@ -187,9 +186,6 @@ export function SessionCreateSuggestionDialog({
             </span>
             <div className="min-w-0">
               <DialogTitle className="text-sm">{t('home.analysisSuggestionTitle')}</DialogTitle>
-              <DialogDescription className="mt-1 max-w-2xl text-xs leading-5">
-                {t('home.analysisSuggestionDescription')}
-              </DialogDescription>
               {attachedReferenceFile && (
                 <span
                   className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full border border-[#d8ccb5]/72 bg-[#fff9ef]/86 px-2 py-1 text-[11px] font-medium text-[#5d6b4d]"
@@ -372,10 +368,7 @@ export function SessionCreateSuggestionDialog({
                               </div>
                             ) : (
                               <div className="mt-2">
-                                <p className="text-[10px] font-medium text-[#6a8054]">
-                                  {t('home.outlineItemContent')}
-                                </p>
-                                <p className="mt-1 line-clamp-4 whitespace-pre-wrap break-words text-xs leading-5 text-[#6d604d]">
+                                <p className="line-clamp-4 whitespace-pre-wrap break-words text-xs leading-5 text-[#6d604d]">
                                   {item.reason || t('home.emptyValue')}
                                 </p>
                               </div>
@@ -410,9 +403,6 @@ export function SessionCreateSuggestionDialog({
                     </label>
                     <div className={suggestionCardClass}>
                       <div className="mb-1.5 flex items-center justify-between gap-2">
-                        <p className="text-[10px] font-medium uppercase text-[#6a8054]">
-                          {t('home.suggestedValue')}
-                        </p>
                         <button
                           type="button"
                           onClick={() =>
@@ -485,9 +475,6 @@ export function SessionCreateSuggestionDialog({
                     </label>
                     <div className={suggestionCardClass}>
                       <div className="mb-1.5 flex items-center justify-between gap-2">
-                        <p className="text-[10px] font-medium uppercase text-[#6a8054]">
-                          {t('home.suggestedValue')}
-                        </p>
                         <button
                           type="button"
                           onClick={() =>

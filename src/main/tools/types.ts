@@ -1,5 +1,6 @@
 import log from "electron-log/main.js";
 import type { LayoutIntent } from "@shared/layout-intent";
+import type { AnimationPreferencesPayload } from "@shared/generation";
 
 // ── Marker constants ──
 
@@ -55,6 +56,7 @@ export interface SessionDeckGenerationContext {
   styleName?: string;
   styleVersion?: string;
   appLocale?: "zh" | "en";
+  animationPreferences?: AnimationPreferencesPayload | null;
   userMessage: string;
   outlineTitles: string[];
   outlineItems: OutlineItem[];

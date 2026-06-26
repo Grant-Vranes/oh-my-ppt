@@ -1,5 +1,6 @@
 export { buildDesignContractSystemPrompt, buildPlanningSystemPrompt } from "./planning";
 export { buildDeckAgentSystemPrompt } from "./deck-system";
+export { formatAnimationPreferencesForPageWriting } from "./animation-preferences";
 export { buildEditAgentSystemPrompt } from "./edit-system";
 export {
   buildSinglePageGenerationPrompt,

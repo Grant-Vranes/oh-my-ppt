@@ -168,6 +168,7 @@ CREATE TABLE IF NOT EXISTS generation_runs (
   total_pages INTEGER NOT NULL DEFAULT 0,
   error TEXT,
   metadata TEXT,
+  animation_preferences TEXT,
   model_config_id TEXT,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
@@ -736,6 +737,9 @@ const enforceGenerationSchema = async (client: LibSqlClient): Promise<void> => {
   const runColumns = await getTableColumns(client, 'generation_runs')
   if (!runColumns.has('model_config_id')) {
     await client.execute('ALTER TABLE generation_runs ADD COLUMN model_config_id TEXT')
+  }
+  if (!runColumns.has('animation_preferences')) {
+    await client.execute('ALTER TABLE generation_runs ADD COLUMN animation_preferences TEXT')
   }
   const jobColumns = await getTableColumns(client, 'generation_jobs')
   if (!jobColumns.has('abort_reason')) {

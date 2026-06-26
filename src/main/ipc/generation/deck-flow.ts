@@ -101,7 +101,8 @@ export async function resolveDeckContext(
     topic: common.topic,
     deckTitle: common.deckTitle,
     appLocale: common.appLocale,
-    fontSelection: common.fontSelection
+    fontSelection: common.fontSelection,
+    animationPreferences: input.animationPreferences
   }
 }
 
@@ -168,6 +169,7 @@ export async function executeDeckGeneration(
     mode: 'generate',
     totalPages: pageRefs.length,
     modelConfigId: context.modelConfigId,
+    animationPreferences: context.animationPreferences,
     metadata: {
       topic: context.topic,
       styleId: context.styleId,
@@ -484,6 +486,7 @@ export async function executeDeckGeneration(
     styleName: context.styleName,
     styleVersion: context.styleVersion,
     appLocale: context.appLocale,
+    animationPreferences: context.animationPreferences,
     topic: context.topic,
     deckTitle: context.deckTitle,
     userMessage: context.userMessage,

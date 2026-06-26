@@ -21,7 +21,12 @@ import { useToastStore } from '../store'
 import { ModelSplitButton } from '../components/model/ModelActionButton'
 import { useModelAction } from '../hooks/useModelAction'
 import { ipc, type FontListItem } from '@renderer/lib/ipc'
-import type { FontSelection, ParsedDocumentPlanResult } from '@shared/generation'
+import {
+  normalizeAnimationPreferences,
+  type AnimationPreferenceId,
+  type FontSelection,
+  type ParsedDocumentPlanResult
+} from '@shared/generation'
 import { useT } from '../i18n'
 import ReactMarkdown from 'react-markdown'
 import { isSupportedImageMimeType } from '@shared/image-mime'
@@ -32,7 +37,7 @@ import {
   type DocumentPlanSuggestion,
   type DocumentPlanSuggestionDraft
 } from '../components/session-create/SessionCreateSuggestionDialog'
-
+import { AnimationPreferenceChips } from '../components/session-create/AnimationPreferenceChips'
 const MIN_PAGE_COUNT = 1
 const MAX_PAGE_COUNT = 500
 const DEFAULT_PAGE_COUNT = 5
@@ -47,8 +52,10 @@ const isSupportedImageFile = (file: File): boolean =>
 
 type AttachedReferenceFile = ParsedDocumentPlanResult['files'][number]
 
-const compactInputClass = 'h-8 px-3 py-1.5 text-xs'
-const compactSelectTriggerClass = 'h-8 px-2.5 py-1.5 text-xs'
+const compactInputClass =
+  'h-10 border-[#d8ccb5]/70 bg-white/75 px-3 py-2 text-sm shadow-[inset_0_1px_2px_rgba(73,61,44,0.04)] placeholder:text-[#9aa18b]'
+const compactSelectTriggerClass =
+  'h-10 border-[#d8ccb5]/70 bg-white/75 px-3 py-2 text-sm shadow-[inset_0_1px_2px_rgba(73,61,44,0.04)]'
 const compactSelectContentClass = 'text-xs'
 const compactSelectItemClass = 'px-2.5 py-1.5 text-xs'
 const delay = (ms: number): Promise<void> =>
@@ -83,6 +90,9 @@ export function SessionCreatePage(): ReactElement {
   const [topic, setTopic] = useState('')
   const [brief, setBrief] = useState('')
   const [briefMode, setBriefMode] = useState<'edit' | 'preview'>('edit')
+  const [selectedAnimationPreferenceIds, setSelectedAnimationPreferenceIds] = useState<
+    AnimationPreferenceId[]
+  >([])
   const [pageCount, setPageCount] = useState(String(DEFAULT_PAGE_COUNT))
   const [selectedStyleId, setSelectedStyleId] = useState('')
   const [selectedTitleFontId, setSelectedTitleFontId] = useState('auto')
@@ -297,7 +307,8 @@ export function SessionCreatePage(): ReactElement {
       navigate(`/sessions/${sessionId}/generating`, {
         state: {
           initialPrompt,
-          modelConfigId: resolvedModelConfigId
+          modelConfigId: resolvedModelConfigId,
+          animationPreferences: normalizeAnimationPreferences(selectedAnimationPreferenceIds)
         }
       })
     } catch (err) {
@@ -508,15 +519,15 @@ export function SessionCreatePage(): ReactElement {
         : t('home.fontSchemePartialHint')
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 p-6">
-      <div>
-        <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-6 py-5">
+      <div className="flex flex-col gap-2 border-b border-[#d8ccb5]/55 pb-5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#7f8a70]">
           {t('home.eyebrow')}
         </p>
-        <h1 className="organic-serif mt-2 text-[32px] font-semibold leading-none text-[#3e4a32]">
+        <h1 className="organic-serif text-[34px] font-semibold leading-tight text-[#33402a]">
           {t('home.title')}
         </h1>
-        <p className="mt-2 text-[12px] text-muted-foreground">{t('home.description')}</p>
+        <p className="max-w-4xl text-sm leading-6 text-[#6f7b62]">{t('home.description')}</p>
       </div>
 
       <div className="space-y-4">
@@ -535,10 +546,10 @@ export function SessionCreatePage(): ReactElement {
           </div>
         )}
 
-        <Card className="mb-4">
-          <CardContent className="space-y-3 py-4 [&_label]:mb-1.5 [&_label]:text-xs">
-            <div>
-              <label className="block font-medium">{t('home.topic')}</label>
+        <Card className="mb-4 overflow-hidden border-[#d8ccb5]/65 bg-[#fffbf4]/82 shadow-[0_18px_42px_rgba(75,63,46,0.12)]">
+          <CardContent className="space-y-5 p-5 [&_label]:mb-2 [&_label]:text-[13px] [&_label]:font-semibold [&_label]:text-[#33402a]">
+            <div className="rounded-lg border border-[#e2d8c7]/70 bg-white/35 p-3">
+              <label className="block">{t('home.topic')}</label>
               <Input
                 placeholder={t('home.topicPlaceholder')}
                 value={topic}
@@ -548,9 +559,9 @@ export function SessionCreatePage(): ReactElement {
               />
             </div>
 
-            <div className="grid gap-3 md:grid-cols-[1fr_100px]">
+            <div className="grid gap-3 rounded-lg border border-[#e2d8c7]/70 bg-white/35 p-3 md:grid-cols-[1fr_112px]">
               <div>
-                <label className="block font-medium">{t('home.style')}</label>
+                <label className="block">{t('home.style')}</label>
                 <StyleSelect
                   value={selectedStyleId}
                   onChange={setSelectedStyleId}
@@ -561,7 +572,7 @@ export function SessionCreatePage(): ReactElement {
               </div>
 
               <div>
-                <label className="block font-medium">{t('home.pageCount')}</label>
+                <label className="block">{t('home.pageCount')}</label>
                 <Input
                   type="text"
                   inputMode="numeric"
@@ -587,8 +598,8 @@ export function SessionCreatePage(): ReactElement {
               </div>
             </div>
 
-            <div>
-              <label className="block font-medium">{t('home.fontScheme')}</label>
+            <div className="rounded-lg border border-[#e2d8c7]/70 bg-white/35 p-3">
+              <label className="block">{t('home.fontScheme')}</label>
               <div className="mt-2 grid gap-2 sm:grid-cols-2">
                 <Select value={selectedTitleFontId} onValueChange={setSelectedTitleFontId}>
                   <SelectTrigger className={compactSelectTriggerClass}>
@@ -667,7 +678,7 @@ export function SessionCreatePage(): ReactElement {
                   </SelectContent>
                 </Select>
               </div>
-              <p className="mt-1 text-[11px] text-muted-foreground">{fontSelectHint}</p>
+              <p className="mt-2 text-xs leading-5 text-[#7f8a70]">{fontSelectHint}</p>
             </div>
 
             <div>
@@ -823,37 +834,39 @@ export function SessionCreatePage(): ReactElement {
                   )}
                   <TooltipProvider delayDuration={180}>
                     <div className="flex flex-wrap items-center gap-2">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="inline-flex">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                void handleChooseReferenceClick()
-                              }}
-                              disabled={parsingDocument}
-                              className="h-8 shrink-0 rounded-lg border border-[#d8ccb5]/80 bg-[#fffdf8]/76 px-2.5 text-xs font-medium text-[#405333] shadow-none hover:bg-[#f3f7ed] hover:text-[#2f3b28]"
-                            >
-                              {parsingDocument ? (
-                                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                              ) : (
-                                <FileText className="mr-1.5 h-3.5 w-3.5" />
-                              )}
-                              {parsingDocument
-                                ? t('home.processingReference')
-                                : t('home.uploadReference')}
-                            </Button>
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom" align="start">
-                          {t('home.uploadReferenceTooltip', {
-                            maxSize: MAX_DOCUMENT_SIZE_MB,
-                            imageMaxSize: MAX_IMAGE_SIZE_MB
-                          })}
-                        </TooltipContent>
-                      </Tooltip>
+                      {!attachedReferenceFile && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="inline-flex">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  void handleChooseReferenceClick()
+                                }}
+                                disabled={parsingDocument}
+                                className="h-8 shrink-0 rounded-lg border border-[#d8ccb5]/80 bg-[#fffdf8]/76 px-2.5 text-xs font-medium text-[#405333] shadow-none hover:bg-[#f3f7ed] hover:text-[#2f3b28]"
+                              >
+                                {parsingDocument ? (
+                                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  <FileText className="mr-1.5 h-3.5 w-3.5" />
+                                )}
+                                {parsingDocument
+                                  ? t('home.processingReference')
+                                  : t('home.uploadReference')}
+                              </Button>
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" align="start">
+                            {t('home.uploadReferenceTooltip', {
+                              maxSize: MAX_DOCUMENT_SIZE_MB,
+                              imageMaxSize: MAX_IMAGE_SIZE_MB
+                            })}
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
                       {attachedReferenceFile && !pendingImageReference && (
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -885,24 +898,37 @@ export function SessionCreatePage(): ReactElement {
                 </div>
               </div>
             </div>
+
+            <div className="rounded-lg border border-[#e2d8c7]/70 bg-white/35 p-3">
+              <label className="flex items-center gap-2">
+                <span>{t('home.animationPreferences')}</span>
+                <span className="rounded border border-[#d8ccb5]/70 bg-white/65 px-1.5 py-0.5 text-[10px] font-medium leading-none text-[#7f8a70]">
+                  {t('common.optional')}
+                </span>
+              </label>
+              <AnimationPreferenceChips
+                selectedIds={selectedAnimationPreferenceIds}
+                onChange={setSelectedAnimationPreferenceIds}
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#d8ccb5]/70 pt-5">
+              <ModelSplitButton
+                modelAction={modelAction}
+                ariaLabel={t('home.createAndStart')}
+                label={t('home.createAndStart')}
+                loadingLabel={t('home.creating')}
+                loading={submitting || loading}
+                disabled={!requiredReady || parsingDocument}
+                icon={Sparkles}
+                tone="primary"
+                className="w-full sm:w-auto"
+                mainClassName="min-w-0 flex-1 sm:flex-none sm:min-w-[176px]"
+                onRun={handleSubmit}
+              />
+            </div>
           </CardContent>
         </Card>
-
-        <div className="flex justify-end">
-          <ModelSplitButton
-            modelAction={modelAction}
-            ariaLabel={t('home.createAndStart')}
-            label={t('home.createAndStart')}
-            loadingLabel={t('home.creating')}
-            loading={submitting || loading}
-            disabled={!requiredReady || parsingDocument}
-            icon={Sparkles}
-            tone="primary"
-            className="w-full md:w-auto"
-            mainClassName="min-w-0 flex-1 md:flex-none md:min-w-[156px]"
-            onRun={handleSubmit}
-          />
-        </div>
       </div>
 
       <SessionCreateSuggestionDialog

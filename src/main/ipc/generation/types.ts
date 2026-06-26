@@ -3,6 +3,7 @@ import type { AgentManager } from '../../agent'
 import type { ModelTimeoutProfile } from '@shared/model-timeout'
 import type { FontSelection } from '@shared/generation'
 import type { SourceDocumentPlan } from '@shared/generation'
+import type { AnimationPreferencesPayload } from '@shared/generation'
 import type { DesignContract } from '../../tools/types'
 import type { CommonGenerationContext } from './context'
 
@@ -23,6 +24,7 @@ export type FinalizeContext = {
   modelConfigId?: string
   modelConfigName?: string
   runModel?: string
+  animationPreferences?: AnimationPreferencesPayload | null
 }
 
 export type GenerationContext = {
@@ -36,6 +38,7 @@ export type GenerationContext = {
   selector?: string
   elementTag?: string
   elementText?: string
+  sourceRunId?: string
   session: Awaited<ReturnType<PPTDatabase['getSession']>>
   sessionRecord: Record<string, unknown>
   previousSessionStatus: string
@@ -68,6 +71,7 @@ export type GenerationContext = {
   deckTitle: string
   appLocale: 'zh' | 'en'
   fontSelection: FontSelection
+  animationPreferences: AnimationPreferencesPayload | null
 }
 
 export type DeckContext = GenerationContext & { effectiveMode: 'generate' }

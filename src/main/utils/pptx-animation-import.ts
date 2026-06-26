@@ -14,7 +14,9 @@ export type ImportedElementAnimation = {
   id: number
   type: ImportedAnimationType
   trigger: ImportedAnimationTrigger
+  clickGroup?: string
   from?: ImportedAnimationFrom
+  path?: string
   duration: number
   delay: number
   sourceId: string
@@ -56,6 +58,55 @@ const parseNumericDelay = (value: string | undefined): number => {
 const readXmlAttrNumber = (value: string | undefined): number | undefined => {
   const n = Number(value)
   return Number.isFinite(n) ? n : undefined
+}
+
+const readMotionChannelValue = (
+  $: cheerio.CheerioAPI,
+  ctn: cheerio.Cheerio<any>,
+  attrName: 'ppt_x' | 'ppt_y',
+  tm: '0' | '100000'
+): string | undefined => {
+  const motionNode = ctn
+    .find('p\\:anim')
+    .filter((_, node) => {
+      const el = $(node)
+      return el.find('p\\:attrName').first().text() === attrName
+    })
+    .first()
+  if (!motionNode.length) return undefined
+  return (
+    motionNode
+      .find(`p\\:tav[tm="${tm}"] p\\:strVal`)
+      .first()
+      .attr('val') || undefined
+  )
+}
+
+const parseDeltaFromMotionExpression = (
+  value: string | undefined,
+  axis: 'x' | 'y'
+): number | undefined => {
+  const raw = String(value || '').trim()
+  if (!raw) return undefined
+  const prefix = axis === 'x' ? '#ppt_x' : '#ppt_y'
+  if (raw === prefix) return 0
+  const match = raw.match(new RegExp(`^${prefix}([+-]\\d+(?:\\.\\d+)?)$`))
+  if (!match) return undefined
+  const delta = Number(match[1])
+  return Number.isFinite(delta) ? delta : undefined
+}
+
+const buildLinearPathFromMotion = (args: {
+  motionXFrom?: string
+  motionXTo?: string
+  motionYFrom?: string
+  motionYTo?: string
+}): string | undefined => {
+  if (args.motionXFrom !== '#ppt_x' || args.motionYFrom !== '#ppt_y') return undefined
+  const deltaX = parseDeltaFromMotionExpression(args.motionXTo, 'x')
+  const deltaY = parseDeltaFromMotionExpression(args.motionYTo, 'y')
+  if (deltaX === undefined || deltaY === undefined) return undefined
+  return `M 0 0 L ${deltaX} ${deltaY}`
 }
 
 const readSlideEmuSize = (
@@ -117,32 +168,75 @@ export const parsePptxSlideAnimationPlan = (
   const animations: ImportedElementAnimation[] = []
   let id = 0
 
+  // Collect grpId values from clickEffect nodes to validate withEffect grouping.
+  // External PPTX files may assign grpId to withEffect for unrelated reasons,
+  // so we only promote withEffect→click when the same grpId appears on a
+  // clickEffect sibling in the same slide.
+  const clickGrpIds = new Set<string>()
+  $('[nodeType="clickEffect"][grpId]').each((_, node) => {
+    const gid = $(node).attr('grpId')
+    if (gid && gid !== '0') clickGrpIds.add(gid)
+  })
+
   $('[presetID]').each((_, node) => {
     const ctn = $(node)
     const nodeType = ctn.attr('nodeType')
+    const grpId = ctn.attr('grpId')
     const presetId = ctn.attr('presetID')
     const presetSubtype = ctn.attr('presetSubtype')
     const presetClass = ctn.attr('presetClass')
     const effectFilter = ctn.find('p\\:animEffect').first().attr('filter')
+    const scaleNode = ctn.find('p\\:animScale').first()
+    const rotationNode = ctn.find('p\\:animRot').first()
+    const scaleFrom = readXmlAttrNumber(scaleNode.find('p\\:from').first().attr('x'))
+    const scaleTo = readXmlAttrNumber(scaleNode.find('p\\:to').first().attr('x'))
+    const motionXFrom = readMotionChannelValue($, ctn, 'ppt_x', '0')
+    const motionXTo = readMotionChannelValue($, ctn, 'ppt_x', '100000')
+    const motionYFrom = readMotionChannelValue($, ctn, 'ppt_y', '0')
+    const motionYTo = readMotionChannelValue($, ctn, 'ppt_y', '100000')
     const type = mapPptxPresetToDataAnimType({
       presetId,
       presetSubtype,
       presetClass,
-      hasScale: ctn.find('p\\:animScale').length > 0,
-      effectFilter
+      hasScale: scaleNode.length > 0,
+      hasRotation: rotationNode.length > 0,
+      scaleFrom,
+      scaleTo,
+      effectFilter,
+      motionXFrom,
+      motionXTo,
+      motionYFrom,
+      motionYTo
     })
-    const from = mapPptxPresetToDataAnimFrom({ presetSubtype, effectFilter })
-    const trigger: ImportedAnimationTrigger = nodeType === 'clickEffect' ? 'click' : 'load'
+    const from = mapPptxPresetToDataAnimFrom({
+      presetId,
+      presetSubtype,
+      presetClass,
+      effectFilter,
+      motionXFrom,
+      motionXTo,
+      motionYFrom,
+      motionYTo
+    })
+    const trigger: ImportedAnimationTrigger =
+      nodeType === 'clickEffect' ||
+      (nodeType === 'withEffect' && grpId && grpId !== '0' && clickGrpIds.has(grpId))
+        ? 'click'
+        : 'load'
     const delay = parseNumericDelay(
       ctn.children('p\\:stCondLst').find('p\\:cond').first().attr('delay')
     )
-    const duration =
-      ctn
-        .find('p\\:cTn[dur]')
-        .map((__, child) => $(child).attr('dur'))
-        .get()
-        .map((value) => Number(value))
-        .find((value) => Number.isFinite(value) && value > 1) ?? 500
+    const allDurs = ctn
+      .find('p\\:cTn[dur]')
+      .map((__, child) => Number($(child).attr('dur')))
+      .get()
+      .filter((value) => Number.isFinite(value) && value > 1)
+    // Emphasis animations export two half-duration phases (rebound).
+    // Sum all dur values to recover the total duration for roundtrip fidelity.
+    const isEmphasis = presetClass === 'emph'
+    const duration = isEmphasis
+      ? allDurs.reduce((sum, d) => sum + d, 0) || 500
+      : allDurs[0] ?? 500
     const spids = [
       ...new Set(
         ctn
@@ -155,11 +249,15 @@ export const parsePptxSlideAnimationPlan = (
     for (const spid of spids) {
       const target = targets.get(spid)
       id += 1
-      animations.push({
+      const animation: ImportedElementAnimation = {
         id,
         type,
         trigger,
         from,
+        path:
+          type === 'path'
+            ? buildLinearPathFromMotion({ motionXFrom, motionXTo, motionYFrom, motionYTo })
+            : undefined,
         duration: clampMs(duration, 500),
         delay,
         sourceId: spid,
@@ -168,7 +266,11 @@ export const parsePptxSlideAnimationPlan = (
         y: target?.y,
         w: target?.w,
         h: target?.h
-      })
+      }
+      if (trigger === 'click' && grpId && grpId !== '0') {
+        animation.clickGroup = grpId
+      }
+      animations.push(animation)
     }
   })
 

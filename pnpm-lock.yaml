@@ -4,10 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-overrides:
-  '@langchain/core': ^1.1.47
-  '@langchain/langgraph': ^1.3.0
-
 importers:
 
   .:
@@ -117,6 +113,9 @@ importers:
       deepagents:
         specifier: ^1.10.2
         version: 1.10.2(langsmith@0.7.1(openai@6.34.0(ws@8.20.0)(zod@4.4.3))(ws@8.20.0))(openai@6.34.0(ws@8.20.0)(zod@4.4.3))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(ws@8.20.0)
+      domhandler:
+        specifier: ^6.0.1
+        version: 6.0.1
       drizzle-orm:
         specifier: ^0.44.5
         version: 0.44.7(@libsql/client@0.14.0)
@@ -226,6 +225,9 @@ importers:
       '@tailwindcss/postcss':
         specifier: ^4.2.2
         version: 4.2.2
+      '@types/mdast':
+        specifier: ^4.0.4
+        version: 4.0.4
       '@types/node':
         specifier: ^22.19.1
         version: 22.19.17
@@ -1093,7 +1095,7 @@ packages:
     resolution: {integrity: sha512-ep1qBIcV07bajsg3fDqMd39rYwoRLOEK/6lk+MCxlm1YB5SRoKKJAZANrblQ/4RYhZJnxf95c6BSQu8VoNbVAQ==}
     engines: {node: '>=20'}
     peerDependencies:
-      '@langchain/core': ^1.1.47
+      '@langchain/core': ^1.1.45
 
   '@langchain/core@1.1.47':
     resolution: {integrity: sha512-+fiPu6ZFnJMrZyKeM77OIVPoMPAY6OKWacnPlojHtXTbMMzb2cEOKAJV0U07cDl86NHSCIYYa0i4CyKZzXbHQQ==}
@@ -1109,7 +1111,7 @@ packages:
     resolution: {integrity: sha512-F4E5Tr0nt8FGghgdscJtHw+ABzChOHeI80R7Y1pjIHdiJom6c2ieo76vL+FWiny80JmoGqhrVAEIWrw0cXKPxg==}
     engines: {node: '>=18'}
     peerDependencies:
-      '@langchain/core': ^1.1.47
+      '@langchain/core': ^1.1.44
 
   '@langchain/langgraph-sdk@1.9.2':
     resolution: {integrity: sha512-1kDPjR0VH/39q2h8k0Sxi35KxOvEQPModVCepxGLlRkbZmuWUH+zfICuJd3rmD1ByeOKQBZEaB7Y+VCYmSMt1w==}
@@ -1132,7 +1134,7 @@ packages:
     resolution: {integrity: sha512-QvhTjiyqFPz81A+y6LHs223w6DTjv5+882DT4mup72bd72rRhNjTYo5fhes5um0swnKArvY/arc7KeFInfHHWw==}
     engines: {node: '>=18'}
     peerDependencies:
-      '@langchain/core': ^1.1.47
+      '@langchain/core': ^1.1.44
       zod: ^3.25.32 || ^4.2.0
       zod-to-json-schema: ^3.x
     peerDependenciesMeta:
@@ -1143,7 +1145,7 @@ packages:
     resolution: {integrity: sha512-bQ2WMIZfSh02trJLYSAtiIcD3j6EBCiAm9nw0dZWQsVaUxmWc3JJqs8uUte6AkMazmLHzcUIw+14UkXO5fRJvQ==}
     engines: {node: '>=20'}
     peerDependencies:
-      '@langchain/core': ^1.1.47
+      '@langchain/core': ^1.1.42
 
   '@langchain/protocol@0.0.15':
     resolution: {integrity: sha512-MllvbpMjqHevUm+v94M422mH7XKN+wGCvJRBVROTWBotEDOATYB4Ktk2UheYP859y9o2LlhtPek5t1T9eyfAbQ==}
@@ -2915,9 +2917,17 @@ packages:
   domelementtype@2.3.0:
     resolution: {integrity: sha512-OLETBj6w0OsagBwdXnPdN0cnMfF9opN69co+7ZrbfPGrdpPVNBUj02spi6B1N7wChLQiPn4CSH/zJvXw56gmHw==}
 
+  domelementtype@3.0.0:
+    resolution: {integrity: sha512-umCQid3jKbDmVjx8jGaW7uUykm4DEUeyV21hPxNMo2nV955DhUThwqyOIDtreepP31hl84X7G5U9ZfsWvIB3Pg==}
+    engines: {node: '>=20.19.0'}
+
   domhandler@5.0.3:
     resolution: {integrity: sha512-cgwlv/1iFQiFnU96XXgROh8xTeetsnJiDsTc7TYCLFd9+/WNkIqPTxiM/8pSd8VIrhXGTf1Ny1q1hquVqDJB5w==}
     engines: {node: '>= 4'}
+
+  domhandler@6.0.1:
+    resolution: {integrity: sha512-gYzvtM72ZtxQO0T048kd6HWSbbGCNOUwcnfQ01cqIJ4X2IYKFFHZ5mKvrQETcFXxsRObZulDaKmy//R7TPtsBg==}
+    engines: {node: '>=20.19.0'}
 
   domutils@3.2.2:
     resolution: {integrity: sha512-6kZKyUajlDuqlHKVX1w7gyslj9MPIXzIFiz/rGu35uC1wMi+kMhQwGhl4lt9unC9Vb9INnY9Z3/ZA3+FhASLaw==}
@@ -3492,7 +3502,7 @@ packages:
 
   glob@7.2.3:
     resolution: {integrity: sha512-nFR0zLpU2YCaRxwoCJvL6UvCH2JFyFVIvwTLsIf21AuHlMskA1hhTdk+LlYJtOlYt9v6dvszD2BGRqBL+iQK9Q==}
-    deprecated: Glob versions prior to v9 are no longer supported
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 
   global-agent@3.0.0:
     resolution: {integrity: sha512-PT6XReJ+D07JvGoxQMkT6qji/jVNfX/h364XHZOWeRzy64sSFr+xJ5OX7LI3b4MPQzdL4H8Y8M0xzPpsVMwA8Q==}
@@ -3899,7 +3909,7 @@ packages:
     resolution: {integrity: sha512-p3H5U1vfO0T4ri/xxqI6jccRP3LYmOW6KGxaJcwI5mIGVR/G6eNhZyjSZB9d7me6J7an4Pc6zA8tH8Qa6/7xwA==}
     engines: {node: '>=20'}
     peerDependencies:
-      '@langchain/core': ^1.1.47
+      '@langchain/core': ^1.1.44
 
   langchain@1.4.1:
     resolution: {integrity: sha512-LHGdj0OQV5pgyZgC2WWiEvNg5g16dg+c3j7pw7Iuw7tJXEvltNLVl6DjC6egxSsWT03FJN0eUJxJ13Dxhz2bBA==}
@@ -3936,6 +3946,7 @@ packages:
 
   libsql@0.4.7:
     resolution: {integrity: sha512-T9eIRCs6b0J1SHKYIvD8+KCJMcWZ900iZyxdnSCdqxN12Z1ijzT+jY5nrk72Jw4B0HGzms2NgpryArlJqvc3Lw==}
+    cpu: [x64, arm64, wasm32]
     os: [darwin, linux, win32]
 
   lie@3.3.0:
@@ -8119,9 +8130,15 @@ snapshots:
 
   domelementtype@2.3.0: {}
 
+  domelementtype@3.0.0: {}
+
   domhandler@5.0.3:
     dependencies:
       domelementtype: 2.3.0
+
+  domhandler@6.0.1:
+    dependencies:
+      domelementtype: 3.0.0
 
   domutils@3.2.2:
     dependencies:

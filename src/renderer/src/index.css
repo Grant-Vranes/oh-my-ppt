@@ -262,6 +262,10 @@ body {
   border-radius: 10px !important;
 }
 
+.session-create-workspace {
+  background: transparent !important;
+}
+
 @keyframes shell-enter {
   from {
     opacity: 0;

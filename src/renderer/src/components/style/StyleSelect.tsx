@@ -25,12 +25,12 @@ export type StyleSelectProps = {
   compact?: boolean
   disabled?: boolean
   className?: string
+  dropdownAlign?: 'start' | 'center' | 'end'
+  dropdownClassName?: string
 }
 
 const thumbnailUrl = (filePath: string): string =>
-  import.meta.env.MODE === 'test'
-    ? 'about:blank'
-    : `local-asset://${encodeURIComponent(filePath)}`
+  import.meta.env.MODE === 'test' ? 'about:blank' : `local-asset://${encodeURIComponent(filePath)}`
 
 const compareFavoriteOptions = (
   a: StyleSelectOption,
@@ -49,7 +49,9 @@ export function StyleSelect({
   placeholder,
   compact = false,
   disabled,
-  className
+  className,
+  dropdownAlign = 'start',
+  dropdownClassName
 }: StyleSelectProps): React.JSX.Element {
   const t = useT()
   const [open, setOpen] = useState(false)
@@ -126,10 +128,13 @@ export function StyleSelect({
         </button>
       </PopoverTrigger>
       <PopoverContent
-        align="start"
+        align={dropdownAlign}
         side="bottom"
         avoidCollisions={false}
-        className="min-w-[var(--radix-popover-trigger-width)] w-[360px] overflow-hidden rounded-lg border border-[#d8ccb5]/85 bg-[#fff9ef] p-0 text-foreground shadow-[0_12px_28px_rgba(88,72,54,0.18)]"
+        className={cn(
+          'min-w-[var(--radix-popover-trigger-width)] w-[360px] overflow-hidden rounded-lg border border-[#d8ccb5]/85 bg-[#fff9ef] p-0 text-foreground shadow-[0_12px_28px_rgba(88,72,54,0.18)]',
+          dropdownClassName
+        )}
       >
         <div className="border-b border-[#e5ddc8]/80 p-2">
           <div className="flex items-center gap-1.5 rounded-md border border-[#d8ccb5]/80 bg-white/80 px-2 py-1">

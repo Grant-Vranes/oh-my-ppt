@@ -519,18 +519,18 @@ export function SessionCreatePage(): ReactElement {
         : t('home.fontSchemePartialHint')
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-6 py-5">
-      <div className="flex flex-col gap-2 border-b border-[#d8ccb5]/55 pb-5">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#7f8a70]">
+    <div className="session-create-page mx-auto flex w-full max-w-7xl flex-col gap-5 px-6 py-6">
+      <div className="flex max-w-4xl flex-col items-start gap-2 border-b border-[#e0d8c8] px-1 pb-6">
+        <p className="rounded bg-[#d4e4c1]/78 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#3e4a32]">
           {t('home.eyebrow')}
         </p>
-        <h1 className="organic-serif text-[34px] font-semibold leading-tight text-[#33402a]">
+        <h1 className="organic-serif text-[32px] font-semibold leading-tight text-[#3e4a32]">
           {t('home.title')}
         </h1>
-        <p className="max-w-4xl text-sm leading-6 text-[#6f7b62]">{t('home.description')}</p>
+        <p className="text-sm leading-6 text-[#5d6b4d]">{t('home.description')}</p>
       </div>
 
-      <div className="space-y-4">
+      <div>
         <input
           ref={documentInputRef}
           type="file"
@@ -540,248 +540,138 @@ export function SessionCreatePage(): ReactElement {
           onChange={(event) => void handleDocumentFilesSelected(event.target.files)}
         />
         {documentParseError && (
-          <div className="flex items-start gap-2 rounded-md border border-[#d58b7f]/45 bg-[#fff2ef] px-3 py-2 text-xs text-[#8a3d33]">
+          <div className="mb-4 flex items-start gap-2 rounded-xl bg-[#fff2ef] px-4 py-3 text-xs text-[#8a3d33]">
             <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{documentParseError}</span>
           </div>
         )}
 
-        <Card className="mb-4 overflow-hidden border-[#d8ccb5]/65 bg-[#fffbf4]/82 shadow-[0_18px_42px_rgba(75,63,46,0.12)]">
-          <CardContent className="space-y-5 p-5 [&_label]:mb-2 [&_label]:text-[13px] [&_label]:font-semibold [&_label]:text-[#33402a]">
-            <div className="rounded-lg border border-[#e2d8c7]/70 bg-white/35 p-3">
-              <label className="block">{t('home.topic')}</label>
-              <Input
-                placeholder={t('home.topicPlaceholder')}
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                required
-                className={compactInputClass}
-              />
-            </div>
-
-            <div className="grid gap-3 rounded-lg border border-[#e2d8c7]/70 bg-white/35 p-3 md:grid-cols-[1fr_112px]">
+        <Card
+          data-session-create-workspace
+          className="session-create-workspace mb-4 overflow-hidden rounded-2xl border border-[#ded8cb] shadow-[0_12px_28px_rgba(86,73,54,0.06)]"
+        >
+          <CardContent className="grid p-0 lg:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.85fr)] [&_label]:text-[13px] [&_label]:font-semibold [&_label]:text-[#3e4a32]">
+            <main
+              data-session-create-main
+              className="flex min-w-0 flex-col gap-6 bg-transparent p-5 sm:p-6 lg:p-7"
+            >
               <div>
-                <label className="block">{t('home.style')}</label>
-                <StyleSelect
-                  value={selectedStyleId}
-                  onChange={setSelectedStyleId}
-                  options={styleOptions}
-                  placeholder={t('home.stylePlaceholder')}
-                  compact
-                />
-              </div>
-
-              <div>
-                <label className="block">{t('home.pageCount')}</label>
+                <label className="mb-2 block">{t('home.topic')}</label>
                 <Input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  placeholder={`${MIN_PAGE_COUNT}-${MAX_PAGE_COUNT}`}
-                  value={pageCount}
+                  placeholder={t('home.topicPlaceholder')}
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
                   required
-                  onChange={(e) => {
-                    const next = e.target.value
-                    setAcceptedSourcePlan(undefined)
-                    if (next === '') {
-                      setPageCount('')
-                      return
-                    }
-                    if (!/^\d+$/.test(next)) return
-                    setPageCount(next)
-                  }}
-                  onBlur={() => {
-                    setPageCount(String(resolvePageCount(pageCount)))
-                  }}
                   className={compactInputClass}
                 />
               </div>
-            </div>
 
-            <div className="rounded-lg border border-[#e2d8c7]/70 bg-white/35 p-3">
-              <label className="block">{t('home.fontScheme')}</label>
-              <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                <Select value={selectedTitleFontId} onValueChange={setSelectedTitleFontId}>
-                  <SelectTrigger className={compactSelectTriggerClass}>
-                    <SelectValue placeholder={t('home.fontSchemeAuto')} />
-                  </SelectTrigger>
-                  <SelectContent className={compactSelectContentClass}>
-                    <SelectItem value="auto" className={compactSelectItemClass}>
-                      {t('home.fontSchemeAuto')}
-                    </SelectItem>
-                    {availableTitleFonts.map((font) => {
-                      const isUploaded = font.source === 'uploaded'
-                      const sourceLabel = isUploaded
-                        ? t('home.fontSourceUploaded')
-                        : t('home.fontSourceBuiltIn')
-                      return (
-                        <SelectItem
-                          key={`${font.source}:${font.id}`}
-                          value={`${font.source}:${font.id}`}
-                          className={compactSelectItemClass}
-                        >
-                          <span className="flex items-center gap-2">
-                            <span
-                              className={`shrink-0 rounded px-1 py-0.5 text-[10px] font-medium ${
-                                isUploaded
-                                  ? 'bg-[#eef9ec] text-[#4a7a46]'
-                                  : 'bg-[#eef6ff] text-[#3e6685]'
-                              }`}
-                            >
-                              {sourceLabel}
-                            </span>
-                            <span className="truncate">
-                              {t('home.fontPairTitle')} · {font.family}
-                            </span>
-                          </span>
-                        </SelectItem>
-                      )
-                    })}
-                  </SelectContent>
-                </Select>
-                <Select value={selectedBodyFontId} onValueChange={setSelectedBodyFontId}>
-                  <SelectTrigger className={compactSelectTriggerClass}>
-                    <SelectValue placeholder={t('home.fontSchemeAuto')} />
-                  </SelectTrigger>
-                  <SelectContent className={compactSelectContentClass}>
-                    <SelectItem value="auto" className={compactSelectItemClass}>
-                      {t('home.fontSchemeAuto')}
-                    </SelectItem>
-                    {availableBodyFonts.map((font) => {
-                      const isUploaded = font.source === 'uploaded'
-                      const sourceLabel = isUploaded
-                        ? t('home.fontSourceUploaded')
-                        : t('home.fontSourceBuiltIn')
-                      return (
-                        <SelectItem
-                          key={`${font.source}:${font.id}`}
-                          value={`${font.source}:${font.id}`}
-                          className={compactSelectItemClass}
-                        >
-                          <span className="flex items-center gap-2">
-                            <span
-                              className={`shrink-0 rounded px-1 py-0.5 text-[10px] font-medium ${
-                                isUploaded
-                                  ? 'bg-[#eef9ec] text-[#4a7a46]'
-                                  : 'bg-[#eef6ff] text-[#3e6685]'
-                              }`}
-                            >
-                              {sourceLabel}
-                            </span>
-                            <span className="truncate">
-                              {t('home.fontPairBody')} · {font.family}
-                            </span>
-                          </span>
-                        </SelectItem>
-                      )
-                    })}
-                  </SelectContent>
-                </Select>
-              </div>
-              <p className="mt-2 text-xs leading-5 text-[#7f8a70]">{fontSelectHint}</p>
-            </div>
-
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <label className="block font-medium">{t('home.brief')}</label>
-                <div className="flex items-center gap-1 rounded-lg border border-border p-0.5">
-                  <button
-                    type="button"
-                    onClick={() => setBriefMode('edit')}
-                    className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium transition-colors ${
-                      briefMode === 'edit'
-                        ? 'bg-foreground text-background'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                    {t('common.edit')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setBriefMode('preview')}
-                    className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium transition-colors ${
-                      briefMode === 'preview'
-                        ? 'bg-foreground text-background'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    <Eye className="h-3.5 w-3.5" />
-                    {t('common.preview')}
-                  </button>
-                </div>
-              </div>
-              <div className="rounded-lg border border-[#d8ccb5]/80 bg-[#fff9ef]/40 p-2">
-                {briefMode === 'edit' ? (
-                  <Textarea
-                    placeholder={t('home.briefPlaceholder')}
-                    rows={6}
-                    value={brief}
-                    required
-                    onChange={(e) => {
-                      setAcceptedSourcePlan(undefined)
-                      setBrief(e.target.value)
-                    }}
-                    className="min-h-[150px] resize-y border-0 bg-transparent px-3 py-2 text-xs leading-5 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
-                  />
-                ) : (
-                  <ScrollArea
-                    className="h-[180px] rounded-lg border border-border/70 bg-background/70"
-                    viewportClassName="p-4"
-                  >
-                    <ReactMarkdown
-                      components={{
-                        h1: ({ children }) => (
-                          <h1 className="mb-2 text-lg font-semibold text-foreground">{children}</h1>
-                        ),
-                        h2: ({ children }) => (
-                          <h2 className="mb-2 mt-3 text-base font-semibold text-foreground">
-                            {children}
-                          </h2>
-                        ),
-                        h3: ({ children }) => (
-                          <h3 className="mb-1.5 mt-2.5 text-sm font-semibold text-foreground">
-                            {children}
-                          </h3>
-                        ),
-                        p: ({ children }) => (
-                          <p className="mb-2 text-xs leading-5 text-muted-foreground">{children}</p>
-                        ),
-                        ul: ({ children }) => (
-                          <ul className="mb-2 list-disc space-y-0.5 pl-5 text-xs text-muted-foreground">
-                            {children}
-                          </ul>
-                        ),
-                        ol: ({ children }) => (
-                          <ol className="mb-2 list-decimal space-y-0.5 pl-5 text-xs text-muted-foreground">
-                            {children}
-                          </ol>
-                        ),
-                        li: ({ children }) => <li>{children}</li>,
-                        code: ({ children }) => (
-                          <code className="rounded bg-muted px-1.5 py-0.5 text-xs text-foreground">
-                            {children}
-                          </code>
-                        ),
-                        blockquote: ({ children }) => (
-                          <blockquote className="mb-2 border-l-2 border-border pl-3 text-xs text-muted-foreground">
-                            {children}
-                          </blockquote>
-                        )
-                      }}
+              <div>
+                <div className="mb-2 flex items-center justify-between">
+                  <label className="block font-medium">{t('home.brief')}</label>
+                  <div className="flex items-center gap-1 rounded-lg bg-[#fffdf8]/84 p-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setBriefMode('edit')}
+                      className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                        briefMode === 'edit'
+                          ? 'bg-[#8fbc8f] text-[#3e4a32]'
+                          : 'text-[#5d6b4d] hover:bg-[#d4e4c1]/70 hover:text-[#3e4a32]'
+                      }`}
                     >
-                      {brief || t('home.briefPlaceholder')}
-                    </ReactMarkdown>
-                  </ScrollArea>
-                )}
-                <div className="mt-2 flex flex-col gap-2 border-t border-[#e5dccb] pt-2">
+                      <Pencil className="h-3.5 w-3.5" />
+                      {t('common.edit')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBriefMode('preview')}
+                      className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                        briefMode === 'preview'
+                          ? 'bg-[#8fbc8f] text-[#3e4a32]'
+                          : 'text-[#5d6b4d] hover:bg-[#d4e4c1]/70 hover:text-[#3e4a32]'
+                      }`}
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                      {t('common.preview')}
+                    </button>
+                  </div>
+                </div>
+                <div className="overflow-hidden rounded-xl border border-[#e0d8c8] bg-[#fffdf8]/90">
+                  {briefMode === 'edit' ? (
+                    <Textarea
+                      placeholder={t('home.briefPlaceholder')}
+                      rows={6}
+                      value={brief}
+                      required
+                      onChange={(e) => {
+                        setAcceptedSourcePlan(undefined)
+                        setBrief(e.target.value)
+                      }}
+                      className="min-h-[250px] resize-y border-0 bg-transparent px-4 py-3 text-xs leading-5 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                    />
+                  ) : (
+                    <ScrollArea className="h-[274px] bg-transparent" viewportClassName="p-4">
+                      <ReactMarkdown
+                        components={{
+                          h1: ({ children }) => (
+                            <h1 className="mb-2 text-lg font-semibold text-foreground">
+                              {children}
+                            </h1>
+                          ),
+                          h2: ({ children }) => (
+                            <h2 className="mb-2 mt-3 text-base font-semibold text-foreground">
+                              {children}
+                            </h2>
+                          ),
+                          h3: ({ children }) => (
+                            <h3 className="mb-1.5 mt-2.5 text-sm font-semibold text-foreground">
+                              {children}
+                            </h3>
+                          ),
+                          p: ({ children }) => (
+                            <p className="mb-2 text-xs leading-5 text-muted-foreground">
+                              {children}
+                            </p>
+                          ),
+                          ul: ({ children }) => (
+                            <ul className="mb-2 list-disc space-y-0.5 pl-5 text-xs text-muted-foreground">
+                              {children}
+                            </ul>
+                          ),
+                          ol: ({ children }) => (
+                            <ol className="mb-2 list-decimal space-y-0.5 pl-5 text-xs text-muted-foreground">
+                              {children}
+                            </ol>
+                          ),
+                          li: ({ children }) => <li>{children}</li>,
+                          code: ({ children }) => (
+                            <code className="rounded bg-muted px-1.5 py-0.5 text-xs text-foreground">
+                              {children}
+                            </code>
+                          ),
+                          blockquote: ({ children }) => (
+                            <blockquote className="mb-2 border-l-2 border-border pl-3 text-xs text-muted-foreground">
+                              {children}
+                            </blockquote>
+                          )
+                        }}
+                      >
+                        {brief || t('home.briefPlaceholder')}
+                      </ReactMarkdown>
+                    </ScrollArea>
+                  )}
+                </div>
+                <div
+                  data-session-create-reference-actions
+                  className="mt-3 flex flex-wrap items-center justify-end gap-2"
+                >
                   {attachedReferenceFile && (
-                    <div className="flex min-w-0">
+                    <div className="flex min-w-0 max-w-full">
                       <span
-                        className={`inline-flex h-6 max-w-full items-center gap-1 rounded-full border px-2 text-[10px] ${
+                        className={`inline-flex h-8 max-w-full items-center gap-1.5 rounded-lg border px-2.5 text-[11px] ${
                           pendingImageReference
                             ? 'border-[#e7a19a]/80 bg-[#fff1ef] text-[#9a3f35]'
-                            : 'border-[#c7d9b4]/70 bg-[#e6f1dc]/80 text-[#405333]'
+                            : 'border-[#c8d6ba] bg-[#fffdf8]/84 text-[#5d6b4d]'
                         }`}
                         title={
                           pendingImageReference
@@ -793,7 +683,7 @@ export function SessionCreatePage(): ReactElement {
                         <button
                           type="button"
                           onClick={() => void handleRevealReferenceFile()}
-                          className="min-w-0 truncate text-left hover:underline"
+                          className="w-[150px] min-w-0 max-w-[150px] truncate text-left hover:underline"
                           title={t('home.revealReferenceFileTooltip')}
                           aria-label={t('home.revealReferenceFile')}
                         >
@@ -833,7 +723,7 @@ export function SessionCreatePage(): ReactElement {
                     </div>
                   )}
                   <TooltipProvider delayDuration={180}>
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center justify-end gap-2">
                       {!attachedReferenceFile && (
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -846,7 +736,7 @@ export function SessionCreatePage(): ReactElement {
                                   void handleChooseReferenceClick()
                                 }}
                                 disabled={parsingDocument}
-                                className="h-8 shrink-0 rounded-lg border border-[#d8ccb5]/80 bg-[#fffdf8]/76 px-2.5 text-xs font-medium text-[#405333] shadow-none hover:bg-[#f3f7ed] hover:text-[#2f3b28]"
+                                className="h-8 shrink-0 rounded-lg border border-[#e0d8c8] bg-[#fffdf8]/84 px-3 text-xs font-medium text-[#5d6b4d] shadow-none hover:bg-[#d4e4c1]/65 hover:text-[#3e4a32]"
                               >
                                 {parsingDocument ? (
                                   <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
@@ -880,10 +770,10 @@ export function SessionCreatePage(): ReactElement {
                                 disabled={!attachedReferenceFile}
                                 icon={Sparkles}
                                 tone="primary"
-                                dropdownAlign="start"
-                                className="box-border h-8 rounded-lg border-0 bg-gradient-to-r from-[#7f965f] to-[#5f7448] shadow-[0_8px_18px_rgba(93,107,77,0.18)]"
-                                mainClassName="h-full bg-transparent px-2.5 text-xs text-white shadow-none hover:bg-white/10 hover:text-white hover:shadow-none"
-                                triggerClassName="h-full w-8 px-0"
+                                dropdownAlign="end"
+                                className="box-border h-8 rounded-lg border-0 bg-[#8fbc8f] shadow-[0_6px_14px_rgba(113,134,95,0.15)]"
+                                mainClassName="h-full bg-transparent px-2.5 text-xs text-[#3e4a32] shadow-none hover:bg-white/10 hover:text-[#3e4a32] hover:shadow-none"
+                                triggerClassName="h-full w-8 px-0 text-[#3e4a32] hover:text-[#3e4a32]"
                                 onRun={handleAnalyzeReference}
                               />
                             </span>
@@ -897,36 +787,171 @@ export function SessionCreatePage(): ReactElement {
                   </TooltipProvider>
                 </div>
               </div>
-            </div>
 
-            <div className="rounded-lg border border-[#e2d8c7]/70 bg-white/35 p-3">
-              <label className="flex items-center gap-2">
-                <span>{t('home.animationPreferences')}</span>
-                <span className="rounded border border-[#d8ccb5]/70 bg-white/65 px-1.5 py-0.5 text-[10px] font-medium leading-none text-[#7f8a70]">
-                  {t('common.optional')}
-                </span>
-              </label>
-              <AnimationPreferenceChips
-                selectedIds={selectedAnimationPreferenceIds}
-                onChange={setSelectedAnimationPreferenceIds}
-              />
-            </div>
+              <div className="mt-auto flex pt-1">
+                <ModelSplitButton
+                  modelAction={modelAction}
+                  ariaLabel={t('home.createAndStart')}
+                  label={t('home.createAndStart')}
+                  loadingLabel={t('home.creating')}
+                  loading={submitting || loading}
+                  disabled={!requiredReady || parsingDocument}
+                  icon={Sparkles}
+                  tone="primary"
+                  className="w-full sm:w-auto"
+                  mainClassName="min-w-0 flex-1 h-10 px-4 sm:flex-none sm:min-w-[176px]"
+                  onRun={handleSubmit}
+                />
+              </div>
+            </main>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#d8ccb5]/70 pt-5">
-              <ModelSplitButton
-                modelAction={modelAction}
-                ariaLabel={t('home.createAndStart')}
-                label={t('home.createAndStart')}
-                loadingLabel={t('home.creating')}
-                loading={submitting || loading}
-                disabled={!requiredReady || parsingDocument}
-                icon={Sparkles}
-                tone="primary"
-                className="w-full sm:w-auto"
-                mainClassName="min-w-0 flex-1 sm:flex-none sm:min-w-[176px]"
-                onRun={handleSubmit}
-              />
-            </div>
+            <aside
+              data-session-create-settings
+              className="min-w-0 bg-transparent p-5 sm:p-6 lg:border-l lg:border-[#ded8cb] lg:p-7"
+            >
+              <div className="space-y-7">
+                <section>
+                  <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_88px] lg:grid-cols-[minmax(0,1fr)_82px]">
+                    <div>
+                      <label className="mb-2 block">{t('home.style')}</label>
+                      <StyleSelect
+                        value={selectedStyleId}
+                        onChange={setSelectedStyleId}
+                        options={styleOptions}
+                        placeholder={t('home.stylePlaceholder')}
+                        compact
+                        className="h-10 border-[#c8d6ba] bg-[#fffdf8]/90 shadow-none"
+                        dropdownAlign="end"
+                        dropdownClassName="w-[min(700px,calc(100vw-3rem))]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block">{t('home.pageCount')}</label>
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        placeholder={`${MIN_PAGE_COUNT}-${MAX_PAGE_COUNT}`}
+                        value={pageCount}
+                        required
+                        onChange={(e) => {
+                          const next = e.target.value
+                          setAcceptedSourcePlan(undefined)
+                          if (next === '') {
+                            setPageCount('')
+                            return
+                          }
+                          if (!/^\d+$/.test(next)) return
+                          setPageCount(next)
+                        }}
+                        onBlur={() => {
+                          setPageCount(String(resolvePageCount(pageCount)))
+                        }}
+                        className={compactInputClass}
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                <section>
+                  <label className="mb-2 block">{t('home.fontScheme')}</label>
+                  <div className="grid gap-2">
+                    <Select value={selectedTitleFontId} onValueChange={setSelectedTitleFontId}>
+                      <SelectTrigger className={compactSelectTriggerClass}>
+                        <SelectValue placeholder={t('home.fontSchemeAuto')} />
+                      </SelectTrigger>
+                      <SelectContent className={compactSelectContentClass}>
+                        <SelectItem value="auto" className={compactSelectItemClass}>
+                          {t('home.fontSchemeAuto')}
+                        </SelectItem>
+                        {availableTitleFonts.map((font) => {
+                          const isUploaded = font.source === 'uploaded'
+                          const sourceLabel = isUploaded
+                            ? t('home.fontSourceUploaded')
+                            : t('home.fontSourceBuiltIn')
+                          return (
+                            <SelectItem
+                              key={`${font.source}:${font.id}`}
+                              value={`${font.source}:${font.id}`}
+                              className={compactSelectItemClass}
+                            >
+                              <span className="flex items-center gap-2">
+                                <span
+                                  className={`shrink-0 rounded px-1 py-0.5 text-[10px] font-medium ${
+                                    isUploaded
+                                      ? 'bg-[#eef9ec] text-[#4a7a46]'
+                                      : 'bg-[#eef6ff] text-[#3e6685]'
+                                  }`}
+                                >
+                                  {sourceLabel}
+                                </span>
+                                <span className="truncate">
+                                  {t('home.fontPairTitle')} · {font.family}
+                                </span>
+                              </span>
+                            </SelectItem>
+                          )
+                        })}
+                      </SelectContent>
+                    </Select>
+                    <Select value={selectedBodyFontId} onValueChange={setSelectedBodyFontId}>
+                      <SelectTrigger className={compactSelectTriggerClass}>
+                        <SelectValue placeholder={t('home.fontSchemeAuto')} />
+                      </SelectTrigger>
+                      <SelectContent className={compactSelectContentClass}>
+                        <SelectItem value="auto" className={compactSelectItemClass}>
+                          {t('home.fontSchemeAuto')}
+                        </SelectItem>
+                        {availableBodyFonts.map((font) => {
+                          const isUploaded = font.source === 'uploaded'
+                          const sourceLabel = isUploaded
+                            ? t('home.fontSourceUploaded')
+                            : t('home.fontSourceBuiltIn')
+                          return (
+                            <SelectItem
+                              key={`${font.source}:${font.id}`}
+                              value={`${font.source}:${font.id}`}
+                              className={compactSelectItemClass}
+                            >
+                              <span className="flex items-center gap-2">
+                                <span
+                                  className={`shrink-0 rounded px-1 py-0.5 text-[10px] font-medium ${
+                                    isUploaded
+                                      ? 'bg-[#eef9ec] text-[#4a7a46]'
+                                      : 'bg-[#eef6ff] text-[#3e6685]'
+                                  }`}
+                                >
+                                  {sourceLabel}
+                                </span>
+                                <span className="truncate">
+                                  {t('home.fontPairBody')} · {font.family}
+                                </span>
+                              </span>
+                            </SelectItem>
+                          )
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-[#7f8a70]">{fontSelectHint}</p>
+                </section>
+
+                <section>
+                  <label className="mb-2 flex items-center gap-2">
+                    <span>{t('home.animationPreferences')}</span>
+                    <span className="text-[10px] font-medium text-[#8b927f]">
+                      {t('common.optional')}
+                    </span>
+                  </label>
+                  <AnimationPreferenceChips
+                    selectedIds={selectedAnimationPreferenceIds}
+                    onChange={setSelectedAnimationPreferenceIds}
+                    compact
+                  />
+                </section>
+              </div>
+            </aside>
           </CardContent>
         </Card>
       </div>

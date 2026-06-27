@@ -1,9 +1,29 @@
 import { describe, expect, it } from 'vitest'
 import fs from 'fs'
 import path from 'path'
+import {
+  buildDeckAgentSystemPrompt,
+  buildSinglePageGenerationPrompt
+} from '../../../src/main/prompt'
+import type { SessionDeckGenerationContext } from '../../../src/main/tools/types'
 
 const readSource = (relativePath: string): string =>
   fs.readFileSync(path.join(process.cwd(), relativePath), 'utf-8')
+
+const baseContext: SessionDeckGenerationContext = {
+  sessionId: 'session-1',
+  projectDir: '/tmp/project',
+  indexPath: '/tmp/project/index.html',
+  pageFileMap: { 'page-1': '/tmp/project/page-1.html' },
+  topic: 'Quarterly report',
+  deckTitle: 'Quarterly report',
+  styleId: 'test-style',
+  styleSkillPrompt: 'Use a clean business style.',
+  userMessage: 'Create a quarterly report.',
+  outlineTitles: ['Overview'],
+  outlineItems: [{ title: 'Overview', contentOutline: 'Summarize the quarter.' }],
+  appLocale: 'en'
+}
 
 describe('content expansion rules — always-on, not source-gated', () => {
   it('CONTENT_EXPANSION_RULES expands only when the page is truly thin', () => {
@@ -12,7 +32,9 @@ describe('content expansion rules — always-on, not source-gated', () => {
     // Expansion is conditional: enough content means choose, group, and budget —
     // not more modules. This guards against dense source pages overflowing.
     expect(shared).toContain('export const CONTENT_EXPANSION_RULES')
+    expect(shared).toContain('内容丰富与优化规则')
     expect(shared).toContain('先判断是否真的不足')
+    expect(shared).toContain('写 HTML 前必须先判断内容是否需要丰富或优化')
     expect(shared).toContain('内容够了就不扩展')
     expect(shared).toContain('已有完整表格、多指标对比、图表 + 读图结论')
     expect(shared).toContain('不要再新增卡片、注释区或第二套总结')
@@ -81,12 +103,42 @@ describe('content expansion rules — always-on, not source-gated', () => {
     expect(afterRetry).toContain('CONTENT_EXPANSION_RULES')
   })
 
-  it('the slide-thesis soul is a shared constant (SLIDE_THESIS_RULES) foregrounded in both generation entries', () => {
+  it('generation prompts keep slide form in SLIDE_THESIS_RULES and content enrichment in CONTENT_EXPANSION_RULES', () => {
+    const deckPrompt = buildDeckAgentSystemPrompt('test-style', {
+      ...baseContext,
+      animationPreferences: { ids: ['fade'] }
+    })
+    const pagePrompt = buildSinglePageGenerationPrompt({
+      topic: 'Quarterly report',
+      deckTitle: 'Quarterly report',
+      pageId: 'page-1',
+      pageNumber: 1,
+      pageTitle: 'Overview',
+      pageOutline: 'Summarize the quarter.'
+    })
+
+    expect(pagePrompt).toContain('Required content enrichment decision before writing')
+    expect(pagePrompt).toContain('First follow SLIDE_THESIS_RULES to decide the slide form')
+    expect(pagePrompt).toContain('CONTENT_EXPANSION_RULES only to decide whether the content itself needs enrichment')
+    expect(pagePrompt).toContain('the page is thin: enrich the argument structure')
+    expect(pagePrompt).toContain('animation is downstream only')
+    expect(pagePrompt).toContain('must follow the slide form, source grounding, and warranted content enrichment')
+
+    expect(deckPrompt).toContain('Animation preferences for page writing only')
+    expect(deckPrompt).toContain('Animation is downstream only')
+    expect(deckPrompt).toContain('Never reduce, skip, or reshape warranted content enrichment')
+    expect(deckPrompt).toContain('写 HTML 前必须先判断内容是否需要丰富或优化')
+    expect(deckPrompt.indexOf('写 HTML 前必须先判断内容是否需要丰富或优化')).toBeLessThan(
+      deckPrompt.indexOf('Animation preferences for page writing only')
+    )
+  })
+
+  it('slide-thesis rules own the form guidance while content expansion owns enrichment', () => {
     const shared = readSource('src/main/prompt/shared.ts')
     const deckSystem = readSource('src/main/prompt/deck-system.ts')
     const generationUser = readSource('src/main/prompt/generation-user.ts')
 
-    // The soul lives ONCE in shared.ts as a constant — not inlined duplicated prose.
+    // The thesis helper lives once in shared.ts as a constant — not inlined duplicated prose.
     expect(shared).toContain('export const SLIDE_THESIS_RULES')
     expect(shared).toContain('3 秒主旨')
     expect(shared).toContain('PPT 是演讲辅助')
@@ -100,9 +152,9 @@ describe('content expansion rules — always-on, not source-gated', () => {
     expect(deckSystem).toContain('SLIDE_THESIS_RULES')
     expect(generationUser).toContain('SLIDE_THESIS_RULES')
 
-    // The soul (SLIDE_THESIS_RULES) and source-grounded expansion live ONLY in the
-    // rewrite-capable edit paths (single-page + deck). Selector (element-level) and
-    // container (index.html transition) edits must NOT carry whole-page signals —
+    // Form guidance and source-grounded content enrichment live ONLY in the
+    // rewrite-capable edit paths (single-page + deck). Selector (element-level)
+    // and container edits must NOT carry whole-page signals —
     // that would violate their narrow scope. Slice each edit function's body and
     // assert the boundary precisely so a future mis-wire is caught.
     const editSystem = readSource('src/main/prompt/edit-system.ts')

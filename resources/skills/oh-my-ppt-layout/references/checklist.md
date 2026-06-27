@@ -12,7 +12,7 @@ Levels:
 
 - Standard mode emits `data-img-slot` / `data-image-slot` / `script[data-img-intent]`, an image job, or an empty image placeholder. Standard mode does not generate images.
 - A text-bearing element (title, body, card) uses `absolute` or `fixed` positioning. Body content must live in grid/flex flow.
-- Any visible text is below 16px (`text-xs` / `text-sm` / `text-[12px]` … `text-[15px]`). `text-base` (16px) is the floor.
+- Body copy, ordinary labels, or card descriptions are below 18px (`text-lg` is the floor), any heading is below 24px (`text-2xl` is the floor), or auxiliary text is below 12px. These are minimums, not fixed sizes. Annotations, footers, page numbers, source/citation lines, and elements explicitly marked `data-ppt-text-role="auxiliary"` may be 12–17px.
 - On a standard or high chart page, a two-row bottom card grid sits under the main chart. Support modules are capped at 0–2 compact blocks; 3 is allowed only when they are genuinely parallel, short facts with explicit height budget.
 - A dense chart page expanded content into more cards without regrouping; rich content must become hierarchy, annotations, compact rows, or an evidence rail, not extra equal-weight modules.
 - Content exceeds 1600×900 — collision, overflow, or clipping.

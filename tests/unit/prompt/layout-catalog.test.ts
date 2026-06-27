@@ -174,7 +174,9 @@ describe('layout skill checklist levels', () => {
 
     // P0 mirrors the project hard rules.
     expect(checklist).toContain('data-img-slot')
-    expect(checklist).toContain('below 16px')
+    expect(checklist).toContain('below 18px')
+    expect(checklist).toContain('heading is below 24px')
+    expect(checklist).toContain('data-ppt-text-role="auxiliary"')
     expect(checklist).toContain('two-row bottom card grid')
     expect(checklist).toContain('exceeds 1600×900')
     expect(checklist).toContain('top-heavy')

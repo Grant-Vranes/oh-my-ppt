@@ -242,15 +242,15 @@ These exit scale labels are preferred over ad hoc scale arrays because the PPTX 
 <div class="grid grid-cols-3 gap-4">
   <div data-anim="fade-up" data-anim-delay="stagger(100)">
     <p class="text-3xl font-bold">$12M</p>
-    <p class="text-base text-gray-500">Revenue</p>
+    <p class="text-lg text-gray-500">Revenue</p>
   </div>
   <div data-anim="fade-up" data-anim-delay="stagger(100)">
     <p class="text-3xl font-bold">86%</p>
-    <p class="text-base text-gray-500">Retention</p>
+    <p class="text-lg text-gray-500">Retention</p>
   </div>
   <div data-anim="fade-up" data-anim-delay="stagger(100)">
     <p class="text-3xl font-bold">2.4x</p>
-    <p class="text-base text-gray-500">ROI</p>
+    <p class="text-lg text-gray-500">ROI</p>
   </div>
 </div>
 ```
@@ -288,7 +288,7 @@ These exit scale labels are preferred over ad hoc scale arrays because the PPTX 
 <div class="flex flex-col gap-6">
   <div data-anim="zoom-in" data-anim-duration="800">
     <p class="text-5xl font-bold">42%</p>
-    <p class="text-base text-gray-500">Market Growth</p>
+    <p class="text-lg text-gray-500">Market Growth</p>
   </div>
   <div class="grid grid-cols-3 gap-4">
     <div data-anim="fade-up" data-anim-delay="stagger(80)">Card 1</div>
@@ -303,7 +303,7 @@ These exit scale labels are preferred over ad hoc scale arrays because the PPTX 
 ```html
 <div data-anim="pulse" data-anim-duration="600">
   <p class="text-xl font-bold text-red-600">Critical Risk</p>
-  <p class="text-base">Action required before Q3.</p>
+  <p class="text-lg">Action required before Q3.</p>
 </div>
 ```
 

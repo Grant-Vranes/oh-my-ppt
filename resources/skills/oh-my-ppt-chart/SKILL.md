@@ -147,7 +147,7 @@ This is the only correct event and the only correct API. The runtime loads Chart
 <div class="grid grid-cols-2 gap-4">
   <div class="flex flex-col gap-2">
     <h3 class="text-2xl font-bold">Quarterly Revenue</h3>
-    <p class="text-base text-gray-500">Growth trend across regions</p>
+    <p class="text-lg text-gray-500">Growth trend across regions</p>
   </div>
   <!-- height calc @ppt-chart-height=560: page content slot = 900 - 48(p-6) - 68(title/subtitle) - 24(gap-6) - 32(reserve) = 728; two columns share width, not height; right-column heading/support = 168; chart slot = 728 - 168 = 560; chart height = hero/main side chart = 560 -->
   <div class="ppt-chart-frame relative h-[560px] w-full overflow-hidden">

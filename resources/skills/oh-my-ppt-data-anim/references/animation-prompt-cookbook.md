@@ -136,7 +136,7 @@
 ```html
 <div data-anim="zoom-in" data-anim-duration="800">
   <p class="text-5xl font-bold">42%</p>
-  <p class="text-base text-gray-500">市场增长率</p>
+  <p class="text-lg text-gray-500">市场增长率</p>
 </div>
 ```
 
@@ -183,7 +183,7 @@
 ```html
 <div data-anim="pulse-soft" data-anim-duration="600">
   <p class="text-2xl font-semibold">99.9%</p>
-  <p class="text-sm text-gray-500">可用性</p>
+  <p class="text-lg text-gray-500">可用性</p>
 </div>
 ```
 
@@ -198,7 +198,7 @@
 ```html
 <div data-anim="pulse" data-anim-duration="600">
   <p class="text-xl font-bold text-red-600">关键风险</p>
-  <p class="text-base">Q3 前需行动</p>
+  <p class="text-lg">Q3 前需行动</p>
 </div>
 ```
 
@@ -334,15 +334,15 @@
 <div class="grid grid-cols-3 gap-4">
   <div data-anim="fade-up" data-anim-stagger="90">
     <p class="text-3xl font-bold">$12M</p>
-    <p class="text-base text-gray-500">营收</p>
+    <p class="text-lg text-gray-500">营收</p>
   </div>
   <div data-anim="fade-up" data-anim-stagger="90">
     <p class="text-3xl font-bold">86%</p>
-    <p class="text-base text-gray-500">留存</p>
+    <p class="text-lg text-gray-500">留存</p>
   </div>
   <div data-anim="fade-up" data-anim-stagger="90">
     <p class="text-3xl font-bold">2.4x</p>
-    <p class="text-base text-gray-500">ROI</p>
+    <p class="text-lg text-gray-500">ROI</p>
   </div>
 </div>
 ```
@@ -397,7 +397,7 @@
 <div class="flex flex-col gap-6">
   <div data-anim="zoom-in" data-anim-duration="800">
     <p class="text-5xl font-bold">42%</p>
-    <p class="text-base text-gray-500">市场增长</p>
+    <p class="text-lg text-gray-500">市场增长</p>
   </div>
   <div class="grid grid-cols-3 gap-4">
     <div data-anim="fade-up" data-anim-stagger="80">卡片 1</div>
@@ -442,7 +442,7 @@
   <p class="text-xl font-bold text-red-600">风险提示</p>
 </div>
 <div data-anim="grow-shrink-soft" data-anim-duration="800">
-  <p class="text-base text-green-600">已有应对方案</p>
+  <p class="text-lg text-green-600">已有应对方案</p>
 </div>
 ```
 

@@ -101,7 +101,7 @@ export const CANVAS_CONSTRAINTS = [
   '- 密度由内容决定：氛围/叙事页低密度，多数页中密度，表格/多指标对比才高密度；内容够了就不扩展，只压缩、归并、换表达。',
   '- 内容过多先总结再布局：如果标题 + 图表/表格/列表/卡片会超出 900px 或显得过密，必须先重写信息架构（主旨、分组、优先级、紧凑表达）再写 HTML；不要靠缩小字号、增加卡片、堆更多行或把所有事实等权上屏来硬塞。',
   '- 图表高度：注释里写 `@ppt-chart-height=N`，且 N 与 class 的 `h-[Npx]` 一致（写 560 就配 h-[560px]）。',
-  '- 字号：正文最小 text-base(16px)，标题最大 text-5xl(48px)；空间紧时调密度与层级，用 grid/flex 解决，不用 100vw/100vh/w-screen/h-screen/iframe。'
+  '- 字号下限：正文、普通标签和卡片说明不小于 `text-lg`(18px)；任何标题不小于 `text-2xl`(24px)，标题仍可按层级放大，最大 `text-5xl`(48px)。注释、页脚、页码、来源/出处等辅助信息可以小于 18px，但不得小于 12px；使用 `<footer>` / `<small>` / `<figcaption>`，或显式标记 `data-ppt-text-role="auxiliary"`。空间紧时调密度与层级，不靠缩小正文或标题硬塞；用 grid/flex 解决，不用 100vw/100vh/w-screen/h-screen/iframe。'
 ].join('\n')
 
 export const LAYOUT_COLLISION_RULES = [

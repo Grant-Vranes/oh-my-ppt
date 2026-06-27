@@ -75,8 +75,10 @@ The same role and density can produce several valid patterns — pick the one wh
 - Use Tailwind grid/flex layout. The root container usually uses `w-full h-full`; avoid fixed pixel values on the root.
 - All content must be fully visible within the canvas. When space is tight, preserve the information by changing the composition: asymmetric split, bento grid, evidence rail, timeline strip, layered callout, compact table, grouped labels, or side-by-side zones.
 - Background fills the entire canvas, defined on the outermost container.
-- Use `text-base` (16px) as the smallest class for all visible text — body, labels, annotations, footnotes.
-- Use `text-5xl` as the largest heading scale. Use `text-2xl` through `text-4xl` for subtitles and metric labels.
+- Body copy, ordinary labels, and card descriptions must be at least `text-lg` (18px).
+- Every heading must be at least `text-2xl` (24px); this is a floor, not a fixed heading size. Use larger heading scales up to `text-5xl` (48px) when hierarchy calls for them.
+- Annotations, footers, page numbers, source/citation lines, and other genuinely auxiliary text may be smaller than 18px, but must remain at least 12px. Use semantic `<footer>`, `<small>`, or `<figcaption>` elements, or mark a non-semantic wrapper with `data-ppt-text-role="auxiliary"`. Do not use this exemption for body copy, ordinary labels, or card descriptions.
+- Decorative chips, badges, status tags, and compact KPI units that intentionally use the 12–17px auxiliary range must carry `data-ppt-text-role="auxiliary"`; otherwise they are ordinary labels and the 18px body floor applies.
 - The visual center can sit slightly above the geometric center for projection comfort. This is a balance correction, not permission to stack all modules in the top half.
 
 ### Body content uses grid/flex flow
@@ -182,7 +184,7 @@ Oh My PPT separates two concerns:
 
 The current style may include its own "layout" advice and composition tendencies; that is expected. When style and this skill interact:
 
-- **Structural safety has priority.** Collision, overflow, content overload, and unreadable font size (below 16px) are backed by this skill and override the style's composition tendency. A style suggestion that would push text into absolute positioning, shrink text below 16px, or overflow the canvas loses to this skill.
+- **Structural safety has priority.** Collision, overflow, content overload, body text below 18px, headings below 24px, or auxiliary text below 12px are backed by this skill and override the style's composition tendency. Auxiliary annotations, footers, page numbers, and source/citation lines are exempt from the 18px body floor, not from the 12px auxiliary floor. A style suggestion that would push text into absolute positioning, shrink text below its semantic floor, or overflow the canvas loses to this skill.
 - **Visual language is the style's alone.** Do not let any pattern in the catalog pull the page toward a fixed external look. Run the style-swap self-check: the same pattern must hold under any other style without pointing at one fixed visual.
 
 When a style's "layout" section conflicts with a structural rule here, follow the structural rule and keep the style's visual treatment.

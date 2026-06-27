@@ -187,6 +187,26 @@ describe('layout prompt budget guardrails', () => {
     expect(combined).toMatch(/h-\[240px\]/i)
   })
 
+  it('keeps body and heading font floors semantic while exempting auxiliary text', () => {
+    const sharedPrompt = readProjectFile('src/main/prompt/shared.ts')
+    const layoutSkill = readProjectFile('resources/skills/oh-my-ppt-layout/SKILL.md')
+    const checklist = readProjectFile('resources/skills/oh-my-ppt-layout/references/checklist.md')
+    const combined = [sharedPrompt, layoutSkill, checklist].join('\n')
+
+    expect(combined).toContain('text-lg')
+    expect(combined).toContain('18px')
+    expect(combined).toContain('text-2xl')
+    expect(combined).toContain('24px')
+    expect(combined).toContain('data-ppt-text-role="auxiliary"')
+    expect(layoutSkill).toContain('this is a floor, not a fixed heading size')
+    expect(layoutSkill).toContain('Decorative chips, badges, status tags')
+    expect(sharedPrompt).toContain('标题仍可按层级放大')
+    expect(checklist).toContain('may be 12–17px')
+    expect(combined).toContain('auxiliary text below 12px')
+    expect(combined).not.toContain('text-base(16px)')
+    expect(combined).not.toContain('text-base` (16px) is the floor')
+  })
+
   it('every canonical copy-this chart example carries @ppt-chart-height matching its h-[Npx]', () => {
     const chartSkill = readProjectFile('resources/skills/oh-my-ppt-chart/SKILL.md')
     const chartReference = readProjectFile('resources/skills/oh-my-ppt-chart/references/chart.md')

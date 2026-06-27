@@ -31,6 +31,10 @@ const PROVIDER_DOCS: Record<ImageModelForm['provider'], { label: string; url: st
     label: '即梦4.0',
     url: 'https://www.volcengine.com/docs/85621/1817045?lang=zh'
   },
+  seedream: {
+    label: 'Seedream',
+    url: 'https://www.volcengine.com/docs/82379/1541523?lang=zh'
+  },
   siliconflow: {
     label: '硅基流动',
     url: 'https://www.siliconflow.cn/'
@@ -51,7 +55,8 @@ const PROVIDER_HINT_KEYS: Record<ImageModelForm['provider'], Parameters<Settings
   jimeng4: 'settings.imageModelConfigHintJimeng4',
   siliconflow: 'settings.imageModelConfigHintSiliconflow',
   openaiCompatible: 'settings.imageModelConfigHintOpenAICompatible',
-  gemini: 'settings.imageModelConfigHintGemini'
+  gemini: 'settings.imageModelConfigHintGemini',
+  seedream: 'settings.imageModelConfigHintSeedream'
 }
 
 const SILICONFLOW_MODELS = [

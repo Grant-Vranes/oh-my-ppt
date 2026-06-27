@@ -49,7 +49,8 @@ const PROVIDER_SIZE_OPTIONS: Record<ImageModelProvider, ImageSizeOption[]> = {
     { value: '1:1|4K', label: '1:1 · 4K' },
     { value: '16:9|4K', label: '16:9 · 4K' },
     { value: '9:16|4K', label: '9:16 · 4K' }
-  ]
+  ],
+  seedream: [{ value: '2K', label: '2K' }]
 }
 
 const SILICONFLOW_QWEN_SIZE_OPTIONS: ImageSizeOption[] = [

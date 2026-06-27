@@ -5,6 +5,7 @@ export type ImageModelProvider =
   | 'siliconflow'
   | 'openaiCompatible'
   | 'gemini'
+  | 'seedream'
 
 export type ImageGenerationSize = '16:9' | '1:1' | '4:3' | '9:16' | '3:4'
 export type ImageGenerationQuality = 'standard' | 'high'

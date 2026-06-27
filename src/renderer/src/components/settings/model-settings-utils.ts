@@ -6,6 +6,7 @@ export const IMAGE_PROVIDER_OPTIONS: Array<{ value: ImageModelProvider; label: s
   { value: 'agnes', label: 'Agnes AI' },
   { value: 'jimeng', label: '即梦3.0' },
   { value: 'jimeng4', label: '即梦4.0' },
+  { value: 'seedream', label: 'Seedream' },
   { value: 'siliconflow', label: '硅基流动' },
   { value: 'openaiCompatible', label: 'OpenAI 兼容' },
   { value: 'gemini', label: 'Gemini' }
@@ -78,6 +79,17 @@ export const createDefaultImageModelConfig = (provider: ImageModelProvider): str
     return stringifyJsonObject({
       model: 'gemini-3.1-flash-image',
       apiKey: ''
+    })
+  }
+  if (provider === 'seedream') {
+    return stringifyJsonObject({
+      baseUrl: 'https://ark.cn-beijing.volces.com',
+      model: 'doubao-seedream-5-0-260128',
+      apiKey: '',
+      response_format: 'url',
+      sizes: ['2K'],
+      sequential_image_generation: 'disabled',
+      stream: false
     })
   }
   return stringifyJsonObject({

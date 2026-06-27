@@ -4,6 +4,7 @@ import { geminiAdapter } from './gemini'
 import { jimengAdapter } from './jimeng'
 import { jimengV4Adapter } from './jimeng-v4'
 import { openAiChatCompletionsAdapter } from './openai-chat-completions'
+import { seedreamAdapter } from './seedream'
 import { siliconFlowAdapter } from './siliconflow'
 
 const PROVIDER_ADAPTERS: Record<
@@ -15,7 +16,8 @@ const PROVIDER_ADAPTERS: Record<
   jimeng4: jimengV4Adapter,
   siliconflow: siliconFlowAdapter,
   openaiCompatible: openAiChatCompletionsAdapter,
-  gemini: geminiAdapter
+  gemini: geminiAdapter,
+  seedream: seedreamAdapter
 }
 
 export function resolveImageGenerationProvider(

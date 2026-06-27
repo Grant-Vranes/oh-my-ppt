@@ -25,6 +25,10 @@ import type { HistoryVersion, RollbackHistoryResult } from '@shared/history.js'
 import type { HtmlThumbnailResourceType } from '@shared/thumbnail'
 import type { IndexTransitionConfig, IndexTransitionType } from '@shared/index-transition.js'
 import type {
+  ElementAnimationConfig,
+  ElementAnimationPatch
+} from '@shared/element-animation.js'
+import type {
   ThinkingStage,
   ThinkingChatMessage,
   ThinkingWorkspace,
@@ -920,6 +924,27 @@ export const ipc = {
     }>,
   ensureElementAnchor: (payload: EnsureElementAnchorPayload) =>
     getIpc().invoke('element-anchor:ensure', payload) as Promise<EnsureElementAnchorResult>,
+  getElementAnimation: (payload: {
+    sessionId: string
+    htmlPath: string
+    pageId: string
+    selector: string
+  }) =>
+    getIpc().invoke('element-animation:get', payload) as Promise<{
+      animation: ElementAnimationConfig | null
+    }>,
+  setElementAnimation: (payload: {
+    sessionId: string
+    htmlPath: string
+    pageId: string
+    selector: string
+    patch: ElementAnimationPatch
+  }) =>
+    getIpc().invoke('element-animation:set', payload) as Promise<{
+      success: boolean
+      changed: boolean
+      animation: ElementAnimationConfig | null
+    }>,
   updateElementProperties: (payload: UpdateElementPropertiesPayload) =>
     getIpc().invoke('text-editor:update-element-properties', payload) as Promise<{
       success: boolean

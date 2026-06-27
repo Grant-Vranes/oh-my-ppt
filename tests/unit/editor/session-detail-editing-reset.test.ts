@@ -119,4 +119,22 @@ describe('session detail editing reset', () => {
       elementText: ''
     })
   })
+
+  it('keeps the animation workspace while clearing its page-scoped target', () => {
+    useSessionDetailUiStore.setState({
+      interactionMode: 'animation-select',
+      workspaceTab: 'animation',
+      selectedSelector: '[data-block-id="metric"]',
+      selectorLabel: 'metric'
+    })
+
+    useSessionDetailUiStore.getState().resetForPageChange()
+
+    expect(useSessionDetailUiStore.getState()).toMatchObject({
+      interactionMode: 'preview',
+      workspaceTab: 'animation',
+      selectedSelector: null,
+      selectorLabel: ''
+    })
+  })
 })

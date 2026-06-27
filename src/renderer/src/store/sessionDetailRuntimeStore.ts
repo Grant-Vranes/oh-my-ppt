@@ -14,6 +14,9 @@ interface SessionDetailRuntimeStore {
   addElementHandler: AddSessionElementHandler | null
   setAddElementHandler: (handler: AddSessionElementHandler | null) => void
   addElement: AddSessionElementHandler
+  refreshCurrentPreviewHandler: (() => void) | null
+  setRefreshCurrentPreviewHandler: (handler: (() => void) | null) => void
+  refreshCurrentPreview: () => void
   workspaceRibbonActions: WorkspaceRibbonRegisteredActions | null
   setWorkspaceRibbonActions: (actions: WorkspaceRibbonRegisteredActions | null) => void
 }
@@ -24,6 +27,13 @@ export const useSessionDetailRuntimeStore = create<SessionDetailRuntimeStore>((s
   addElement: async (relativePath, fileName, options) => {
     const handler = get().addElementHandler
     return handler ? handler(relativePath, fileName, options) : false
+  },
+  refreshCurrentPreviewHandler: null,
+  setRefreshCurrentPreviewHandler: (refreshCurrentPreviewHandler) =>
+    set({ refreshCurrentPreviewHandler }),
+  refreshCurrentPreview: () => {
+    const handler = get().refreshCurrentPreviewHandler
+    handler?.()
   },
   workspaceRibbonActions: null,
   setWorkspaceRibbonActions: (workspaceRibbonActions) => set({ workspaceRibbonActions })

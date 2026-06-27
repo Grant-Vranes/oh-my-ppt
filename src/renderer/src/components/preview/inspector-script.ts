@@ -2,8 +2,15 @@ import { buildElementPickerCoreScript } from './element-picker-core'
 
 export const INSPECTOR_CONSOLE_PREFIX = '__PPT_INSPECTOR__:'
 
-export function buildInspectorInjectScript(options?: { mode?: 'inspect' | 'text-edit' }): string {
-  const mode = options?.mode === 'text-edit' ? 'text-edit' : 'inspect'
+export function buildInspectorInjectScript(options?: {
+  mode?: 'inspect' | 'text-edit' | 'animation-select'
+}): string {
+  const mode =
+    options?.mode === 'text-edit'
+      ? 'text-edit'
+      : options?.mode === 'animation-select'
+        ? 'animation-select'
+        : 'inspect'
   return `
 (() => {
   const STATE_KEY = "__pptInspectorState";
@@ -233,6 +240,72 @@ export function buildInspectorInjectScript(options?: { mode?: 'inspect' | 'text-
   };
 
   const normalizeText = (value) => String(value || "").replace(/\\s+/g, " ").trim();
+
+  const readDelimitedFormula = (text) => {
+    const trimmed = String(text || "").trim();
+    if (trimmed.startsWith("$$") && trimmed.endsWith("$$") && trimmed.length > 4) {
+      return { latex: trimmed.slice(2, -2).trim(), displayMode: true };
+    }
+    const displayStart = text.indexOf("$$");
+    const displayEnd = displayStart >= 0 ? text.indexOf("$$", displayStart + 2) : -1;
+    if (displayStart >= 0 && displayEnd > displayStart) {
+      return { latex: text.slice(displayStart + 2, displayEnd).trim(), displayMode: true };
+    }
+    const bracketStart = text.indexOf("\\\\[");
+    const bracketEnd = bracketStart >= 0 ? text.indexOf("\\\\]", bracketStart + 2) : -1;
+    if (bracketStart >= 0 && bracketEnd > bracketStart) {
+      return { latex: text.slice(bracketStart + 2, bracketEnd).trim(), displayMode: true };
+    }
+    const inlineStart = text.indexOf("\\\\(");
+    const inlineEnd = inlineStart >= 0 ? text.indexOf("\\\\)", inlineStart + 2) : -1;
+    if (inlineStart >= 0 && inlineEnd > inlineStart) {
+      return { latex: text.slice(inlineStart + 2, inlineEnd).trim(), displayMode: false };
+    }
+    const singleStart = text.indexOf("$");
+    const singleEnd = singleStart >= 0 ? text.indexOf("$", singleStart + 1) : -1;
+    if (singleStart >= 0 && singleEnd > singleStart) {
+      return { latex: text.slice(singleStart + 1, singleEnd).trim(), displayMode: false };
+    }
+    return { latex: "", displayMode: false };
+  };
+
+  const readFormulaMetadata = (element) => {
+    if (!(element instanceof Element)) return undefined;
+    const rendered = element.matches(".katex, .katex-display")
+      ? element
+      : element.querySelector(".katex, .katex-display");
+    const sourceHolder = rendered || element;
+    const explicitLatex =
+      sourceHolder.getAttribute("data-ppt-formula-latex") ||
+      element.getAttribute("data-ppt-formula-latex") ||
+      "";
+    const annotation = rendered
+      ? rendered.querySelector('annotation[encoding="application/x-tex"]')
+      : element.querySelector('annotation[encoding="application/x-tex"]');
+    let latex = explicitLatex || (annotation ? annotation.textContent || "" : "");
+    let sourceDisplayMode = false;
+    if (!latex) {
+      const text = element.textContent || "";
+      const delimited = readDelimitedFormula(text);
+      if (!delimited.latex) return undefined;
+      latex = delimited.latex.trim();
+      sourceDisplayMode = delimited.displayMode;
+    }
+    if (!latex) return undefined;
+    const clone = (rendered || element).cloneNode(true);
+    if (clone instanceof Element) {
+      clone.classList.remove(HIGHLIGHT_CLASS);
+      clone.querySelectorAll("." + HIGHLIGHT_CLASS).forEach((child) => {
+        if (child instanceof Element) child.classList.remove(HIGHLIGHT_CLASS);
+      });
+    }
+    const html = rendered ? clone.outerHTML || "" : clone.innerHTML || "";
+    const displayMode =
+      sourceHolder.getAttribute("data-ppt-formula-display") === "true" ||
+      sourceHolder.classList.contains("katex-display") ||
+      sourceDisplayMode;
+    return { latex: latex.trim(), html, displayMode };
+  };
 
   const hasOnlyEditableTextChildren = (element) => {
     return Array.from(element.children || []).every((child) => {
@@ -516,10 +589,7 @@ export function buildInspectorInjectScript(options?: { mode?: 'inspect' | 'text-
     style.id = STYLE_ID;
     const highlightColor = MODE === "text-edit" ? "#16a34a" : "#3b82f6";
     style.textContent = \`
-      html, body, body * {
-        animation: none !important;
-        transition: none !important;
-      }
+      \${shouldFreezeMotion ? 'html, body, body * {\\n        animation: none !important;\\n        transition: none !important;\\n      }\\n' : ''}
       .\${HIGHLIGHT_CLASS} {
         cursor: \${MODE === "text-edit" ? "text" : "crosshair"} !important;
       }
@@ -536,6 +606,7 @@ export function buildInspectorInjectScript(options?: { mode?: 'inspect' | 'text-
   };
 
   let activeElement = null;
+  let lockedElement = null;
   let highlightOverlayElement = null;
   const restoredAnimationStyles = [];
   const cursorHost = document.body || document.documentElement;
@@ -543,9 +614,11 @@ export function buildInspectorInjectScript(options?: { mode?: 'inspect' | 'text-
   if (cursorHost && cursorHost.style) {
     cursorHost.style.cursor = MODE === "text-edit" ? "text" : "crosshair";
   }
+  const shouldFreezeMotion = MODE === "inspect";
   ensureStyle();
 
   const freezeAnimationsForInspect = () => {
+    if (!shouldFreezeMotion) return;
     if (window.PPT && typeof window.PPT.finishAnimations === "function") {
       try { window.PPT.finishAnimations(); } catch (_error) {}
     } else if (window.PPT && typeof window.PPT.stopAnimations === "function") {
@@ -744,6 +817,7 @@ export function buildInspectorInjectScript(options?: { mode?: 'inspect' | 'text-
   };
 
   const clearActive = () => {
+    lockedElement = null;
     if (activeElement) {
       activeElement.classList.remove(HIGHLIGHT_CLASS);
       activeElement = null;
@@ -751,7 +825,28 @@ export function buildInspectorInjectScript(options?: { mode?: 'inspect' | 'text-
     updateHighlightOverlay();
   };
 
+  const setLocked = (el) => {
+    lockedElement = el instanceof Element ? el : null;
+    setActive(lockedElement);
+  };
+
+  const restoreActive = (selector) => {
+    try {
+      if (!selector || typeof selector !== "string") return false;
+      const target = document.querySelector(selector);
+      if (!(target instanceof Element)) return false;
+      setLocked(target);
+      return true;
+    } catch (_error) {
+      return false;
+    }
+  };
+
   const onHover = (target) => {
+    if (lockedElement) {
+      setActive(lockedElement);
+      return;
+    }
     if (!target) {
       clearActive();
       return;
@@ -760,6 +855,7 @@ export function buildInspectorInjectScript(options?: { mode?: 'inspect' | 'text-
   };
 
   const onPick = (target) => {
+    setLocked(target);
     const selector = buildStableSelector(target);
     if (!selector) {
       console.log(LOG_PREFIX + JSON.stringify({
@@ -772,6 +868,7 @@ export function buildInspectorInjectScript(options?: { mode?: 'inspect' | 'text-
     const elementTag = target.tagName ? target.tagName.toLowerCase() : "";
     const rawText = normalizeText(target.textContent);
     const elementText = rawText.length > 80 ? rawText.slice(0, 80) + "…" : rawText;
+    const formula = readFormulaMetadata(target);
     const computed = window.getComputedStyle(target);
     const rect = getVisualBounds(target);
 
@@ -791,6 +888,7 @@ export function buildInspectorInjectScript(options?: { mode?: 'inspect' | 'text-
         textAlign: computed.textAlign || "",
         backgroundColor: computed.backgroundColor || ""
       },
+      formula,
       bounds: {
         x: Math.round(rect.left * 10) / 10,
         y: Math.round(rect.top * 10) / 10,
@@ -821,7 +919,7 @@ export function buildInspectorInjectScript(options?: { mode?: 'inspect' | 'text-
     }
     const style = document.getElementById(STYLE_ID);
     if (style) style.remove();
-    restoreFrozenAnimationStyles();
+    if (shouldFreezeMotion) restoreFrozenAnimationStyles();
     if (cursorHost && cursorHost.style) {
       cursorHost.style.cursor = previousCursor || "";
     }
@@ -837,6 +935,7 @@ export function buildInspectorInjectScript(options?: { mode?: 'inspect' | 'text-
   window.addEventListener("resize", updateHighlightOverlay, true);
 
   window[STATE_KEY] = { active: true, cleanup };
+  window.__pptInspectorRestoreSelection = restoreActive;
 })();
   `
 }

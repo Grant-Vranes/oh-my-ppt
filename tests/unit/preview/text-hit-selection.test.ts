@@ -1,3 +1,5 @@
+import path from 'path'
+import fs from 'fs'
 import { Window } from 'happy-dom'
 import { describe, expect, it } from 'vitest'
 import {
@@ -688,6 +690,22 @@ function readPayload(logs: string[], prefix: string) {
 }
 
 describe('preview text hit selection', () => {
+  it('animation-select inspector mode does not freeze motion', () => {
+    const script = buildInspectorInjectScript({ mode: 'animation-select' })
+    expect(script).toContain('MODE = "animation-select"')
+    expect(script).toContain('window.__pptInspectorRestoreSelection')
+    expect(script).toContain('shouldFreezeMotion')
+  })
+
+  it('animation-select mode does not install preview click animation bridge', async () => {
+    const source = fs.readFileSync(
+      path.resolve(__dirname, '../../../src/renderer/src/components/preview/PreviewIframe.tsx'),
+      'utf-8'
+    )
+    expect(source).toContain("currentInteractionMode === 'preview'")
+    expect(source).not.toContain("currentInteractionMode === 'preview' || currentInteractionMode === 'animation-select'")
+  })
+
   it('inspector selects the inline span under the text caret point', () => {
     const { window, paragraph, logs } = setupInlineTextPage(buildInspectorInjectScript())
 
@@ -869,6 +887,32 @@ describe('preview text hit selection', () => {
     expect(payload.elementTag).toBe('span')
     expect(payload.selector).not.toContain('formula-card')
     expect(window.document.querySelector(payload.selector || '')).toBe(formula)
+  })
+
+  it('animation-select includes formula metadata for runtime-rendered formulas', () => {
+    const { window, formulaHtml, logs } = setupFormulaPage(
+      buildInspectorInjectScript({ mode: 'animation-select' })
+    )
+
+    formulaHtml.dispatchEvent(
+      new window.MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 180,
+        clientY: 145
+      })
+    )
+
+    const payload = readPayload(logs, INSPECTOR_CONSOLE_PREFIX) as {
+      mode?: string
+      formula?: { latex?: string; html?: string; displayMode?: boolean }
+    }
+    expect(payload.mode).toBe('animation-select')
+    expect(payload.formula).toMatchObject({
+      latex: 'x^2',
+      displayMode: false
+    })
+    expect(payload.formula?.html).toContain('class="katex"')
   })
 
   it('inspector selects the formula when hit testing returns the formula host', () => {
@@ -1337,6 +1381,60 @@ describe('preview text hit selection', () => {
     expect(payload.bounds).toMatchObject({ width: 100, height: 40 })
     const overlay = window.document.getElementById('ppt-inspector-highlight-overlay') as HTMLElement
     expect(overlay).toBeTruthy()
+    expect(overlay.style.left).toBe('176px')
+    expect(overlay.style.top).toBe('116px')
+    expect(overlay.style.width).toBe('108px')
+    expect(overlay.style.height).toBe('48px')
+  })
+
+  it('inspector keeps the selected highlight after hover moves away', () => {
+    const { window, card, logs } = setupOverflowBoxPage(buildInspectorInjectScript())
+
+    card.dispatchEvent(
+      new window.MouseEvent('mousemove', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 220,
+        clientY: 140
+      })
+    )
+    card.dispatchEvent(
+      new window.MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 220,
+        clientY: 140
+      })
+    )
+
+    const payload = readPayload(logs, INSPECTOR_CONSOLE_PREFIX) as {
+      bounds?: { width?: number; height?: number }
+    }
+    expect(payload.bounds).toMatchObject({ width: 100, height: 40 })
+
+    const overlay = window.document.getElementById('ppt-inspector-highlight-overlay') as HTMLElement
+    expect(overlay).toBeTruthy()
+    expect(overlay.style.left).toBe('176px')
+    expect(overlay.style.top).toBe('116px')
+    expect(overlay.style.width).toBe('108px')
+    expect(overlay.style.height).toBe('48px')
+
+    const mockedDocument = window.document as Document & {
+      elementFromPoint: () => Element | null
+      elementsFromPoint: () => Element[]
+    }
+    mockedDocument.elementFromPoint = () => null
+    mockedDocument.elementsFromPoint = () => []
+
+    card.dispatchEvent(
+      new window.MouseEvent('mousemove', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 12,
+        clientY: 12
+      })
+    )
+
     expect(overlay.style.left).toBe('176px')
     expect(overlay.style.top).toBe('116px')
     expect(overlay.style.width).toBe('108px')

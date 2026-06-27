@@ -61,6 +61,7 @@ export function useWorkspaceRibbonController(isSavingEdits: boolean): {
   const selectedPageId = useSessionDetailUiStore((state) => state.selectedPageId)
   const activeTab = useSessionDetailUiStore((state) => state.workspaceTab)
   const setActiveTab = useSessionDetailUiStore((state) => state.setWorkspaceTab)
+  const bumpPreviewKey = useSessionDetailUiStore((state) => state.bumpPreviewKey)
   const interactionMode = useSessionDetailUiStore((state) => state.interactionMode)
   const setInteractionMode = useSessionDetailUiStore((state) => state.setInteractionMode)
   const clearSelectedElement = useSessionDetailUiStore((state) => state.clearSelectedElement)
@@ -96,6 +97,10 @@ export function useWorkspaceRibbonController(isSavingEdits: boolean): {
 
   const applyTab = useCallback(
     (tab: SessionWorkspaceTab): void => {
+      if (activeTab === 'animation' && tab !== 'animation') {
+        clearSelectedElement()
+        bumpPreviewKey()
+      }
       setActiveTab(tab)
       if (tab === 'preview') {
         setInteractionMode('preview')
@@ -114,9 +119,11 @@ export function useWorkspaceRibbonController(isSavingEdits: boolean): {
         return
       }
       if (tab === 'animation') {
+        useEditSessionStore.getState().cancelEdit()
         clearSelectedElement()
-        setInteractionMode('preview')
+        setInteractionMode('animation-select')
         setSpeechScriptDialogOpen(false)
+        toastInfo(t('sessionDetail.animationModeToast'))
         return
       }
       if (tab === 'ai') {
@@ -134,6 +141,8 @@ export function useWorkspaceRibbonController(isSavingEdits: boolean): {
     },
     [
       clearSelectedElement,
+      activeTab,
+      bumpPreviewKey,
       interactionMode,
       setActiveTab,
       setInteractionMode,
@@ -147,13 +156,17 @@ export function useWorkspaceRibbonController(isSavingEdits: boolean): {
     (tab: SessionWorkspaceTab): void => {
       if (tab === activeTab) return
       const canSwitchWithoutSave = tab === 'browse' || tab === 'edit' || tab === 'preview'
-      if (!canSwitchWithoutSave && hasPendingEdits) {
+      if (!canSwitchWithoutSave) {
+        useEditSessionStore.getState().commitCurrentDraft()
+      }
+      const hasCurrentPendingEdits = useEditHistoryStore.getState().hasPendingEdits(pageId)
+      if (!canSwitchWithoutSave && (hasPendingEdits || hasCurrentPendingEdits)) {
         setPendingTab(tab)
         return
       }
       applyTab(tab)
     },
-    [activeTab, applyTab, hasPendingEdits]
+    [activeTab, applyTab, hasPendingEdits, pageId]
   )
 
   const cancelPendingTab = useCallback((): void => {

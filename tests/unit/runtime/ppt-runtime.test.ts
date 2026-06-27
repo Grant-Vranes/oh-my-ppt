@@ -738,7 +738,7 @@ describe('PPT.executeDataAnim (routed through PPT.animate)', () => {
     const callArgs = animateSpy.mock.calls[0]
     const params = callArgs[1] as Record<string, unknown>
     expect(params.opacity).toEqual([0, 1])
-    expect(params.translateY).toEqual([40, 0])
+    expect(params.translateY).toEqual([64, 0])
     animateSpy.mockRestore()
   })
 
@@ -749,7 +749,7 @@ describe('PPT.executeDataAnim (routed through PPT.animate)', () => {
     ;(PPT.executeDataAnim as Function)(config)
     const params = animateSpy.mock.calls[0][1] as Record<string, unknown>
     expect(params.opacity).toEqual([0, 1])
-    expect(params.translateX).toEqual([40, 0])
+    expect(params.translateX).toEqual([72, 0])
     animateSpy.mockRestore()
   })
 
@@ -760,7 +760,7 @@ describe('PPT.executeDataAnim (routed through PPT.animate)', () => {
     ;(PPT.executeDataAnim as Function)(config)
     const params = animateSpy.mock.calls[0][1] as Record<string, unknown>
     expect(params.opacity).toEqual([0, 1])
-    expect(params.translateY).toEqual([-40, 0])
+    expect(params.translateY).toEqual([-64, 0])
     animateSpy.mockRestore()
   })
 
@@ -771,7 +771,7 @@ describe('PPT.executeDataAnim (routed through PPT.animate)', () => {
     ;(PPT.executeDataAnim as Function)(config)
     const params = animateSpy.mock.calls[0][1] as Record<string, unknown>
     expect(params.opacity).toEqual([0, 1])
-    expect(params.translateX).toEqual([-40, 0])
+    expect(params.translateX).toEqual([-72, 0])
     animateSpy.mockRestore()
   })
 
@@ -782,7 +782,7 @@ describe('PPT.executeDataAnim (routed through PPT.animate)', () => {
     ;(PPT.executeDataAnim as Function)(config)
     const params = animateSpy.mock.calls[0][1] as Record<string, unknown>
     expect(params.opacity).toEqual([0, 1])
-    expect(params.translateX).toEqual([-40, 0])
+    expect(params.translateX).toEqual([-72, 0])
     animateSpy.mockRestore()
   })
 

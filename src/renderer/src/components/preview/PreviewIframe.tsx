@@ -121,6 +121,7 @@ export interface PreviewIframeHandle {
     layout: { x?: number; y?: number; width?: number; height?: number }
   ) => void
   restoreEditModeSelection: (selector: string) => Promise<boolean>
+  restoreInspectorSelection: (selector: string) => Promise<boolean>
   clearEditModeSelection: () => void
   hideElement: (selector: string) => void
   showElement: (selector: string) => void
@@ -337,17 +338,6 @@ export const PreviewIframe = forwardRef<
     }
   }
 
-  const ensureAnchoredSelector = async (args: {
-    selector: string
-    elementTag?: string
-    elementText?: string
-    reason: 'inspect' | 'drag' | 'text-edit'
-    formula?: EditableElementSnapshot['formula']
-  }): Promise<string> => {
-    const result = await ensureAnchoredAnchor(args)
-    return result.selector
-  }
-
   const handleWebviewRef = useCallback((node: Electron.WebviewTag | null): void => {
     webviewReadyRef.current = false
     inspectorInjectedRef.current = false
@@ -528,6 +518,28 @@ export const PreviewIframe = forwardRef<
                 return false;
               } catch (e) {
                 console.debug("[EditMode] restore script error", e);
+                return false;
+              }
+            })()`
+          )
+          return Boolean(result)
+        } catch {
+          return false
+        }
+      },
+      async restoreInspectorSelection(selector: string): Promise<boolean> {
+        const wv = webviewRef.current
+        if (!wv) return false
+        try {
+          const result = await wv.executeJavaScript(
+            `(function() {
+              try {
+                if (window.__pptInspectorRestoreSelection) {
+                  return window.__pptInspectorRestoreSelection(${JSON.stringify(selector)});
+                }
+                return false;
+              } catch (e) {
+                console.debug("[Inspector] restore selection error", e);
                 return false;
               }
             })()`
@@ -857,14 +869,18 @@ export const PreviewIframe = forwardRef<
     }
   }, [webviewElement])
 
-  // Inspector effect: handles AI inspect mode only.
+  // Selection overlay effect: handles AI inspect and animation-select.
   useEffect(() => {
     const webview = webviewElement
     if (!webview || !inspectable || !webviewReady) return
 
     const runInspectorLifecycle = (): void => {
       if (inspecting) {
-        safeExecuteHostScript(webview, 'inspector-inject', buildInspectorInjectScript())
+        safeExecuteHostScript(
+          webview,
+          'inspector-inject',
+          buildInspectorInjectScript({ mode: currentInteractionMode === 'animation-select' ? 'animation-select' : 'inspect' })
+        )
         inspectorInjectedRef.current = true
       } else {
         if (!inspectorInjectedRef.current) return
@@ -880,7 +896,7 @@ export const PreviewIframe = forwardRef<
       safeExecuteHostScript(webview, 'inspector-cleanup', buildInspectorCleanupScript())
       inspectorInjectedRef.current = false
     }
-  }, [inspectable, inspecting, webviewReady, webviewSrc, webviewElement])
+  }, [inspectable, inspecting, currentInteractionMode, webviewReady, webviewSrc, webviewElement])
 
   // Unified edit mode effect: handles click-to-select, drag, and resize.
   // Use ref for onDidReload to avoid re-running effect on every parent re-render.
@@ -999,11 +1015,13 @@ export const PreviewIframe = forwardRef<
       try {
         const parsed = JSON.parse(raw) as {
           type?: string
+          mode?: 'inspect' | 'text-edit' | 'animation-select'
           selector?: string
           blockId?: string
           label?: string
           elementTag?: string
           elementText?: string
+          formula?: EditableElementSnapshot['formula']
           kind?: EditSelectionPayload['kind']
           capabilities?: EditSelectionPayload['capabilities']
           snapshot?: EditSelectionPayload['snapshot']
@@ -1034,30 +1052,34 @@ export const PreviewIframe = forwardRef<
           editability?: EditSelectionPayload['editability']
         }
 
-        // Inspector: element selected (AI mode)
+        // Inspector / animation-select: element selected
         if (isInspectorMessage && parsed.type === 'selected' && parsed.selector) {
-          void (async () => {
-            const anchoredSelector = await ensureAnchoredSelector({
-              selector: parsed.selector || '',
-              elementTag: parsed.elementTag,
-              elementText: parsed.elementText,
-              reason: 'inspect',
-              formula: parsed.snapshot?.formula
-            })
-            // Page-instance guard: drop events whose emitting webview has since been
-            // replaced (page switch, or the remount triggered by save/undo/redo/
-            // discard). Their async `await` straddled the boundary, so applying them
-            // now would re-dirty the store against stale state. The remount fires the
-            // ref callback (webviewRef.current = new node) before the new iframe
-            // reloads, so post-replayPending stale events are dropped too.
-            if (webviewRef.current !== webview) return
-            onSelectorSelectedRef.current?.(
-              anchoredSelector,
-              anchoredSelector,
-              parsed.elementTag,
-              parsed.elementText
-            )
-          })().catch(() => {})
+          if (parsed.mode === 'animation-select' && parsed.formula) {
+            void (async () => {
+              const anchor = await ensureAnchoredAnchor({
+                selector: parsed.selector || '',
+                elementTag: parsed.elementTag,
+                elementText: parsed.elementText,
+                reason: 'inspect',
+                formula: parsed.formula
+              })
+              if (webviewRef.current !== webview) return
+              onSelectorSelectedRef.current?.(
+                anchor.selector,
+                anchor.selector,
+                parsed.elementTag,
+                parsed.elementText
+              )
+            })().catch(() => {})
+            return
+          }
+          if (webviewRef.current !== webview) return
+          onSelectorSelectedRef.current?.(
+            parsed.selector,
+            parsed.label || parsed.selector,
+            parsed.elementTag,
+            parsed.elementText
+          )
           return
         }
 

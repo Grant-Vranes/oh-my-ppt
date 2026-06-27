@@ -3,6 +3,47 @@ import { buildSlideXml } from '../../../src/main/utils/html-pptx/ooxml-writer'
 import type { HtmlToPptxSlide } from '../../../src/main/utils/html-pptx/types'
 
 describe('buildSlideXml animation export', () => {
+  it('exports automatic and click animations together', () => {
+    const slide: HtmlToPptxSlide = {
+      texts: [
+        { text: 'Automatic', x: 1, y: 1, w: 4, h: 0.8, fontSize: 24 },
+        { text: 'Click', x: 1, y: 2, w: 4, h: 0.8, fontSize: 24 }
+      ],
+      shapes: [],
+      images: [],
+      tables: [],
+      animationTraces: [
+        {
+          type: 'fade-up',
+          trigger: 'load',
+          duration: 500,
+          delay: 0,
+          order: 0,
+          x: 100,
+          y: 100,
+          w: 400,
+          h: 80
+        },
+        {
+          type: 'exit-fade',
+          trigger: 'click',
+          duration: 600,
+          delay: 0,
+          order: 1,
+          x: 100,
+          y: 200,
+          w: 400,
+          h: 80
+        }
+      ]
+    }
+
+    const xml = buildSlideXml(slide, new Map(), 1)
+
+    expect(xml).toContain('nodeType="withEffect"')
+    expect(xml).toContain('nodeType="clickEffect"')
+  })
+
   it('binds one data-anim container trace to every exported shape inside it', () => {
     const slide: HtmlToPptxSlide = {
       texts: [

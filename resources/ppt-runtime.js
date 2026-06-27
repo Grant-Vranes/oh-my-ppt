@@ -842,10 +842,10 @@
     "fade-left":  { opacity: "0", transform: "translateX(20px)" },
     "fade-right": { opacity: "0", transform: "translateX(-20px)" },
     "scale-in":   { opacity: "0", transform: "scale(0.85)" },
-    "slide-up":   { opacity: "0", transform: "translateY(40px)" },
-    "slide-down": { opacity: "0", transform: "translateY(-40px)" },
-    "slide-left": { opacity: "0", transform: "translateX(40px)" },
-    "slide-right":{ opacity: "0", transform: "translateX(-40px)" },
+    "slide-up":   { opacity: "0", transform: "translateY(64px)" },
+    "slide-down": { opacity: "0", transform: "translateY(-64px)" },
+    "slide-left": { opacity: "0", transform: "translateX(72px)" },
+    "slide-right":{ opacity: "0", transform: "translateX(-72px)" },
     "zoom-in":    { opacity: "0", transform: "scale(0.75)" },
     "spin-in":    { opacity: "0", transform: "rotate(-12deg) scale(0.92)" }
   };
@@ -1194,22 +1194,22 @@
           break;
         case "slide-up":
           params.opacity = [0, 1];
-          params.translateY = [40, 0];
+          params.translateY = [64, 0];
           break;
         case "slide-down":
           params.opacity = [0, 1];
-          params.translateY = [-40, 0];
+          params.translateY = [-64, 0];
           break;
         case "slide-left":
           params.opacity = [0, 1];
-          params.translateX = [40, 0];
+          params.translateX = [72, 0];
           break;
         case "slide-right":
           params.opacity = [0, 1];
-          params.translateX = [-40, 0];
+          params.translateX = [-72, 0];
           break;
         case "fly-in": {
-          var fly = getSideOffset(animDef.from, 40);
+          var fly = getSideOffset(animDef.from, 72);
           params.opacity = [0, 1];
           if (fly.scale) {
             params.scale = [fly.scale, 1];

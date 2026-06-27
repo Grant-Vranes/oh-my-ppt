@@ -100,7 +100,7 @@ const numericAnimXml = (
 </p:anim>`
 
 // LINEAR_PATH_RE: Must be kept in sync with the duplicated definitions in
-// `src/main/tools/html-utils.ts` and `src/main/utils/html-pptx/browser-scripts.ts`.
+// `src/main/animation/data-anim-validator.ts` and `src/main/utils/html-pptx/browser-scripts.ts`.
 // Note: browser-scripts.ts uses a serialized version with escaped backslashes.
 const LINEAR_PATH_RE = /^M\s+-?\d+(?:\.\d+)?\s+-?\d+(?:\.\d+)?\s+L\s+-?\d+(?:\.\d+)?\s+-?\d+(?:\.\d+)?\s*$/i
 

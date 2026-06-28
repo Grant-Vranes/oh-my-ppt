@@ -1,5 +1,55 @@
 # 更新日志 / Changelog
 
+## 2026-06-28 · v2.0.18
+
+### 中文
+
+- 新增创建时动画风格选择（可选）：生成演示前可以先选择喜欢的动效动画方向，让整套演示从一开始就更接近想要的讲述节奏。
+- 新增编辑页[动画]单个元素动画设置：编辑时可直接给文字、图片、图表等元素添加入场、强调或退出效果，适合做重点突出和逐步讲解。
+- 新增数学公式编辑：选中公式后可直接修改内容、切换展示方式并实时预览，理工、金融、教育类演示更容易精修。
+- 新增风格收藏：常用风格可以收藏，创建演示或切换风格时更快找到自己反复使用的视觉方案。
+- 新增风格搜索：风格库和创建页风格选择器都支持搜索与场景筛选，面对大量风格时不用再一点点翻。
+- 新增 Seedream 生图支持：图片生成可使用 Seedream，给需要配图、背景图和创意视觉的页面多一个选择。
+- 新增更多模型兼容选项（thinking）：设置模型时可以更灵活地适配不同服务，减少“配置看起来没问题但实际无法调用”的情况。
+- 新增了更多的内置动画：更多的动画内置，以及配置友好，单元素也可以配置不同动画。
+- 修复【对话创作】偶发中断：AI 整理需求或生成大纲时，即使模型返回的内容结构略有差异，也会自动校正并继续处理，减少因格式不一致导致的失败(deepseek)。
+- 优化【对话创作】上下文连续性：更新主题、确认事项和待解决问题时会保留未改动的信息，减少多轮沟通中需求或决定意外丢失。
+- 优化手动编辑保存体验：移动、缩放、改字、删元素等操作会更清楚地进入待保存状态，切换页面前也会提醒，减少辛苦调整后丢失修改。
+- 优化【编辑页】页面管理体验：页面排序、重命名、删除、单页导出和大纲导出更顺手，侧栏和浏览模式里的页面切换也更稳定。
+- 优化风格查找体验：风格按适用场景重新整理，收藏、搜索和筛选结果更符合实际使用习惯。
+- 优化【生成过程】后台生成体验：最小化应用后不会再被单页预览反复唤起，仅在整套演示生成完成或失败时恢复窗口提醒。
+- 优化页面可读性：新生成页面会减少过小文字，标题、正文和注释更适合直接投屏或分享（正文最小18px，注释等不低于12px）。
+- 优化元素选中和拖拽：复杂页面里选中文字、公式、图片和重叠元素更准确，拖拽对齐时也更不容易偏。
+- 优化编辑历史稳定性：撤销、重做、历史回滚和继续编辑更稳，复杂会话里反复调整更安心。
+- 增强 PPTX 动画保留效果：导入和导出时能更好保留常见动画，导出的可编辑 PPTX 在 PowerPoint/WPS 中播放更接近应用内效果。
+- 增强图表页生成质量：图表会获得更合理的展示空间，旁边的结论、注释和指标也更克制，减少“图太小、卡片太多、重点不清”的页面。
+- 增强复杂内容排版能力：生成时会更重视页面主次、信息密度和阅读路径，长内容更容易被整理成适合演示的结构（更关注内容密度来决定排版）。
+- 增强动画生成质量：AI 生成的动画更贴近演示场景，减少看起来热闹但不利于讲述或导出后表现不一致的动画。
+
+### English
+
+- Added optional animation style choices during creation: pick the motion direction you want before generation so the whole deck starts closer to the pacing you have in mind.
+- Added per-element animation controls: add entrance, emphasis, or exit effects directly to text, images, charts, and other slide elements in the editor — ideal for highlighting key points and walking through content step by step.
+- Added formula editing: select a formula to revise its content, switch display style, and preview the result instantly, making it easier to fine-tune technical, finance, and education decks.
+- Added style favorites: save frequently used styles and find them faster when creating a deck or switching styles.
+- Added style search: both the style library and the creation-flow style picker now support search and scenario filtering, so you no longer have to scroll through large collections one by one.
+- Added Seedream image generation support: use Seedream for slide visuals, backgrounds, and creative imagery, giving image-heavy pages one more option.
+- Added more flexible model compatibility options (thinking): model setup adapts to more services, reducing cases where a config looks fine but actually fails to call.
+- Added more built-in animations: more animations are now built in, with friendlier configuration.
+- Fixed occasional interruptions in Chat to Create: when AI organizes requirements or builds an outline, minor structural differences in model responses (deepseek) are corrected automatically instead of stopping the workflow.
+- Improved Chat to Create context continuity: when updating topics, confirmed decisions, or open questions, unchanged information is preserved, reducing accidental loss of requirements or decisions across multi-turn planning.
+- Improved manual edit saving: moves, resizes, text changes, and deleted elements are now more clearly marked as pending work, and page switching reminds you to save — reducing the chance of losing careful adjustments.
+- Improved page management in the editor: sorting, renaming, deleting, single-slide export, and outline export feel smoother, and page switching in the sidebar and browse mode is more stable.
+- Improved style discovery: styles are reorganized by use case, so favorites, search, and filter results better match real creation habits.
+- Improved background generation: minimizing the app no longer lets individual slide previews repeatedly bring it forward; the window returns only when the full deck completes or fails.
+- Improved slide readability: newly generated pages avoid overly small text, making titles, body copy, and notes easier to present or share (body text minimum 18px, notes no smaller than 12px).
+- Improved element selection and dragging: text, formulas, images, and overlapping elements are easier to target accurately on complex slides, and alignment while dragging is less likely to drift.
+- Improved editing reliability: undo, redo, history rollback, and continued editing are steadier, making repeated adjustments in complex sessions more reassuring.
+- Enhanced PPTX animation preservation: common animations are better retained on import and export, so editable PPTX files play closer to the in-app experience in PowerPoint / WPS.
+- Enhanced chart-slide quality: charts get more appropriate space, while nearby conclusions, notes, and metrics stay more restrained — reducing slides where the chart is too small, there are too many cards, and the main point is unclear.
+- Enhanced complex-content layout: generation pays more attention to hierarchy, information density, and reading flow, turning long material into more presentation-ready structures (layout is now decided more by content density).
+- Enhanced animation quality: generated animations are more presentation-oriented, reducing flashy effects that distract from the message or behave inconsistently after export.
+
 ## 2026-06-16 · v2.0.17
 
 ### 中文

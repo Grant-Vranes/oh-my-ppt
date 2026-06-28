@@ -1255,7 +1255,7 @@ export const PreviewIframe = forwardRef<
         <webview
           ref={handleWebviewRef}
           src={webviewSrc}
-          tabIndex={0}
+          tabIndex={thumbnail ? -1 : 0}
           title={title}
           className={`absolute left-0 top-0 h-[900px] w-[1600px] origin-top-left ${
             pointerEnabled ? 'pointer-events-auto' : 'pointer-events-none'

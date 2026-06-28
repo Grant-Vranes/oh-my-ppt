@@ -4,11 +4,14 @@ import { cn } from '@renderer/lib/utils'
 import type { GenerationPreviewPage } from './types'
 
 export function GenerationThumbnail({
-  page
+  page,
+  previewEnabled = true
 }: {
   page: GenerationPreviewPage
+  previewEnabled?: boolean
 }): React.JSX.Element {
-  const hasPreview = page.status === 'completed' && (page.htmlPath || page.sourceUrl)
+  const hasPreview =
+    previewEnabled && page.status === 'completed' && (page.htmlPath || page.sourceUrl)
 
   return (
     <div

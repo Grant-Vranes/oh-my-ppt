@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { ScrollArea } from '@renderer/components/ui/ScrollArea'
 import { GenerationThumbnail } from './GenerationThumbnail'
 import type { GenerationPreviewPage } from './types'
@@ -7,6 +8,18 @@ export function GenerationPreviewGrid({
 }: {
   pages: GenerationPreviewPage[]
 }): React.JSX.Element {
+  const [previewEnabled, setPreviewEnabled] = useState(
+    () => typeof document === 'undefined' || document.visibilityState === 'visible'
+  )
+
+  useEffect(() => {
+    const updatePreviewVisibility = (): void => {
+      setPreviewEnabled(document.visibilityState === 'visible')
+    }
+    document.addEventListener('visibilitychange', updatePreviewVisibility)
+    return () => document.removeEventListener('visibilitychange', updatePreviewVisibility)
+  }, [])
+
   return (
     <ScrollArea className="min-h-0 flex-1" viewportClassName="pr-2 pb-2">
       <div className="grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-4">
@@ -18,7 +31,7 @@ export function GenerationPreviewGrid({
               animation: `gen-page-rise 420ms ease ${Math.min(index * 55, 440)}ms both`
             }}
           >
-            <GenerationThumbnail page={page} />
+            <GenerationThumbnail page={page} previewEnabled={previewEnabled} />
           </div>
         ))}
       </div>

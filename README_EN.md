@@ -86,6 +86,7 @@ Output is pure HTML slides: instant browser preview, no extra software, easy to 
 - 🖥️ **Presentation mode** — Enter fullscreen presentation with one click, navigate slides with arrow keys or clicks
 - 📝 **Speaker script generation** — Generate scripts for the full deck or the current slide, with formal, casual conversational, storytelling, and custom styles
 - 🎬 **Animation support** — 16+ slide transition effects plus Anime.js v4-powered whole-element motion
+- 🎞️ **Per-element animation controls** — Select individual text, image, chart, or other elements while editing, then configure entrance, emphasis, or exit effects with automatic/click triggers, duration, and direction
 - 🧮 **Math formula rendering** — Display common LaTeX formulas for classes, teaching decks, and technical talks
 - 📄 **Multi-format export** — Export to PDF, batch PNG, MP4 video, or editable PPTX with embedded fonts (still being improved)
 - 🏷️ **Session management** — Session list distinguishes AI-created decks from imported PPTX decks, and deck names can be renamed
@@ -142,6 +143,8 @@ When creating a deck, you can choose **title fonts** and **body fonts** separate
 ## 🎬 Animation Support
 
 Oh My PPT generates HTML slides with 16+ slide transition effects and a local **Anime.js v4** runtime. During generation or chat-based editing, the AI can add presentation motion to whole slide elements such as titles, metric cards, images, chart containers, and step blocks.
+
+In addition to AI-generated motion, edit mode lets you select an individual element and configure its entrance, emphasis, or exit effect, together with automatic or click triggering, duration, and direction.
 
 Animations are designed for real presentation flow: content can appear step by step with the speaker's rhythm instead of showing everything on the slide at once. This works well for reports, pitches, classes, and product walkthroughs.
 

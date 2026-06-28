@@ -20,6 +20,10 @@ import {
 } from './engine/template'
 import { FREEZE_PAGE_FOR_EXPORT_SCRIPT } from '../utils/html-pptx/browser-scripts'
 import { isCancellationMessage } from './generation/status-utils'
+import {
+  revealGenerationWindow,
+  shouldRevealGenerationWindow
+} from './generation/generation-window-policy'
 
 export type SessionRunState = {
   sessionId: string
@@ -570,6 +574,10 @@ export function createIpcContext(
       enrichedChunk.type === 'run_error'
     ) {
       log.info('[generate:chunk] emit', summarizeGenerateChunk(enrichedChunk))
+    }
+
+    if (shouldRevealGenerationWindow(enrichedChunk, state)) {
+      revealGenerationWindow(mainWindow)
     }
 
     const windows = BrowserWindow.getAllWindows()

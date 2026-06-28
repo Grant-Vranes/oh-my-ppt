@@ -65,6 +65,19 @@ describe('OOXML timing tree structure', () => {
     })
   })
 
+  it('starts the main animation sequence immediately so load animations do not wait for a click', () => {
+    const xml = buildSlideTimingXml([
+      makeAnim({ spid: 3, type: 'fade-up', trigger: 'load' }),
+      makeAnim({ spid: 4, type: 'exit-fade', trigger: 'click', order: 1 })
+    ])
+    const $ = parseTimingXml(xml)
+    expect($).not.toBeNull()
+
+    expect(xml).not.toContain('<p:cond delay="indefinite"/>')
+    expect($('p\\:cTn[nodeType="withEffect"]').length).toBeGreaterThan(0)
+    expect($('p\\:cTn[nodeType="clickEffect"]').length).toBeGreaterThan(0)
+  })
+
   it('emphasis effects contain a p:seq with two child animScale elements', () => {
     const xml = buildSlideTimingXml([makeAnim({ spid: 3, type: 'pulse' })])
     const $ = parseTimingXml(xml)
@@ -193,6 +206,47 @@ describe('OOXML timing tree structure', () => {
     const effects = $('p\\:animEffect')
     expect(effects.length).toBe(1)
     expect(effects.attr('filter')).toBe('fade')
+  })
+
+  it('entrance animation channels use smooth ease-out timing', () => {
+    const xml = buildSlideTimingXml([makeAnim({ spid: 3, type: 'fade-up', duration: 600 })])
+    const $ = parseTimingXml(xml)
+    expect($).not.toBeNull()
+
+    const timedNodes = $('p\\:cTn[dur="600"][accel][decel]')
+    expect(timedNodes.length).toBeGreaterThanOrEqual(2)
+    timedNodes.each((_, el) => {
+      expect($(el).attr('accel')).toBe('0')
+      expect($(el).attr('decel')).toBe('70000')
+    })
+  })
+
+  it('exit animation channels use smooth ease-in timing', () => {
+    const xml = buildSlideTimingXml([
+      makeAnim({ spid: 3, type: 'exit-fly', trigger: 'click', duration: 600 })
+    ])
+    const $ = parseTimingXml(xml)
+    expect($).not.toBeNull()
+
+    const timedNodes = $('p\\:cTn[dur="600"][accel][decel]')
+    expect(timedNodes.length).toBeGreaterThanOrEqual(2)
+    timedNodes.each((_, el) => {
+      expect($(el).attr('accel')).toBe('70000')
+      expect($(el).attr('decel')).toBe('0')
+    })
+  })
+
+  it('emphasis rebound uses smooth ease-in-out timing on both phases', () => {
+    const xml = buildSlideTimingXml([makeAnim({ spid: 5, type: 'pulse', duration: 600 })])
+    const $ = parseTimingXml(xml)
+    expect($).not.toBeNull()
+
+    const scaleTimingNodes = $('p\\:animScale p\\:cTn[dur][accel][decel]')
+    expect(scaleTimingNodes.length).toBe(2)
+    scaleTimingNodes.each((_, el) => {
+      expect($(el).attr('accel')).toBe('20000')
+      expect($(el).attr('decel')).toBe('60000')
+    })
   })
 
   it('build list entries match unique target spids exactly', () => {

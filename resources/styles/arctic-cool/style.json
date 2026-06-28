@@ -5,13 +5,13 @@
     "en": "Arctic Cool"
   },
   "description": "冰蓝渐变裹住冷静理性，数据在这里找到尊严",
-  "category": "冷色 · 深色",
+  "category": "深色 · 沉稳",
   "aliases": [
     "arctic",
     "冷",
     "商业分析"
   ],
-  "styleCase": "商业分析报告、金融数据展示、季度汇报、市场研究",
-  "version": "2.0.0",
+  "styleCase": "商业汇报、产品发布、技术分享",
+  "version": "2.0.1",
   "source": "builtin"
 }

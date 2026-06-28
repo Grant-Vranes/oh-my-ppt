@@ -82,6 +82,12 @@ export interface PreviewIframeHandle {
       html?: string
       text?: string
       textTarget?: EditTextTarget
+      formula?: {
+        latex: string
+        html: string
+        displayMode: boolean
+        originalLatex?: string
+      }
       style?: { color?: string; fontSize?: string; fontWeight?: string; textAlign?: string }
     }
   ) => void
@@ -115,6 +121,7 @@ export interface PreviewIframeHandle {
     layout: { x?: number; y?: number; width?: number; height?: number }
   ) => void
   restoreEditModeSelection: (selector: string) => Promise<boolean>
+  restoreInspectorSelection: (selector: string) => Promise<boolean>
   clearEditModeSelection: () => void
   hideElement: (selector: string) => void
   showElement: (selector: string) => void
@@ -129,6 +136,17 @@ export interface PreviewIframeHandle {
   ) => Promise<{ selector: string; htmlFragment: string } | null>
   readElementHtml: (selector: string) => Promise<string>
   readElementSnapshot: (selector: string) => Promise<EditableElementSnapshot | null>
+  readElementLayout: (
+    selector: string
+  ) => Promise<{
+    isAbsoluteMode: boolean
+    x: number
+    y: number
+    width: number
+    height: number
+    visualX?: number
+    visualY?: number
+  } | null>
   applyChildUpdates: (
     selector: string,
     childUpdates: Array<{ path: number[]; width?: number; height?: number }>
@@ -264,6 +282,7 @@ export const PreviewIframe = forwardRef<
     elementTag?: string
     elementText?: string
     reason: 'inspect' | 'drag' | 'text-edit'
+    formula?: EditableElementSnapshot['formula']
   }): Promise<{ selector: string; blockId?: string }> => {
     if (!pageHtmlPath || !pageId) {
       throw new Error('Cannot anchor element without page path and page id')
@@ -277,14 +296,39 @@ export const PreviewIframe = forwardRef<
         selector: args.selector,
         elementTag: args.elementTag,
         elementText: args.elementText,
-        reason: args.reason
+        reason: args.reason,
+        formula: args.formula
       })
       if (result.changed && result.blockId) {
         const webview = webviewRef.current
         if (webview) {
           safeExecuteJavaScript(
             webview,
-            `(() => { var __el = document.querySelector(${JSON.stringify(args.selector)}); if (__el && !__el.getAttribute('data-block-id')) __el.setAttribute('data-block-id', ${JSON.stringify(result.blockId)}); })();`
+            `(() => {
+              var __selector = ${JSON.stringify(args.selector)};
+              var __blockId = ${JSON.stringify(result.blockId)};
+              var __latex = ${JSON.stringify(args.formula?.latex || '')};
+              var __normalize = function(value) { return String(value || '').replace(/\\s+/g, ' ').trim(); };
+              var __nodes = [];
+              try { __nodes = Array.prototype.slice.call(document.querySelectorAll(__selector)); } catch (_error) {}
+              var __el = __nodes.length === 1 ? __nodes[0] : null;
+              if (!__el && __latex) {
+                var __formulaNodes = Array.prototype.slice.call(document.querySelectorAll('.katex'));
+                var __matches = __formulaNodes.filter(function(node) {
+                  if (!(node instanceof Element) || node.getAttribute('data-block-id')) return false;
+                  var annotation = node.querySelector('annotation[encoding="application/x-tex"]');
+                  var latex = node.getAttribute('data-ppt-formula-latex') || (annotation ? annotation.textContent : '');
+                  return __normalize(latex) === __normalize(__latex);
+                });
+                if (__matches.length === 1) __el = __matches[0];
+              }
+              if (__el instanceof Element) {
+                var __target = __el.classList.contains('katex-display') && !__el.classList.contains('katex')
+                  ? (__el.querySelector('.katex') || __el)
+                  : __el;
+                if (!__target.getAttribute('data-block-id')) __target.setAttribute('data-block-id', __blockId);
+              }
+            })();`
           )
         }
       }
@@ -292,16 +336,6 @@ export const PreviewIframe = forwardRef<
     } catch {
       throw new Error('Failed to anchor selected element')
     }
-  }
-
-  const ensureAnchoredSelector = async (args: {
-    selector: string
-    elementTag?: string
-    elementText?: string
-    reason: 'inspect' | 'drag' | 'text-edit'
-  }): Promise<string> => {
-    const result = await ensureAnchoredAnchor(args)
-    return result.selector
   }
 
   const handleWebviewRef = useCallback((node: Electron.WebviewTag | null): void => {
@@ -375,6 +409,12 @@ export const PreviewIframe = forwardRef<
           html?: string
           text?: string
           textTarget?: EditTextTarget
+          formula?: {
+            latex: string
+            html: string
+            displayMode: boolean
+            originalLatex?: string
+          }
           style?: { color?: string; fontSize?: string; fontWeight?: string; textAlign?: string }
           zIndex?: number
         }
@@ -478,6 +518,28 @@ export const PreviewIframe = forwardRef<
                 return false;
               } catch (e) {
                 console.debug("[EditMode] restore script error", e);
+                return false;
+              }
+            })()`
+          )
+          return Boolean(result)
+        } catch {
+          return false
+        }
+      },
+      async restoreInspectorSelection(selector: string): Promise<boolean> {
+        const wv = webviewRef.current
+        if (!wv) return false
+        try {
+          const result = await wv.executeJavaScript(
+            `(function() {
+              try {
+                if (window.__pptInspectorRestoreSelection) {
+                  return window.__pptInspectorRestoreSelection(${JSON.stringify(selector)});
+                }
+                return false;
+              } catch (e) {
+                console.debug("[Inspector] restore selection error", e);
                 return false;
               }
             })()`
@@ -689,6 +751,29 @@ export const PreviewIframe = forwardRef<
           return null
         }
       },
+      async readElementLayout(
+        selector: string
+      ): Promise<{
+        isAbsoluteMode: boolean
+        x: number
+        y: number
+        width: number
+        height: number
+        visualX?: number
+        visualY?: number
+      } | null> {
+        const wv = webviewRef.current
+        if (!wv || !canExecuteJavaScript(wv)) return null
+        try {
+          return (
+            (await wv.executeJavaScript(
+              `window.__pptEditModeReadLayout ? window.__pptEditModeReadLayout(${JSON.stringify(selector)}) : null`
+            )) || null
+          )
+        } catch {
+          return null
+        }
+      },
       applyChildUpdates(
         selector: string,
         childUpdates: Array<{ path: number[]; width?: number; height?: number }>
@@ -784,14 +869,18 @@ export const PreviewIframe = forwardRef<
     }
   }, [webviewElement])
 
-  // Inspector effect: handles AI inspect mode only.
+  // Selection overlay effect: handles AI inspect and animation-select.
   useEffect(() => {
     const webview = webviewElement
     if (!webview || !inspectable || !webviewReady) return
 
     const runInspectorLifecycle = (): void => {
       if (inspecting) {
-        safeExecuteHostScript(webview, 'inspector-inject', buildInspectorInjectScript())
+        safeExecuteHostScript(
+          webview,
+          'inspector-inject',
+          buildInspectorInjectScript({ mode: currentInteractionMode === 'animation-select' ? 'animation-select' : 'inspect' })
+        )
         inspectorInjectedRef.current = true
       } else {
         if (!inspectorInjectedRef.current) return
@@ -807,7 +896,7 @@ export const PreviewIframe = forwardRef<
       safeExecuteHostScript(webview, 'inspector-cleanup', buildInspectorCleanupScript())
       inspectorInjectedRef.current = false
     }
-  }, [inspectable, inspecting, webviewReady, webviewSrc, webviewElement])
+  }, [inspectable, inspecting, currentInteractionMode, webviewReady, webviewSrc, webviewElement])
 
   // Unified edit mode effect: handles click-to-select, drag, and resize.
   // Use ref for onDidReload to avoid re-running effect on every parent re-render.
@@ -926,11 +1015,13 @@ export const PreviewIframe = forwardRef<
       try {
         const parsed = JSON.parse(raw) as {
           type?: string
+          mode?: 'inspect' | 'text-edit' | 'animation-select'
           selector?: string
           blockId?: string
           label?: string
           elementTag?: string
           elementText?: string
+          formula?: EditableElementSnapshot['formula']
           kind?: EditSelectionPayload['kind']
           capabilities?: EditSelectionPayload['capabilities']
           snapshot?: EditSelectionPayload['snapshot']
@@ -961,22 +1052,34 @@ export const PreviewIframe = forwardRef<
           editability?: EditSelectionPayload['editability']
         }
 
-        // Inspector: element selected (AI mode)
+        // Inspector / animation-select: element selected
         if (isInspectorMessage && parsed.type === 'selected' && parsed.selector) {
-          void (async () => {
-            const anchoredSelector = await ensureAnchoredSelector({
-              selector: parsed.selector || '',
-              elementTag: parsed.elementTag,
-              elementText: parsed.elementText,
-              reason: 'inspect'
-            })
-            onSelectorSelectedRef.current?.(
-              anchoredSelector,
-              anchoredSelector,
-              parsed.elementTag,
-              parsed.elementText
-            )
-          })().catch(() => {})
+          if (parsed.mode === 'animation-select' && parsed.formula) {
+            void (async () => {
+              const anchor = await ensureAnchoredAnchor({
+                selector: parsed.selector || '',
+                elementTag: parsed.elementTag,
+                elementText: parsed.elementText,
+                reason: 'inspect',
+                formula: parsed.formula
+              })
+              if (webviewRef.current !== webview) return
+              onSelectorSelectedRef.current?.(
+                anchor.selector,
+                anchor.selector,
+                parsed.elementTag,
+                parsed.elementText
+              )
+            })().catch(() => {})
+            return
+          }
+          if (webviewRef.current !== webview) return
+          onSelectorSelectedRef.current?.(
+            parsed.selector,
+            parsed.label || parsed.selector,
+            parsed.elementTag,
+            parsed.elementText
+          )
           return
         }
 
@@ -987,8 +1090,10 @@ export const PreviewIframe = forwardRef<
               selector: parsed.selector || '',
               elementTag: parsed.elementTag,
               elementText: parsed.elementText,
-              reason: 'drag'
+              reason: 'drag',
+              formula: parsed.snapshot?.formula
             })
+            if (webviewRef.current !== webview) return
             const textTarget =
               parsed.textTarget && parsed.textTarget.parentSelector === parsed.selector
                 ? { ...parsed.textTarget, parentSelector: anchor.selector }
@@ -1031,11 +1136,13 @@ export const PreviewIframe = forwardRef<
               anchorResult = await ensureAnchoredAnchor({
                 selector: parsed.selector || '',
                 elementTag: parsed.elementTag,
-                reason: 'drag'
+                reason: 'drag',
+                formula: parsed.snapshot?.formula
               })
             } catch {
               return
             }
+            if (webviewRef.current !== webview) return
             const wv = webviewRef.current
             if (wv) {
               safeExecuteJavaScript(
@@ -1053,8 +1160,10 @@ export const PreviewIframe = forwardRef<
             const anchor = await ensureAnchoredAnchor({
               selector: parsed.selector || '',
               elementTag: parsed.elementTag,
-              reason: 'drag'
+              reason: 'drag',
+              formula: parsed.snapshot?.formula
             })
+            if (webviewRef.current !== webview) return
             onElementMovedRef.current?.({
               selector: anchor.selector,
               blockId: anchor.blockId || parsed.blockId,
@@ -1146,7 +1255,7 @@ export const PreviewIframe = forwardRef<
         <webview
           ref={handleWebviewRef}
           src={webviewSrc}
-          tabIndex={0}
+          tabIndex={thumbnail ? -1 : 0}
           title={title}
           className={`absolute left-0 top-0 h-[900px] w-[1600px] origin-top-left ${
             pointerEnabled ? 'pointer-events-auto' : 'pointer-events-none'

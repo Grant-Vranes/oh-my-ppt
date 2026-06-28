@@ -106,6 +106,7 @@ export class GenerateJobManager {
         mode: context.effectiveMode === 'retry' ? 'retry' : 'generate',
         totalPages,
         modelConfigId: context.modelConfigId,
+        animationPreferences: context.animationPreferences || null,
         metadata: {
           backgroundJob: true,
           kind,

@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ipc } from '@renderer/lib/ipc'
-import type { GenerateChunkEvent } from '@shared/generation.js'
+import type { AnimationPreferencesPayload, GenerateChunkEvent } from '@shared/generation.js'
 import videoSrc from '../assets/images/video.mp4'
 import { getEditorGate, type EditorGate } from '../lib/sessionMetadata'
 import { useLang, type Lang } from '../i18n'
@@ -20,6 +20,8 @@ type LocationState = {
   modelConfigId?: string
   retry?: boolean
   rerunToken?: number
+  animationPreferences?: AnimationPreferencesPayload | null
+  failedRunId?: string
 }
 
 type GenerationKind = 'standard' | 'template'
@@ -320,6 +322,7 @@ export function SessionGeneratingPage({
     buildPagePlaceholders(1, lang)
   )
   const [presentationTitle, setPresentationTitle] = useState<string>('')
+  const [cancelPending, setCancelPending] = useState(false)
   const generatingPath =
     generationKind === 'template' && id
       ? `/sessions/${id}/template-generating`
@@ -395,6 +398,7 @@ export function SessionGeneratingPage({
         setStatus('running')
         setProgress(0)
         setError(null)
+        setCancelPending(false)
         setCurrentStage('preflight')
         setEvents([{ text: t('generating.created'), time: new Date().toISOString() }])
       }, 0)
@@ -671,7 +675,8 @@ export function SessionGeneratingPage({
           : ipc.retryFailedPages({
               sessionId: id,
               modelConfigId: resolvedModelConfigId,
-              userMessage: state.initialPrompt?.trim() || undefined
+              userMessage: state.initialPrompt?.trim() || undefined,
+              failedRunId: state.failedRunId
             })
         : generationKind === 'template'
           ? ipc.startTemplateGenerate({
@@ -684,7 +689,8 @@ export function SessionGeneratingPage({
               sessionId: id,
               modelConfigId: resolvedModelConfigId,
               userMessage: initialPrompt,
-              type: 'deck'
+              type: 'deck',
+              animationPreferences: state?.animationPreferences || undefined
             })
       void request
         .then((result) => {
@@ -900,11 +906,19 @@ export function SessionGeneratingPage({
     state?.modelConfigId,
     state?.retry,
     state?.rerunToken,
+    state?.animationPreferences,
+    state?.failedRunId,
     ensureModelActive,
     selectedModelConfigId,
     lang,
     t
   ])
+
+  useEffect(() => {
+    if (status !== 'queued' && status !== 'running') {
+      setCancelPending(false)
+    }
+  }, [status])
 
   const displayProgress = Math.max(0, Math.min(100, Math.round(progress)))
   const fullyGenerated = isSessionFullyGenerated(editorGate)
@@ -952,6 +966,7 @@ export function SessionGeneratingPage({
       state: {
         modelConfigId,
         retry: true,
+        failedRunId: activeRunIdRef.current || undefined,
         rerunToken: Date.now()
       }
     })
@@ -964,9 +979,24 @@ export function SessionGeneratingPage({
         initialPrompt: state?.initialPrompt,
         modelConfigId,
         retry: false,
+        animationPreferences: state?.animationPreferences || undefined,
         rerunToken: Date.now()
       }
     })
+  }
+  const handleCancelGeneration = (): void => {
+    if (!id || cancelPending || (status !== 'queued' && status !== 'running')) return
+    setCancelPending(true)
+    void ipc
+      .cancelGenerate(id)
+      .then((result) => {
+        if (!result?.success) {
+          setCancelPending(false)
+        }
+      })
+      .catch(() => {
+        setCancelPending(false)
+      })
   }
 
   return (
@@ -1027,6 +1057,7 @@ export function SessionGeneratingPage({
             continueRemainingLabel={t('generating.continueRemaining')}
             regenerateLabel={t('generating.regenerate')}
             cancelLabel={t('generating.cancelGeneration')}
+            isCancelling={cancelPending}
             hasGeneratedPages={canContinueRemaining}
             canEnterEditor={canEnterEditor}
             showEditorShortcut={showProgressEditorShortcut}
@@ -1034,10 +1065,7 @@ export function SessionGeneratingPage({
             onEnterEditor={() => navigate(`/sessions/${id}`)}
             onContinueRemaining={handleContinueRemaining}
             onRegenerate={handleRegenerate}
-            onCancel={() => {
-              if (!id) return
-              void ipc.cancelGenerate(id)
-            }}
+            onCancel={handleCancelGeneration}
           />
 
           <GenerationPreviewGrid pages={previewPages} />

@@ -13,7 +13,11 @@ import {
   buildSinglePageGenerationPrompt,
   CONTENT_LANGUAGE_RULES
 } from '../../prompt'
-import type { FontSelection, GenerateChunkEvent } from '@shared/generation'
+import type {
+  AnimationPreferencesPayload,
+  FontSelection,
+  GenerateChunkEvent
+} from '@shared/generation'
 import { normalizeLayoutIntent, type LayoutIntent } from '@shared/layout-intent'
 import { resolveModelTimeoutMs, type ModelTimeoutProfile } from '@shared/model-timeout'
 import { progressLabel, progressText } from '@shared/progress'
@@ -811,6 +815,7 @@ export const runDeepAgentDeckGeneration = async (args: {
   styleName?: string
   styleVersion?: string
   appLocale?: AppLocale
+  animationPreferences?: AnimationPreferencesPayload | null
   modelTimeoutMs?: number
   topic: string
   deckTitle: string
@@ -1101,6 +1106,7 @@ export const runDeepAgentDeckGeneration = async (args: {
         styleName: args.styleName,
         styleVersion: args.styleVersion,
         appLocale: args.appLocale,
+        animationPreferences: args.animationPreferences,
         designContract: args.designContract,
         templatePageReadRequired: args.requireTemplatePageRead,
         userMessage: args.userMessage,
@@ -1151,7 +1157,6 @@ export const runDeepAgentDeckGeneration = async (args: {
                   referenceDocumentSnippets,
                   isRetryMode: args.generationMode === 'retry',
                   writeToolName,
-                  designContract: args.designContract,
                   retryContext
                 })
               ]

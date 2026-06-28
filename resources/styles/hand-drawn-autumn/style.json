@@ -5,13 +5,13 @@
     "en": "Hand-drawn Autumn Travel Journal"
   },
   "description": "温暖秋日色调的手绘插画风格，充满童趣与旅行感。",
-  "category": "插画手账",
+  "category": "插画 · 手绘",
   "aliases": [
     "手绘旅行风",
     "秋日手账风",
     "卡通插画风"
   ],
-  "styleCase": "旅行手账、生活记录、城市漫游笔记、亲子活动海报、校园社团招新、节日主题分享",
-  "version": "2.0.0",
+  "styleCase": "旅游出行、生活方式、亲子儿童",
+  "version": "2.0.2",
   "source": "builtin"
 }

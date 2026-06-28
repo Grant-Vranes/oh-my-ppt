@@ -39,6 +39,7 @@ interface StyleOption {
   styleCase?: string
   thumbnailPath?: string | null
   previewPath?: string | null
+  favoriteAt?: number | null
 }
 
 const tokenizeStyleText = (value: string): string[] => {
@@ -177,7 +178,13 @@ export function GenerationConfirmDialog({
 
   const loadOptions = useCallback(async (): Promise<void> => {
     const [styleRes, fontRes] = await Promise.all([ipc.listStyles(), ipc.listFonts()])
-    const sorted = [...styleRes.items].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
+    const sorted = [...styleRes.items].sort(
+      (a, b) =>
+        (b.favoriteAt || 0) - (a.favoriteAt || 0) ||
+        (b.updatedAt || 0) - (a.updatedAt || 0) ||
+        (b.createdAt || 0) - (a.createdAt || 0) ||
+        a.id.localeCompare(b.id)
+    )
     setStyleOptions(
       sorted.map((item) => ({
         id: item.id,
@@ -187,7 +194,8 @@ export function GenerationConfirmDialog({
         aliases: item.aliases,
         styleCase: item.styleCase,
         thumbnailPath: item.thumbnailPath,
-        previewPath: item.previewPath
+        previewPath: item.previewPath,
+        favoriteAt: item.favoriteAt
       }))
     )
     const fonts = [...fontRes.userFonts, ...fontRes.googleFonts]
@@ -254,8 +262,8 @@ export function GenerationConfirmDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[calc(100vw-2rem)] max-w-3xl overflow-hidden">
+    <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
+      <DialogContent className="max-h-[calc(100vh-2rem)] w-[calc(100vw-2rem)] max-w-3xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t('thinking.generationDialogTitle')}</DialogTitle>
           <DialogDescription className="text-[12px]">

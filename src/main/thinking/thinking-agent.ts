@@ -10,6 +10,7 @@ import { buildThinkingContext, type ThinkingContextArgs } from './context-builde
 import { findUnsupportedPrecisionClaims, type CredibilityIssue } from './content-credibility'
 import { routeThinkingIntent, type ThinkingIntentRoute } from './intent-router'
 import { normalizeThinkingAssistantReply } from './reply-normalizer'
+import { createThinkingToolInputRecoveryMiddleware } from './tool-error-recovery'
 import {
   checkStageTransition,
   isValidTransition,
@@ -460,7 +461,10 @@ function getOrCreateRuntime(
     ],
     systemPrompt: args.systemPrompt,
     tools: workflowTools.tools as any,
-    middleware: [createThinkingToolAllowlistMiddleware(allowedToolNames) as any]
+    middleware: [
+      createThinkingToolInputRecoveryMiddleware() as any,
+      createThinkingToolAllowlistMiddleware(allowedToolNames) as any
+    ]
   })
 
   const runtime: ThinkingRuntime = {

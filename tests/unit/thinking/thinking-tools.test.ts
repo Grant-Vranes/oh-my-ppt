@@ -46,6 +46,66 @@ afterEach(async () => {
 })
 
 describe('thinking workflow tools', () => {
+  it('normalizes object-form confirmed decisions and preserves omitted context fields', async () => {
+    const thinkingDir = await makeTempThinkingDir()
+    const { tools, state } = createThinkingWorkflowTools({
+      thinkingDir,
+      currentStage: 'collect'
+    })
+    const updateContext = tools.find((tool) => tool.name === 'update_context_document')
+    expect(updateContext).toBeTruthy()
+
+    await updateContext!.invoke({
+      topic: '2026 AI动漫发展',
+      userIntent: '面向行业从业者进行案例分享。',
+      confirmedDecisions: [
+        {
+          主题: '2026年AI动漫发展',
+          听众: '行业从业者',
+          页数: '8页'
+        }
+      ],
+      openQuestions: ['是否需要补充更多海外案例？']
+    })
+    await updateContext!.invoke({
+      latestDirection: '用户确认开始生成大纲。'
+    })
+
+    const context = await fs.promises.readFile(path.join(thinkingDir, 'context.md'), 'utf-8')
+
+    expect(state.contextUpdated).toBe(true)
+    expect(state.contextUpdateCount).toBe(2)
+    expect(context).toContain('## Topic\n2026 AI动漫发展')
+    expect(context).toContain(
+      '- 主题: 2026年AI动漫发展；听众: 行业从业者；页数: 8页'
+    )
+    expect(context).toContain('- 是否需要补充更多海外案例？')
+    expect(context).toContain('## Latest Direction\n用户确认开始生成大纲。')
+  })
+
+  it('clears a context list only when the model explicitly passes an empty array', async () => {
+    const thinkingDir = await makeTempThinkingDir()
+    const { tools } = createThinkingWorkflowTools({
+      thinkingDir,
+      currentStage: 'collect'
+    })
+    const updateContext = tools.find((tool) => tool.name === 'update_context_document')
+    expect(updateContext).toBeTruthy()
+
+    await updateContext!.invoke({
+      topic: '保留主题',
+      openQuestions: ['待确认问题']
+    })
+    await updateContext!.invoke({
+      openQuestions: []
+    })
+
+    const context = await fs.promises.readFile(path.join(thinkingDir, 'context.md'), 'utf-8')
+    expect(context).toContain('## Topic\n保留主题')
+    expect(context).not.toContain('## Open Questions')
+    expect(context).not.toContain('待确认问题')
+  })
+
   it('stages page batches in memory and writes thinking.md only on final commit', async () => {
     const thinkingDir = await makeTempThinkingDir()
     const initial = await fs.promises.readFile(path.join(thinkingDir, 'thinking.md'), 'utf-8')

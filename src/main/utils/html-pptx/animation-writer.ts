@@ -13,7 +13,9 @@ export interface PptxTargetAnimation {
   spid: number
   type: HtmlToPptxAnimationType
   trigger: HtmlToPptxAnimationTrigger
+  clickGroup?: string
   from?: HtmlToPptxAnimationFrom
+  path?: string
   duration: number
   delay: number
   order: number
@@ -24,15 +26,34 @@ const clampMs = (value: number, fallback: number): number => {
   return Math.round(Math.max(100, Math.min(5000, numeric)))
 }
 
+const SMOOTH_EASE_IN_OUT = ' accel="20000" decel="60000"'
+const SMOOTH_EASE_OUT = ' accel="0" decel="70000"'
+const SMOOTH_EASE_IN = ' accel="70000" decel="0"'
+
 const targetXml = (spid: number): string => `<p:tgtEl><p:spTgt spid="${spid}"/></p:tgtEl>`
 
-const ctnAttrs = (anim: PptxTargetAnimation, id: number): string => {
+const smoothTimingAttrs = (anim: PptxTargetAnimation): string => {
+  const preset = getPptxAnimationPreset(anim.type)
+  if (!preset) return SMOOTH_EASE_IN_OUT
+  if (preset.presetClass === 'exit') return SMOOTH_EASE_IN
+  if (preset.presetClass === 'entr') return SMOOTH_EASE_OUT
+  return SMOOTH_EASE_IN_OUT
+}
+
+const ctnAttrs = (args: {
+  anim: PptxTargetAnimation
+  id: number
+  nodeTypeOverride?: 'clickEffect' | 'withEffect'
+  grpIdOverride?: number
+}): string => {
+  const { anim, id, nodeTypeOverride, grpIdOverride } = args
   const preset = getPptxAnimationPreset(anim.type)
   if (!preset) return ''
-  const nodeType = anim.trigger === 'click' ? 'clickEffect' : 'withEffect'
+  const nodeType = nodeTypeOverride || (anim.trigger === 'click' ? 'clickEffect' : 'withEffect')
   const subtype =
     preset.presetSubtype === undefined ? '' : ` presetSubtype="${preset.presetSubtype}"`
-  return `id="${id}" presetID="${preset.presetId}" presetClass="${preset.presetClass}"${subtype} fill="hold" grpId="0" nodeType="${nodeType}"`
+  const grpId = grpIdOverride === undefined ? 0 : grpIdOverride
+  return `id="${id}" presetID="${preset.presetId}" presetClass="${preset.presetClass}"${subtype} fill="hold" grpId="${grpId}" nodeType="${nodeType}"`
 }
 
 const visibilitySetXml = (spid: number, id: number): string => `<p:set>
@@ -57,10 +78,11 @@ const fadeXml = (
   id: number,
   duration: number,
   transition: 'in' | 'out' = 'in',
-  filter = 'fade'
+  filter = 'fade',
+  smoothAttrs = SMOOTH_EASE_IN_OUT
 ): string => `<p:animEffect transition="${transition}" filter="${filter}">
   <p:cBhvr>
-    <p:cTn id="${id}" dur="${duration}" fill="hold"/>
+    <p:cTn id="${id}" dur="${duration}" fill="hold"${smoothAttrs}/>
     ${targetXml(spid)}
   </p:cBhvr>
 </p:animEffect>`
@@ -71,10 +93,11 @@ const numericAnimXml = (
   duration: number,
   attrName: 'ppt_x' | 'ppt_y',
   from: string,
-  to: string
+  to: string,
+  smoothAttrs = SMOOTH_EASE_IN_OUT
 ): string => `<p:anim calcmode="lin" valueType="num">
   <p:cBhvr additive="base">
-    <p:cTn id="${id}" dur="${duration}" fill="hold"/>
+    <p:cTn id="${id}" dur="${duration}" fill="hold"${smoothAttrs}/>
     ${targetXml(spid)}
     <p:attrNameLst>
       <p:attrName>${attrName}</p:attrName>
@@ -90,8 +113,95 @@ const numericAnimXml = (
   </p:tavLst>
 </p:anim>`
 
+// LINEAR_PATH_RE: Must be kept in sync with the duplicated definitions in
+// `src/main/animation/data-anim-validator.ts` and `src/main/utils/html-pptx/browser-scripts.ts`.
+// Note: browser-scripts.ts uses a serialized version with escaped backslashes.
+const LINEAR_PATH_RE = /^M\s+-?\d+(?:\.\d+)?\s+-?\d+(?:\.\d+)?\s+L\s+-?\d+(?:\.\d+)?\s+-?\d+(?:\.\d+)?\s*$/i
+
+const parseLinearPathDelta = (
+  pathValue: string | undefined
+): { x: number; y: number } | null => {
+  const raw = String(pathValue || '').trim()
+  if (!raw || !LINEAR_PATH_RE.test(raw)) return null
+  const coords = raw.match(/-?\d+(?:\.\d+)?/g)
+  if (!coords || coords.length < 4) return null
+  const startX = Number(coords[0])
+  const startY = Number(coords[1])
+  const endX = Number(coords[coords.length - 2])
+  const endY = Number(coords[coords.length - 1])
+  if (![startX, startY, endX, endY].every(Number.isFinite)) return null
+  return { x: endX - startX, y: endY - startY }
+}
+
+const formatSignedDelta = (value: number): string => {
+  const rounded = Math.round(value * 1000) / 1000
+  if (Math.abs(rounded) < 0.0005) return ''
+  return rounded >= 0 ? `+${rounded}` : `${rounded}`
+}
+
+const resolveExplicitEntranceDelta = (
+  anim: PptxTargetAnimation
+): { x?: number; y?: number } | null => {
+  switch (anim.type) {
+    case 'fade-up':
+      return { y: 20 }
+    case 'fade-down':
+      return { y: -20 }
+    case 'fade-left':
+      return { x: 20 }
+    case 'fade-right':
+      return { x: -20 }
+    case 'slide-up':
+      return { y: 40 }
+    case 'slide-down':
+      return { y: -40 }
+    case 'slide-left':
+      return { x: 40 }
+    case 'slide-right':
+      return { x: -40 }
+    default:
+      return null
+  }
+}
+
 const motionXml = (anim: PptxTargetAnimation, duration: number, nextId: () => number): string[] => {
   const preset = getPptxAnimationPreset(anim.type)
+  const smoothAttrs = smoothTimingAttrs(anim)
+  if (anim.type === 'path') {
+    const delta = parseLinearPathDelta(anim.path)
+    if (!delta) return []
+    return [
+      numericAnimXml(
+        anim.spid,
+        nextId(),
+        duration,
+        'ppt_x',
+        '#ppt_x',
+        `#ppt_x${formatSignedDelta(delta.x)}`,
+        smoothAttrs
+      ),
+      numericAnimXml(
+        anim.spid,
+        nextId(),
+        duration,
+        'ppt_y',
+        '#ppt_y',
+        `#ppt_y${formatSignedDelta(delta.y)}`,
+        smoothAttrs
+      )
+    ]
+  }
+  const explicitEntranceDelta = resolveExplicitEntranceDelta(anim)
+  if (explicitEntranceDelta && preset?.presetClass === 'entr') {
+    const xFrom =
+      explicitEntranceDelta.x === undefined ? '#ppt_x' : `#ppt_x${formatSignedDelta(explicitEntranceDelta.x)}`
+    const yFrom =
+      explicitEntranceDelta.y === undefined ? '#ppt_y' : `#ppt_y${formatSignedDelta(explicitEntranceDelta.y)}`
+    return [
+      numericAnimXml(anim.spid, nextId(), duration, 'ppt_x', xFrom, '#ppt_x', smoothAttrs),
+      numericAnimXml(anim.spid, nextId(), duration, 'ppt_y', yFrom, '#ppt_y', smoothAttrs)
+    ]
+  }
   const motion = preset?.motion === 'fromTrace' ? resolveTraceMotion(anim.from) : preset?.motion
   if (!preset || !motion) return []
 
@@ -110,8 +220,24 @@ const motionXml = (anim: PptxTargetAnimation, duration: number, nextId: () => nu
   const isExit = preset.presetClass === 'exit'
 
   return [
-    numericAnimXml(anim.spid, nextId(), duration, 'ppt_x', isExit ? '#ppt_x' : xAway, isExit ? xAway : '#ppt_x'),
-    numericAnimXml(anim.spid, nextId(), duration, 'ppt_y', isExit ? '#ppt_y' : yAway, isExit ? yAway : '#ppt_y')
+    numericAnimXml(
+      anim.spid,
+      nextId(),
+      duration,
+      'ppt_x',
+      isExit ? '#ppt_x' : xAway,
+      isExit ? xAway : '#ppt_x',
+      smoothAttrs
+    ),
+    numericAnimXml(
+      anim.spid,
+      nextId(),
+      duration,
+      'ppt_y',
+      isExit ? '#ppt_y' : yAway,
+      isExit ? yAway : '#ppt_y',
+      smoothAttrs
+    )
   ]
 }
 
@@ -120,34 +246,101 @@ const scaleXml = (
   id: number,
   duration: number,
   from = 85000,
-  to = 100000
-): string => `<p:animScale>
+  to = 100000,
+  options?: { emphasisRebound?: boolean; smoothAttrs?: string }
+): string => {
+  // For emphasis animations (pulse, grow-shrink), generate two-phase rebound
+  if (options?.emphasisRebound && from !== to) {
+    const halfDur = Math.floor(duration / 2)
+    return `<p:seq>
+  <p:cTn id="${id}" fill="hold">
+    <p:childTnLst>
+      <p:animScale>
+        <p:cBhvr additive="base">
+          <p:cTn id="${id + 1}" dur="${halfDur}" fill="hold"${options.smoothAttrs || SMOOTH_EASE_IN_OUT}/>
+          ${targetXml(spid)}
+        </p:cBhvr>
+        <p:from x="${from}" y="${from}"/>
+        <p:to x="${to}" y="${to}"/>
+      </p:animScale>
+      <p:animScale>
+        <p:cBhvr additive="base">
+          <p:cTn id="${id + 2}" dur="${halfDur}" fill="remove"${options.smoothAttrs || SMOOTH_EASE_IN_OUT}/>
+          ${targetXml(spid)}
+        </p:cBhvr>
+        <p:from x="${to}" y="${to}"/>
+        <p:to x="100000" y="100000"/>
+      </p:animScale>
+    </p:childTnLst>
+  </p:cTn>
+</p:seq>`
+  }
+
+  return `<p:animScale>
   <p:cBhvr additive="base">
-    <p:cTn id="${id}" dur="${duration}" fill="hold"/>
+    <p:cTn id="${id}" dur="${duration}" fill="hold"${options?.smoothAttrs || SMOOTH_EASE_IN_OUT}/>
     ${targetXml(spid)}
   </p:cBhvr>
   <p:from x="${from}" y="${from}"/>
   <p:to x="${to}" y="${to}"/>
 </p:animScale>`
+}
 
-const effectXml = (anim: PptxTargetAnimation, nextId: () => number): string => {
+const rotationXml = (
+  spid: number,
+  id: number,
+  duration: number,
+  from = 0,
+  to = 0,
+  smoothAttrs = SMOOTH_EASE_IN_OUT
+): string => `<p:animRot from="${from}" to="${to}">
+  <p:cBhvr additive="base">
+    <p:cTn id="${id}" dur="${duration}" fill="hold"${smoothAttrs}/>
+    ${targetXml(spid)}
+  </p:cBhvr>
+</p:animRot>`
+
+const effectXml = (
+  anim: PptxTargetAnimation,
+  nextId: () => number,
+  options?: { nodeTypeOverride?: 'clickEffect' | 'withEffect'; grpIdOverride?: number }
+): string => {
   const preset = getPptxAnimationPreset(anim.type)
   if (!preset) return ''
   const duration = clampMs(anim.duration, 500)
   const delay = Math.max(0, Math.round(Number.isFinite(anim.delay) ? anim.delay : 0))
+  const smoothAttrs = smoothTimingAttrs(anim)
   const effectId = nextId()
   const chunks = [visibilitySetXml(anim.spid, nextId()), ...motionXml(anim, duration, nextId)]
   if (preset.scale) {
-    chunks.push(scaleXml(anim.spid, nextId(), duration, preset.scaleFrom, preset.scaleTo))
+    const isEmphasis = preset.presetClass === 'emph'
+    const scaleId = nextId()
+    chunks.push(scaleXml(anim.spid, scaleId, duration, preset.scaleFrom, preset.scaleTo, {
+      emphasisRebound: isEmphasis,
+      smoothAttrs
+    }))
+    // Reserve additional IDs for two-phase emphasis animation
+    if (isEmphasis) {
+      nextId()
+      nextId()
+    }
+  }
+  if (preset.rotateFrom !== undefined || preset.rotateTo !== undefined) {
+    chunks.push(rotationXml(anim.spid, nextId(), duration, preset.rotateFrom, preset.rotateTo, smoothAttrs))
   }
   if (preset.effectFilter === 'wipe') {
-    chunks.push(fadeXml(anim.spid, nextId(), duration, preset.transition ?? 'in', wipeFilterForFrom(anim.from)))
+    chunks.push(fadeXml(anim.spid, nextId(), duration, preset.transition ?? 'in', wipeFilterForFrom(anim.from), smoothAttrs))
   } else if (preset.fade) {
-    chunks.push(fadeXml(anim.spid, nextId(), duration, preset.transition ?? 'in'))
+    chunks.push(fadeXml(anim.spid, nextId(), duration, preset.transition ?? 'in', 'fade', smoothAttrs))
   }
 
   return `<p:par>
-  <p:cTn ${ctnAttrs(anim, effectId)}>
+  <p:cTn ${ctnAttrs({
+    anim,
+    id: effectId,
+    nodeTypeOverride: options?.nodeTypeOverride,
+    grpIdOverride: options?.grpIdOverride
+  })}>
     <p:stCondLst>
       <p:cond delay="${delay}"/>
     </p:stCondLst>
@@ -176,7 +369,32 @@ export function buildSlideTimingXml(animations: PptxTargetAnimation[], startNode
   const mainSeqId = nextId()
   const kickoffId = nextId()
   const effectGroupId = nextId()
-  const effects = ordered.map((anim) => effectXml(anim, nextId)).join('\n')
+  let nextClickGroupId = 1
+  let lastClickGroup: string | undefined
+  let lastClickGroupId: number | undefined
+  const effects = ordered.map((anim) => {
+    if (anim.trigger !== 'click') {
+      return effectXml(anim, nextId)
+    }
+    if (!anim.clickGroup) {
+      lastClickGroup = undefined
+      lastClickGroupId = undefined
+      return effectXml(anim, nextId)
+    }
+    if (anim.clickGroup !== lastClickGroup) {
+      lastClickGroup = anim.clickGroup
+      lastClickGroupId = nextClickGroupId
+      nextClickGroupId += 1
+      return effectXml(anim, nextId, {
+        nodeTypeOverride: 'clickEffect',
+        grpIdOverride: lastClickGroupId
+      })
+    }
+    return effectXml(anim, nextId, {
+      nodeTypeOverride: 'withEffect',
+      grpIdOverride: lastClickGroupId
+    })
+  }).join('\n')
   const buildList = [...new Set(ordered.map((anim) => anim.spid))]
     .map((spid) => `<p:bldP spid="${spid}" grpId="0"/>`)
     .join('\n      ')
@@ -192,7 +410,7 @@ export function buildSlideTimingXml(animations: PptxTargetAnimation[], startNode
                 <p:par>
                   <p:cTn id="${kickoffId}" fill="hold">
                     <p:stCondLst>
-                      <p:cond delay="indefinite"/>
+                      <p:cond delay="0"/>
                       <p:cond evt="onBegin" delay="0">
                         <p:tn val="${mainSeqId}"/>
                       </p:cond>

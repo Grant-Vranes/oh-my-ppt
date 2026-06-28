@@ -4,6 +4,7 @@ import {
   DEFAULT_MODEL_TEMPERATURE,
   getCurrentModelTemperatureControl,
   isCurrentModelTemperatureEnabled,
+  resolveCurrentModelThinkingParameterMode,
   resolveCurrentModelTemperature,
   resolveCurrentModelTemperatureOptions,
   runWithModelTemperatureControl
@@ -27,10 +28,11 @@ describe('model temperature runtime', () => {
 
   it('omits temperature throughout the current async model task when disabled', async () => {
     await runWithModelTemperatureControl(
-      { id: 'reasoning-model', disableTemperature: true },
+      { id: 'reasoning-model', disableTemperature: true, thinkingParameterMode: 'omit' },
       async () => {
         await Promise.resolve()
         expect(isCurrentModelTemperatureEnabled()).toBe(false)
+        expect(resolveCurrentModelThinkingParameterMode()).toBe('omit')
         expect(resolveCurrentModelTemperature(0.7)).toBeUndefined()
         expect(resolveCurrentModelTemperature(undefined)).toBeUndefined()
         expect(resolveCurrentModelTemperatureOptions(0.7)).not.toHaveProperty('temperature')
@@ -49,18 +51,23 @@ describe('model temperature runtime', () => {
       releaseReady = resolve
     })
 
-    const runTask = async (id: string, disableTemperature: boolean): Promise<number | undefined> => {
+    const runTask = async (
+      id: string,
+      disableTemperature: boolean,
+      thinkingParameterMode: 'auto' | 'omit'
+    ): Promise<number | undefined> => {
       await Promise.resolve()
-      bindCurrentModelTemperatureControl({ id, disableTemperature })
+      bindCurrentModelTemperatureControl({ id, disableTemperature, thinkingParameterMode })
       readyCount += 1
       if (readyCount === 2) releaseReady?.()
       await waitForRelease
       expect(getCurrentModelTemperatureControl()?.modelConfigId).toBe(id)
+      expect(resolveCurrentModelThinkingParameterMode()).toBe(thinkingParameterMode)
       return resolveCurrentModelTemperature(0.5)
     }
 
-    const disabledTask = runTask('disabled-model', true)
-    const enabledTask = runTask('enabled-model', false)
+    const disabledTask = runTask('disabled-model', true, 'omit')
+    const enabledTask = runTask('enabled-model', false, 'auto')
     await allReady
     releaseTasks?.()
 

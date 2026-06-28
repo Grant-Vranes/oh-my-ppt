@@ -5,7 +5,7 @@
     "en": "Indigo Lotus"
   },
   "description": "紫蓝渐变的黄昏海天国风",
-  "category": "自然 · 有机",
+  "category": "东方 · 国风",
   "aliases": [
     "青莲",
     "碧蓝",
@@ -13,7 +13,7 @@
     "国风",
     "紫蓝"
   ],
-  "styleCase": "国风文化讲座、传统节日企划、诗词散文分享、艺术展览导览、治愈系心理课",
-  "version": "2.0.0",
+  "styleCase": "传统文化、疗愈冥想、教学科普",
+  "version": "2.0.1",
   "source": "builtin"
 }

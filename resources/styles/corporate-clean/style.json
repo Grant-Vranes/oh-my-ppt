@@ -12,7 +12,7 @@
     "正式",
     "商务"
   ],
-  "styleCase": "董事会汇报、B2B 销售演示、金融保险行业报告、季度业务 Review",
-  "version": "2.0.0",
+  "styleCase": "商业汇报、融资路演、年度庆典",
+  "version": "2.0.1",
   "source": "builtin"
 }

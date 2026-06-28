@@ -5,9 +5,11 @@ import type { FontSelection, GenerateStartPayload, SourceDocumentPlan } from '@s
 import {
   MAX_SELECTED_PAGES,
   MAX_STYLE_SWITCH_PAGES,
+  normalizeAnimationPreferences,
   normalizeFontSelection,
   normalizeSelectPageIds
 } from '@shared/generation'
+import type { AnimationPreferencesPayload } from '@shared/generation'
 import type { ModelTimeoutProfile } from '@shared/model-timeout'
 import type { IpcContext } from '../context'
 import type { GenerateChatType } from './types'
@@ -77,6 +79,8 @@ export type NormalizedGenerateInput = {
   elementText?: string
   chatType: GenerateChatType
   chatPageId?: string
+  animationPreferences: AnimationPreferencesPayload | null
+  failedRunId?: string
 }
 
 export function normalizeGeneratePayload(payload: unknown): NormalizedGenerateInput {
@@ -135,6 +139,12 @@ export function normalizeGeneratePayload(payload: unknown): NormalizedGenerateIn
     chatType === 'page' && typeof input?.chatPageId === 'string' && input.chatPageId.trim().length > 0
       ? input.chatPageId.trim()
       : undefined
+  const animationPreferences = normalizeAnimationPreferences(input?.animationPreferences)
+  const failedRunIdRaw = (payload as { failedRunId?: unknown } | null)?.failedRunId
+  const failedRunId =
+    typeof failedRunIdRaw === 'string' && failedRunIdRaw.trim().length > 0
+      ? failedRunIdRaw.trim()
+      : undefined
 
   return {
     sessionId,
@@ -153,7 +163,9 @@ export function normalizeGeneratePayload(payload: unknown): NormalizedGenerateIn
     elementTag,
     elementText,
     chatType,
-    chatPageId
+    chatPageId,
+    animationPreferences,
+    failedRunId
   }
 }
 

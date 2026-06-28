@@ -1,18 +1,24 @@
 import type { SessionDeckGenerationContext } from '../tools/types'
 import {
   CANVAS_CONSTRAINTS,
+  CONTENT_EXPANSION_RULES,
   CONTENT_LANGUAGE_RULES,
   CONTENT_WRITING_RULES,
   FRONTEND_CAPABILITIES,
   LAYOUT_COLLISION_RULES,
+  LAYOUT_DELIVERY_GUARD,
   PAGE_SEMANTIC_STRUCTURE,
+  SLIDE_THESIS_RULES,
   SOURCE_DOCUMENT_FACT_RULE,
   SOURCE_DOCUMENT_READ_STRATEGY,
+  SOURCE_GROUNDED_EXPANSION_RULES,
   STABLE_HTML_FRAGMENT_PROTOCOL,
+  STYLE_FIDELITY_RULES,
   buildOutlinePageList,
   formatDesignContract,
   resolveContextStylePrompt
 } from './shared'
+import { formatAnimationPreferencesForPageWriting } from './animation-preferences'
 
 export function buildDeckAgentSystemPrompt(
   styleId: string | null | undefined,
@@ -49,6 +55,9 @@ export function buildDeckAgentSystemPrompt(
     : '3. Call update_page_file(content) page by page. For multi-page generation, write each target page file in order. You may pass pageId to override automatic targeting.'
   const sourceDocumentPaths = (context.sourceDocumentPaths || []).filter(Boolean)
   const isRetryMode = context.mode === 'retry'
+  const animationPreferencePrompt = formatAnimationPreferencesForPageWriting(
+    context.animationPreferences
+  )
   const sourceDocumentInstructions =
     sourceDocumentPaths.length > 0
       ? [
@@ -60,6 +69,7 @@ export function buildDeckAgentSystemPrompt(
           'If snippets are insufficient, conflicting, or missing key facts, follow the source-reading skill against these source documents:',
           ...sourceDocumentPaths.map((docPath) => `- ${docPath}`),
           SOURCE_DOCUMENT_FACT_RULE,
+          SOURCE_GROUNDED_EXPANSION_RULES,
           isRetryMode
             ? '- This is a failed-slide retry. Match source material only around the failed slide title and outline; do not reconstruct the whole deck outline.'
             : "- This is initial page generation. Follow the established page outline slide by slide; do not prematurely insert other slides' material.",
@@ -78,15 +88,9 @@ export function buildDeckAgentSystemPrompt(
     'You are a PPT generation expert responsible for turning a planned page outline into slide HTML content.',
     'You run inside a DeepAgents filesystem session and must write each slide into its own /<pageId>.html file through tools.',
     '',
+    SLIDE_THESIS_RULES,
+    '',
     CONTENT_LANGUAGE_RULES,
-    '',
-    '## 风格与视觉',
-    `风格预设：${presetLabel} (${presetId})`,
-    '风格规则：',
-    stylePrompt,
-    '',
-    '本套演示设计契约（统一视觉护栏，避免机械套版）：',
-    formatDesignContract(context.designContract),
     '',
     isTemplateGeneration
       ? [
@@ -100,7 +104,7 @@ export function buildDeckAgentSystemPrompt(
       : [
           '## 创意变化',
           '- 在统一风格内制造每页的视觉惊喜：变化主视觉位置、标题进入方式、信息节奏、留白比例或局部装饰语言。',
-          '- 每页至少有一个清晰的视觉焦点，可以是关键数字、图表、产品/场景图、概念符号、时间节点或一句核心判断。',
+          '- 每页至少有一个清晰的视觉焦点，可以是关键数字、图表、概念符号、时间节点或一句核心判断。',
           '- 惊喜感服务于内容理解；不要为了变化加入无关装饰、复杂嵌套、遮挡文字或难以维护的结构。',
           '- 同一套 deck 内避免连续页面使用完全相同的标题位置、卡片网格和背景分区。'
         ].join('\n'),
@@ -109,12 +113,17 @@ export function buildDeckAgentSystemPrompt(
     CANVAS_CONSTRAINTS,
     '',
     LAYOUT_COLLISION_RULES,
+    '',
+    LAYOUT_DELIVERY_GUARD,
     '- index.html 是总览壳（导航+iframe），不要修改其核心结构。',
     '',
     PAGE_SEMANTIC_STRUCTURE,
     '',
+    CONTENT_EXPANSION_RULES,
+    '',
     FRONTEND_CAPABILITIES,
     '',
+    ...(animationPreferencePrompt ? [animationPreferencePrompt, ''] : []),
     CONTENT_WRITING_RULES,
     '',
     STABLE_HTML_FRAGMENT_PROTOCOL,
@@ -179,7 +188,17 @@ export function buildDeckAgentSystemPrompt(
     'Page outline:',
     pageList,
     '',
-    'Fill each corresponding page strictly according to the content points in the outline above, keeping titles and content aligned.',
+    'Fill each page around its main thesis: treat the content points in the outline as evidence to select, group, and merge around the one sentence the page should deliver — not as a checklist where every point becomes a visible module. Keep each page title aligned with its thesis.',
+    '',
+    '## 最终风格校准（写入前）',
+    `风格预设：${presetLabel} (${presetId})`,
+    '风格规则：',
+    stylePrompt,
+    '',
+    '本套演示设计契约（统一视觉护栏，避免机械套版）：',
+    formatDesignContract(context.designContract),
+    '',
+    STYLE_FIDELITY_RULES,
     '',
     `⛔ FINAL REMINDER: Before you send your final text response, you MUST have successfully called ${
       isTemplateGeneration

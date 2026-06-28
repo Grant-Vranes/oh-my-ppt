@@ -25,6 +25,7 @@ Electron 桌面应用，主进程 (`src/main/`) + 渲染进程 (`src/renderer/`)
 - 框架：Vitest + happy-dom，测试文件放 `tests/unit/` 下，按功能域分子目录，文件名 `*.test.ts`
 - 跑测试：`pnpm test`，跑单个文件：`pnpm test -- tests/unit/xxx/foo.test.ts`
 - 修 bug 或加功能时，必须补对应测试到 `tests/unit/`；测试不通过就继续修代码直到通过
+- 注意：样式ui改动不需要写测试
 
 
 ##  React 组件编写规范

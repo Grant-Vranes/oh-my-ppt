@@ -31,6 +31,10 @@ const PROVIDER_DOCS: Record<ImageModelForm['provider'], { label: string; url: st
     label: '即梦4.0',
     url: 'https://www.volcengine.com/docs/85621/1817045?lang=zh'
   },
+  seedream: {
+    label: 'Seedream',
+    url: 'https://www.volcengine.com/docs/82379/1541523?lang=zh'
+  },
   siliconflow: {
     label: '硅基流动',
     url: 'https://www.siliconflow.cn/'
@@ -51,7 +55,8 @@ const PROVIDER_HINT_KEYS: Record<ImageModelForm['provider'], Parameters<Settings
   jimeng4: 'settings.imageModelConfigHintJimeng4',
   siliconflow: 'settings.imageModelConfigHintSiliconflow',
   openaiCompatible: 'settings.imageModelConfigHintOpenAICompatible',
-  gemini: 'settings.imageModelConfigHintGemini'
+  gemini: 'settings.imageModelConfigHintGemini',
+  seedream: 'settings.imageModelConfigHintSeedream'
 }
 
 const SILICONFLOW_MODELS = [
@@ -143,7 +148,7 @@ export function ImageModelConfigDialog({
                   <a
                     href={providerDocs.url}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 rounded-md border border-[#cbbfa8]/80 bg-[#fffaf1]/75 px-2 py-0.5 font-medium text-[#5d6b4d] transition-colors hover:border-[#aebd9a] hover:text-[#3e4a32]"
                   >
                     {t('settings.imageProviderOfficialDocs')}

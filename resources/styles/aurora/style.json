@@ -5,13 +5,13 @@
     "en": "Aurora"
   },
   "description": "极光渐变融化在blur里，封面页天生就该这样梦幻",
-  "category": "效果 · 重",
+  "category": "效果 · 戏剧",
   "aliases": [
     "aurora",
     "极光",
     "封面"
   ],
-  "styleCase": "封面页、CTA 页、结语页、活动开幕",
-  "version": "2.0.0",
+  "styleCase": "影视音乐、产品发布、年度庆典",
+  "version": "2.0.2",
   "source": "builtin"
 }

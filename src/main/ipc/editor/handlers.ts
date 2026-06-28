@@ -1,8 +1,16 @@
 import { ipcMain } from 'electron'
+import log from 'electron-log/main.js'
 import fs from 'fs'
 import * as cheerio from 'cheerio'
 import type { IpcContext } from '../context'
 import { GitHistoryService } from '../../history/git-history-service'
+import {
+  parseElementAnimationConfig,
+  patchElementAnimationConfig
+} from '../../animation/element-animation'
+import { validateDataAnimPatch } from '../../animation/data-anim-validator'
+import type { ElementAnimationPatch } from '../../../shared/element-animation'
+import { ensureSessionRuntimeCompatible } from '../session/runtime-assets'
 import {
   withHtmlFileLock,
   clampDragValue,
@@ -33,12 +41,14 @@ export function registerEditorHandlers(ctx: IpcContext): void {
       pageId?: unknown
       selector?: unknown
       elementTag?: unknown
+      formula?: unknown
     }
     const sessionId = normalizeSessionId(record.sessionId)
     const htmlPath = typeof record.htmlPath === 'string' ? record.htmlPath : ''
     const pageId = typeof record.pageId === 'string' ? record.pageId.trim() : ''
     const selector = typeof record.selector === 'string' ? record.selector.trim() : ''
     const elementTag = typeof record.elementTag === 'string' ? record.elementTag.trim() : ''
+    const formula = record.formula && typeof record.formula === 'object' ? record.formula : undefined
     if (!htmlPath) throw new Error('页面路径不能为空')
     if (!pageId) throw new Error('pageId 不能为空')
     if (!selector) throw new Error('元素 selector 不能为空')
@@ -51,7 +61,12 @@ export function registerEditorHandlers(ctx: IpcContext): void {
     })
     return await withHtmlFileLock(safeHtmlPath, async () => {
       const html = await fs.promises.readFile(safeHtmlPath, 'utf-8')
-      const result = ensureElementAnchorInHtml(html, { pageId, selector, elementTag })
+      const result = ensureElementAnchorInHtml(html, {
+        pageId,
+        selector,
+        elementTag,
+        formula: formula as Parameters<typeof ensureElementAnchorInHtml>[1]['formula']
+      })
       if (result.changed) {
         await fs.promises.writeFile(safeHtmlPath, result.html, 'utf-8')
       }
@@ -62,6 +77,122 @@ export function registerEditorHandlers(ctx: IpcContext): void {
         changed: result.changed
       }
     })
+  })
+
+  // ─── element-animation:get / set ───────────────────────
+
+  ipcMain.handle('element-animation:get', async (_event, payload: unknown) => {
+    if (!payload || typeof payload !== 'object') {
+      throw new Error('元素动画参数无效')
+    }
+    const record = payload as {
+      sessionId?: unknown
+      htmlPath?: unknown
+      pageId?: unknown
+      selector?: unknown
+    }
+    const sessionId = normalizeSessionId(record.sessionId)
+    const htmlPath = typeof record.htmlPath === 'string' ? record.htmlPath : ''
+    const pageId = typeof record.pageId === 'string' ? record.pageId.trim() : ''
+    const selector = typeof record.selector === 'string' ? record.selector.trim() : ''
+    if (!sessionId) throw new Error('缺少 sessionId')
+    if (!htmlPath) throw new Error('页面路径不能为空')
+    if (!pageId) throw new Error('pageId 不能为空')
+    if (!selector) throw new Error('元素 selector 不能为空')
+
+    const safeHtmlPath = await assertPathInAllowedRoots({
+      filePath: htmlPath,
+      mode: 'read',
+      sessionId,
+      htmlOnly: true
+    })
+    return await withHtmlFileLock(safeHtmlPath, async () => {
+      const html = await fs.promises.readFile(safeHtmlPath, 'utf-8')
+      return { animation: parseElementAnimationConfig(html, selector) }
+    })
+  })
+
+  ipcMain.handle('element-animation:set', async (_event, payload: unknown) => {
+    if (!payload || typeof payload !== 'object') {
+      throw new Error('元素动画参数无效')
+    }
+    const record = payload as {
+      sessionId?: unknown
+      htmlPath?: unknown
+      pageId?: unknown
+      selector?: unknown
+      patch?: unknown
+    }
+    const sessionId = normalizeSessionId(record.sessionId)
+    const htmlPath = typeof record.htmlPath === 'string' ? record.htmlPath : ''
+    const pageId = typeof record.pageId === 'string' ? record.pageId.trim() : ''
+    const selector = typeof record.selector === 'string' ? record.selector.trim() : ''
+    const patch =
+      record.patch && typeof record.patch === 'object'
+        ? (record.patch as ElementAnimationPatch)
+        : null
+    if (!sessionId) throw new Error('缺少 sessionId')
+    if (!htmlPath) throw new Error('页面路径不能为空')
+    if (!pageId) throw new Error('pageId 不能为空')
+    if (!selector) throw new Error('元素 selector 不能为空')
+    if (!patch) throw new Error('元素动画 patch 不能为空')
+    const session = await db.getSession(sessionId)
+    if (!session) throw new Error('会话不存在或已被删除')
+
+    const safeHtmlPath = await assertPathInAllowedRoots({
+      filePath: htmlPath,
+      mode: 'write',
+      sessionId,
+      htmlOnly: true
+    })
+    const projectDir = await resolveSessionProjectDir(sessionId)
+    await ensureSessionRuntimeCompatible(ctx, projectDir)
+    const history = new GitHistoryService(db)
+    await history.ensureBaseline(sessionId, projectDir).catch((error) => {
+      log.warn('[element-animation:set] ensure history baseline failed', {
+        sessionId,
+        message: error instanceof Error ? error.message : String(error)
+      })
+    })
+
+    const result = await withHtmlFileLock(safeHtmlPath, async () => {
+      const html = await fs.promises.readFile(safeHtmlPath, 'utf-8')
+      const next = patchElementAnimationConfig(html, selector, patch)
+      // Fail only on contract violations this patch newly introduces on the target.
+      // Pre-existing violations elsewhere must not block the targeted edit.
+      const { newErrors } = validateDataAnimPatch(html, next.html)
+      if (newErrors.length > 0) {
+        throw new Error(`元素动画验证失败：${newErrors.join('; ')}`)
+      }
+      if (next.changed) {
+        await fs.promises.writeFile(safeHtmlPath, next.html, 'utf-8')
+      }
+      return next
+    })
+
+    if (result.changed) {
+      await history.recordOperation({
+        sessionId,
+        projectDir,
+        type: 'edit',
+        scope: 'selector',
+        prompt: result.config
+          ? `为元素设置动画：${result.config.type} ${result.config.durationMs}ms`
+          : '关闭元素动画',
+        metadata: {
+          action: 'setElementAnimation',
+          pageId,
+          selector,
+          animation: result.config
+        }
+      })
+    }
+
+    return {
+      success: true,
+      changed: result.changed,
+      animation: result.config
+    }
   })
 
   // ─── element-editor:delete-element ──────────────────────
@@ -285,10 +416,12 @@ export function registerEditorHandlers(ctx: IpcContext): void {
         const patch = e.patch && typeof e.patch === 'object' ? (e.patch as Record<string, unknown>) : {}
         const style = patch.style && typeof patch.style === 'object' ? patch.style : undefined
         const attrs = patch.attrs && typeof patch.attrs === 'object' ? patch.attrs : undefined
+        const formula = patch.formula && typeof patch.formula === 'object' ? patch.formula : undefined
         try {
           html = patchGenericElementProperties(html, resolvedSelector, {
             text: typeof patch.text === 'string' ? patch.text : undefined,
             html: typeof patch.html === 'string' ? patch.html : undefined,
+            formula: formula as Parameters<typeof patchGenericElementProperties>[2]['formula'],
             textTarget: patch.textTarget,
             style: style as Parameters<typeof patchGenericElementProperties>[2]['style'],
             attrs: attrs as Parameters<typeof patchGenericElementProperties>[2]['attrs']
@@ -433,6 +566,7 @@ export function registerEditorHandlers(ctx: IpcContext): void {
         ? (record.patch as {
             text?: unknown
             html?: unknown
+            formula?: unknown
             textTarget?: unknown
             style?: unknown
           })

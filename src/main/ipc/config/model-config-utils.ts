@@ -6,6 +6,11 @@ import {
 import type { IpcContext } from '../context'
 import { readAppLocale, uiText } from '../config/locale-utils'
 import { bindCurrentModelTemperatureControl } from '../../model-runtime'
+import {
+  DEFAULT_THINKING_PARAMETER_MODE,
+  normalizeThinkingParameterMode,
+  type ThinkingParameterMode
+} from '@shared/model-config'
 
 export interface ActiveModelConfig {
   id: string
@@ -16,6 +21,7 @@ export interface ActiveModelConfig {
   baseUrl: string
   maxTokens: number
   disableTemperature: boolean
+  thinkingParameterMode: ThinkingParameterMode
 }
 
 export type ResolvedModelConfig = ActiveModelConfig
@@ -64,6 +70,7 @@ const resolveModelConfigRow = (
     baseUrl: string
     maxTokens?: number | null
     disableTemperature?: number | boolean | null
+    thinkingParameterMode?: string | null
   },
   options: {
     locale: 'zh' | 'en'
@@ -110,7 +117,10 @@ const resolveModelConfigRow = (
     apiKey,
     baseUrl: String(config.baseUrl || '').trim(),
     maxTokens: config.maxTokens || 4096,
-    disableTemperature: config.disableTemperature === 1 || config.disableTemperature === true
+    disableTemperature: config.disableTemperature === 1 || config.disableTemperature === true,
+    thinkingParameterMode: normalizeThinkingParameterMode(
+      config.thinkingParameterMode || DEFAULT_THINKING_PARAMETER_MODE
+    )
   }
   bindCurrentModelTemperatureControl(resolved)
   return resolved

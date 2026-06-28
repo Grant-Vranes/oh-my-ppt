@@ -34,6 +34,12 @@ export interface PropertyEditItem {
   patch: {
     html?: string
     text?: string
+    formula?: {
+      latex: string
+      html: string
+      displayMode: boolean
+      originalLatex?: string
+    }
     textTarget?: {
       type: 'text-node'
       parentSelector: string
@@ -108,6 +114,7 @@ function cloneSnapshot(s: EditSnapshot): EditSnapshot {
       patch: {
         html: e.patch.html,
         text: e.patch.text,
+        formula: e.patch.formula ? { ...e.patch.formula } : undefined,
         textTarget: e.patch.textTarget ? { ...e.patch.textTarget } : undefined,
         style: e.patch.style ? { ...e.patch.style } : undefined,
         attrs: e.patch.attrs ? { ...e.patch.attrs } : undefined
@@ -200,6 +207,7 @@ function propertyPatchEquals(a: PropertyEditItem['patch'], b: PropertyEditItem['
   return (
     a.text === b.text &&
     a.html === b.html &&
+    JSON.stringify(a.formula || null) === JSON.stringify(b.formula || null) &&
     JSON.stringify(a.textTarget || null) === JSON.stringify(b.textTarget || null) &&
     JSON.stringify(aStyle) === JSON.stringify(bStyle) &&
     JSON.stringify(aAttrs) === JSON.stringify(bAttrs)

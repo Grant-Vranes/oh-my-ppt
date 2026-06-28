@@ -5,7 +5,7 @@
     "en": "Oriental Poetic Illustration"
   },
   "description": "竹影月色，禅意诗画的东方插画",
-  "category": "自然 · 有机",
+  "category": "东方 · 国风",
   "aliases": [
     "东方",
     "禅意",
@@ -14,7 +14,7 @@
     "zen",
     "诗意"
   ],
-  "styleCase": "东方哲学、禅修冥想、茶道花艺、文学经典、节气文化",
-  "version": "2.0.0",
+  "styleCase": "传统文化、疗愈冥想、教学科普",
+  "version": "2.0.1",
   "source": "builtin"
 }

@@ -1,3 +1,9 @@
+import {
+  DEFAULT_THINKING_PARAMETER_MODE,
+  normalizeThinkingParameterMode,
+  type ThinkingParameterMode
+} from '@shared/model-config'
+
 export interface OpenAIModelOptionsInput {
   model: string
   apiKey: string
@@ -5,6 +11,7 @@ export interface OpenAIModelOptionsInput {
   temperatureOptions: { temperature?: number }
   maxTokens: number
   useResponsesApi?: boolean
+  thinkingParameterMode?: ThinkingParameterMode
 }
 
 export const shouldDisableOpenAICompatibleThinking = (baseUrl: string): boolean => {
@@ -25,16 +32,38 @@ export const normalizeOpenAIBaseUrl = (baseUrl: string, useResponsesApi = false)
   return resolvedBaseUrl.replace(/\/responses$/i, '')
 }
 
+export const resolveOpenAIThinkingModelKwargs = ({
+  baseUrl,
+  useResponsesApi = false,
+  thinkingParameterMode = DEFAULT_THINKING_PARAMETER_MODE
+}: {
+  baseUrl: string
+  useResponsesApi?: boolean
+  thinkingParameterMode?: ThinkingParameterMode
+}): Record<string, unknown> => {
+  if (useResponsesApi) return {}
+
+  const mode = normalizeThinkingParameterMode(thinkingParameterMode)
+  if (mode === 'omit') return {}
+
+  return shouldDisableOpenAICompatibleThinking(baseUrl) ? { thinking: { type: 'disabled' } } : {}
+}
+
 export const buildOpenAIModelOptions = ({
   model,
   apiKey,
   baseUrl,
   temperatureOptions,
   maxTokens,
-  useResponsesApi = false
+  useResponsesApi = false,
+  thinkingParameterMode = DEFAULT_THINKING_PARAMETER_MODE
 }: OpenAIModelOptionsInput) => {
   const resolvedBaseUrl = normalizeOpenAIBaseUrl(baseUrl, useResponsesApi)
-  const disableCompatibleThinking = shouldDisableOpenAICompatibleThinking(resolvedBaseUrl)
+  const modelKwargs = resolveOpenAIThinkingModelKwargs({
+    baseUrl: resolvedBaseUrl,
+    useResponsesApi,
+    thinkingParameterMode
+  })
 
   return {
     model,
@@ -44,8 +73,7 @@ export const buildOpenAIModelOptions = ({
     configuration: resolvedBaseUrl ? { baseURL: resolvedBaseUrl } : undefined,
     // Some OpenAI-compatible Chat Completions endpoints reject reasoning/thinking params.
     // Responses API has a different payload shape, so keep this compatibility shim off there.
-    modelKwargs:
-      disableCompatibleThinking && !useResponsesApi ? { thinking: { type: 'disabled' } } : {}
+    modelKwargs
   }
 }
 

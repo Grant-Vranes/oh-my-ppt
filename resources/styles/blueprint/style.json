@@ -5,13 +5,13 @@
     "en": "Blueprint"
   },
   "description": "深蓝底上浅蓝线条织就网格，建筑师的梦想画布",
-  "category": "效果 · 重",
+  "category": "效果 · 戏剧",
   "aliases": [
     "blueprint",
     "工程",
     "架构"
   ],
-  "styleCase": "系统架构展示、工程蓝图讲解、技术方案设计、基础设施规划",
-  "version": "2.0.0",
+  "styleCase": "技术分享、产品发布、商业汇报",
+  "version": "2.0.1",
   "source": "builtin"
 }

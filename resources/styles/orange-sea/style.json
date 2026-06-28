@@ -5,7 +5,7 @@
     "en": "Sunset Bay"
   },
   "description": "晴空蓝柔杏白落日橙的治愈渐变",
-  "category": "自然 · 有机",
+  "category": "暖色 · 治愈",
   "aliases": [
     "落日海",
     "晴橙",
@@ -13,7 +13,7 @@
     "海边",
     "夕阳"
   ],
-  "styleCase": "心理咨询、健康生活方式、旅行户外、教育儿童内容、自然环保、品牌治愈营销",
-  "version": "2.0.0",
+  "styleCase": "旅游出行、疗愈冥想、教学科普",
+  "version": "2.0.2",
   "source": "builtin"
 }

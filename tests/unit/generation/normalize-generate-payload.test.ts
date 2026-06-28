@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   MAX_SELECTED_PAGES,
   MAX_STYLE_SWITCH_PAGES,
+  normalizeAnimationPreferences,
   normalizeSelectPageIds
 } from '../../../src/shared/generation'
 
@@ -36,5 +37,30 @@ describe('normalizeSelectPageIds', () => {
     expect(normalizeSelectPageIds(pageIds, MAX_STYLE_SWITCH_PAGES)).toHaveLength(
       MAX_STYLE_SWITCH_PAGES
     )
+  })
+})
+
+describe('normalizeAnimationPreferences', () => {
+  it('deduplicates known animation preference ids and limits to three', () => {
+    expect(
+      normalizeAnimationPreferences({
+        ids: ['fade-up', 'wipe', 'fade-up', 'pulse-soft', 'zoom-in']
+      })
+    ).toEqual({ ids: ['fade-up', 'wipe', 'pulse-soft'] })
+  })
+
+  it('drops unknown ids and returns null when no known preference remains', () => {
+    expect(
+      normalizeAnimationPreferences({
+        ids: ['unknown', 'default', 'fade-up']
+      })
+    ).toEqual({ ids: ['fade-up'] })
+    expect(normalizeAnimationPreferences({ ids: ['unknown'] })).toBeNull()
+  })
+
+  it('accepts raw id arrays for UI state normalization', () => {
+    expect(normalizeAnimationPreferences(['slide-right', 'zoom-in', 'pulse'])).toEqual({
+      ids: ['slide-right', 'zoom-in', 'pulse']
+    })
   })
 })

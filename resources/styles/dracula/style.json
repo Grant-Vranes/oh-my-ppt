@@ -5,13 +5,13 @@
     "en": "Dracula"
   },
   "description": "紫夜笼罩屏幕，每一行代码都在荧光中呼吸",
-  "category": "冷色 · 深色",
+  "category": "深色 · 科技",
   "aliases": [
     "dracula",
     "紫红",
     "代码分享"
   ],
-  "styleCase": "代码密集的技术分享、开源项目演示、编程教学、黑客马拉松",
-  "version": "2.0.0",
+  "styleCase": "技术分享、教学科普、产品发布",
+  "version": "2.0.1",
   "source": "builtin"
 }

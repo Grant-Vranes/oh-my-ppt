@@ -25,6 +25,11 @@ export type StagedThinkingFinalizeResult =
 
 const pageRoleSchema = z.enum(['cover', 'section', 'content', 'case', 'comparison', 'data', 'summary'])
 
+const contextDecisionSchema = z.union([
+  z.string(),
+  z.record(z.string(), z.coerce.string())
+])
+
 const contextDocumentSchema = z.object({
   topic: z.string().optional().describe('Presentation topic when known.'),
   userIntent: z
@@ -32,17 +37,23 @@ const contextDocumentSchema = z.object({
     .optional()
     .describe('Short markdown summary of what the user wants and what has been learned.'),
   confirmedDecisions: z
-    .array(z.string())
+    .array(contextDecisionSchema)
     .optional()
-    .describe('Confirmed durable decisions. Do not include guesses.'),
+    .describe(
+      'Confirmed durable decisions. Each item may be a concise string or a flat key-value object. Omit to preserve existing decisions; pass [] to clear them. Do not include guesses.'
+    ),
   openQuestions: z
     .array(z.string())
     .optional()
-    .describe('Only unresolved questions that still matter.'),
+    .describe(
+      'Only unresolved questions that still matter. Omit to preserve existing questions; pass [] to clear them.'
+    ),
   sourceNotes: z
     .array(z.string())
     .optional()
-    .describe('Facts or observations from uploaded/source materials.'),
+    .describe(
+      'Facts or observations from uploaded/source materials. Omit to preserve existing notes; pass [] to clear them.'
+    ),
   latestDirection: z
     .string()
     .optional()
@@ -114,6 +125,20 @@ const THINKING_SECTION_ORDER = [
 function bulletList(items: string[] | undefined): string {
   return (items || [])
     .map((item) => item.trim())
+    .filter(Boolean)
+    .map((item) => (item.startsWith('- ') ? item : `- ${item}`))
+    .join('\n')
+}
+
+function contextDecisionList(items: ContextDocumentInput['confirmedDecisions']): string {
+  return (items || [])
+    .map((item) => {
+      if (typeof item === 'string') return item.trim()
+      return Object.entries(item)
+        .map(([key, value]) => `${key.trim()}: ${value.trim()}`)
+        .filter((item) => !item.endsWith(': '))
+        .join('；')
+    })
     .filter(Boolean)
     .map((item) => (item.startsWith('- ') ? item : `- ${item}`))
     .join('\n')
@@ -349,13 +374,13 @@ function buildContextMd(args: {
   stage: ThinkingStage
   topic?: string
   userIntent?: string
-  confirmedDecisions?: string[]
+  confirmedDecisions?: ContextDocumentInput['confirmedDecisions']
   openQuestions?: string[]
   latestDirection?: string
   sourceNotes?: string[]
 }): string {
   const topic = args.topic?.trim()
-  const confirmedDecisions = bulletList(args.confirmedDecisions)
+  const confirmedDecisions = contextDecisionList(args.confirmedDecisions)
   const openQuestions = bulletList(args.openQuestions)
   const sourceNotes = bulletList(args.sourceNotes)
   const userIntent = args.userIntent?.trim() || (topic ? `- Topic: ${topic}` : '')
@@ -372,6 +397,57 @@ function buildContextMd(args: {
   ]
     .join('\n')
     .trimEnd() + '\n'
+}
+
+function removeSection(markdown: string, heading: string): string {
+  const escaped = heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const sectionRegex = new RegExp(
+    `^##\\s*${escaped}\\s*\\n[\\s\\S]*?(?=^##\\s+|(?![\\s\\S]))`,
+    'm'
+  )
+  return markdown.replace(sectionRegex, '').replace(/\n{3,}/g, '\n\n').trimEnd()
+}
+
+function mergeContextMd(
+  baseMarkdown: string,
+  input: ContextDocumentInput,
+  currentStage: ThinkingStage
+): string {
+  let next = baseMarkdown.trim() || `## Stage: ${currentStage}`
+  if (/^## Stage:\s*\S+/m.test(next)) {
+    next = next.replace(/^## Stage:\s*\S+/m, `## Stage: ${currentStage}`)
+  } else {
+    next = `## Stage: ${currentStage}\n\n${next}`
+  }
+
+  const updates: Array<[string, string | undefined]> = [
+    ['Topic', input.topic],
+    ['User Intent', input.userIntent],
+    [
+      'Confirmed Decisions',
+      input.confirmedDecisions === undefined
+        ? undefined
+        : contextDecisionList(input.confirmedDecisions)
+    ],
+    [
+      'Open Questions',
+      input.openQuestions === undefined ? undefined : bulletList(input.openQuestions)
+    ],
+    [
+      'Source Notes',
+      input.sourceNotes === undefined ? undefined : bulletList(input.sourceNotes)
+    ],
+    ['Latest Direction', input.latestDirection]
+  ]
+
+  for (const [heading, content] of updates) {
+    if (content === undefined) continue
+    next = content.trim()
+      ? upsertSection(next, heading, content)
+      : removeSection(next, heading)
+  }
+
+  return next.trimEnd() + '\n'
 }
 
 async function mergeThinkingMdFromBase(
@@ -487,15 +563,11 @@ export function createThinkingWorkflowTools(args: {
         const validTargets = VALID_TRANSITIONS[args.currentStage].join(', ')
         stageNote = ` Requested stage ${requestedStage} was ignored because it is not a valid transition from ${args.currentStage}. Valid targets: ${validTargets}.`
       }
-      const content = buildContextMd({
-        stage: args.currentStage,
-        topic: input.topic,
-        userIntent: input.userIntent,
-        confirmedDecisions: input.confirmedDecisions,
-        openQuestions: input.openQuestions,
-        latestDirection: input.latestDirection,
-        sourceNotes: input.sourceNotes
-      })
+      const contextPath = path.join(args.thinkingDir, 'context.md')
+      const existingContext = fs.existsSync(contextPath)
+        ? await fs.promises.readFile(contextPath, 'utf-8')
+        : buildContextMd({ stage: args.currentStage })
+      const content = mergeContextMd(existingContext, input, args.currentStage)
       await writeContextMd(args.thinkingDir, content)
       state.contextUpdated = true
       state.contextUpdateCount += 1
@@ -504,7 +576,7 @@ export function createThinkingWorkflowTools(args: {
     {
       name: 'update_context_document',
       description:
-        'Required thinking workflow tool. Persist rolling conversation memory to /context.md every turn: user intent, confirmed decisions, open questions, source notes, and latest direction. Optionally set `stage` to transition to a new stage when the user explicitly requests it or requirements for the next stage are met. Use this instead of write_file/edit_file for context.md.',
+        'Required thinking workflow tool. Merge rolling conversation memory into /context.md every turn: user intent, confirmed decisions, open questions, source notes, and latest direction. Omitted fields are preserved; pass an empty array only when a list section should be cleared. Optionally set `stage` to transition to a new stage when the user explicitly requests it or requirements for the next stage are met. Use this instead of write_file/edit_file for context.md.',
       schema: contextDocumentSchema
     }
   )

@@ -5,7 +5,7 @@
     "en": "Chinese Fresh Trio"
   },
   "description": "翠绿湖蓝米白三色，清朗国风现代",
-  "category": "浅色 · 沉静",
+  "category": "浅色 · 柔和",
   "aliases": [
     "三色",
     "青绿",
@@ -14,7 +14,7 @@
     "fresh",
     "国风现代"
   ],
-  "styleCase": "品牌视觉、数据报告、教育科普、企业年报、清新演示",
-  "version": "2.0.0",
+  "styleCase": "品牌营销、商业汇报、教学科普",
+  "version": "2.0.1",
   "source": "builtin"
 }

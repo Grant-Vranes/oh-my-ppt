@@ -165,6 +165,7 @@ export interface GenerateStartPayload {
   imagePaths?: string[]
   videoPaths?: string[]
   docPaths?: string[]
+  animationPreferences?: AnimationPreferencesPayload
 }
 
 export interface SwitchSessionStylePayload {
@@ -201,6 +202,102 @@ export interface GenerateRetryFailedPayload {
   sessionId: string
   modelConfigId?: string
   userMessage?: string
+  failedRunId?: string
+}
+
+export type AnimationPreferenceId =
+  | 'fade'
+  | 'fade-up'
+  | 'fade-down'
+  | 'fade-left'
+  | 'fade-right'
+  | 'scale-in'
+  | 'slide-up'
+  | 'slide-down'
+  | 'slide-left'
+  | 'slide-right'
+  | 'fly-in'
+  | 'wipe'
+  | 'zoom-in'
+  | 'spin-in'
+  | 'pulse-soft'
+  | 'pulse'
+  | 'pulse-strong'
+  | 'grow-shrink-soft'
+  | 'grow-shrink'
+  | 'grow-shrink-strong'
+
+export interface AnimationPreferencesPayload {
+  ids: AnimationPreferenceId[]
+}
+
+const ANIMATION_PREFERENCE_IDS = new Set<AnimationPreferenceId>([
+  'fade',
+  'fade-up',
+  'fade-down',
+  'fade-left',
+  'fade-right',
+  'scale-in',
+  'slide-up',
+  'slide-down',
+  'slide-left',
+  'slide-right',
+  'fly-in',
+  'wipe',
+  'zoom-in',
+  'spin-in',
+  'pulse-soft',
+  'pulse',
+  'pulse-strong',
+  'grow-shrink-soft',
+  'grow-shrink',
+  'grow-shrink-strong'
+])
+
+export const normalizeAnimationPreferences = (
+  value: unknown
+): AnimationPreferencesPayload | null => {
+  const rawIds = Array.isArray((value as AnimationPreferencesPayload | null)?.ids)
+    ? (value as AnimationPreferencesPayload).ids
+    : Array.isArray(value)
+      ? value
+      : []
+  const ids = Array.from(
+    new Set(
+      rawIds
+        .map((item) => String(item || '').trim())
+        .filter((item): item is AnimationPreferenceId =>
+          ANIMATION_PREFERENCE_IDS.has(item as AnimationPreferenceId)
+        )
+    )
+  )
+  const selected = ids.slice(0, 3)
+  return selected.length > 0 ? { ids: selected } : null
+}
+
+export type AnimationPreferenceSourceRun = {
+  session_id: string
+  animation_preferences: string | null
+}
+
+/**
+ * Inherit animation preferences from a prior generation run — but only when an
+ * explicit source run is supplied AND it belongs to the same session. A missing
+ * or stale source run must never block retry; degrade to no preferences.
+ * See docs/design/session-create-animation-preferences-design.md (run 字段持久化).
+ */
+export const resolveInheritedAnimationPreferences = (
+  sourceRun: AnimationPreferenceSourceRun | null | undefined,
+  sessionId: string
+): AnimationPreferencesPayload | null => {
+  if (!sourceRun || sourceRun.session_id !== sessionId) return null
+  try {
+    return normalizeAnimationPreferences(
+      sourceRun.animation_preferences ? JSON.parse(sourceRun.animation_preferences) : null
+    )
+  } catch {
+    return null
+  }
 }
 
 export interface GenerateAddPagePayload {

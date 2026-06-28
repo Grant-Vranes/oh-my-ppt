@@ -12,4 +12,10 @@ describe('normalizeCreativePageFragment block ids', () => {
     expect(html).toMatch(/<span class="accent" data-block-id="text-\d+">/)
     expect(html).toMatch(/<strong data-block-id="text-\d+">red text<\/strong>/)
   })
+
+  it('marks generated fragments for semantic font-floor enforcement', () => {
+    const html = normalizeCreativePageFragment('<div><h2>Title</h2><p>Body</p></div>')
+
+    expect(html).toContain('data-ppt-readable-fonts="1"')
+  })
 })

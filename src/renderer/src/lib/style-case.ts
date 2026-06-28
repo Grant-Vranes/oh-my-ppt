@@ -36,3 +36,22 @@ export function filterByStyleCase<T extends StyleCaseItem>(items: T[], styleCase
   if (!styleCase) return items
   return items.filter((item) => parseStyleCases(item.styleCase).includes(styleCase))
 }
+
+export type StyleSearchItem = {
+  label?: string
+  description?: string
+  styleCase?: string
+}
+
+/** 按关键词模糊过滤风格（匹配名称、描述、用途）。空关键词返回全部。 */
+export function filterByStyleKeyword<T extends StyleSearchItem>(items: T[], query: string): T[] {
+  const keyword = query.trim().toLowerCase()
+  if (!keyword) return items
+  return items.filter((item) =>
+    [item.label, item.description, item.styleCase]
+      .filter((value): value is string => typeof value === 'string' && value.length > 0)
+      .join(' ')
+      .toLowerCase()
+      .includes(keyword)
+  )
+}

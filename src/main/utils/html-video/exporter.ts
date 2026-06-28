@@ -313,7 +313,8 @@ const SEEK_PAGE_FOR_ANIMATED_VIDEO_SCRIPT = (timeMs: number): string => `
     let opacity = isExit ? 1 - p : p;
     let transform = 'none';
     let clipPath = '';
-    const distance = Math.max(24, Math.min(120, Math.max(item.rect?.w || 0, item.rect?.h || 0) * 0.18));
+    const baseDistance = Math.max(32, Math.min(140, Math.max(item.rect?.w || 0, item.rect?.h || 0) * 0.26));
+    const distance = item.type === 'fade-left' || item.type === 'fade-right' ? Math.min(baseDistance, 52) : baseDistance;
     if (item.type === 'fade') {
       transform = 'none';
     } else if (item.type === 'scale-in' || item.type === 'zoom-in') {

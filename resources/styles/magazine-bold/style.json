@@ -5,13 +5,13 @@
     "en": "Magazine Bold"
   },
   "description": "奶油纸上跃动超大衬线，翻开的每一页都是封面",
-  "category": "大胆 · 杂志",
+  "category": "杂志 · 编辑",
   "aliases": [
     "magazine",
     "bold",
     "大字杂志"
   ],
-  "styleCase": "专栏文章、封面故事、品牌月刊、产品目录",
-  "version": "2.0.0",
+  "styleCase": "杂志编辑、品牌营销、艺术视觉",
+  "version": "2.0.1",
   "source": "builtin"
 }

@@ -3,9 +3,14 @@ import { tool } from '@langchain/core/tools'
 import { z } from 'zod'
 import * as cheerio from 'cheerio'
 import log from 'electron-log/main.js'
+import type { AnyNode } from 'domhandler'
 import { buildFontHeadTags } from './font-registry'
 import type { SessionDeckGenerationContext } from './types'
 import { validateHtmlContent, validatePersistedPageHtml } from './html-utils'
+import {
+  parseChartHeightClass,
+  resolveChartHeightFromNearbyComment
+} from './chart-height'
 import { buildSessionAssetHeadTags } from '../ipc/engine/page-assets'
 import { normalizeCreativePageFragment } from './page-fragment-normalizer'
 import { validateTemplateSkeletonPreserved } from '../ipc/templates/template-skeleton-validator'
@@ -67,20 +72,18 @@ export const BASE_PAGE_STYLE_TAG = `<style id="ppt-page-guard-style">
     font-size: 16px;
     font-family: var(--ppt-body-font);
   }
+  .ppt-page-content [data-ppt-readable-fonts="1"] {
+    font-size: 18px;
+  }
   .ppt-page-content h1,
   .ppt-page-content h2,
+  .ppt-page-content h3,
+  .ppt-page-content h4,
+  .ppt-page-content h5,
+  .ppt-page-content h6,
   .ppt-page-content [data-role="title"],
   .ppt-page-content [data-block-id="title"] {
     font-family: var(--ppt-title-font);
-  }
-  .ppt-page-content .text-xs,
-  .ppt-page-content .text-sm,
-  .ppt-page-content [class*="text-[12px]"],
-  .ppt-page-content [class*="text-[13px]"],
-  .ppt-page-content [class*="text-[14px]"],
-  .ppt-page-content [class*="text-[15px]"] {
-    font-size: 1rem !important;
-    line-height: 1.5 !important;
   }
   .ppt-page-content > [data-page-scaffold="1"] {
     width: 100%;
@@ -123,12 +126,57 @@ export const FIT_SCRIPT = `<script id="ppt-page-fit">
 (() => {
   const WIDTH = 1600;
   const HEIGHT = 900;
-  const MIN_FONT = 14;
+  const LEGACY_MIN_FONT = 14;
+  const AUXILIARY_MIN_FONT = 12;
+  const BODY_MIN_FONT = 18;
+  const HEADING_MIN_FONT = 24;
+  const AUXILIARY_TEXT_SELECTOR = [
+    "footer",
+    "small",
+    "figcaption",
+    '[data-ppt-text-role="auxiliary"]',
+    '[data-role="footer"]',
+    '[data-role="footnote"]',
+    '[data-role="source"]',
+    '[data-role="annotation"]',
+    '[data-role="page-number"]'
+  ].join(",");
   const search = new URLSearchParams(window.location.search);
   const disableFit = search.get("fit") === "off";
   const findRoot = () =>
     document.querySelector('.ppt-page-root[data-ppt-guard-root="1"]') ||
     document.querySelector(".ppt-page-root");
+  const collectTextElements = (root) => {
+    const elements = new Set();
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let textNode = walker.nextNode();
+    while (textNode) {
+      const parent = textNode.parentElement;
+      if (
+        textNode.textContent.trim() &&
+        parent &&
+        !parent.closest("script, style, svg, canvas, .katex")
+      ) {
+        elements.add(parent);
+      }
+      textNode = walker.nextNode();
+    }
+    return Array.from(elements);
+  };
+  const isAuxiliaryText = (node) => Boolean(node.closest(AUXILIARY_TEXT_SELECTOR));
+  const resolveMinimumFontSize = (node, readableRoot) => {
+    if (!readableRoot || !readableRoot.contains(node)) return LEGACY_MIN_FONT;
+    if (isAuxiliaryText(node)) return AUXILIARY_MIN_FONT;
+    if (
+      node.matches("h1, h2, h3, h4, h5, h6") ||
+      node.closest(
+        'h1, h2, h3, h4, h5, h6, [data-role="title"], [data-block-id="title"]'
+      )
+    ) {
+      return HEADING_MIN_FONT;
+    }
+    return BODY_MIN_FONT;
+  };
 
   function fitPage() {
     const root = findRoot();
@@ -175,20 +223,34 @@ export const FIT_SCRIPT = `<script id="ppt-page-fit">
     }
 
     scope.style.transform = "scale(1)";
+    const measuredContent = content || scope;
+    const readableRoot = measuredContent.querySelector('[data-ppt-readable-fonts="1"]');
+    const textEntries = collectTextElements(measuredContent).map((node) => ({
+      node,
+      minimum: resolveMinimumFontSize(node, readableRoot),
+      size: Number.parseFloat(getComputedStyle(node).fontSize || "16")
+    }));
+    if (readableRoot) {
+      textEntries.forEach((entry) => {
+        if (entry.minimum <= 0) return;
+        if (Number.isFinite(entry.size) && entry.size < entry.minimum) {
+          entry.size = entry.minimum;
+          entry.node.style.fontSize = entry.minimum + "px";
+        }
+      });
+    }
     if (disableFit) {
       return;
     }
     const targetWidth = Math.max(1, Math.floor(scope.clientWidth || root.clientWidth || WIDTH));
     const targetHeight = Math.max(1, Math.floor(scope.clientHeight || root.clientHeight || HEIGHT));
     let guard = 0;
-    const measuredContent = content || scope;
-    const textNodes = measuredContent.querySelectorAll("h1, h2, h3, h4, p, li, blockquote, .text");
     while ((measuredContent.scrollWidth > targetWidth || measuredContent.scrollHeight > targetHeight) && guard < 12) {
       let changed = false;
-      textNodes.forEach((node) => {
-        const size = Number.parseFloat(getComputedStyle(node).fontSize || "16");
-        if (Number.isFinite(size) && size > MIN_FONT) {
-          node.style.fontSize = Math.max(MIN_FONT, Math.floor(size * 0.94)) + "px";
+      textEntries.forEach((entry) => {
+        if (Number.isFinite(entry.size) && entry.size > entry.minimum) {
+          entry.size = Math.max(entry.minimum, Math.floor(entry.size * 0.94));
+          entry.node.style.fontSize = entry.size + "px";
           changed = true;
         }
       });
@@ -269,20 +331,22 @@ const DEFAULT_MOTION_SCRIPT = `<script id="ppt-default-motion">
 
     // Wire click-triggered animations
     if (config.click.length > 0 && pptApi.clicks && typeof pptApi.clicks.on === "function") {
-      var clickDefs = config.click;
-      clickDefs.forEach(function (animDef, idx) {
+      var clickSteps = Array.isArray(config.clickSteps) && config.clickSteps.length > 0
+        ? config.clickSteps
+        : config.click.map(function (animDef) { return [animDef]; });
+      clickSteps.forEach(function (stepDefs, idx) {
         var clickNum = idx + 1;
         pptApi.clicks.on(clickNum, function () {
-          var single = [animDef];
           if (typeof pptApi.executeDataAnim === "function") {
-            pptApi.executeDataAnim(single);
+            pptApi.executeDataAnim(stepDefs);
           } else {
-            // Fallback: direct animate
-            pptApi.animate(animDef.targets, {
-              opacity: [0, 1],
-              translateY: [20, 0],
-              duration: animDef.duration,
-              easing: animDef.easing
+            stepDefs.forEach(function (animDef) {
+              pptApi.animate(animDef.targets, {
+                opacity: [0, 1],
+                translateY: [20, 0],
+                duration: animDef.duration,
+                easing: animDef.easing
+              });
             });
           }
         });
@@ -519,17 +583,14 @@ function isMarginUtilityClass(cls: string): boolean {
 }
 
 function hasFixedChartHeightClass(classes: Iterable<string>): boolean {
-  return Array.from(classes).some((cls) => {
-    const base = classBaseName(cls)
-    return /^h-\[\s*(?!0+(?:\.0+)?px\b)\d+(?:\.\d+)?px\s*\]$/.test(base)
-  })
+  return Array.from(classes).some((cls) => parseChartHeightClass(classBaseName(cls)) !== null)
 }
 
 function isUnstableChartFrameLayoutClass(cls: string): boolean {
   const base = classBaseName(cls)
   return (
     base === 'flex-1' ||
-    (/^h-/.test(base) && !/^h-\[\s*(?!0+(?:\.0+)?px\b)\d+(?:\.\d+)?px\s*\]$/.test(base)) ||
+    (/^h-/.test(base) && parseChartHeightClass(base) === null) ||
     /^min-h-/.test(base) ||
     /^max-h-/.test(base)
   )
@@ -539,6 +600,13 @@ function hasFixedChartHeightStyle(styleRaw: string): boolean {
   return /(?:^|;)\s*height\s*:\s*(?!\s*(?:auto|0(?:px|rem|em|%)?|100%|inherit|initial|unset)\b)[^;]+/i.test(
     styleRaw
   )
+}
+
+function resolveChartFrameHeightClassFromNearbyComment(
+  parent: cheerio.Cheerio<AnyNode>
+): string | null {
+  const height = resolveChartHeightFromNearbyComment(parent)
+  return height === null ? null : `h-[${height}px]`
 }
 
 function hasDataAnim(html: string): boolean {
@@ -557,7 +625,7 @@ function hasCustomPageAnimation(html: string): boolean {
  * Merged single-pass cheerio preprocessing: canvas lock styles, chart stabilization,
  * and unsafe hidden states. Replaces 3 separate cheerio.load calls with one.
  */
-function preprocessPageHtml(html: string): string {
+export function preprocessPageHtml(html: string): string {
   try {
     const $ = cheerio.load(html.trim(), { scriptingEnabled: false })
 
@@ -612,7 +680,9 @@ function preprocessPageHtml(html: string): string {
       )
 
       if (!hasFixedHeightClass && !hasFixedHeightStyle) {
-        parentClassSet.add(CHART_FRAME_DEFAULT_HEIGHT_CLASS)
+        parentClassSet.add(
+          resolveChartFrameHeightClassFromNearbyComment(parent) || CHART_FRAME_DEFAULT_HEIGHT_CLASS
+        )
       }
 
       if (!parentClassSet.has('ppt-chart-frame')) parentClassSet.add('ppt-chart-frame')
@@ -723,21 +793,6 @@ function repairMalformedCreativeFragment(content: string): string | null {
   } catch {
     return null
   }
-}
-
-function enforceMinimumFontSize(html: string): string {
-  return html.replace(
-    /font-size\s*:\s*([0-9.]+)\s*(px|rem|em)/gi,
-    (match, valueStr, unit) => {
-      const value = parseFloat(valueStr)
-      const u = unit.toLowerCase()
-      const px = u === 'px' ? value : u === 'rem' || u === 'em' ? value * 16 : value
-      if (px > 0 && px < 16) {
-        return `font-size: 1rem`
-      }
-      return match
-    }
-  )
 }
 
 function countHtmlTag(content: string, tagName: string): { open: number; close: number } {
@@ -985,9 +1040,8 @@ export function createPageWriteTools(args: {
         titleFont: context.designContract?.titleFont || 'Inter',
         bodyFont: context.designContract?.bodyFont || 'Inter'
       }
-      const fixedContent = enforceMinimumFontSize(preparedContent.content)
       const normalized = await normalizeAndInjectPageRuntime(
-        fixedContent,
+        preparedContent.content,
         resolvedPageId,
         context.projectDir,
         designFonts

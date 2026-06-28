@@ -5,7 +5,7 @@
     "en": "Palace Ink Red"
   },
   "description": "厚重墨红配宣纸米灰，新中式高级感的东方力量",
-  "category": "国风商务",
+  "category": "东方 · 国风",
   "aliases": [
     "宫墙红",
     "故宫配色",
@@ -14,7 +14,7 @@
     "palace",
     "ink-red"
   ],
-  "styleCase": "传统文化分享、品牌视觉提案、审美设计课程、高端商务汇报",
-  "version": "2.0.0",
+  "styleCase": "传统文化、品牌营销、商业汇报",
+  "version": "2.0.1",
   "source": "builtin"
 }

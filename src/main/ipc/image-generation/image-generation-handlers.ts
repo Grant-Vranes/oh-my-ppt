@@ -43,7 +43,8 @@ const VALID_IMAGE_PROVIDERS = [
   'agnes',
   'siliconflow',
   'openaiCompatible',
-  'gemini'
+  'gemini',
+  'seedream'
 ] as const
 
 const resolveProvider = (provider: unknown): ImageModelProvider => {

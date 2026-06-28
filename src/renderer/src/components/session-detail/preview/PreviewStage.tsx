@@ -43,6 +43,7 @@ export const PreviewStage = forwardRef<
   const canvasHostRef = useRef<HTMLDivElement>(null)
   const wasEditingRef = useRef(false)
   const previewIdentityRef = useRef('')
+  const animationPreviewIdentityRef = useRef('')
   const restoreTimerRef = useRef<number | null>(null)
   const [previewReloadSignal, setPreviewReloadSignal] = useState(0)
   const previewKey = useSessionDetailUiStore((state) => state.previewKey)
@@ -50,9 +51,12 @@ export const PreviewStage = forwardRef<
   const setInteractionMode = useSessionDetailUiStore((state) => state.setInteractionMode)
   const setWorkspaceTab = useSessionDetailUiStore((state) => state.setWorkspaceTab)
   const editSelectedSelector = useSessionDetailUiStore((state) => state.editSelectedSelector)
+  const selectedSelector = useSessionDetailUiStore((state) => state.selectedSelector)
   const setSelectedElement = useSessionDetailUiStore((state) => state.setSelectedElement)
+  const clearSelectedElement = useSessionDetailUiStore((state) => state.clearSelectedElement)
   const isEditing = interactionMode === 'edit'
-  const isInspecting = interactionMode === 'ai-inspect'
+  const isAnimationSelecting = interactionMode === 'animation-select'
+  const isInspecting = interactionMode === 'ai-inspect' || isAnimationSelecting
 
   const setPreviewIframeHandle = useCallback(
     (handle: PreviewIframeHandle | null): void => {
@@ -89,6 +93,27 @@ export const PreviewStage = forwardRef<
     restoreTimerRef.current = window.setTimeout(tryRestore, 0)
   }, [])
 
+  const restoreAnimationSelection = useCallback((selector: string): void => {
+    if (restoreTimerRef.current !== null) {
+      window.clearTimeout(restoreTimerRef.current)
+      restoreTimerRef.current = null
+    }
+
+    let attempts = 0
+    const tryRestore = (): void => {
+      attempts += 1
+      window.requestAnimationFrame(() => {
+        const restorePromise = previewIframeRef.current?.restoreInspectorSelection(selector)
+        void restorePromise?.then((restored) => {
+          if (restored || attempts >= 3) return
+          restoreTimerRef.current = window.setTimeout(tryRestore, 50)
+        })
+      })
+    }
+
+    restoreTimerRef.current = window.setTimeout(tryRestore, 0)
+  }, [])
+
   useEffect(() => {
     return () => {
       if (restoreTimerRef.current !== null) {
@@ -101,9 +126,22 @@ export const PreviewStage = forwardRef<
   const handleDidReload = useCallback((): void => {
     onReplayPendingEdits()
     setPreviewReloadSignal((value) => value + 1)
-    if (!isEditing || !editSelectedSelector) return
-    restoreEditSelection(editSelectedSelector)
-  }, [editSelectedSelector, isEditing, onReplayPendingEdits, restoreEditSelection])
+    if (isEditing && editSelectedSelector) {
+      restoreEditSelection(editSelectedSelector)
+      return
+    }
+    if (isAnimationSelecting && selectedSelector) {
+      restoreAnimationSelection(selectedSelector)
+    }
+  }, [
+    editSelectedSelector,
+    isAnimationSelecting,
+    isEditing,
+    onReplayPendingEdits,
+    restoreAnimationSelection,
+    restoreEditSelection,
+    selectedSelector
+  ])
 
   useEffect(() => {
     const previewIdentity = `${selectedPage?.pageId || ''}:${previewKey}:${previewRefreshKey}`
@@ -133,6 +171,21 @@ export const PreviewStage = forwardRef<
   ])
 
   useEffect(() => {
+    if (!isAnimationSelecting || !selectedSelector) return
+    const previewIdentity = `${selectedPage?.pageId || ''}:${previewKey}:${previewRefreshKey}`
+    if (previewIdentity === animationPreviewIdentityRef.current) return
+    animationPreviewIdentityRef.current = previewIdentity
+    restoreAnimationSelection(selectedSelector)
+  }, [
+    isAnimationSelecting,
+    previewKey,
+    previewRefreshKey,
+    restoreAnimationSelection,
+    selectedPage?.pageId,
+    selectedSelector
+  ])
+
+  useEffect(() => {
     if (interactionMode === 'preview') return
     const onKeyDown = (event: KeyboardEvent): void => {
       const target = event.target
@@ -158,6 +211,8 @@ export const PreviewStage = forwardRef<
       if (event.key === 'Escape') {
         if (isEditing) {
           onDiscardAllEdits()
+        } else if (isAnimationSelecting && selectedSelector) {
+          clearSelectedElement()
         } else {
           setInteractionMode('preview')
           setWorkspaceTab('preview')
@@ -169,11 +224,14 @@ export const PreviewStage = forwardRef<
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [
     interactionMode,
+    clearSelectedElement,
+    isAnimationSelecting,
     isEditing,
     onDiscardAllEdits,
     onCancelElementEdit,
     onUndo,
     onRedo,
+    selectedSelector,
     setInteractionMode,
     setWorkspaceTab
   ])
@@ -212,6 +270,10 @@ export const PreviewStage = forwardRef<
                 onElementMoved={onElementMoved}
                 onElementSelected={onElementSelected}
                 onInspectExit={() => {
+                  if (isAnimationSelecting && selectedSelector) {
+                    clearSelectedElement()
+                    return
+                  }
                   setInteractionMode('preview')
                   setWorkspaceTab('preview')
                   onCancelElementEdit()

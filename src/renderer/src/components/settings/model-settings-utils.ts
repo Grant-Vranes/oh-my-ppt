@@ -1,10 +1,12 @@
 import type { ImageModelConfig, ImageModelProvider, ModelConfig } from '../../lib/ipc'
 import type { ImageModelForm, ModelForm } from './types'
+import { DEFAULT_THINKING_PARAMETER_MODE } from '@shared/model-config.js'
 
 export const IMAGE_PROVIDER_OPTIONS: Array<{ value: ImageModelProvider; label: string }> = [
   { value: 'agnes', label: 'Agnes AI' },
   { value: 'jimeng', label: '即梦3.0' },
   { value: 'jimeng4', label: '即梦4.0' },
+  { value: 'seedream', label: 'Seedream' },
   { value: 'siliconflow', label: '硅基流动' },
   { value: 'openaiCompatible', label: 'OpenAI 兼容' },
   { value: 'gemini', label: 'Gemini' }
@@ -79,6 +81,17 @@ export const createDefaultImageModelConfig = (provider: ImageModelProvider): str
       apiKey: ''
     })
   }
+  if (provider === 'seedream') {
+    return stringifyJsonObject({
+      baseUrl: 'https://ark.cn-beijing.volces.com',
+      model: 'doubao-seedream-5-0-260128',
+      apiKey: '',
+      response_format: 'url',
+      sizes: ['2K'],
+      sequential_image_generation: 'disabled',
+      stream: false
+    })
+  }
   return stringifyJsonObject({
     model: 'agnes-image-2.0-flash',
     apiKey: '',
@@ -94,6 +107,7 @@ export const createEmptyModelForm = (active = false): ModelForm => ({
   baseUrl: '',
   maxTokens: '4096',
   disableTemperature: false,
+  thinkingParameterMode: DEFAULT_THINKING_PARAMETER_MODE,
   active
 })
 
@@ -106,6 +120,7 @@ export const createModelForm = (config: ModelConfig): ModelForm => ({
   baseUrl: config.baseUrl,
   maxTokens: String(config.maxTokens || 4096),
   disableTemperature: config.disableTemperature,
+  thinkingParameterMode: config.thinkingParameterMode || DEFAULT_THINKING_PARAMETER_MODE,
   active: config.active
 })
 

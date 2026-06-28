@@ -19,12 +19,14 @@ import {
   DEFAULT_MODEL_TEMPERATURE,
   getCurrentModelTemperatureControl,
   isCurrentModelTemperatureEnabled,
+  resolveCurrentModelThinkingParameterMode,
   resolveCurrentModelTemperatureOptions
 } from './model-runtime'
 import {
   buildOpenAIModelOptions,
   isOpenAIResponsesProvider,
-  shouldDisableOpenAICompatibleThinking
+  normalizeOpenAIBaseUrl,
+  resolveOpenAIThinkingModelKwargs
 } from './openai-model-options'
 import { ModelUsageCallbackHandler } from './model-usage'
 import { CompatibleChatOpenAIResponses } from './openai-responses-compat'
@@ -48,7 +50,6 @@ export {
 export type { SessionDeckGenerationContext } from './tools'
 export {
   buildPlanningSystemPrompt,
-  buildDeckGenerationPrompt,
   buildSinglePageGenerationPrompt
 } from './prompt'
 
@@ -480,13 +481,20 @@ export function resolveModel(
   const temperatureOptions = resolveCurrentModelTemperatureOptions(temperature)
   const resolvedTemperature = temperatureOptions.temperature
   const temperatureControl = getCurrentModelTemperatureControl()
+  const thinkingParameterMode = resolveCurrentModelThinkingParameterMode()
   const resolvedBaseUrl = typeof baseUrl === 'string' ? baseUrl.trim() : ''
   const resolvedMaxTokens = maxTokens && maxTokens > 0 ? maxTokens : 4096
   const useOpenAIResponsesApi = isOpenAIResponsesProvider(provider)
   const openAIProtocol =
     provider === 'openai' ? 'chat-completions' : useOpenAIResponsesApi ? 'responses' : undefined
-  const disableCompatibleThinking =
-    provider === 'openai' && shouldDisableOpenAICompatibleThinking(resolvedBaseUrl)
+  const openAIThinkingModelKwargs =
+    provider === 'openai' || provider === 'openai-responses'
+      ? resolveOpenAIThinkingModelKwargs({
+          baseUrl: normalizeOpenAIBaseUrl(resolvedBaseUrl, useOpenAIResponsesApi),
+          useResponsesApi: useOpenAIResponsesApi,
+          thinkingParameterMode
+        })
+      : {}
   const usageCallback = new ModelUsageCallbackHandler({
     provider,
     model: resolvedModel,
@@ -501,9 +509,10 @@ export function resolveModel(
     temperatureEnabled: isCurrentModelTemperatureEnabled(),
     temperatureControlBound: temperatureControl !== undefined,
     modelConfigId: temperatureControl?.modelConfigId ?? null,
+    thinkingParameterMode,
     maxTokens: resolvedMaxTokens,
     openAIProtocol,
-    openAICompatibility: disableCompatibleThinking ? ['thinking.type=disabled'] : []
+    openAICompatibility: 'thinking' in openAIThinkingModelKwargs ? ['thinking.type=disabled'] : []
   })
 
   switch (provider) {
@@ -515,7 +524,8 @@ export function resolveModel(
             apiKey,
             baseUrl: resolvedBaseUrl,
             temperatureOptions,
-            maxTokens: resolvedMaxTokens
+            maxTokens: resolvedMaxTokens,
+            thinkingParameterMode
           }),
           callbacks: [usageCallback]
         }
@@ -528,7 +538,8 @@ export function resolveModel(
           baseUrl: resolvedBaseUrl,
           temperatureOptions,
           maxTokens: resolvedMaxTokens,
-          useResponsesApi: true
+          useResponsesApi: true,
+          thinkingParameterMode
         }),
         callbacks: [usageCallback]
       })

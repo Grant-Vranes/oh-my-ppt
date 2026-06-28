@@ -150,6 +150,7 @@ interface SessionDetailUiStore {
   setSpeechConfig: (config: SpeechConfig) => void
   finishAddPage: (selectedPageId?: string | null) => void
   resetForPageChange: () => void
+  resetEditingPageState: () => void
   resetForSessionChange: () => void
 }
 
@@ -392,12 +393,31 @@ export const useSessionDetailUiStore = create<SessionDetailUiStore>((set) => ({
   resetForPageChange: () =>
     set({
       interactionMode: 'preview' as InteractionMode,
-      workspaceTab: 'preview' as SessionWorkspaceTab,
       selectedSelector: null,
       editSelectedSelector: null,
       selectorLabel: '',
       elementTag: '',
       elementText: ''
+    }),
+  resetEditingPageState: () =>
+    set({
+      interactionMode: 'preview' as InteractionMode,
+      workspaceTab: 'preview' as SessionWorkspaceTab,
+      editorSnapEnabled: true,
+      editorGridVisible: false,
+      editorGridSize: 20,
+      editorGuidesByPage: {},
+      selectedSelector: null,
+      editSelectedSelector: null,
+      selectorLabel: '',
+      elementTag: '',
+      elementText: '',
+      pendingAssets: [],
+      assetDragActive: false,
+      assetPickerOpen: false,
+      isGeneratingSpeechScript: false,
+      speechProgress: null,
+      speechScriptDialogOpen: false
     }),
   resetForSessionChange: () =>
     set({

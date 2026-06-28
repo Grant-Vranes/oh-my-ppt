@@ -27,18 +27,19 @@ import {
   Palette,
   PencilLine,
   Plus,
+  Search,
   Sparkles,
+  Star,
   Trash2,
-  Upload
+  Upload,
+  X
 } from 'lucide-react'
 import { useT } from '../i18n'
 import { useThumbnailUpdates } from '../hooks/useThumbnailUpdates'
 import { useVisibleItemIds } from '../hooks/useVisibleItemIds'
-import {
-  buildStyleCaseOptions,
-  filterByStyleCase,
-  parseStyleCases
-} from '@renderer/lib/style-case'
+import { filterByStyleCase, filterByStyleKeyword, parseStyleCases } from '@renderer/lib/style-case'
+import { StyleCaseFilter } from '../components/style/StyleCaseFilter'
+import { cn } from '@renderer/lib/utils'
 
 type StyleSummary = {
   id: string
@@ -50,6 +51,7 @@ type StyleSummary = {
   styleCase?: string
   previewPath?: string | null
   thumbnailPath?: string | null
+  favoriteAt?: number | null
   createdAt?: number
   updatedAt?: number
 }
@@ -60,6 +62,12 @@ const OFFICIAL_STYLE_SKILL_URL = 'https://github.com/arcsin1/style-generate-skil
 const localAssetUrl = (filePath: string): string => `local-asset://${encodeURIComponent(filePath)}`
 const stylePreviewUrl = (filePath: string): string =>
   import.meta.env.MODE === 'test' ? 'about:blank' : localAssetUrl(filePath)
+const compareStylesByUpdated = (a: StyleSummary, b: StyleSummary): number =>
+  (b.updatedAt || 0) - (a.updatedAt || 0) ||
+  (b.createdAt || 0) - (a.createdAt || 0) ||
+  a.id.localeCompare(b.id)
+const compareStylesByFavorite = (a: StyleSummary, b: StyleSummary): number =>
+  (b.favoriteAt || 0) - (a.favoriteAt || 0) || compareStylesByUpdated(a, b)
 
 export function StylesPage(): React.JSX.Element {
   const navigate = useNavigate()
@@ -67,6 +75,9 @@ export function StylesPage(): React.JSX.Element {
   const [importingPackageType, setImportingPackageType] = useState<'zip' | 'directory' | ''>('')
   const [exportingStyleId, setExportingStyleId] = useState('')
   const [selectedStyleCase, setSelectedStyleCase] = useState('')
+  const [query, setQuery] = useState('')
+  const [favoriteOnly, setFavoriteOnly] = useState(false)
+  const [favoriteUpdatingStyleId, setFavoriteUpdatingStyleId] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<StyleSummary | null>(null)
   const [deletingStyleId, setDeletingStyleId] = useState('')
   const { error, info, success, warning } = useToastStore()
@@ -75,18 +86,17 @@ export function StylesPage(): React.JSX.Element {
   const generatePreview = useStylePreviewStore((state) => state.generatePreview)
   const t = useT()
 
-  const styleCaseOptions = useMemo(() => buildStyleCaseOptions(styles), [styles])
-  const visibleStyleCaseOptions = useMemo(() => {
-    const popular = styleCaseOptions.filter((option) => option.count > 1)
-    const selected = styleCaseOptions.find((option) => option.label === selectedStyleCase)
-    return selected && !popular.some((option) => option.label === selected.label)
-      ? [...popular, selected]
-      : popular
-  }, [selectedStyleCase, styleCaseOptions])
-  const filteredStyles = useMemo(
-    () => filterByStyleCase(styles, selectedStyleCase),
-    [selectedStyleCase, styles]
-  )
+  const favoriteCount = useMemo(() => styles.filter((style) => style.favoriteAt != null).length, [styles])
+  const styleCaseAvailableStyles = useMemo(() => {
+    const byKeyword = filterByStyleKeyword(styles, query)
+    return favoriteOnly ? byKeyword.filter((style) => style.favoriteAt != null) : byKeyword
+  }, [favoriteOnly, query, styles])
+  const filteredStyles = useMemo(() => {
+    const byCase = filterByStyleCase(styleCaseAvailableStyles, selectedStyleCase)
+    return favoriteOnly ? [...byCase].sort(compareStylesByFavorite) : byCase
+  }, [favoriteOnly, selectedStyleCase, styleCaseAvailableStyles])
+  const emptyStylesText =
+    favoriteOnly && favoriteCount === 0 ? t('styles.noFavoriteStyles') : t('styles.noMatchingStyles')
   const fallbackStyleIds = useMemo(
     () =>
       new Set(
@@ -104,7 +114,7 @@ export function StylesPage(): React.JSX.Element {
   const loadStyles = useCallback(async (): Promise<void> => {
     try {
       const { items } = await ipc.listStyles()
-      const sorted = [...items].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
+      const sorted = [...items].sort(compareStylesByUpdated)
       setStyles(sorted)
     } catch (e) {
       error(t('styles.loadFailed'), {
@@ -208,6 +218,41 @@ export function StylesPage(): React.JSX.Element {
     }
   }, [error, generatePreview, success, t])
 
+  const handleToggleFavorite = useCallback(async (style: StyleSummary): Promise<void> => {
+    if (favoriteUpdatingStyleId) return
+    const nextFavorite = style.favoriteAt == null
+    const previousFavoriteAt = style.favoriteAt ?? null
+    const optimisticFavoriteAt = nextFavorite ? Math.floor(Date.now() / 1000) : null
+    setFavoriteUpdatingStyleId(style.id)
+    setStyles((current) =>
+      current.map((item) =>
+        item.id === style.id ? { ...item, favoriteAt: optimisticFavoriteAt } : item
+      )
+    )
+    try {
+      const result = await ipc.setStyleFavorite({ styleId: style.id, favorite: nextFavorite })
+      if (!result.success) {
+        throw new Error(t('common.retryLater'))
+      }
+      setStyles((current) =>
+        current.map((item) =>
+          item.id === style.id ? { ...item, favoriteAt: result.favoriteAt } : item
+        )
+      )
+    } catch (e) {
+      setStyles((current) =>
+        current.map((item) =>
+          item.id === style.id ? { ...item, favoriteAt: previousFavoriteAt } : item
+        )
+      )
+      error(t('styles.favoriteFailed'), {
+        description: e instanceof Error ? e.message : t('common.retryLater')
+      })
+    } finally {
+      setFavoriteUpdatingStyleId('')
+    }
+  }, [error, favoriteUpdatingStyleId, t])
+
   return (
     <TooltipProvider delayDuration={180}>
       <div className="mx-auto w-full max-w-6xl p-6">
@@ -289,38 +334,54 @@ export function StylesPage(): React.JSX.Element {
         <p className="mt-2 text-[12px] text-muted-foreground">{t('styles.description')}</p>
       </div>
 
-      {styleCaseOptions.length > 0 && (
-        <div className="mb-5 rounded-lg border border-[#d8ccb5]/75 bg-[#fff9ef]/76 p-3">
-          <p className="mb-2 text-xs font-medium text-[#3e4a32]">{t('styles.styleCaseFilter')}</p>
-          <div className="flex flex-wrap gap-1.5">
-            <button
-              type="button"
-              className={`rounded-md border px-2 py-1 text-xs font-medium transition-colors ${
-                selectedStyleCase === ''
-                  ? 'border-[#97aa7c] bg-[#dbe7ca] text-[#2f3b28]'
-                  : 'border-[#d6c08d]/80 bg-white/70 text-[#7c6a4c] hover:bg-[#fff3d8]'
-              }`}
-              onClick={() => setSelectedStyleCase('')}
-            >
-              {t('styles.allStyleCases')} · {styles.length}
-            </button>
-            {visibleStyleCaseOptions.map((option) => (
+      <div className="mb-5 rounded-lg border border-[#d8ccb5]/75 bg-[#fff9ef]/76 p-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-h-9 flex-1 items-center gap-2 rounded-md border border-[#d8ccb5]/80 bg-white/80 px-2.5">
+            <Search className="h-4 w-4 shrink-0 text-[#7c6a4c]/60" />
+            <input
+              type="text"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={t('styles.searchPlaceholder')}
+              className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+            />
+            {query ? (
               <button
-                key={option.label}
                 type="button"
-                className={`rounded-md border px-2 py-1 text-xs font-medium transition-colors ${
-                  selectedStyleCase === option.label
-                    ? 'border-[#97aa7c] bg-[#dbe7ca] text-[#2f3b28]'
-                    : 'border-[#d6c08d]/80 bg-white/70 text-[#7c6a4c] hover:bg-[#fff3d8]'
-                }`}
-                onClick={() => setSelectedStyleCase(option.label)}
+                onClick={() => setQuery('')}
+                className="shrink-0 text-[#7c6a4c]/60 transition-colors hover:text-[#7c6a4c]"
+                aria-label={t('styles.clearSearch')}
+                title={t('styles.clearSearch')}
               >
-                {option.label} · {option.count}
+                <X className="h-4 w-4" />
               </button>
-            ))}
+            ) : null}
           </div>
+          <button
+            type="button"
+            onClick={() => setFavoriteOnly((current) => !current)}
+            className={cn(
+              'inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-md border px-3 text-xs font-medium transition-colors',
+              favoriteOnly
+                ? 'border-[#97aa7c] bg-[#dbe7ca] text-[#2f3b28]'
+                : 'border-[#d6c08d]/80 bg-white/70 text-[#7c6a4c] hover:bg-[#fff3d8]'
+            )}
+            aria-pressed={favoriteOnly}
+          >
+            <Star className={cn('h-3.5 w-3.5', favoriteOnly && 'fill-[#d6a942] text-[#d6a942]')} />
+            {`${t('styles.favoriteStyles')} · ${favoriteCount}`}
+          </button>
         </div>
-      )}
+        <StyleCaseFilter
+          className="mt-3"
+          items={styles}
+          availableItems={styleCaseAvailableStyles}
+          selected={selectedStyleCase}
+          onSelect={setSelectedStyleCase}
+          allLabel={t('styles.allStyleCases')}
+          title={t('styles.styleCaseFilter')}
+        />
+      </div>
 
       <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">
         {filteredStyles.map((style) => (
@@ -358,6 +419,48 @@ export function StylesPage(): React.JSX.Element {
                     )}
                   </div>
                 )}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className={cn(
+                        'absolute left-3 top-3 z-20 h-8 w-8 rounded-md bg-white/95 p-0 text-[#8a7048] shadow-[0_3px_10px_rgba(40,48,34,0.16)]',
+                        style.favoriteAt != null
+                          ? 'text-[#d6a942] opacity-100'
+                          : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
+                      )}
+                      disabled={favoriteUpdatingStyleId === style.id}
+                      onClick={() => void handleToggleFavorite(style)}
+                      aria-label={
+                        style.favoriteAt != null
+                          ? t('styles.unfavoriteStyle')
+                          : t('styles.favoriteStyle')
+                      }
+                      title={
+                        style.favoriteAt != null
+                          ? t('styles.unfavoriteStyleTooltip')
+                          : t('styles.favoriteStyleTooltip')
+                      }
+                    >
+                      {favoriteUpdatingStyleId === style.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Star
+                          className={cn(
+                            'h-3.5 w-3.5',
+                            style.favoriteAt != null && 'fill-[#d6a942] text-[#d6a942]'
+                          )}
+                        />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" align="start">
+                    {style.favoriteAt != null
+                      ? t('styles.unfavoriteStyleTooltip')
+                      : t('styles.favoriteStyleTooltip')}
+                  </TooltipContent>
+                </Tooltip>
                 <div className="absolute inset-x-0 top-0 flex items-start justify-end gap-1.5 bg-gradient-to-b from-black/30 to-transparent p-3 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
                   {!style.previewPath && (
                     <Tooltip>
@@ -481,7 +584,7 @@ export function StylesPage(): React.JSX.Element {
       </div>
       {filteredStyles.length === 0 && (
         <div className="rounded-lg border border-dashed border-[#d8ccb5] py-12 text-center text-sm text-muted-foreground">
-          {t('styles.noMatchingStyles')}
+          {emptyStylesText}
         </div>
       )}
       <AlertDialog

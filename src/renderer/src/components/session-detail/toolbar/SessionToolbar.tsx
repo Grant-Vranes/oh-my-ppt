@@ -51,6 +51,7 @@ export function SessionToolbar({
     hasPages,
     isGenerating,
     historyDisabled,
+    selectedPageHasPendingEdits,
     canPreview,
     canRevealFile,
     sessionTitle,
@@ -86,7 +87,9 @@ export function SessionToolbar({
     isExportingSessionZip
 
   const exportingAny = isExporting
-  const homeDisabled = exportingAny || isGenerating || !!isSavingEdits
+  const editLocked = selectedPageHasPendingEdits || !!isSavingEdits
+  const toolbarActionsDisabled = exportingAny || isGenerating || editLocked
+  const homeDisabled = toolbarActionsDisabled
 
   return (
     <>
@@ -130,7 +133,7 @@ export function SessionToolbar({
                 variant="outline"
                 size="sm"
                 className={cn(btnClass, 'gap-1')}
-                disabled={exportingAny}
+                disabled={toolbarActionsDisabled}
               >
                 {exportingAny ? (
                   <Loader2 className={cn(iconClass, 'animate-spin')} />
@@ -207,7 +210,7 @@ export function SessionToolbar({
                 size="sm"
                 className={btnClass}
                 onClick={() => void exportActions.openProjectPreview()}
-                disabled={exportingAny}
+                disabled={toolbarActionsDisabled}
               >
                 <Globe className={iconClass} />
                 {t('sessionDetail.preview')}
@@ -229,7 +232,7 @@ export function SessionToolbar({
                 size="sm"
                 className={btnClass}
                 onClick={() => void exportActions.openPresentation()}
-                disabled={exportingAny}
+                disabled={toolbarActionsDisabled}
               >
                 <Monitor className={iconClass} />
                 {t('sessionDetail.present')}
@@ -272,14 +275,14 @@ export function SessionToolbar({
                 variant="outline"
                 size="sm"
                 className={cn(btnClass, 'px-2')}
-                disabled={exportingAny}
+                disabled={toolbarActionsDisabled}
               >
                 <MoreHorizontal className="h-3.5 w-3.5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="min-w-[12rem]">
               <DropdownMenuItem
-                disabled={saveAsNewSessionDisabled || !!isSavingEdits}
+                disabled={saveAsNewSessionDisabled || editLocked}
                 onClick={() => setSaveAsNewSessionOpen(true)}
               >
                 {savingAsNewSession ? (
@@ -290,12 +293,18 @@ export function SessionToolbar({
                 {t('sessionDetail.saveAsNewSession')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setSaveTemplateOpen(true)}>
+              <DropdownMenuItem
+                disabled={editLocked || exportingAny || isGenerating}
+                onClick={() => setSaveTemplateOpen(true)}
+              >
                 <LayoutTemplate className={dropIconClass} />
                 {t('sessionDetail.saveTemplate')}
               </DropdownMenuItem>
               {canRevealFile && (
-                <DropdownMenuItem onClick={() => void exportActions.revealSelectedPageFile()}>
+                <DropdownMenuItem
+                  disabled={editLocked || exportingAny || isGenerating}
+                  onClick={() => void exportActions.revealSelectedPageFile()}
+                >
                   <FileSearch className={dropIconClass} />
                   {t('sessionDetail.revealFile')}
                 </DropdownMenuItem>

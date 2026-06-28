@@ -5,7 +5,7 @@
     "en": "Minimal White"
   },
   "description": "克制到极致的高级感，留白是最有力的表达",
-  "category": "浅色 · 沉静",
+  "category": "浅色 · 极简",
   "aliases": [
     "minimal",
     "light",
@@ -14,7 +14,7 @@
     "clean",
     "minimal-light"
   ],
-  "styleCase": "内部汇报、一对一技术评审、严肃话题讨论、长时间工作坊",
-  "version": "2.0.0",
+  "styleCase": "技术分享、商业汇报、教学科普",
+  "version": "2.0.1",
   "source": "builtin"
 }

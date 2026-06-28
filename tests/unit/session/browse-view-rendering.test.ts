@@ -5,6 +5,7 @@ import React, { act } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { BrowseView } from '../../../src/renderer/src/components/session-detail/browse/BrowseView'
+import { TooltipProvider } from '../../../src/renderer/src/components/ui/Tooltip'
 import { useGenerateStore } from '../../../src/renderer/src/store/generateStore'
 import { useSessionDetailUiStore } from '../../../src/renderer/src/store/sessionDetailStore'
 
@@ -81,7 +82,13 @@ async function renderBrowseView(): Promise<{ container: HTMLDivElement; root: Ro
   const root = createRoot(container)
 
   await act(async () => {
-    root.render(React.createElement(BrowseView, { sessionId: 'session-1' }))
+    root.render(
+      React.createElement(
+        TooltipProvider,
+        { delayDuration: 0 },
+        React.createElement(BrowseView, { sessionId: 'session-1' })
+      )
+    )
   })
 
   return { container, root }
@@ -137,6 +144,97 @@ describe('BrowseView preview rendering', () => {
       )
       expect(titles).toHaveLength(11)
       expect(titles).not.toContain('browse-page-2')
+    } finally {
+      await cleanupRoot(root, container)
+    }
+  })
+
+  it('reserves two lines for every card title so short titles do not shrink the card', async () => {
+    const pages = [
+      {
+        id: 'page-1',
+        pageId: 'page-1',
+        pageNumber: 1,
+        title: 'Short one-line title',
+        html: '<html></html>',
+        sourceUrl: 'session://page-1.html'
+      },
+      {
+        id: 'page-2',
+        pageId: 'page-2',
+        pageNumber: 2,
+        title: 'A '.repeat(80).trim(),
+        html: '<html></html>',
+        sourceUrl: 'session://page-2.html'
+      }
+    ]
+    useGenerateStore.getState().setPages(pages)
+    const { container, root } = await renderBrowseView()
+
+    try {
+      const titles = container.querySelectorAll('p')
+      expect(titles).toHaveLength(2)
+      // Every title reserves 2 lines (leading-4 = 1rem/line), so a 1-line
+      // title cannot shrink its card below a 2-line title's card.
+      for (const title of titles) {
+        expect((title as HTMLElement).style.minHeight).toBe('calc(2 * 1rem)')
+      }
+    } finally {
+      await cleanupRoot(root, container)
+    }
+  })
+
+  it('renders a drag handle for each browse card', async () => {
+    useGenerateStore.getState().setPages(makePages(3))
+    const { container, root } = await renderBrowseView()
+
+    try {
+      const handles = container.querySelectorAll('button[aria-label="pageManagement.dragHandle"]')
+      expect(handles).toHaveLength(3)
+    } finally {
+      await cleanupRoot(root, container)
+    }
+  })
+
+  it('renders browse card hover actions for export, rename, and delete', async () => {
+    useGenerateStore.getState().setPages(makePages(3))
+    const { container, root } = await renderBrowseView()
+
+    try {
+      expect(
+        container.querySelectorAll('button[aria-label="sessionDetail.exportSinglePagePptx"]')
+      ).toHaveLength(3)
+      expect(container.querySelectorAll('button[aria-label="pageManagement.editPageTitle"]'))
+        .toHaveLength(3)
+      expect(container.querySelectorAll('button[aria-label="pageManagement.deletePage"]'))
+        .toHaveLength(3)
+    } finally {
+      await cleanupRoot(root, container)
+    }
+  })
+
+  it('wires browse card rename and delete actions to page management state', async () => {
+    useGenerateStore.getState().setPages(makePages(2))
+    const { container, root } = await renderBrowseView()
+
+    try {
+      const renameButton = container.querySelector<HTMLButtonElement>(
+        'button[aria-label="pageManagement.editPageTitle"]'
+      )
+      const deleteButton = container.querySelector<HTMLButtonElement>(
+        'button[aria-label="pageManagement.deletePage"]'
+      )
+
+      await act(async () => {
+        renameButton?.click()
+      })
+      expect(useSessionDetailUiStore.getState().pageTitleEditPageId).toBe('page-1')
+      expect(useSessionDetailUiStore.getState().pageTitleEditDraft).toBe('Page 1')
+
+      await act(async () => {
+        deleteButton?.click()
+      })
+      expect(useSessionDetailUiStore.getState().deleteConfirmPageId).toBe('page-1')
     } finally {
       await cleanupRoot(root, container)
     }

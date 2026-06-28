@@ -351,8 +351,11 @@ describe('source-grounded prompt rules', () => {
 
     expect(engineGenerate).toContain('keyPoints must contain 1-10 short phrases')
     expect(engineGenerate).toContain('preserve each listed topic as a separate key point')
-    expect(generationUser).toContain('If there are 2-10 points')
-    expect(generationUser).toContain('keep them as distinct visible topics')
+    expect(generationUser).not.toContain('final slide should cover all of them')
+    expect(generationUser).toContain('not as a checklist')
+    expect(generationUser).toContain('Do not duplicate the same source facts')
+    expect(generationUser).toContain('grouping related points')
+    expect(generationUser).toContain('keep them distinct only where the layout allows')
     expect(planningSource).toContain('Provide 1-10 key points per slide')
     expect(runtimeUserSource).toContain('keyPoints must contain 1-10 strings')
   })
@@ -365,7 +368,13 @@ describe('source-grounded prompt rules', () => {
     expect(planningSource).toContain('SOURCE_MATERIAL_PLANNING_RULES')
     expect(sharedSource).toContain('Apply these rules only when source documents')
     expect(sharedSource).toContain('Stay source-grounded and avoid creative drift')
+    expect(sharedSource).toContain('evidence, not a slide checklist')
+    expect(sharedSource).toContain('split into multiple slides when one page would become a data dump')
     expect(sharedSource).toContain('split source-backed sections')
+    expect(sharedSource).toContain('deepen each slide from the available material')
+    expect(sharedSource).toContain('SOURCE_GROUNDED_EXPANSION_RULES')
+    expect(sharedSource).toContain('actively enrich the slide from the material')
+    expect(sharedSource).toContain('source-grounded does not mean exhaustive')
     expect(sharedSource).toContain('Do not add generic agenda')
     expect(planningSource).toContain('For open-ended topics without source materials')
     expect(planningSource).not.toContain('split or merge')
@@ -385,7 +394,7 @@ describe('source-grounded prompt rules', () => {
 
     expect(sharedSource).toContain('SOURCE_READING_SKILL_NAME')
     expect(sharedSource).toContain('Before using source documents')
-    expect(sharedSource).toContain('not as final evidence or permission to freestyle')
+    expect(sharedSource).toContain('Grounding forbids inventing facts the source lacks')
     expect(sharedSource).not.toContain('Before writing source-backed content')
     expect(sharedSource).not.toContain('Do not read entire long documents into context at once')
     expect(sourceReadingSkill).toContain(
@@ -399,9 +408,33 @@ describe('source-grounded prompt rules', () => {
     expect(sourceReadingSkill).toContain('Slide title: "Q3 Revenue Highlights"')
     expect(sourceReadingSkill).toContain('Prefer 50-80 lines around grep matches')
     expect(source).toContain('expansion must be source-grounded')
+    expect(source).toContain('SOURCE_GROUNDED_EXPANSION_RULES')
+    expect(source).toContain('if inspected material is thin, enrich the slide')
+    expect(readSource('src/main/prompt/deck-system.ts')).toContain('SOURCE_GROUNDED_EXPANSION_RULES')
+    expect(readSource('src/main/prompt/edit-system.ts')).toContain('SOURCE_GROUNDED_EXPANSION_RULES')
     expect(source).toContain('SOURCE_DOCUMENT_FACT_RULE')
     expect(sharedSource).toContain('examples, risks, decisions, or conclusions')
     expect(source).not.toContain('first use grep or glob')
     expect(source).not.toContain('you do not need to reread')
+  })
+
+  it('source-reading skill expands thin pages instead of over-suppressing into sparse slides', () => {
+    const sourceReadingSkill = readSource('resources/skills/oh-my-ppt-source-reading/SKILL.md')
+
+    // The old wording ("build ONLY from inspected passages" / "do not fill gaps")
+    // over-suppressed: with a reference doc present the model rendered bare source
+    // (chart + a couple facts) and left the page blank, because it read the skill as
+    // forbidding any addition. Those over-strict lines are gone.
+    expect(sourceReadingSkill).not.toContain('Build slide content only from inspected')
+    expect(sourceReadingSkill).not.toContain('Do not fill gaps with plausible-sounding')
+
+    // The skill now tells the model to expand a thin page into a full argument with
+    // analytical structure derived from the inspected material.
+    expect(sourceReadingSkill).toContain('A half-empty slide is a failure')
+    expect(sourceReadingSkill).toContain('Expand the slide into a complete argument')
+    expect(sourceReadingSkill).toContain('comparison dimensions')
+
+    // ...while keeping the anti-hallucination core: never invent EXACT facts.
+    expect(sourceReadingSkill).toContain('Do not invent exact facts')
   })
 })

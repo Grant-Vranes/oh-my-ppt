@@ -112,6 +112,7 @@ export const normalizeCreativePageFragment = (html: string): string => {
       mergeClassNames(scaffold.attr('class'), CREATIVE_FRAGMENT_SECTION_CLASS.split(/\s+/))
     )
   }
+  scaffold.attr('data-ppt-readable-fonts', '1')
 
   let content: cheerio.Cheerio<AnyNode> = scaffold
     .find('main[data-role="content"], main[data-block-id="content"], main')

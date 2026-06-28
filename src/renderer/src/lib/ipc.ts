@@ -25,6 +25,10 @@ import type { HistoryVersion, RollbackHistoryResult } from '@shared/history.js'
 import type { HtmlThumbnailResourceType } from '@shared/thumbnail'
 import type { IndexTransitionConfig, IndexTransitionType } from '@shared/index-transition.js'
 import type {
+  ElementAnimationConfig,
+  ElementAnimationPatch
+} from '@shared/element-animation.js'
+import type {
   ThinkingStage,
   ThinkingChatMessage,
   ThinkingWorkspace,
@@ -42,6 +46,7 @@ import type {
   ImageModelConfig,
   ImageModelProvider
 } from '@shared/image-generation.js'
+import type { ThinkingParameterMode } from '@shared/model-config.js'
 import type { ExportProgressPayload } from '@shared/export-progress.js'
 import type { PageMergeDisabledReason } from '@shared/page-merge'
 import type { ModelUsagePeriod, ModelUsageStats } from '@shared/model-usage'
@@ -104,6 +109,7 @@ export interface StyleListItem {
   version?: string
   styleCase?: string
   packageDir?: string
+  favoriteAt?: number | null
   previewPath?: string | null
   thumbnailPath?: string | null
   createdAt?: number
@@ -213,6 +219,11 @@ export interface EnsureElementAnchorPayload {
   elementTag?: string
   elementText?: string
   reason?: 'inspect' | 'drag' | 'text-edit'
+  formula?: {
+    latex: string
+    html: string
+    displayMode: boolean
+  }
 }
 
 export interface EnsureElementAnchorResult {
@@ -298,6 +309,7 @@ export interface ModelConfig {
   baseUrl: string
   maxTokens: number
   disableTemperature: boolean
+  thinkingParameterMode: ThinkingParameterMode
   active: boolean
   createdAt: number
   updatedAt: number
@@ -733,6 +745,7 @@ export const ipc = {
     baseUrl: string
     maxTokens?: number
     disableTemperature?: boolean
+    thinkingParameterMode?: ThinkingParameterMode
     active?: boolean
   }) =>
     getIpc().invoke('settings:upsertModelConfig', payload) as Promise<{
@@ -770,6 +783,7 @@ export const ipc = {
     baseUrl: string
     maxTokens?: number
     disableTemperature?: boolean
+    thinkingParameterMode?: ThinkingParameterMode
     timeoutMs: number
   }) =>
     getIpc().invoke('settings:verifyApiKey', payload) as Promise<{
@@ -824,6 +838,12 @@ export const ipc = {
       success: boolean
       previewPath: string
       thumbnailPath: string
+    }>,
+  setStyleFavorite: (payload: { styleId: string; favorite: boolean }) =>
+    getIpc().invoke('styles:setFavorite', payload) as Promise<{
+      success: boolean
+      styleId: string
+      favoriteAt: number | null
     }>,
   onHtmlThumbnailChanged: (callback: (task: HtmlThumbnailTask) => void): (() => void) => {
     const channel = 'thumbnails:changed'
@@ -904,6 +924,27 @@ export const ipc = {
     }>,
   ensureElementAnchor: (payload: EnsureElementAnchorPayload) =>
     getIpc().invoke('element-anchor:ensure', payload) as Promise<EnsureElementAnchorResult>,
+  getElementAnimation: (payload: {
+    sessionId: string
+    htmlPath: string
+    pageId: string
+    selector: string
+  }) =>
+    getIpc().invoke('element-animation:get', payload) as Promise<{
+      animation: ElementAnimationConfig | null
+    }>,
+  setElementAnimation: (payload: {
+    sessionId: string
+    htmlPath: string
+    pageId: string
+    selector: string
+    patch: ElementAnimationPatch
+  }) =>
+    getIpc().invoke('element-animation:set', payload) as Promise<{
+      success: boolean
+      changed: boolean
+      animation: ElementAnimationConfig | null
+    }>,
   updateElementProperties: (payload: UpdateElementPropertiesPayload) =>
     getIpc().invoke('text-editor:update-element-properties', payload) as Promise<{
       success: boolean

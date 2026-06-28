@@ -8,6 +8,7 @@ import type { GenerationPageStatus, GenerationRunStatus } from '../schema'
 import { defaultModelTimeoutMs } from '@shared/model-timeout'
 import { patchModelConfigMaxTokens } from './add-model-max-tokens'
 import { patchModelConfigDisableTemperature } from './add-model-disable-temperature'
+import { patchModelConfigThinkingParameterMode } from './add-model-thinking-parameter-mode'
 import { patchStylesColumns } from './add-styles-columns'
 import { patchDesignContractFonts } from './backfill-design-contract-fonts'
 
@@ -110,6 +111,7 @@ CREATE TABLE IF NOT EXISTS model_configs (
   base_url TEXT NOT NULL DEFAULT '',
   max_tokens INTEGER NOT NULL DEFAULT 4096,
   disable_temperature INTEGER NOT NULL DEFAULT 0,
+  thinking_parameter_mode TEXT NOT NULL DEFAULT 'auto',
   active INTEGER NOT NULL DEFAULT 0,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
@@ -166,6 +168,7 @@ CREATE TABLE IF NOT EXISTS generation_runs (
   total_pages INTEGER NOT NULL DEFAULT 0,
   error TEXT,
   metadata TEXT,
+  animation_preferences TEXT,
   model_config_id TEXT,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
@@ -265,6 +268,7 @@ CREATE TABLE IF NOT EXISTS styles (
   style_case TEXT NOT NULL DEFAULT '',
   package_dir TEXT NOT NULL DEFAULT '',
   active INTEGER NOT NULL DEFAULT 1,
+  favorite_at INTEGER,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 );
@@ -733,6 +737,9 @@ const enforceGenerationSchema = async (client: LibSqlClient): Promise<void> => {
   const runColumns = await getTableColumns(client, 'generation_runs')
   if (!runColumns.has('model_config_id')) {
     await client.execute('ALTER TABLE generation_runs ADD COLUMN model_config_id TEXT')
+  }
+  if (!runColumns.has('animation_preferences')) {
+    await client.execute('ALTER TABLE generation_runs ADD COLUMN animation_preferences TEXT')
   }
   const jobColumns = await getTableColumns(client, 'generation_jobs')
   if (!jobColumns.has('abort_reason')) {
@@ -1321,4 +1328,5 @@ export const runDatabasePatches = async (args: {
   await patchSessionPagesFromGenerationPages({ client, db, resolveStoragePath })
   await patchModelConfigMaxTokens(client)
   await patchModelConfigDisableTemperature(client)
+  await patchModelConfigThinkingParameterMode(client)
 }

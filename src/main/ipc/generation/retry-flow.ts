@@ -9,7 +9,11 @@ import { normalizeLayoutIntent, type LayoutIntent } from '@shared/layout-intent'
 import { validatePersistedPageHtml } from '../../tools/html-utils'
 import type { DesignContract } from '../../tools/types'
 import { buildDesignContractWithLLM, runDeepAgentDeckGeneration } from '../engine/generate'
-import type { GeneratedPagePayload } from '@shared/generation'
+import {
+  resolveInheritedAnimationPreferences,
+  type AnimationPreferencesPayload,
+  type GeneratedPagePayload
+} from '@shared/generation'
 import { nanoid } from 'nanoid'
 import {
   buildRetryUserMessage,
@@ -30,6 +34,11 @@ export async function resolveRetryContext(
 
   const common = await resolveCommonContext(ctx, input.sessionId, input.modelConfigId)
   const userMessage = buildRetryUserMessage(input.rawUserMessage)
+  let animationPreferences: AnimationPreferencesPayload | null = null
+  if (input.failedRunId) {
+    const sourceRun = await ctx.db.getGenerationRun(input.failedRunId)
+    animationPreferences = resolveInheritedAnimationPreferences(sourceRun, input.sessionId)
+  }
   const sourceDocumentPaths = await resolveSourceDocuments(ctx, {
     sessionId: input.sessionId,
     projectDir: common.projectDir,
@@ -49,6 +58,7 @@ export async function resolveRetryContext(
     selector: undefined,
     elementTag: undefined,
     elementText: undefined,
+    sourceRunId: input.failedRunId,
     session: common.session,
     sessionRecord: common.sessionRecord,
     previousSessionStatus: common.previousSessionStatus,
@@ -80,7 +90,8 @@ export async function resolveRetryContext(
     topic: common.topic,
     deckTitle: common.deckTitle,
     appLocale: common.appLocale,
-    fontSelection: common.fontSelection
+    fontSelection: common.fontSelection,
+    animationPreferences
   }
 }
 
@@ -242,10 +253,14 @@ export async function executeRetryFailedPages(
     mode: 'retry',
     totalPages: retryPages.length,
     modelConfigId: context.modelConfigId,
+    animationPreferences: context.animationPreferences,
     metadata: {
       retryOnly: true,
       source: 'session_pages',
       pageIds: retryPages.map((page) => page.pageId),
+      inheritedAnimationPreferencesFromRunId: context.animationPreferences
+        ? context.sourceRunId || null
+        : null,
       modelConfigId: context.modelConfigId,
       modelConfigName: context.modelConfigName,
       provider: context.provider,
@@ -387,6 +402,7 @@ export async function executeRetryFailedPages(
     styleName: context.styleName,
     styleVersion: context.styleVersion,
     appLocale: context.appLocale,
+    animationPreferences: context.animationPreferences,
     topic: context.topic,
     deckTitle: context.deckTitle,
     userMessage:

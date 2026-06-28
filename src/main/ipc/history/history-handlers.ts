@@ -2,6 +2,7 @@ import { ipcMain } from 'electron'
 import log from 'electron-log/main.js'
 import type { IpcContext } from '../context'
 import { GitHistoryService } from '../../history/git-history-service'
+import { HISTORY_VERSION_LIMIT } from '@shared/history'
 
 export function registerHistoryHandlers(ctx: IpcContext): void {
   const { db, resolveSessionProjectDir, sessionRunStates } = ctx
@@ -14,7 +15,10 @@ export function registerHistoryHandlers(ctx: IpcContext): void {
           ? payload.sessionId.trim()
           : ''
       if (!sessionId) throw new Error('缺少 sessionId')
-      const limit = Math.max(1, Math.min(50, Math.floor(Number(payload?.limit) || 10)))
+      const limit = Math.max(
+        1,
+        Math.min(HISTORY_VERSION_LIMIT, Math.floor(Number(payload?.limit) || HISTORY_VERSION_LIMIT))
+      )
       const projectDir = await resolveSessionProjectDir(sessionId)
       const service = new GitHistoryService(db)
       await service.ensureBaseline(sessionId, projectDir).catch((error) => {

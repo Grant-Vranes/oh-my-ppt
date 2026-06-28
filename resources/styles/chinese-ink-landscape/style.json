@@ -5,7 +5,7 @@
     "en": "Chinese Ink Landscape"
   },
   "description": "青灰山色暖沙米，深远辽阔山水意境",
-  "category": "自然 · 有机",
+  "category": "东方 · 国风",
   "aliases": [
     "山水",
     "水墨",
@@ -14,7 +14,7 @@
     "ink",
     "远山"
   ],
-  "styleCase": "文化哲思、东方美学、茶道香道、地产文旅、文学讲座",
-  "version": "2.0.0",
+  "styleCase": "旅游出行、传统文化、艺术视觉",
+  "version": "2.0.2",
   "source": "builtin"
 }

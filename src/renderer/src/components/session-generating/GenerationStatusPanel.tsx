@@ -1,5 +1,5 @@
 import type React from 'react'
-import { CheckCircle2, CircleAlert } from 'lucide-react'
+import { CheckCircle2, CircleAlert, Loader2 } from 'lucide-react'
 import { Button } from '@renderer/components/ui/Button'
 import { ModelSplitButton } from '@renderer/components/model/ModelActionButton'
 import { cn } from '@renderer/lib/utils'
@@ -20,6 +20,7 @@ export function GenerationStatusPanel({
   continueRemainingLabel,
   regenerateLabel,
   cancelLabel,
+  isCancelling,
   hasGeneratedPages,
   canEnterEditor,
   showEditorShortcut,
@@ -42,6 +43,7 @@ export function GenerationStatusPanel({
   continueRemainingLabel: string
   regenerateLabel: string
   cancelLabel: string
+  isCancelling?: boolean
   hasGeneratedPages: boolean
   canEnterEditor: boolean
   showEditorShortcut: boolean
@@ -140,8 +142,11 @@ export function GenerationStatusPanel({
                   size="sm"
                   variant="outline"
                   className="h-6 rounded-md px-2 text-[10px] shadow-none"
+                  disabled={isCancelling}
+                  aria-busy={isCancelling || undefined}
                   onClick={onCancel}
                 >
+                  {isCancelling && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
                   {cancelLabel}
                 </Button>
               )}

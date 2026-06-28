@@ -514,6 +514,137 @@ function stripUnsafeRichTextHtml(html: string): string {
   return root.html() || ''
 }
 
+function stripUnsafeFormulaHtml(
+  html: string,
+  latex: string,
+  displayMode: boolean,
+  blockId?: string
+): string {
+  const normalizedLatex = normalizeText(latex)
+  if (!normalizedLatex) throw new Error('公式不能为空')
+  if (normalizedLatex.length > 2000) throw new Error('公式不能超过 2000 个字符')
+  if (html.length > 100000) throw new Error('公式内容过长')
+  const $ = cheerio.load(`<root>${html}</root>`, { scriptingEnabled: false }, false)
+  const root = $('root').first()
+  root.find('script, style, iframe, object, embed, img, video, audio, canvas, svg, input').remove()
+  root.find('*').each((_, node) => {
+    const el = $(node)
+    const attrs = { ...(node.attribs || {}) }
+    const className = String(attrs.class || '')
+      .split(/\s+/)
+      .filter(
+        (item) =>
+          item &&
+          !item.startsWith('ppt-edit-mode-') &&
+          !item.startsWith('ppt-inspector-')
+      )
+      .join(' ')
+    if (className) el.attr('class', className)
+    else el.removeAttr('class')
+    for (const name of Object.keys(attrs)) {
+      const lowerName = name.toLowerCase()
+      const value = String(attrs[name] || '')
+      if (
+        lowerName.startsWith('on') ||
+        lowerName === 'srcdoc' ||
+        ((lowerName === 'href' || lowerName === 'src') && !/^(#|data:font\/|$)/i.test(value)) ||
+        (lowerName === 'style' && /(?:url\s*\(|expression\s*\()/i.test(value))
+      ) {
+        el.removeAttr(name)
+      }
+    }
+  })
+  const rendered = root.find('.katex').first().length
+    ? root.find('.katex').first()
+    : root.find('.katex-display').first()
+  if (rendered.length === 0) throw new Error('公式渲染结果无效')
+  rendered.attr('data-ppt-formula-latex', normalizedLatex)
+  rendered.attr('data-ppt-formula-display', displayMode ? 'true' : 'false')
+  if (blockId) rendered.attr('data-block-id', blockId)
+  return root.html() || ''
+}
+
+function normalizeFormulaSource(value: string): string {
+  return value.replace(/\s+/g, ' ').trim()
+}
+
+function replaceSourceFormulaHtml(
+  html: string,
+  formula: { latex: string; originalLatex: string; displayMode: boolean }
+): string | null {
+  const original = normalizeFormulaSource(formula.originalLatex || '')
+  const buildDelimited = (latex: string): string =>
+    formula.displayMode ? `\\[${latex}\\]` : `\\(${latex}\\)`
+  const candidates = [
+    {
+      pattern: /\$\$([\s\S]+?)\$\$/g
+    },
+    {
+      pattern: /\\\[([\s\S]+?)\\\]/g
+    },
+    {
+      pattern: /\\\(([\s\S]+?)\\\)/g
+    },
+    {
+      pattern: /\$([^\n$]+?)\$/g
+    }
+  ]
+
+  for (const candidate of candidates) {
+    const matches = Array.from(html.matchAll(candidate.pattern))
+    if (matches.length === 0) continue
+    const exact = matches.find((match) => normalizeFormulaSource(match[1] || '') === original)
+    const match = exact || (matches.length === 1 ? matches[0] : null)
+    if (!match || match.index === undefined) continue
+    return (
+      html.slice(0, match.index) +
+      buildDelimited(formula.latex) +
+      html.slice(match.index + match[0].length)
+    )
+  }
+
+  return null
+}
+
+function htmlHasFormulaDelimiter(html: string): boolean {
+  return /(?:\$\$|\\\(|\\\[|\$[^\s$])/.test(html)
+}
+
+function isSafeFormulaHostFallback(html: string): boolean {
+  if (htmlHasFormulaDelimiter(html)) return false
+  const text = normalizeText(cheerio.load(`<root>${html}</root>`, { scriptingEnabled: false }, false).text())
+  return !text
+}
+
+function replaceSourceFormulaWithHtml(
+  html: string,
+  formula: { matchLatex: string; replacementHtml: string }
+): string | null {
+  const original = normalizeFormulaSource(formula.matchLatex || '')
+  if (!original) return null
+  const candidates = [
+    /\$\$([\s\S]+?)\$\$/g,
+    /\\\[([\s\S]+?)\\\]/g,
+    /\\\(([\s\S]+?)\\\)/g,
+    /\$([^\n$]+?)\$/g
+  ]
+
+  for (const pattern of candidates) {
+    const matches = Array.from(html.matchAll(pattern))
+    if (matches.length === 0) continue
+    const exact = matches.find((match) => normalizeFormulaSource(match[1] || '') === original)
+    const match = exact || (matches.length === 1 ? matches[0] : null)
+    if (!match || match.index === undefined) continue
+    return (
+      html.slice(0, match.index) +
+      formula.replacementHtml +
+      html.slice(match.index + match[0].length)
+    )
+  }
+
+  return null
+}
+
 export function patchGenericElementProperties(
   html: string,
   selector: string,
@@ -521,6 +652,12 @@ export function patchGenericElementProperties(
     html?: string
     text?: string
     textTarget?: unknown
+    formula?: {
+      latex?: unknown
+      html?: unknown
+      displayMode?: unknown
+      originalLatex?: unknown
+    }
     style?: {
       zIndex?: unknown
       opacity?: unknown
@@ -552,7 +689,31 @@ export function patchGenericElementProperties(
   }
   if (!target || target.length === 0) return html
 
-  if (typeof patch.html === 'string') {
+  if (patch.formula && typeof patch.formula.html === 'string') {
+    const latex = typeof patch.formula.latex === 'string' ? patch.formula.latex : ''
+    const originalLatex =
+      typeof patch.formula.originalLatex === 'string' ? patch.formula.originalLatex : ''
+    const displayMode = patch.formula.displayMode === true
+    const nextHtml = stripUnsafeFormulaHtml(
+      patch.formula.html,
+      latex,
+      displayMode
+    )
+    const currentHtml = target.html() || ''
+    const sourceReplaced = replaceSourceFormulaHtml(currentHtml, {
+      latex,
+      originalLatex,
+      displayMode
+    })
+    if (sourceReplaced !== null) {
+      target.html(sourceReplaced)
+    } else {
+      const renderedFormula = target.find('.katex, .katex-display').first()
+      if (renderedFormula.length > 0) renderedFormula.replaceWith(nextHtml)
+      else if (isSafeFormulaHostFallback(currentHtml)) target.html(nextHtml)
+      else throw new Error('公式定位失败，未改动原文；请重新选择公式后再编辑')
+    }
+  } else if (typeof patch.html === 'string') {
     const nextHtml = stripUnsafeRichTextHtml(patch.html)
     const text = normalizeText(
       cheerio.load(`<root>${nextHtml}</root>`, { scriptingEnabled: false }, false).text()
@@ -636,6 +797,11 @@ export function ensureElementAnchorInHtml(
     pageId: string
     selector: string
     elementTag?: string
+    formula?: {
+      latex?: unknown
+      html?: unknown
+      displayMode?: unknown
+    }
   }
 ): { html: string; selector: string; blockId: string; changed: boolean } {
   const $ = cheerio.load(html, { scriptingEnabled: false })
@@ -646,6 +812,24 @@ export function ensureElementAnchorInHtml(
     throw new Error('无法锚定元素：selector 无效')
   }
   if (!target || target.length === 0) {
+    if (args.formula && typeof args.formula.html === 'string') {
+      const latex = typeof args.formula.latex === 'string' ? args.formula.latex : ''
+      const displayMode = args.formula.displayMode === true
+      const blockId = allocateBlockId()
+      const formulaHtml = stripUnsafeFormulaHtml(args.formula.html, latex, displayMode, blockId)
+      const nextHtml = replaceSourceFormulaWithHtml(html, {
+        matchLatex: latex,
+        replacementHtml: formulaHtml
+      })
+      if (nextHtml) {
+        return {
+          html: nextHtml,
+          selector: stableSelectorFor(args.pageId, blockId),
+          blockId,
+          changed: true
+        }
+      }
+    }
     throw new Error('无法锚定元素：页面内容可能已经变化')
   }
   assertAnchorableElement(target)

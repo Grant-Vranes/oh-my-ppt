@@ -120,7 +120,8 @@ export async function resolveEditContext(
     topic: common.topic,
     deckTitle: common.deckTitle,
     appLocale: common.appLocale,
-    fontSelection: common.fontSelection
+    fontSelection: common.fontSelection,
+    animationPreferences: null
   }
 }
 

@@ -2,8 +2,15 @@ import { buildElementPickerCoreScript } from './element-picker-core'
 
 export const INSPECTOR_CONSOLE_PREFIX = '__PPT_INSPECTOR__:'
 
-export function buildInspectorInjectScript(options?: { mode?: 'inspect' | 'text-edit' }): string {
-  const mode = options?.mode === 'text-edit' ? 'text-edit' : 'inspect'
+export function buildInspectorInjectScript(options?: {
+  mode?: 'inspect' | 'text-edit' | 'animation-select'
+}): string {
+  const mode =
+    options?.mode === 'text-edit'
+      ? 'text-edit'
+      : options?.mode === 'animation-select'
+        ? 'animation-select'
+        : 'inspect'
   return `
 (() => {
   const STATE_KEY = "__pptInspectorState";
@@ -234,6 +241,72 @@ export function buildInspectorInjectScript(options?: { mode?: 'inspect' | 'text-
 
   const normalizeText = (value) => String(value || "").replace(/\\s+/g, " ").trim();
 
+  const readDelimitedFormula = (text) => {
+    const trimmed = String(text || "").trim();
+    if (trimmed.startsWith("$$") && trimmed.endsWith("$$") && trimmed.length > 4) {
+      return { latex: trimmed.slice(2, -2).trim(), displayMode: true };
+    }
+    const displayStart = text.indexOf("$$");
+    const displayEnd = displayStart >= 0 ? text.indexOf("$$", displayStart + 2) : -1;
+    if (displayStart >= 0 && displayEnd > displayStart) {
+      return { latex: text.slice(displayStart + 2, displayEnd).trim(), displayMode: true };
+    }
+    const bracketStart = text.indexOf("\\\\[");
+    const bracketEnd = bracketStart >= 0 ? text.indexOf("\\\\]", bracketStart + 2) : -1;
+    if (bracketStart >= 0 && bracketEnd > bracketStart) {
+      return { latex: text.slice(bracketStart + 2, bracketEnd).trim(), displayMode: true };
+    }
+    const inlineStart = text.indexOf("\\\\(");
+    const inlineEnd = inlineStart >= 0 ? text.indexOf("\\\\)", inlineStart + 2) : -1;
+    if (inlineStart >= 0 && inlineEnd > inlineStart) {
+      return { latex: text.slice(inlineStart + 2, inlineEnd).trim(), displayMode: false };
+    }
+    const singleStart = text.indexOf("$");
+    const singleEnd = singleStart >= 0 ? text.indexOf("$", singleStart + 1) : -1;
+    if (singleStart >= 0 && singleEnd > singleStart) {
+      return { latex: text.slice(singleStart + 1, singleEnd).trim(), displayMode: false };
+    }
+    return { latex: "", displayMode: false };
+  };
+
+  const readFormulaMetadata = (element) => {
+    if (!(element instanceof Element)) return undefined;
+    const rendered = element.matches(".katex, .katex-display")
+      ? element
+      : element.querySelector(".katex, .katex-display");
+    const sourceHolder = rendered || element;
+    const explicitLatex =
+      sourceHolder.getAttribute("data-ppt-formula-latex") ||
+      element.getAttribute("data-ppt-formula-latex") ||
+      "";
+    const annotation = rendered
+      ? rendered.querySelector('annotation[encoding="application/x-tex"]')
+      : element.querySelector('annotation[encoding="application/x-tex"]');
+    let latex = explicitLatex || (annotation ? annotation.textContent || "" : "");
+    let sourceDisplayMode = false;
+    if (!latex) {
+      const text = element.textContent || "";
+      const delimited = readDelimitedFormula(text);
+      if (!delimited.latex) return undefined;
+      latex = delimited.latex.trim();
+      sourceDisplayMode = delimited.displayMode;
+    }
+    if (!latex) return undefined;
+    const clone = (rendered || element).cloneNode(true);
+    if (clone instanceof Element) {
+      clone.classList.remove(HIGHLIGHT_CLASS);
+      clone.querySelectorAll("." + HIGHLIGHT_CLASS).forEach((child) => {
+        if (child instanceof Element) child.classList.remove(HIGHLIGHT_CLASS);
+      });
+    }
+    const html = rendered ? clone.outerHTML || "" : clone.innerHTML || "";
+    const displayMode =
+      sourceHolder.getAttribute("data-ppt-formula-display") === "true" ||
+      sourceHolder.classList.contains("katex-display") ||
+      sourceDisplayMode;
+    return { latex: latex.trim(), html, displayMode };
+  };
+
   const hasOnlyEditableTextChildren = (element) => {
     return Array.from(element.children || []).every((child) => {
       const tag = child.tagName ? child.tagName.toLowerCase() : "";
@@ -318,6 +391,12 @@ export function buildInspectorInjectScript(options?: { mode?: 'inspect' | 'text-
     isSelectable: isUsableTarget,
     getSelector: buildStableSelector,
     resolveTarget: ({ origin, clientX, clientY, target, pickAtPointBase }) => {
+      const formulaTarget =
+        pickFormulaTarget(origin) ||
+        pickFormulaTarget(target) ||
+        pickFormulaTargetAtPoint(origin, clientX, clientY) ||
+        pickFormulaTargetAtPoint(target, clientX, clientY);
+      if (formulaTarget) return formulaTarget;
       if (!isGeneratedBackgroundTarget(target)) return target;
       return pickWithoutGeneratedBackground(origin, clientX, clientY, pickAtPointBase) || target;
     }
@@ -340,7 +419,110 @@ export function buildInspectorInjectScript(options?: { mode?: 'inspect' | 'text-
 
   const pickFormulaTarget = (origin) => {
     if (!(origin instanceof Element) || MODE === "text-edit") return null;
-    return findAtomicHost(origin, ".katex, .katex-display, math, annotation, semantics");
+    let candidate = origin;
+    let formula = null;
+    while (candidate && candidate instanceof Element) {
+      if (candidate.classList.contains("katex")) {
+        formula = candidate;
+        break;
+      }
+      if (!formula && candidate.classList.contains("katex-display")) formula = candidate;
+      const parent = candidate.parentElement || candidate.parentNode;
+      candidate = parent && parent.nodeType === Node.ELEMENT_NODE ? parent : null;
+    }
+    if (!formula || !isInsidePageRoot(formula)) return null;
+    return formula;
+  };
+
+  // Keep this formula hit-test block in sync with edit-mode-script.ts.
+  const getFormulaHitElement = (formula) => {
+    if (!(formula instanceof Element)) return null;
+    const htmlLayer = formula.querySelector(".katex-html");
+    if (htmlLayer instanceof Element) return htmlLayer;
+    if (formula.classList.contains("katex-display")) {
+      const innerKatex = formula.querySelector(".katex");
+      if (innerKatex instanceof Element) return innerKatex;
+    }
+    return formula;
+  };
+
+  const getFormulaHitBounds = (formula) => {
+    const hitElement = getFormulaHitElement(formula);
+    if (!(hitElement instanceof Element)) return null;
+    const base = hitElement.getBoundingClientRect();
+    let left = Infinity;
+    let top = Infinity;
+    let right = -Infinity;
+    let bottom = -Infinity;
+    const includeRect = (rect) => {
+      if (!rect || (rect.width < 0.5 && rect.height < 0.5)) return;
+      left = Math.min(left, rect.left);
+      top = Math.min(top, rect.top);
+      right = Math.max(right, rect.right);
+      bottom = Math.max(bottom, rect.bottom);
+    };
+    Array.from(hitElement.getClientRects ? hitElement.getClientRects() : [base]).forEach(includeRect);
+    hitElement.querySelectorAll("*").forEach((child) => {
+      if (!(child instanceof Element)) return;
+      if (child.closest(".katex-mathml")) return;
+      Array.from(child.getClientRects ? child.getClientRects() : [child.getBoundingClientRect()]).forEach(includeRect);
+    });
+    if (!Number.isFinite(left) || !Number.isFinite(top) || !Number.isFinite(right) || !Number.isFinite(bottom)) {
+      return {
+        left: base.left,
+        top: base.top,
+        right: base.right,
+        bottom: base.bottom,
+        width: Math.max(1, base.width),
+        height: Math.max(1, base.height),
+      };
+    }
+    return {
+      left,
+      top,
+      right,
+      bottom,
+      width: Math.max(1, right - left),
+      height: Math.max(1, bottom - top),
+    };
+  };
+
+  const isPointInsideFormulaBounds = (formula, clientX, clientY) => {
+    const bounds = getFormulaHitBounds(formula);
+    if (!bounds) return false;
+    return clientX >= bounds.left && clientX <= bounds.right && clientY >= bounds.top && clientY <= bounds.bottom;
+  };
+
+  const pickFormulaTargetAtPoint = (origin, clientX, clientY) => {
+    if (!(origin instanceof Element) || MODE === "text-edit" || !Number.isFinite(clientX) || !Number.isFinite(clientY)) return null;
+    const root = getPageRoot(origin);
+    if (!root) return null;
+    const formulas = [];
+    const addFormula = (formula) => {
+      if (!(formula instanceof Element)) return;
+      const target = formula.classList.contains("katex-display")
+        ? formula.querySelector(".katex") || formula
+        : formula;
+      if (!(target instanceof Element) || !isInsidePageRoot(target) || formulas.includes(target)) return;
+      if (isPointInsideFormulaBounds(target, clientX, clientY)) formulas.push(target);
+    };
+    if (origin.matches(".katex, .katex-display")) addFormula(origin);
+    origin.querySelectorAll(".katex, .katex-display").forEach(addFormula);
+    if (!formulas.length && root !== origin) {
+      root.querySelectorAll(".katex, .katex-display").forEach(addFormula);
+    }
+    if (!formulas.length) return null;
+    formulas.sort((a, b) => {
+      const aBounds = getFormulaHitBounds(a);
+      const bBounds = getFormulaHitBounds(b);
+      const aArea = (aBounds?.width || Number.MAX_SAFE_INTEGER) * (aBounds?.height || Number.MAX_SAFE_INTEGER);
+      const bArea = (bBounds?.width || Number.MAX_SAFE_INTEGER) * (bBounds?.height || Number.MAX_SAFE_INTEGER);
+      if (aArea !== bArea) return aArea - bArea;
+      if (a.classList.contains("katex") && !b.classList.contains("katex")) return -1;
+      if (!a.classList.contains("katex") && b.classList.contains("katex")) return 1;
+      return 0;
+    });
+    return formulas[0] || null;
   };
 
   const pickSvgTarget = (origin) => {
@@ -376,10 +558,16 @@ export function buildInspectorInjectScript(options?: { mode?: 'inspect' | 'text-
     if (atomicTarget) return atomicTarget;
 
     if (Number.isFinite(clientX) && Number.isFinite(clientY)) {
+      const originFormulaTarget = pickFormulaTargetAtPoint(origin, clientX, clientY);
+      if (originFormulaTarget) return originFormulaTarget;
       const pointTarget = getPointTarget(origin, clientX, clientY);
       const artTextPointTarget = pickArtTextTarget(pointTarget);
       if (artTextPointTarget) return artTextPointTarget;
-      const atomicPointTarget = pickCanvasTarget(pointTarget) || pickFormulaTarget(pointTarget) || pickSvgTarget(pointTarget);
+      const atomicPointTarget =
+        pickCanvasTarget(pointTarget) ||
+        pickFormulaTarget(pointTarget) ||
+        pickFormulaTargetAtPoint(pointTarget, clientX, clientY) ||
+        pickSvgTarget(pointTarget);
       if (atomicPointTarget) return atomicPointTarget;
       if (pointTarget) return promoteToWrapper(pointTarget);
     }
@@ -401,10 +589,7 @@ export function buildInspectorInjectScript(options?: { mode?: 'inspect' | 'text-
     style.id = STYLE_ID;
     const highlightColor = MODE === "text-edit" ? "#16a34a" : "#3b82f6";
     style.textContent = \`
-      html, body, body * {
-        animation: none !important;
-        transition: none !important;
-      }
+      \${shouldFreezeMotion ? 'html, body, body * {\\n        animation: none !important;\\n        transition: none !important;\\n      }\\n' : ''}
       .\${HIGHLIGHT_CLASS} {
         cursor: \${MODE === "text-edit" ? "text" : "crosshair"} !important;
       }
@@ -421,6 +606,7 @@ export function buildInspectorInjectScript(options?: { mode?: 'inspect' | 'text-
   };
 
   let activeElement = null;
+  let lockedElement = null;
   let highlightOverlayElement = null;
   const restoredAnimationStyles = [];
   const cursorHost = document.body || document.documentElement;
@@ -428,9 +614,11 @@ export function buildInspectorInjectScript(options?: { mode?: 'inspect' | 'text-
   if (cursorHost && cursorHost.style) {
     cursorHost.style.cursor = MODE === "text-edit" ? "text" : "crosshair";
   }
+  const shouldFreezeMotion = MODE === "inspect";
   ensureStyle();
 
   const freezeAnimationsForInspect = () => {
+    if (!shouldFreezeMotion) return;
     if (window.PPT && typeof window.PPT.finishAnimations === "function") {
       try { window.PPT.finishAnimations(); } catch (_error) {}
     } else if (window.PPT && typeof window.PPT.stopAnimations === "function") {
@@ -508,7 +696,25 @@ export function buildInspectorInjectScript(options?: { mode?: 'inspect' | 'text-
 
   freezeAnimationsForInspect();
 
-  const getVisualBounds = (element) => {
+  const getFormulaVisualElement = (element) => {
+    if (!(element instanceof Element)) return null;
+    const formula = element.matches(".katex, .katex-display")
+      ? element
+      : element.closest(".katex, .katex-display");
+    if (!(formula instanceof Element)) return null;
+    const htmlLayer = formula.matches(".katex-html") ? formula : formula.querySelector(".katex-html");
+    if (htmlLayer instanceof Element) return htmlLayer;
+    if (formula.classList.contains("katex-display")) {
+      const innerKatex = formula.querySelector(".katex");
+      if (innerKatex instanceof Element) return innerKatex;
+    }
+    return formula;
+  };
+
+  const getClientRectBounds = (element) => {
+    if (!(element instanceof Element)) {
+      return { left: 0, top: 0, right: 0, bottom: 0, width: 1, height: 1 };
+    }
     const base = element.getBoundingClientRect();
     let left = base.left;
     let top = base.top;
@@ -524,7 +730,35 @@ export function buildInspectorInjectScript(options?: { mode?: 'inspect' | 'text-
     };
 
     Array.from(element.getClientRects ? element.getClientRects() : [base]).forEach(includeRect);
-    element.querySelectorAll("*").forEach((child) => {
+    return {
+      left,
+      top,
+      right,
+      bottom,
+      width: Math.max(1, right - left),
+      height: Math.max(1, bottom - top),
+    };
+  };
+
+  const getFormulaVisualBounds = (element) => {
+    const boundsRoot = getFormulaVisualElement(element);
+    if (!boundsRoot) return getClientRectBounds(element);
+    const base = boundsRoot.getBoundingClientRect();
+    let left = base.left;
+    let top = base.top;
+    let right = base.right;
+    let bottom = base.bottom;
+
+    const includeRect = (rect) => {
+      if (!rect || (rect.width < 0.5 && rect.height < 0.5)) return;
+      left = Math.min(left, rect.left);
+      top = Math.min(top, rect.top);
+      right = Math.max(right, rect.right);
+      bottom = Math.max(bottom, rect.bottom);
+    };
+
+    Array.from(boundsRoot.getClientRects ? boundsRoot.getClientRects() : [base]).forEach(includeRect);
+    boundsRoot.querySelectorAll("*").forEach((child) => {
       if (!(child instanceof Element)) return;
       if (child.id === OVERLAY_ID) return;
       if (["SCRIPT", "STYLE", "LINK", "META", "TITLE"].includes(child.tagName)) return;
@@ -535,9 +769,16 @@ export function buildInspectorInjectScript(options?: { mode?: 'inspect' | 'text-
     return {
       left,
       top,
+      right,
+      bottom,
       width: Math.max(1, right - left),
       height: Math.max(1, bottom - top),
     };
+  };
+
+  const getVisualBounds = (element) => {
+    if (getFormulaVisualElement(element)) return getFormulaVisualBounds(element);
+    return getClientRectBounds(element);
   };
 
   const ensureHighlightOverlay = () => {
@@ -576,6 +817,7 @@ export function buildInspectorInjectScript(options?: { mode?: 'inspect' | 'text-
   };
 
   const clearActive = () => {
+    lockedElement = null;
     if (activeElement) {
       activeElement.classList.remove(HIGHLIGHT_CLASS);
       activeElement = null;
@@ -583,7 +825,28 @@ export function buildInspectorInjectScript(options?: { mode?: 'inspect' | 'text-
     updateHighlightOverlay();
   };
 
+  const setLocked = (el) => {
+    lockedElement = el instanceof Element ? el : null;
+    setActive(lockedElement);
+  };
+
+  const restoreActive = (selector) => {
+    try {
+      if (!selector || typeof selector !== "string") return false;
+      const target = document.querySelector(selector);
+      if (!(target instanceof Element)) return false;
+      setLocked(target);
+      return true;
+    } catch (_error) {
+      return false;
+    }
+  };
+
   const onHover = (target) => {
+    if (lockedElement) {
+      setActive(lockedElement);
+      return;
+    }
     if (!target) {
       clearActive();
       return;
@@ -592,6 +855,7 @@ export function buildInspectorInjectScript(options?: { mode?: 'inspect' | 'text-
   };
 
   const onPick = (target) => {
+    setLocked(target);
     const selector = buildStableSelector(target);
     if (!selector) {
       console.log(LOG_PREFIX + JSON.stringify({
@@ -604,8 +868,9 @@ export function buildInspectorInjectScript(options?: { mode?: 'inspect' | 'text-
     const elementTag = target.tagName ? target.tagName.toLowerCase() : "";
     const rawText = normalizeText(target.textContent);
     const elementText = rawText.length > 80 ? rawText.slice(0, 80) + "…" : rawText;
+    const formula = readFormulaMetadata(target);
     const computed = window.getComputedStyle(target);
-    const rect = target.getBoundingClientRect();
+    const rect = getVisualBounds(target);
 
     console.log(LOG_PREFIX + JSON.stringify({
       type: "selected",
@@ -623,6 +888,7 @@ export function buildInspectorInjectScript(options?: { mode?: 'inspect' | 'text-
         textAlign: computed.textAlign || "",
         backgroundColor: computed.backgroundColor || ""
       },
+      formula,
       bounds: {
         x: Math.round(rect.left * 10) / 10,
         y: Math.round(rect.top * 10) / 10,
@@ -653,7 +919,7 @@ export function buildInspectorInjectScript(options?: { mode?: 'inspect' | 'text-
     }
     const style = document.getElementById(STYLE_ID);
     if (style) style.remove();
-    restoreFrozenAnimationStyles();
+    if (shouldFreezeMotion) restoreFrozenAnimationStyles();
     if (cursorHost && cursorHost.style) {
       cursorHost.style.cursor = previousCursor || "";
     }
@@ -669,6 +935,7 @@ export function buildInspectorInjectScript(options?: { mode?: 'inspect' | 'text-
   window.addEventListener("resize", updateHighlightOverlay, true);
 
   window[STATE_KEY] = { active: true, cleanup };
+  window.__pptInspectorRestoreSelection = restoreActive;
 })();
   `
 }

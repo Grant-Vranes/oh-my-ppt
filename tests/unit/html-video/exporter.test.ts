@@ -24,7 +24,8 @@ import {
   normalizeCapturedVideoFrameImage,
   normalizeVideoExportCaptureFps,
   normalizeVideoExportFps,
-  normalizeVideoExportSecondsPerPage
+  normalizeVideoExportSecondsPerPage,
+  resolveVideoExportFrameLayout
 } from '../../../src/main/utils/html-video/exporter'
 
 describe('html video exporter', () => {
@@ -67,5 +68,29 @@ describe('html video exporter', () => {
     expect(normalizeVideoExportFps(5)).toBe(12)
     expect(normalizeVideoExportCaptureFps(30, 24)).toBe(24)
     expect(normalizeVideoExportSecondsPerPage(0)).toBe(1)
+  })
+
+  it('uses a 2K video frame and centers non-16:9 slide canvases inside it', () => {
+    expect(VIDEO_EXPORT_FRAME_SIZE).toEqual({ width: 2560, height: 1440 })
+
+    const portrait = resolveVideoExportFrameLayout({
+      frameWidth: 2560,
+      frameHeight: 1440,
+      slideWidth: 900,
+      slideHeight: 1600
+    })
+    expect(portrait.scale).toBeCloseTo(1440 / 1600)
+    expect(portrait.top).toBeCloseTo(0)
+    expect(portrait.left).toBeCloseTo((2560 - 900 * (1440 / 1600)) / 2)
+
+    const square = resolveVideoExportFrameLayout({
+      frameWidth: 2560,
+      frameHeight: 1440,
+      slideWidth: 1200,
+      slideHeight: 1200
+    })
+    expect(square.scale).toBeCloseTo(1440 / 1200)
+    expect(square.top).toBeCloseTo(0)
+    expect(square.left).toBeCloseTo(560)
   })
 })

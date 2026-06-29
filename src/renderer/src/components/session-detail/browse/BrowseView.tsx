@@ -26,13 +26,13 @@ import { limitBrowsePreviewIds } from './browse-preview-utils'
 import { useSessionReorderPages } from '../hooks/useSessionReorderPages'
 import { useSessionPageActions } from '../hooks/useSessionPageActions'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/Tooltip'
+import { isDefaultSlideSize, trySessionSlideSize } from '@shared/slide-size'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '../../ui/DropdownMenu'
-import { isDefaultSlideSize, trySessionSlideSize } from '@shared/slide-size'
 
 /** Keep recently-scrolled-past webviews alive as buffer */
 const VISIBLE_CACHE = 20

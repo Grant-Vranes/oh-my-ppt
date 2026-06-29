@@ -766,14 +766,15 @@ export function registerExportHandlers(ctx: IpcContext): void {
         filePath: saveResult.filePath,
         fps,
         secondsPerPage,
-        width: slideSize.width,
-        height: slideSize.height,
+        slideWidth: slideSize.width,
+        slideHeight: slideSize.height,
         sessionPageId: requestedPageId || undefined
       })
       const exported = await exportHtmlPagesToVideo({
         pages,
         outputPath: saveResult.filePath,
         tempRootDir: path.dirname(projectDir),
+        slideSize,
         fps,
         captureFps:
           payload && typeof payload === 'object'

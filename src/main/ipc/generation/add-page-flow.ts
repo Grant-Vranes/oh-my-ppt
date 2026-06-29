@@ -45,6 +45,7 @@ export type AddPageContext = {
   styleKey: string
   styleName: string
   styleVersion: string
+  slideSize: import('@shared/slide-size').SlideSizePreset
   topic: string
   deckTitle: string
   appLocale: 'zh' | 'en'
@@ -206,7 +207,7 @@ export async function executeAddPageGeneration(
       pageNumber: newPageNumber,
       pageId: newPageId,
       title: planResult.title
-    }),
+    }, context.slideSize),
     'utf-8'
   )
 
@@ -284,6 +285,7 @@ export async function executeAddPageGeneration(
         styleKey: context.styleKey,
         styleName: context.styleName,
         styleVersion: context.styleVersion,
+        slideSize: context.slideSize,
         appLocale: context.appLocale,
         topic: context.topic,
         deckTitle: context.deckTitle,
@@ -407,7 +409,8 @@ export async function executeAddPageGeneration(
           title: page.title,
           htmlPath: path.basename(page.htmlPath)
         })
-      )
+      ),
+      context.slideSize
     ),
     'utf-8'
   )

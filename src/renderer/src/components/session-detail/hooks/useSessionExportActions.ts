@@ -1,10 +1,16 @@
 import { useMemo } from 'react'
 import { ipc } from '@renderer/lib/ipc'
-import { useGenerateStore, useSessionDetailUiStore, useToastStore } from '@renderer/store'
+import {
+  useGenerateStore,
+  useSessionDetailUiStore,
+  useSessionStore,
+  useToastStore
+} from '@renderer/store'
 import { useT } from '@renderer/i18n'
 import { normalizePagesForSelection } from '../shared/pageUtils'
 import { startExportProgressToast } from './exportProgressToast'
 import type { ExportKind, ExportProgressPayload } from '@shared/export-progress.js'
+import { isDefaultSlideSize, trySessionSlideSize } from '@shared/slide-size'
 
 type PptxExportOptions = {
   imageOnly?: boolean
@@ -48,6 +54,7 @@ export function useSessionExportActions(sessionId: string): {
   exportPng: () => Promise<void>
   exportVideo: (options?: VideoExportOptions) => Promise<void>
   exportPptx: (options?: PptxExportOptions) => Promise<void>
+  canExportPptx: boolean
   exportSlidePack: () => Promise<void>
   exportSessionZip: () => Promise<void>
   exportOutlinesMarkdown: () => Promise<void>
@@ -73,6 +80,9 @@ export function useSessionExportActions(sessionId: string): {
   )
   const selectedPageId = useSessionDetailUiStore((state) => state.selectedPageId)
   const currentPages = useGenerateStore((state) => state.currentPages)
+  const currentSession = useSessionStore((state) => state.currentSession)
+  const slideSize = trySessionSlideSize(currentSession)
+  const canExportPptx = slideSize ? isDefaultSlideSize(slideSize) : false
 
   const pages = useMemo(() => normalizePagesForSelection(currentPages), [currentPages])
   const selectedPage = useMemo(
@@ -284,6 +294,10 @@ export function useSessionExportActions(sessionId: string): {
   const exportPptx = async (options?: PptxExportOptions): Promise<void> => {
     const detailState = useSessionDetailUiStore.getState()
     if (!sessionId || detailState.isExportingPptx) return
+    if (!canExportPptx) {
+      toastError('当前 PPTX 导出仅支持 16:9。请导出 PNG、PDF 或视频。')
+      return
+    }
     const imageOnly = options?.imageOnly === true
     detailState.setIsExportingPptx(true)
     const progressToast = createExportProgressToast({
@@ -435,6 +449,7 @@ export function useSessionExportActions(sessionId: string): {
     exportPng,
     exportVideo,
     exportPptx,
+    canExportPptx,
     exportSlidePack,
     exportSessionZip,
     exportOutlinesMarkdown,

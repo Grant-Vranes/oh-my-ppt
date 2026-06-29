@@ -21,6 +21,9 @@ export const normalizeSession = (session: Record<string, unknown> | null | undef
     ...session,
     styleId: session.styleId ?? session.style_id ?? null,
     page_count: session.page_count ?? session.pageCount ?? null,
+    slideSizeId: session.slideSizeId ?? session.slide_size_id ?? null,
+    slideWidth: session.slideWidth ?? session.slide_width ?? null,
+    slideHeight: session.slideHeight ?? session.slide_height ?? null,
     referenceDocumentPath:
       session.referenceDocumentPath ?? session.reference_document_path ?? null,
     reference_document_path:

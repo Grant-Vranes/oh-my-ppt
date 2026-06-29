@@ -326,7 +326,8 @@ export async function executeTemplateDeckGeneration(
           title: titleByPageId.get(page.pageId) || page.title,
           htmlPath: path.basename(page.htmlPath)
         })
-      )
+      ),
+      context.slideSize
     ),
     'utf-8'
   )
@@ -463,6 +464,7 @@ export async function executeTemplateDeckGeneration(
     styleKey: context.styleKey,
     styleName: context.styleName,
     styleVersion: context.styleVersion,
+    slideSize: context.slideSize,
     appLocale: context.appLocale,
     topic: context.topic,
     deckTitle: context.deckTitle,

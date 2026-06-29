@@ -10,6 +10,10 @@ import { recordHistoryOperationStrict } from '../history/git-history-service'
 import { createDefaultDesignContract } from '../utils/design-contract'
 import { resolveUsableStyleId } from '../utils/style-skills'
 import { findSlidePackResourceZipInsideZip } from './slide-pack-archive'
+import {
+  requireSlideSizeFromHtml,
+  type SlideSizePreset
+} from '@shared/slide-size'
 
 const MAX_IMPORT_FILE_BYTES = 300 * 1024 * 1024
 const MAX_EXTRACTED_BYTES = 600 * 1024 * 1024
@@ -433,7 +437,12 @@ const buildImportedPages = (
     htmlFileName: page.htmlFileName
   }))
 
-const rewriteIndexHtml = async (projectDir: string, title: string, pages: ImportedPage[]): Promise<void> => {
+const rewriteIndexHtml = async (
+  projectDir: string,
+  title: string,
+  pages: ImportedPage[],
+  slideSize: SlideSizePreset
+): Promise<void> => {
   log.info('[session-import] rewrite index start', {
     projectDir,
     title,
@@ -446,7 +455,11 @@ const rewriteIndexHtml = async (projectDir: string, title: string, pages: Import
     title: page.title,
     htmlPath: page.htmlFileName
   }))
-  await fs.promises.writeFile(path.join(projectDir, 'index.html'), buildProjectIndexHtml(title, deckPages), 'utf-8')
+  await fs.promises.writeFile(
+    path.join(projectDir, 'index.html'),
+    buildProjectIndexHtml(title, deckPages, slideSize),
+    'utf-8'
+  )
   log.info('[session-import] rewrite index completed', {
     projectDir,
     pageCount: pages.length
@@ -544,7 +557,15 @@ export async function importSessionFile(
     })
 
     const importedPages = buildImportedPages(projectDir, sourcePages)
-    await rewriteIndexHtml(projectDir, title, importedPages)
+    const sourceSizeHtml = await fs.promises
+      .readFile(path.join(projectDir, 'index.html'), 'utf-8')
+      .catch(async () =>
+        importedPages[0]
+          ? fs.promises.readFile(importedPages[0].htmlPath, 'utf-8').catch(() => '')
+          : ''
+      )
+    const slideSize = requireSlideSizeFromHtml(sourceSizeHtml)
+    await rewriteIndexHtml(projectDir, title, importedPages, slideSize)
     const styleId = resolveUsableStyleId()
 
     const metadata: Record<string, unknown> = {
@@ -561,6 +582,9 @@ export async function importSessionFile(
       sessionId,
       title,
       pageCount: importedPages.length,
+      slideSizeId: slideSize.id,
+      slideWidth: slideSize.width,
+      slideHeight: slideSize.height,
       importKind: prepared.importKind
     })
     await ctx.db.createSession({
@@ -569,6 +593,9 @@ export async function importSessionFile(
       topic: title,
       styleId,
       pageCount: importedPages.length,
+      slideSizeId: slideSize.id,
+      slideWidth: slideSize.width,
+      slideHeight: slideSize.height,
       provider: 'import',
       model: 'session-file-import'
     })

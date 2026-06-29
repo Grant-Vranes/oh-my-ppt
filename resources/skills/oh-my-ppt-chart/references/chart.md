@@ -7,7 +7,7 @@ Deep-dive examples, layout integration patterns, and Chart.js options that work 
 Copy this pattern for every chart. Adapt the type, data, and options.
 
 ```html
-<!-- height calc @ppt-chart-height=560: content slot = 900 - 64(p-8) - 80(title/subtitle) - 24(gap-6) - 32(reserve) = 700; support note = 140; chart slot = 700 - 140 = 560; chart height = hero/main = 560 -->
+<!-- height calc @ppt-chart-height=560: default 900 canvas example; content slot = 900 - 64(p-8) - 80(title/subtitle) - 24(gap-6) - 32(reserve) = 700; support note = 140; chart slot = 700 - 140 = 560; chart height = hero/main = 560 -->
 <div class="ppt-chart-frame relative h-[560px] w-full overflow-hidden">
   <canvas id="chart-sales" class="h-full w-full"></canvas>
 </div>
@@ -55,10 +55,10 @@ The `.ppt-chart-frame` parent must have an explicit `h-[Npx]` height. Chart.js r
 
 ### Mandatory: calculate slot, choose chart height, then write — numbers must match
 
-Before writing the chart frame, calculate the chart slot, choose the actual chart frame height for the slide role, and write both in an HTML comment immediately before the chart frame. The comment MUST include the dedicated marker `@ppt-chart-height=N`, and the marker value MUST equal `h-[Npx]`. Never put `@ppt-chart-height=...` as visible text inside `.ppt-chart-frame`. Two terms: **content slot** = 900 − padding − title − gaps − reserve (the area for the chart plus its support modules); **chart slot** = content slot − support modules. The final `h-[Npx]` MUST equal the chart slot, never the content slot.
+Before writing the chart frame, calculate the chart slot, choose the actual chart frame height for the slide role, and write both in an HTML comment immediately before the chart frame. The comment MUST include the dedicated marker `@ppt-chart-height=N`, and the marker value MUST equal `h-[Npx]`. Never put `@ppt-chart-height=...` as visible text inside `.ppt-chart-frame`. Two terms: **content slot** = current canvas height − padding − title − gaps − reserve (the area for the chart plus its support modules); **chart slot** = content slot − support modules. The final `h-[Npx]` MUST equal the chart slot, never the content slot.
 
 ```html
-<!-- height calc @ppt-chart-height=520: content slot = 900 - 48(p-6) - 80(title+subtitle) - 24(gap) - 40(reserve) = 708 (chart + support area); support cards below = 188; chart slot = 708 - 188 = 520 -> h-[520px] -->
+<!-- height calc @ppt-chart-height=520: default 900 canvas example; content slot = 900 - 48(p-6) - 80(title+subtitle) - 24(gap) - 40(reserve) = 708 (chart + support area); support cards below = 188; chart slot = 708 - 188 = 520 -> h-[520px] -->
 <div class="ppt-chart-frame relative h-[520px] w-full overflow-hidden">
   <canvas id="my-chart" class="h-full w-full"></canvas>
 </div>
@@ -67,7 +67,7 @@ Before writing the chart frame, calculate the chart slot, choose the actual char
 The final number in the comment and `h-[Npx]` MUST match. Do NOT leave a comment such as `chart height = 420` and then use `h-[240px]`; write the final chart-height decision explicitly and copy that exact number into `h-[Npx]`.
 
 Calculation steps:
-1. Start from **900px** (full slide height; runtime page root has no default padding)
+1. Start from the **current canvas height** stated by the layout/canvas prompt (runtime page root has no default padding)
 2. Subtract outer padding (p-6=48, p-8=64)
 3. Subtract all modules above the chart: title, subtitle, metrics row, legends
 4. Subtract all gaps between modules
@@ -117,7 +117,7 @@ Do not generate these patterns:
 
 ```html
 <!-- Comment ends at raw available slot, but frame uses a different number -->
-<!-- height calc: 900 - 48(p-6) - 80(title) - 24(gap) = 748 -->
+<!-- height calc: current canvas height - 48(p-6) - 80(title) - 24(gap) = available content slot -->
 <div class="ppt-chart-frame relative h-[360px] w-full overflow-hidden"></div>
 
 <!-- Tailwind scale shortcut is not a pixel budget -->

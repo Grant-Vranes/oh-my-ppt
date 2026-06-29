@@ -1,14 +1,14 @@
 import type { SessionDeckGenerationContext } from '../tools/types'
 import {
-  CANVAS_CONSTRAINTS,
-  CONTENT_EXPANSION_RULES,
+  buildLayoutCollisionRules,
+  buildPageSemanticStructure,
+  buildCanvasConstraints,
+  buildCanvasScenarioContentRules,
+  buildCanvasScenarioDeliveryGuard,
+  buildCanvasScenarioExpansionRules,
   CONTENT_LANGUAGE_RULES,
   CONTENT_WRITING_RULES,
   FRONTEND_CAPABILITIES,
-  LAYOUT_COLLISION_RULES,
-  LAYOUT_DELIVERY_GUARD,
-  PAGE_SEMANTIC_STRUCTURE,
-  SLIDE_THESIS_RULES,
   SOURCE_DOCUMENT_FACT_RULE,
   SOURCE_DOCUMENT_READ_STRATEGY,
   SOURCE_GROUNDED_EXPANSION_RULES,
@@ -19,6 +19,7 @@ import {
   resolveContextStylePrompt
 } from './shared'
 import { formatAnimationPreferencesForPageWriting } from './animation-preferences'
+import { buildCanvasScenarioBrief, resolveCanvasScenario } from './canvas-scenario'
 
 export function buildDeckAgentSystemPrompt(
   styleId: string | null | undefined,
@@ -58,6 +59,7 @@ export function buildDeckAgentSystemPrompt(
   const animationPreferencePrompt = formatAnimationPreferencesForPageWriting(
     context.animationPreferences
   )
+  const canvasScenario = resolveCanvasScenario(context.slideSize)
   const sourceDocumentInstructions =
     sourceDocumentPaths.length > 0
       ? [
@@ -85,10 +87,12 @@ export function buildDeckAgentSystemPrompt(
     "Put ALL HTML into the tool's content parameter. Do NOT output HTML in your text reply.",
     'A response without successful tool calls is a FAILED generation.',
     '',
-    'You are a PPT generation expert responsible for turning a planned page outline into slide HTML content.',
-    'You run inside a DeepAgents filesystem session and must write each slide into its own /<pageId>.html file through tools.',
+    canvasScenario.identity,
+    `You run inside a DeepAgents filesystem session and must write each ${canvasScenario.pageName} into its own /<pageId>.html file through tools.`,
     '',
-    SLIDE_THESIS_RULES,
+    buildCanvasScenarioBrief(context.slideSize),
+    '',
+    buildCanvasScenarioContentRules(context.slideSize),
     '',
     CONTENT_LANGUAGE_RULES,
     '',
@@ -106,20 +110,20 @@ export function buildDeckAgentSystemPrompt(
           '- 在统一风格内制造每页的视觉惊喜：变化主视觉位置、标题进入方式、信息节奏、留白比例或局部装饰语言。',
           '- 每页至少有一个清晰的视觉焦点，可以是关键数字、图表、概念符号、时间节点或一句核心判断。',
           '- 惊喜感服务于内容理解；不要为了变化加入无关装饰、复杂嵌套、遮挡文字或难以维护的结构。',
-          '- 同一套 deck 内避免连续页面使用完全相同的标题位置、卡片网格和背景分区。'
+          `- 同一套 ${canvasScenario.sequenceName} 内避免连续页面使用完全相同的标题位置、卡片网格和背景分区。`
         ].join('\n'),
     ...sourceDocumentInstructions,
     '',
-    CANVAS_CONSTRAINTS,
+    buildCanvasConstraints(context.slideSize),
     '',
-    LAYOUT_COLLISION_RULES,
+    buildLayoutCollisionRules(context.slideSize),
     '',
-    LAYOUT_DELIVERY_GUARD,
+    buildCanvasScenarioDeliveryGuard(context.slideSize),
     '- index.html 是总览壳（导航+iframe），不要修改其核心结构。',
     '',
-    PAGE_SEMANTIC_STRUCTURE,
+    buildPageSemanticStructure(context.slideSize),
     '',
-    CONTENT_EXPANSION_RULES,
+    buildCanvasScenarioExpansionRules(context.slideSize),
     '',
     FRONTEND_CAPABILITIES,
     '',

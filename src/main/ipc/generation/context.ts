@@ -14,6 +14,7 @@ import type { ModelTimeoutProfile } from '@shared/model-timeout'
 import type { IpcContext } from '../context'
 import type { GenerateChatType } from './types'
 import type { SessionStyleSnapshotRow } from '../../db/database'
+import { requireSessionSlideSize, type SlideSizePreset } from '@shared/slide-size'
 
 export { resolveSourceDocuments } from './source-documents'
 import { resolveGlobalModelTimeouts, resolveModelConfigForTask } from '../config/model-config-utils'
@@ -52,6 +53,7 @@ export type CommonGenerationContext = {
   styleKey: string
   styleName: string
   styleVersion: string
+  slideSize: SlideSizePreset
   topic: string
   deckTitle: string
   appLocale: 'zh' | 'en'
@@ -311,6 +313,7 @@ export async function resolveCommonContext(
     styleKey: styleSnapshot.styleKey,
     styleName: styleSnapshot.styleName,
     styleVersion: styleSnapshot.version,
+    slideSize: requireSessionSlideSize(sessionRecord),
     topic: String(sessionRecord.topic || '当前主题'),
     deckTitle: String(sessionRecord.title || 'OhMyPPT Preview'),
     appLocale,

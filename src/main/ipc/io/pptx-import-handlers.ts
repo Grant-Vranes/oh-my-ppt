@@ -123,6 +123,9 @@ export function registerPptxImportHandlers(ctx: IpcContext): void {
         topic: imported.title,
         styleId: initialStyleId,
         pageCount: imported.pageCount,
+        slideSizeId: 'wide-16-9',
+        slideWidth: 1600,
+        slideHeight: 900,
         provider: 'import',
         model: 'pptx-import'
       })

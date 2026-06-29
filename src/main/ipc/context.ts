@@ -30,7 +30,7 @@ export type SessionRunState = {
   runId: string
   mode: 'generate' | 'edit' | 'retry' | 'addPage' | 'retrySinglePage'
   kind?: 'standard' | 'template' | 'retry'
-  activityKind?: 'edit' | 'style-switch' | 'single-page-retry'
+  activityKind?: 'edit' | 'style-switch' | 'single-page-retry' | 'addPage'
   previousSessionStatus?: string
   status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'
   progress: number
@@ -85,7 +85,7 @@ export interface IpcContext {
     runId: string
     mode: 'generate' | 'edit' | 'retry' | 'addPage' | 'retrySinglePage'
     kind?: 'standard' | 'template' | 'retry'
-    activityKind?: 'edit' | 'style-switch' | 'single-page-retry'
+    activityKind?: 'edit' | 'style-switch' | 'single-page-retry' | 'addPage'
     totalPages: number
     previousSessionStatus?: string
     status?: 'queued' | 'running'
@@ -144,6 +144,7 @@ export interface IpcContext {
     deckTitle: string
     indexPath: string
     pages: Array<{ pageNumber: number; pageId: string; title: string; htmlPath: string }>
+    slideSize: import('@shared/slide-size').SlideSizePreset
   }) => Promise<void>
   PRINT_READY_PREFIX: string
   EXPORT_PAGE_READY_TIMEOUT_MS: number
@@ -161,6 +162,7 @@ export interface IpcContext {
   renderPageToPdfBuffer: (args: {
     page: SessionPageFile
     timeoutMs: number
+    slideSize: import('@shared/slide-size').SlideSizePreset
   }) => Promise<{ pngBuffer: Buffer; warning?: string }>
 }
 
@@ -403,7 +405,7 @@ export function createIpcContext(
     runId: string
     mode: 'generate' | 'edit' | 'retry' | 'addPage' | 'retrySinglePage'
     kind?: 'standard' | 'template' | 'retry'
-    activityKind?: 'edit' | 'style-switch' | 'single-page-retry'
+    activityKind?: 'edit' | 'style-switch' | 'single-page-retry' | 'addPage'
     totalPages: number
     previousSessionStatus?: string
     status?: 'queued' | 'running'
@@ -1074,17 +1076,21 @@ export function createIpcContext(
     deckTitle: string
     indexPath: string
     pages: Array<{ pageNumber: number; pageId: string; title: string; htmlPath: string }>
+    slideSize: import('@shared/slide-size').SlideSizePreset
   }): Promise<void> => {
-    const { deckTitle, indexPath, pages } = args
+    const { deckTitle, indexPath, pages, slideSize } = args
     await Promise.all(
       pages.map((page) =>
         fs.promises.writeFile(
           page.htmlPath,
-          buildPageScaffoldHtml({
-            pageNumber: page.pageNumber,
-            pageId: page.pageId,
-            title: page.title
-          }),
+          buildPageScaffoldHtml(
+            {
+              pageNumber: page.pageNumber,
+              pageId: page.pageId,
+              title: page.title
+            },
+            slideSize
+          ),
           'utf-8'
         )
       )
@@ -1100,7 +1106,8 @@ export function createIpcContext(
             title: page.title,
             htmlPath: path.basename(page.htmlPath)
           })
-        )
+        ),
+        slideSize
       ),
       'utf-8'
     )
@@ -1234,14 +1241,15 @@ export function createIpcContext(
   const renderPageToPdfBuffer = async (args: {
     page: SessionPageFile
     timeoutMs: number
+    slideSize: import('@shared/slide-size').SlideSizePreset
   }): Promise<{ pngBuffer: Buffer; warning?: string }> => {
-    const { page, timeoutMs } = args
-    const CAPTURE_WIDTH = 1600
-    const CAPTURE_HEIGHT = 900
+    const { page, timeoutMs, slideSize } = args
+    const captureWidth = slideSize.width
+    const captureHeight = slideSize.height
     const win = new BrowserWindow({
       show: false,
-      width: CAPTURE_WIDTH,
-      height: CAPTURE_HEIGHT,
+      width: captureWidth,
+      height: captureHeight,
       backgroundColor: '#ffffff',
       webPreferences: {
         contextIsolation: true,
@@ -1255,7 +1263,7 @@ export function createIpcContext(
     try {
       // Ensure no zoom and exact content size for consistent capture
       win.webContents.setZoomFactor(1)
-      win.setContentSize(CAPTURE_WIDTH, CAPTURE_HEIGHT)
+      win.setContentSize(captureWidth, captureHeight)
       const pageUrl = new URL(pathToFileURL(page.htmlPath).toString())
       pageUrl.searchParams.set('fit', 'off')
       pageUrl.searchParams.set('print', '1')
@@ -1284,12 +1292,12 @@ export function createIpcContext(
       await sleep(450)
       await win.webContents.executeJavaScript(FREEZE_PAGE_FOR_EXPORT_SCRIPT, true)
       await sleep(80)
-      // Capture with explicit rect to ensure exact 1600x900 coverage
+      // Capture with an explicit rect to preserve the session canvas.
       const image = await win.webContents.capturePage({
         x: 0,
         y: 0,
-        width: CAPTURE_WIDTH,
-        height: CAPTURE_HEIGHT
+        width: captureWidth,
+        height: captureHeight
       })
       const pngBuffer = image.toPNG()
 

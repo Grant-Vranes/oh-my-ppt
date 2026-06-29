@@ -14,9 +14,16 @@ import {
   type ImportedElementAnimation,
   type SlideAnimationPlan
 } from './pptx-animation-import'
+import type { SlideSizePreset } from '@shared/slide-size'
 
 const PAGE_WIDTH = 1600
 const PAGE_HEIGHT = 900
+const PPTX_IMPORT_SLIDE_SIZE: SlideSizePreset = {
+  id: 'wide-16-9',
+  label: '宽屏 16:9',
+  width: PAGE_WIDTH,
+  height: PAGE_HEIGHT
+}
 
 type ImportWarning = {
   pageNumber?: number
@@ -2077,7 +2084,7 @@ ${hasImportedAnimations ? buildImportedPptxMotionScript() : ''}`
     pageNumber: args.pageNumber,
     pageId: args.pageId,
     title: args.title
-  })
+  }, PPTX_IMPORT_SLIDE_SIZE)
   const $ = cheerio.load(scaffold, { scriptingEnabled: false })
   $('.ppt-page-root').first().removeClass('p-2 p-8').attr('style', 'padding:0;')
   $('.ppt-page-content').first().html(body)
@@ -2227,7 +2234,8 @@ export async function importPptxToEditableHtml(args: {
           title: page.title,
           htmlPath: path.basename(page.htmlPath)
         })
-      )
+      ),
+      PPTX_IMPORT_SLIDE_SIZE
     ),
     'utf-8'
   )

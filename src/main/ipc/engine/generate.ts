@@ -814,6 +814,7 @@ export const runDeepAgentDeckGeneration = async (args: {
   styleKey?: string
   styleName?: string
   styleVersion?: string
+  slideSize: import('@shared/slide-size').SlideSizePreset
   appLocale?: AppLocale
   animationPreferences?: AnimationPreferencesPayload | null
   modelTimeoutMs?: number
@@ -1105,6 +1106,7 @@ export const runDeepAgentDeckGeneration = async (args: {
         styleKey: args.styleKey,
         styleName: args.styleName,
         styleVersion: args.styleVersion,
+        slideSize: args.slideSize,
         appLocale: args.appLocale,
         animationPreferences: args.animationPreferences,
         designContract: args.designContract,
@@ -1152,6 +1154,7 @@ export const runDeepAgentDeckGeneration = async (args: {
                   pageNumber: page.pageNumber,
                   pageTitle: page.title,
                   pageOutline: page.outline,
+                  slideSize: args.slideSize,
                   layoutIntent: page.layoutIntent,
                   sourceDocumentPaths: args.sourceDocumentPaths,
                   referenceDocumentSnippets,
@@ -1474,6 +1477,7 @@ type RunDeepAgentEditBaseArgs = {
   styleKey?: string
   styleName?: string
   styleVersion?: string
+  slideSize: import('@shared/slide-size').SlideSizePreset
   appLocale?: AppLocale
   modelTimeoutMs?: number
   topic: string
@@ -1536,6 +1540,7 @@ const runDeepAgentScopedEdit = async (args: RunDeepAgentScopedEditArgs): Promise
       styleKey: args.styleKey,
       styleName: args.styleName,
       styleVersion: args.styleVersion,
+      slideSize: args.slideSize,
       appLocale: args.appLocale,
       designContract: args.designContract,
       userMessage: args.userMessage,

@@ -35,6 +35,9 @@ vi.mock('../../../src/renderer/src/store', () => ({
         metadata: '{}',
         generated_count: 6,
         failed_count: 0,
+        slideSizeId: 'wide-16-9',
+        slideWidth: 1600,
+        slideHeight: 900,
         thumbnailPath: '/cache/session-1.png'
       },
       {
@@ -51,6 +54,9 @@ vi.mock('../../../src/renderer/src/store', () => ({
         metadata: '{}',
         generated_count: 0,
         failed_count: 0,
+        slideSizeId: 'vertical-9-16',
+        slideWidth: 900,
+        slideHeight: 1600,
         thumbnailPath: null
       }
     ],
@@ -91,7 +97,7 @@ describe('SessionsPage rendering', () => {
     document.body.innerHTML = ''
   })
 
-  it('renders sessions in a fixed two-column card grid with previews and all actions', async () => {
+  it('renders sessions in fixed-height cards with centered size-aware thumbnails', async () => {
     const container = document.createElement('div')
     document.body.appendChild(container)
     const root = createRoot(container)
@@ -104,7 +110,14 @@ describe('SessionsPage rendering', () => {
     expect(card).toBeTruthy()
     expect(card?.parentElement?.className).toContain('grid-cols-2')
     expect(card?.className).toContain('flex-col')
-    expect(card?.querySelector('.aspect-video')).toBeTruthy()
+    expect(card?.querySelector('[data-session-thumbnail-frame]')?.className).toContain('h-[230px]')
+    expect((card?.querySelector('img') as HTMLImageElement | null)?.style.aspectRatio).toBe(
+      '1600 / 900'
+    )
+    const portraitCard = container.querySelector('[data-session-card-id="session-2"]')
+    expect((portraitCard?.querySelector('img') as HTMLImageElement | null)?.style.aspectRatio).toBe(
+      '900 / 1600'
+    )
     expect(card?.querySelectorAll('img')).toHaveLength(1)
     expect(card?.querySelectorAll('iframe')).toHaveLength(0)
     const placeholderImage = container.querySelector(

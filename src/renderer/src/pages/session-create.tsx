@@ -38,6 +38,11 @@ import {
   type DocumentPlanSuggestionDraft
 } from '../components/session-create/SessionCreateSuggestionDialog'
 import { AnimationPreferenceChips } from '../components/session-create/AnimationPreferenceChips'
+import {
+  DEFAULT_SLIDE_SIZE_ID,
+  SLIDE_SIZE_PRESETS,
+  type SlideSizePresetId
+} from '@shared/slide-size'
 const MIN_PAGE_COUNT = 1
 const MAX_PAGE_COUNT = 500
 const DEFAULT_PAGE_COUNT = 5
@@ -94,6 +99,7 @@ export function SessionCreatePage(): ReactElement {
     AnimationPreferenceId[]
   >([])
   const [pageCount, setPageCount] = useState(String(DEFAULT_PAGE_COUNT))
+  const [slideSizeId, setSlideSizeId] = useState<SlideSizePresetId>(DEFAULT_SLIDE_SIZE_ID)
   const [selectedStyleId, setSelectedStyleId] = useState('')
   const [selectedTitleFontId, setSelectedTitleFontId] = useState('auto')
   const [selectedBodyFontId, setSelectedBodyFontId] = useState('auto')
@@ -294,6 +300,7 @@ export function SessionCreatePage(): ReactElement {
         styleId: selectedStyleId,
         modelConfigId: resolvedModelConfigId,
         pageCount: safePageCount,
+        slideSizeId,
         referenceDocumentPath: referenceDocumentPath || undefined,
         sourcePlan: acceptedSourcePlan,
         fontSelection
@@ -851,6 +858,41 @@ export function SessionCreatePage(): ReactElement {
                         className={compactInputClass}
                       />
                     </div>
+                  </div>
+                  <div className="mt-3">
+                    <label className="mb-2 block">{t('home.slideSize')}</label>
+                    <Select
+                      value={slideSizeId}
+                      onValueChange={(value) => setSlideSizeId(value as SlideSizePresetId)}
+                    >
+                      <SelectTrigger className={compactSelectTriggerClass}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className={compactSelectContentClass}>
+                        {SLIDE_SIZE_PRESETS.map((preset) => (
+                          <SelectItem
+                            key={preset.id}
+                            value={preset.id}
+                            className={compactSelectItemClass}
+                          >
+                            {preset.id === 'wide-16-9'
+                              ? t('home.slideSizeWide')
+                              : preset.id === 'vertical-9-16'
+                                ? t('home.slideSizeVertical')
+                                : preset.id === 'standard-4-3'
+                                  ? t('home.slideSizeStandard')
+                                  : preset.id === 'square-1-1'
+                                    ? t('home.slideSizeSquare')
+                                    : preset.id === 'vertical-3-4'
+                                      ? t('home.slideSizePortrait')
+                                      : t('home.slideSizeXiaohongshu')}
+                            <span className="ml-2 text-[10px] text-[#8b927f]">
+                              {preset.width}×{preset.height}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </section>
 

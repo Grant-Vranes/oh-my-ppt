@@ -108,7 +108,8 @@ export function GenerationActivityDialog({ sessionId }: { sessionId: string }): 
         'activityKind' in event.payload &&
         (event.payload.activityKind === 'edit' ||
           event.payload.activityKind === 'style-switch' ||
-          event.payload.activityKind === 'single-page-retry')
+          event.payload.activityKind === 'single-page-retry' ||
+          event.payload.activityKind === 'addPage')
           ? event.payload.activityKind
           : undefined
       if (!shouldHandleGenerationActivity(activityKind, activeRetryContext)) return

@@ -133,10 +133,19 @@ export function resolveHtmlThumbnailCacheRoot(): string {
 export function resolveHtmlThumbnailPath(
   resourceType: HtmlThumbnailResourceType,
   resourceId: string,
-  variant = 'default'
+  variant = 'default',
+  size?: { width: number; height: number }
 ): string {
   const key = createHash('sha256')
-    .update(JSON.stringify({ resourceType, resourceId, variant }))
+    .update(
+      JSON.stringify({
+        resourceType,
+        resourceId,
+        variant,
+        width: size?.width || DEFAULT_CAPTURE_WIDTH,
+        height: size?.height || DEFAULT_CAPTURE_HEIGHT
+      })
+    )
     .digest('hex')
     .slice(0, 32)
   return path.join(resolveHtmlThumbnailCacheRoot(), `${key}.png`)
@@ -515,7 +524,8 @@ export async function enqueueHtmlThumbnail(
       const thumbnailPath = resolveHtmlThumbnailPath(
         normalized.resourceType,
         normalized.resourceId,
-        normalized.variant
+        normalized.variant,
+        { width: normalized.captureWidth, height: normalized.captureHeight }
       )
       pendingPath = `${thumbnailPath}.tmp`
       let png: Buffer | null = null

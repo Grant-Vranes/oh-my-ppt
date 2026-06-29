@@ -386,6 +386,18 @@ export function buildEditModeInjectScript(previewScale = 1): string {
     return document.querySelector("[data-ppt-guard-root='1'], .ppt-page-root");
   };
 
+  const readPageRootSize = (root) => {
+    if (!(root instanceof Element)) {
+      throw new Error("missing page root");
+    }
+    const width = Number(root.getAttribute("data-ppt-width"));
+    const height = Number(root.getAttribute("data-ppt-height"));
+    if (!Number.isFinite(width) || width <= 0 || !Number.isFinite(height) || height <= 0) {
+      throw new Error("missing page root slide size metadata");
+    }
+    return { width, height };
+  };
+
   const isScaffoldBlock = (element) => {
     if (!(element instanceof Element)) return false;
     const blockId = element.getAttribute("data-block-id");
@@ -2406,12 +2418,22 @@ export function buildEditModeInjectScript(previewScale = 1): string {
 
   window.__pptEditModeSetSnapSettings = (settings) => {
     const root = getDocumentPageRoot();
-    const rootRect = root ? root.getBoundingClientRect() : { width: 1600, height: 900 };
+    if (!root) {
+      console.warn("[ppt-edit-mode] cannot update snap settings: missing page root");
+      return;
+    }
+    let rootSize;
+    try {
+      rootSize = readPageRootSize(root);
+    } catch (error) {
+      console.warn("[ppt-edit-mode] cannot update snap settings: " + (error && error.message ? error.message : String(error)));
+      return;
+    }
     snapSettings = {
       enabled: settings?.enabled !== false,
       guides: {
-        vertical: normalizeSnapValues(settings?.guides?.vertical, rootRect.width),
-        horizontal: normalizeSnapValues(settings?.guides?.horizontal, rootRect.height),
+        vertical: normalizeSnapValues(settings?.guides?.vertical, rootSize.width),
+        horizontal: normalizeSnapValues(settings?.guides?.horizontal, rootSize.height),
       },
       grid: {
         enabled: Boolean(settings?.grid?.enabled),
@@ -2423,9 +2445,10 @@ export function buildEditModeInjectScript(previewScale = 1): string {
   window.__pptEditModeReadSnapPoints = () => {
     const root = getDocumentPageRoot();
     if (!root) return { x: [], y: [] };
+    const rootSize = readPageRootSize(root);
     const rootRect = root.getBoundingClientRect();
-    const x = [0, rootRect.width / 2, rootRect.width];
-    const y = [0, rootRect.height / 2, rootRect.height];
+    const x = [0, rootSize.width / 2, rootSize.width];
+    const y = [0, rootSize.height / 2, rootSize.height];
     root.querySelectorAll("[data-block-id]").forEach((candidate) => {
       if (!(candidate instanceof Element)) return;
       if (!isUsableElementTarget(candidate) || isScaffoldBlock(candidate)) return;

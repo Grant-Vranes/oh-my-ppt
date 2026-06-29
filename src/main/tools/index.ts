@@ -7,4 +7,7 @@ export {
 } from "./types";
 export type { SessionDeckGenerationContext, DeckToolStatusPayload, ToolStreamConfig } from "./types";
 export { createSessionBoundDeckTools } from "./deck-tools";
-export { BASE_PAGE_STYLE_TAG, FIT_SCRIPT } from "./page-writer";
+export {
+  buildBasePageStyleTag,
+  buildFitScript
+} from "./page-writer";

@@ -1,6 +1,7 @@
 import log from "electron-log/main.js";
 import type { LayoutIntent } from "@shared/layout-intent";
 import type { AnimationPreferencesPayload } from "@shared/generation";
+import type { SlideSizePreset } from "@shared/slide-size";
 
 // ── Marker constants ──
 
@@ -55,6 +56,7 @@ export interface SessionDeckGenerationContext {
   styleKey?: string;
   styleName?: string;
   styleVersion?: string;
+  slideSize: SlideSizePreset;
   appLocale?: "zh" | "en";
   animationPreferences?: AnimationPreferencesPayload | null;
   userMessage: string;

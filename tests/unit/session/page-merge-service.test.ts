@@ -49,6 +49,12 @@ import {
   mergeSessionPages
 } from '../../../src/main/ipc/session/page-merge-service'
 
+const wideSlideSize = {
+  slideSizeId: 'wide-16-9',
+  slideWidth: 1600,
+  slideHeight: 900
+}
+
 describe('mergeSessionPages', () => {
   let root: string
   let sourceProjectDir: string
@@ -62,7 +68,8 @@ describe('mergeSessionPages', () => {
         id: sessionId,
         title: sessionId === 'source' ? 'Source deck' : 'Target deck',
         status: 'completed',
-        metadata: '{}'
+        metadata: '{}',
+        ...wideSlideSize
       })),
       listSessionsWithPageCounts: vi.fn(),
       listSourcePageSkeletons: vi.fn(async () => sourceSkeletons),
@@ -135,7 +142,7 @@ describe('mergeSessionPages', () => {
     mocks.loadEditableSessionPages.mockImplementation(async (_ctx, sessionId: string) => {
       if (sessionId === 'source') {
         return {
-          session: {},
+          session: wideSlideSize,
           projectDir: sourceProjectDir,
           indexPath: path.join(sourceProjectDir, 'index.html'),
           deckTitle: 'Source',
@@ -160,7 +167,7 @@ describe('mergeSessionPages', () => {
         }
       }
       return {
-        session: {},
+        session: wideSlideSize,
         projectDir: targetProjectDir,
         indexPath: path.join(targetProjectDir, 'index.html'),
         deckTitle: 'Target',
@@ -249,7 +256,8 @@ describe('mergeSessionPages', () => {
           id: 'target',
           title: 'Target',
           status: 'completed',
-          updated_at: 3
+          updated_at: 3,
+          ...wideSlideSize
         },
         pageCount: 1
       },
@@ -258,7 +266,8 @@ describe('mergeSessionPages', () => {
           id: 'source',
           title: 'Source',
           status: 'completed',
-          updated_at: 2
+          updated_at: 2,
+          ...wideSlideSize
         },
         pageCount: 4
       }
@@ -270,6 +279,40 @@ describe('mergeSessionPages', () => {
     expect(result).toEqual([
       expect.objectContaining({ id: 'source', pageCount: 4, selectable: true })
     ])
+  })
+
+  it('disables and rejects source sessions with a different canvas size', async () => {
+    const context = createContext()
+    context.db.getSession.mockImplementation(async (sessionId: string) => ({
+      id: sessionId,
+      title: sessionId,
+      status: 'completed',
+      metadata: '{}',
+      slideSizeId: sessionId === 'source' ? 'vertical-9-16' : 'wide-16-9',
+      slideWidth: sessionId === 'source' ? 900 : 1600,
+      slideHeight: sessionId === 'source' ? 1600 : 900
+    }))
+    context.db.listSessionsWithPageCounts.mockResolvedValue([
+      {
+        session: await context.db.getSession('source'),
+        pageCount: 2
+      }
+    ])
+
+    await expect(listMergeSourceSessions(context as never, 'target')).resolves.toEqual([
+      expect.objectContaining({
+        id: 'source',
+        selectable: false,
+        disabledReason: 'PAGE_MERGE_SLIDE_SIZE_MISMATCH'
+      })
+    ])
+    await expect(
+      mergeSessionPages(context as never, {
+        targetSessionId: 'target',
+        sourceSessionId: 'source',
+        sourcePageIds: ['source-page-1']
+      })
+    ).rejects.toMatchObject({ code: 'PAGE_MERGE_SLIDE_SIZE_MISMATCH' })
   })
 
   it('rejects a page when a required local resource is missing', async () => {
@@ -366,7 +409,8 @@ describe('mergeSessionPages', () => {
       id: sessionId,
       title: sessionId === 'source' ? 'Source deck' : 'Target deck',
       status: sessionId === 'target' ? 'failed' : 'completed',
-      metadata: '{}'
+      metadata: '{}',
+      ...wideSlideSize
     }))
     mocks.persistManagedPages.mockImplementationOnce(async (_ctx, args) => {
       await fs.promises.writeFile(args.indexPath, '<html>new index</html>')

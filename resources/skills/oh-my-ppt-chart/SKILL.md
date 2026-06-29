@@ -36,10 +36,10 @@ Every chart needs exactly two parts: an HTML frame with explicit height, and a s
 
 ### 1. HTML — chart frame with explicit height
 
-Before writing the chart frame, you MUST calculate the chart slot and then choose the actual chart frame height. Write the calculation as an HTML comment immediately before the chart frame, include the dedicated marker `@ppt-chart-height=N`, and make the marker, the **final chart height**, and the `h-[Npx]` value all use the same number. Never put `@ppt-chart-height=...` as visible text inside `.ppt-chart-frame`. Do NOT write a comment that ends with one number and a frame height that uses another number. Two terms: **content slot** = 900 − padding − title − gaps − reserve (the area for the chart plus its support modules); **chart slot** = content slot − support modules. The final `h-[Npx]` MUST equal the chart slot, never the content slot.
+Before writing the chart frame, you MUST calculate the chart slot and then choose the actual chart frame height. Write the calculation as an HTML comment immediately before the chart frame, include the dedicated marker `@ppt-chart-height=N`, and make the marker, the **final chart height**, and the `h-[Npx]` value all use the same number. Never put `@ppt-chart-height=...` as visible text inside `.ppt-chart-frame`. Do NOT write a comment that ends with one number and a frame height that uses another number. Two terms: **content slot** = current canvas height − padding − title − gaps − reserve (the area for the chart plus its support modules); **chart slot** = content slot − support modules. The final `h-[Npx]` MUST equal the chart slot, never the content slot.
 
 ```html
-<!-- height calc @ppt-chart-height=560: content slot = 900 - 48(p-6) - 68(title) - 24(gap-6) - 28(h3) - 8(gap-2) - 32(reserve) = 692 (chart + support area); support rail = 132; chart slot = 692 - 132 = 560 -> h-[560px] -->
+<!-- height calc @ppt-chart-height=560: default 900 canvas example; content slot = 900 - 48(p-6) - 68(title) - 24(gap-6) - 28(h3) - 8(gap-2) - 32(reserve) = 692 (chart + support area); support rail = 132; chart slot = 692 - 132 = 560 -> h-[560px] -->
 <div class="ppt-chart-frame relative h-[560px] w-full overflow-hidden">
   <canvas id="my-chart" class="h-full w-full"></canvas>
 </div>
@@ -50,13 +50,13 @@ The final number in the comment and `h-[Npx]` MUST match. If the comment ends wi
 Use this exact comment structure for generated charts:
 
 ```html
-<!-- height calc @ppt-chart-height=[final]: content slot = [900 - ... - reserve] = [content slot]; support = [support height]; chart slot = [content slot - support] = [chart slot]; chart height = [role decision] = [final] -->
+<!-- height calc @ppt-chart-height=[final]: content slot = [current canvas height - ... - reserve] = [content slot]; support = [support height]; chart slot = [content slot - support] = [chart slot]; chart height = [role decision] = [final] -->
 <!-- Example after replacing placeholders: height calc @ppt-chart-height=560: chart slot = 560; chart height = hero/main = 560 -->
 <div class="ppt-chart-frame relative h-[560px] w-full overflow-hidden">
 ```
 
 Calculation steps:
-1. Start from 900px (full slide height; runtime page root has no default padding)
+1. Start from the current canvas height stated by the layout/canvas prompt (runtime page root has no default padding)
 2. Subtract outer padding (p-6=48, p-8=64)
 3. Subtract all modules above the chart: title, subtitle, metrics row, legends
 4. Subtract all gaps between modules
@@ -95,7 +95,7 @@ A chart-only slide is usually under-explained even if the chart is large. Pair t
 Bad patterns to avoid:
 
 ```html
-<!-- height calc: 900 - 48(...) = 676 -->
+<!-- height calc: current canvas height - 48(...) = available content slot -->
 <div class="ppt-chart-frame relative h-[400px]">...</div>
 
 <div class="ppt-chart-frame relative h-64">...</div>
@@ -149,7 +149,7 @@ This is the only correct event and the only correct API. The runtime loads Chart
     <h3 class="text-2xl font-bold">Quarterly Revenue</h3>
     <p class="text-lg text-gray-500">Growth trend across regions</p>
   </div>
-  <!-- height calc @ppt-chart-height=560: page content slot = 900 - 48(p-6) - 68(title/subtitle) - 24(gap-6) - 32(reserve) = 728; two columns share width, not height; right-column heading/support = 168; chart slot = 728 - 168 = 560; chart height = hero/main side chart = 560 -->
+  <!-- height calc @ppt-chart-height=560: default 900 canvas example; page content slot = 900 - 48(p-6) - 68(title/subtitle) - 24(gap-6) - 32(reserve) = 728; two columns share width, not height; right-column heading/support = 168; chart slot = 728 - 168 = 560; chart height = hero/main side chart = 560 -->
   <div class="ppt-chart-frame relative h-[560px] w-full overflow-hidden">
     <canvas id="revenue-chart" class="h-full w-full"></canvas>
   </div>
@@ -182,7 +182,7 @@ document.addEventListener('DOMContentLoaded', function() {
 - Use `PPT.createChart(canvasElement, config)` — pass the canvas DOM element, not a 2D context.
 - Wrap every `PPT.createChart` call inside `document.addEventListener('DOMContentLoaded', function() { ... })`.
 - Put category labels in `data.labels` as plain strings or string arrays. If a category-axis `ticks.callback` is needed, return `this.getLabelForValue(value)`.
-- Derive chart frame height from the layout budget (900px minus all other modules and a 24-40px safety reserve), then choose a height that fits the chart role. Do not blindly use all leftover height.
+- Derive chart frame height from the layout budget (current canvas height minus all other modules and a 24-40px safety reserve), then choose a height that fits the chart role. Do not blindly use all leftover height.
 - Every generated `.ppt-chart-frame` needs the height calc comment immediately before it.
 - Do not add padding to the `.ppt-chart-frame` div — it wastes height budget without visual benefit. Padding belongs on the parent card/container, not on the chart frame itself.
 - Do not put `width`, `height`, or inline `style` size attributes on `<canvas>`; the chart frame controls the size.
@@ -208,5 +208,5 @@ Two levels of chart animation, each handled by a different system:
 
 ## Cross-skill references
 
-- Budget chart height from the slide's 900px total (see layout skill). Title + modules + gaps + chart frame + 24-40px reserve <= 900px.
+- Budget chart height from the current slide height (see layout skill). Title + modules + gaps + chart frame + 24-40px reserve <= current canvas height.
 - Chart container entrance animation uses `data-anim` on the chart frame div (see animation skill).

@@ -145,12 +145,16 @@ export function SessionToolbar({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-80">
-              <DropdownMenuItem onClick={() => void exportActions.exportPptx()}>
+              <DropdownMenuItem
+                disabled={!exportActions.canExportPptx}
+                onClick={() => void exportActions.exportPptx()}
+              >
                 <Presentation className={dropIconClass} />
                 {t('sessionDetail.toolbarExportPptxEditable')}
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="items-start"
+                disabled={!exportActions.canExportPptx}
                 onClick={() => void exportActions.exportPptx({ imageOnly: true })}
               >
                 <ImageIcon className={cn(dropIconClass, 'mt-0.5')} />

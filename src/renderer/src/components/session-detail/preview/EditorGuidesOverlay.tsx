@@ -4,6 +4,7 @@ import { useSessionDetailUiStore } from '@renderer/store'
 import { useT } from '@renderer/i18n'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/Tooltip'
 import type { PreviewIframeHandle } from '../../preview/PreviewIframe'
+import type { SlideSizePreset } from '@shared/slide-size'
 
 type GuideAxis = 'vertical' | 'horizontal'
 
@@ -30,10 +31,9 @@ interface EditorGuidesOverlayProps {
   canvasHostRef: RefObject<HTMLDivElement | null>
   previewIframeRef: RefObject<PreviewIframeHandle | null>
   reloadSignal: number
+  slideSize: SlideSizePreset
 }
 
-const PAGE_WIDTH = 1600
-const PAGE_HEIGHT = 900
 export const RULER_SIZE = 22
 export const RULER_GAP = 6
 export const EDITOR_INSET = RULER_SIZE + RULER_GAP + 8
@@ -42,16 +42,18 @@ const EMPTY_GUIDES = { vertical: [], horizontal: [] }
 const createTicks = (size: number, step = 20): number[] =>
   Array.from({ length: Math.floor(size / step) + 1 }, (_, index) => index * step)
 
-const HORIZONTAL_TICKS = createTicks(PAGE_WIDTH)
-const VERTICAL_TICKS = createTicks(PAGE_HEIGHT)
-
 export function EditorGuidesOverlay({
   selectedPageId,
   frameRef,
   canvasHostRef,
   previewIframeRef,
-  reloadSignal
+  reloadSignal,
+  slideSize
 }: EditorGuidesOverlayProps): React.JSX.Element | null {
+  const pageWidth = slideSize.width
+  const pageHeight = slideSize.height
+  const horizontalTicks = useMemo(() => createTicks(pageWidth), [pageWidth])
+  const verticalTicks = useMemo(() => createTicks(pageHeight), [pageHeight])
   const t = useT()
   const guideSnapPointsRef = useRef<{ x: number[]; y: number[] }>({ x: [], y: [] })
   const snapSyncTimerRef = useRef<number | null>(null)
@@ -127,9 +129,9 @@ export function EditorGuidesOverlay({
     }
     const frameRect = frame.getBoundingClientRect()
     const hostRect = host.getBoundingClientRect()
-    const scale = Math.min(hostRect.width / PAGE_WIDTH, hostRect.height / PAGE_HEIGHT)
-    const width = PAGE_WIDTH * scale
-    const height = PAGE_HEIGHT * scale
+    const scale = Math.min(hostRect.width / pageWidth, hostRect.height / pageHeight)
+    const width = pageWidth * scale
+    const height = pageHeight * scale
     setCanvasMetrics({
       left: hostRect.left - frameRect.left + Math.max(0, (hostRect.width - width) / 2),
       top: hostRect.top - frameRect.top + Math.max(0, (hostRect.height - height) / 2),
@@ -137,7 +139,7 @@ export function EditorGuidesOverlay({
       height,
       scale
     })
-  }, [canvasHostRef, frameRef])
+  }, [canvasHostRef, frameRef, pageHeight, pageWidth])
 
   useEffect(() => {
     updateCanvasMetrics()
@@ -157,7 +159,7 @@ export function EditorGuidesOverlay({
   const snapGuidePosition = useCallback(
     (axis: GuideAxis, rawPosition: number): number => {
       if (!canvasMetrics) return rawPosition
-      const max = axis === 'vertical' ? PAGE_WIDTH : PAGE_HEIGHT
+      const max = axis === 'vertical' ? pageWidth : pageHeight
       const clamped = Math.max(0, Math.min(max, rawPosition))
       if (!editorSnapEnabled) return clamped
       const candidates =
@@ -179,7 +181,7 @@ export function EditorGuidesOverlay({
       }
       return Number(Math.max(0, Math.min(max, best)).toFixed(1))
     },
-    [canvasMetrics, editorGridSize, editorGridVisible, editorSnapEnabled]
+    [canvasMetrics, editorGridSize, editorGridVisible, editorSnapEnabled, pageHeight, pageWidth]
   )
 
   const rawPositionFromPointer = useCallback(
@@ -203,9 +205,9 @@ export function EditorGuidesOverlay({
   )
 
   const isGuideOutsideCanvas = useCallback((axis: GuideAxis, position: number): boolean => {
-    const max = axis === 'vertical' ? PAGE_WIDTH : PAGE_HEIGHT
+    const max = axis === 'vertical' ? pageWidth : pageHeight
     return position < 0 || position > max
-  }, [])
+  }, [pageHeight, pageWidth])
 
   const guideDragRef = useRef<GuideDragState | null>(null)
   const guideDragActive = guideDrag !== null
@@ -365,7 +367,7 @@ export function EditorGuidesOverlay({
         onClick={(event) => addGuideFromRuler('vertical', event)}
         title={t('sessionDetail.editorRulerHint')}
       >
-        {HORIZONTAL_TICKS.map((value) => {
+        {horizontalTicks.map((value) => {
           const major = value % 100 === 0
           return (
             <span
@@ -396,7 +398,7 @@ export function EditorGuidesOverlay({
         onClick={(event) => addGuideFromRuler('horizontal', event)}
         title={t('sessionDetail.editorRulerHint')}
       >
-        {VERTICAL_TICKS.map((value) => {
+        {verticalTicks.map((value) => {
           const major = value % 100 === 0
           return (
             <span

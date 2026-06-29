@@ -41,25 +41,37 @@ describe('template cover thumbnails', () => {
         resourceId: 'template-1',
         variant: 'cover',
         sourcePath: '/tmp/page-1.html',
-        pageId: 'page-1'
+        pageId: 'page-1',
+        captureWidth: undefined,
+        captureHeight: undefined,
+        thumbnailWidth: 640,
+        thumbnailHeight: undefined
       },
       {
         resourceType: 'template',
         resourceId: 'template-2',
         variant: 'cover',
         sourcePath: '/tmp/page-2.html',
-        pageId: 'page-2'
+        pageId: 'page-2',
+        captureWidth: undefined,
+        captureHeight: undefined,
+        thumbnailWidth: 640,
+        thumbnailHeight: undefined
       }
     ])
     expect(state.enqueueHtmlThumbnails).toHaveBeenCalledWith(
       [
         {
           resourceType: 'template',
-          resourceId: 'template-2',
-          variant: 'cover',
-          sourcePath: '/tmp/page-2.html',
-          pageId: 'page-2'
-        }
+        resourceId: 'template-2',
+        variant: 'cover',
+        sourcePath: '/tmp/page-2.html',
+        pageId: 'page-2',
+        captureWidth: undefined,
+        captureHeight: undefined,
+        thumbnailWidth: 640,
+        thumbnailHeight: undefined
+      }
       ],
       { delayMs: 250 }
     )

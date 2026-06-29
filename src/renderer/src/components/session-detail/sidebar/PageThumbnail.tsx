@@ -4,6 +4,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/Tooltip'
 import { PreviewIframe } from '../../preview/PreviewIframe'
 import type { SessionPreviewPage } from '../shared/types'
 import { useT } from '@renderer/i18n'
+import { useSessionStore } from '@renderer/store'
+import { trySessionSlideSize } from '@shared/slide-size'
 
 export const PageThumbnail = memo(function PageThumbnail({
   page,
@@ -21,6 +23,15 @@ export const PageThumbnail = memo(function PageThumbnail({
   actions?: React.ReactNode
 }): React.JSX.Element {
   const t = useT()
+  const currentSession = useSessionStore((state) => state.currentSession)
+  const slideSize = trySessionSlideSize(currentSession)
+  if (!slideSize) {
+    return <div className="h-[154px] w-full rounded-[1.25rem] bg-[#e8e0d0]/34" />
+  }
+  const thumbnailFitStyle =
+    slideSize.width >= slideSize.height
+      ? { width: '100%', aspectRatio: `${slideSize.width}/${slideSize.height}` }
+      : { height: '100%', aspectRatio: `${slideSize.width}/${slideSize.height}` }
 
   const pageInfoTooltip = (
     <TooltipContent side="right" align="start">
@@ -57,28 +68,33 @@ export const PageThumbnail = memo(function PageThumbnail({
       />
       <div
         className={cn(
-          'relative h-[106px] w-full overflow-hidden rounded-[1rem] bg-[#f5f1e8]/88 shadow-[0_5px_14px_rgba(93,107,77,0.08)]',
+          'relative flex h-[138px] w-full items-center justify-center overflow-hidden rounded-[1rem] bg-[#f5f1e8]/88 shadow-[0_5px_14px_rgba(93,107,77,0.08)]',
           isSelected
             ? 'shadow-[0_6px_16px_rgba(93,107,77,0.13)]'
             : 'group-hover:shadow-[0_6px_15px_rgba(93,107,77,0.1)]'
         )}
-        style={{ contain: 'paint' }}
+        style={{
+          contain: 'paint'
+        }}
       >
-        {renderPreview ? (
-          <PreviewIframe
-            key={`thumb-${page.id}-${previewVersion}`}
-            src={page.sourceUrl}
-            htmlPath={page.htmlPath}
-            pageId={page.pageId}
-            title={`filmstrip-page-${page.pageNumber}`}
-            inspectable={false}
-            thumbnail
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center bg-[#eee7d9]/78 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a9a7b]">
-            P{page.pageNumber}
-          </div>
-        )}
+        <div className="relative max-h-full max-w-full overflow-hidden" style={thumbnailFitStyle}>
+          {renderPreview ? (
+            <PreviewIframe
+              key={`thumb-${page.id}-${previewVersion}`}
+              src={page.sourceUrl}
+              htmlPath={page.htmlPath}
+              pageId={page.pageId}
+              title={`filmstrip-page-${page.pageNumber}`}
+              slideSize={slideSize}
+              inspectable={false}
+              thumbnail
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-[#eee7d9]/78 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a9a7b]">
+              P{page.pageNumber}
+            </div>
+          )}
+        </div>
       </div>
       <Tooltip>
         <TooltipTrigger asChild>

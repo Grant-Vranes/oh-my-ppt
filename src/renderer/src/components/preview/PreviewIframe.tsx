@@ -19,6 +19,7 @@ import {
 } from './edit-mode-script'
 import { ipc } from '@renderer/lib/ipc'
 import type { InteractionMode } from '@renderer/store'
+import { requireSlideSize, type SlideSizePreset } from '@shared/slide-size'
 
 const buildPreviewClickAnimationInjectScript = (): string => `
 (() => {
@@ -174,6 +175,7 @@ export const PreviewIframe = forwardRef<
     editMode?: boolean
     thumbnail?: boolean
     interactionMode?: InteractionMode
+    slideSize: SlideSizePreset
     onSelectorSelected?: (
       selector: string,
       label: string,
@@ -197,6 +199,7 @@ export const PreviewIframe = forwardRef<
     editMode = false,
     thumbnail = false,
     interactionMode,
+    slideSize: slideSizeInput,
     onSelectorSelected,
     onElementMoved,
     onElementSelected,
@@ -206,6 +209,7 @@ export const PreviewIframe = forwardRef<
   },
   ref
 ) {
+  const slideSize = requireSlideSize(slideSizeInput)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const webviewRef = useRef<Electron.WebviewTag | null>(null)
   const webviewReadyRef = useRef(false)
@@ -238,7 +242,7 @@ export const PreviewIframe = forwardRef<
 
   const applyPreviewUrlParams = (inputUrl: string): string => {
     const url = new URL(inputUrl)
-    // PreviewIframe already does 1600x900 viewport scaling.
+    // PreviewIframe already scales the logical slide canvas into its viewport.
     // Disable page-level auto-fit to avoid double-scaling on specific pages.
     url.searchParams.set('fit', 'off')
     if (thumbnail) {
@@ -1232,10 +1236,10 @@ export const PreviewIframe = forwardRef<
 
     const updateScale = (): void => {
       const { width, height } = el.getBoundingClientRect()
-      const nextScaleRaw = Math.min(width / 1600, height / 900)
+      const nextScaleRaw = Math.min(width / slideSize.width, height / slideSize.height)
       const nextScale = Number.isFinite(nextScaleRaw) && nextScaleRaw > 0 ? nextScaleRaw : 1
-      const offsetX = Math.max(0, (width - 1600 * nextScale) / 2)
-      const offsetY = Math.max(0, (height - 900 * nextScale) / 2)
+      const offsetX = Math.max(0, (width - slideSize.width * nextScale) / 2)
+      const offsetY = Math.max(0, (height - slideSize.height * nextScale) / 2)
       setPreviewScale(nextScale)
       setTransform(`translate(${offsetX}px, ${offsetY}px) scale(${nextScale})`)
     }
@@ -1244,7 +1248,7 @@ export const PreviewIframe = forwardRef<
     const observer = new ResizeObserver(updateScale)
     observer.observe(el)
     return () => observer.disconnect()
-  }, [])
+  }, [slideSize.height, slideSize.width])
 
   return (
     <div
@@ -1257,10 +1261,10 @@ export const PreviewIframe = forwardRef<
           src={webviewSrc}
           tabIndex={thumbnail ? -1 : 0}
           title={title}
-          className={`absolute left-0 top-0 h-[900px] w-[1600px] origin-top-left ${
+          className={`absolute left-0 top-0 origin-top-left ${
             pointerEnabled ? 'pointer-events-auto' : 'pointer-events-none'
           } ${editMode ? 'cursor-move' : inspecting ? 'cursor-crosshair' : ''}`}
-          style={{ transform }}
+          style={{ width: slideSize.width, height: slideSize.height, transform }}
         />
       ) : null}
     </div>

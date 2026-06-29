@@ -16,7 +16,7 @@ import {
 } from '@dnd-kit/core'
 import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { useGenerateStore, useSessionDetailUiStore } from '@renderer/store'
+import { useGenerateStore, useSessionDetailUiStore, useSessionStore } from '@renderer/store'
 import { normalizePagesForSelection } from '../shared'
 import type { SessionPreviewPage } from '../shared/types'
 import { PreviewIframe } from '../../preview/PreviewIframe'
@@ -32,6 +32,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '../../ui/DropdownMenu'
+import { isDefaultSlideSize, trySessionSlideSize } from '@shared/slide-size'
 
 /** Keep recently-scrolled-past webviews alive as buffer */
 const VISIBLE_CACHE = 20
@@ -45,27 +46,43 @@ const BrowseCard = memo(function BrowseCard({
   previewVersion: number
   renderPreview: boolean
 }): React.JSX.Element {
+  const currentSession = useSessionStore((state) => state.currentSession)
+  const slideSize = trySessionSlideSize(currentSession)
+  if (!slideSize) {
+    return (
+      <div className="group overflow-hidden rounded-[4px] bg-white/60 shadow-[0_4px_16px_rgba(93,107,77,0.08)]">
+        <div className="relative flex h-[220px] w-full items-center justify-center overflow-hidden rounded-t-[4px] bg-[#f5f1e8]/88" />
+      </div>
+    )
+  }
+  const thumbnailFitStyle =
+    slideSize.width >= slideSize.height
+      ? { width: '100%', aspectRatio: `${slideSize.width}/${slideSize.height}` }
+      : { height: '100%', aspectRatio: `${slideSize.width}/${slideSize.height}` }
   return (
     <div className="group overflow-hidden rounded-[4px] bg-white/60 shadow-[0_4px_16px_rgba(93,107,77,0.08)] transition-shadow hover:shadow-[0_8px_24px_rgba(93,107,77,0.14)]">
       <div
-        className="relative w-full overflow-hidden rounded-t-[4px] bg-[#f5f1e8]/88"
-        style={{ aspectRatio: '16/9', contain: 'paint' }}
+        className="relative flex h-[220px] w-full items-center justify-center overflow-hidden rounded-t-[4px] bg-[#f5f1e8]/88"
+        style={{ contain: 'paint' }}
       >
-        {renderPreview ? (
-          <PreviewIframe
-            key={`browse-${page.id}-${previewVersion}`}
-            src={page.sourceUrl}
-            htmlPath={page.htmlPath}
-            pageId={page.pageId}
-            title={`browse-page-${page.pageNumber}`}
-            inspectable={false}
-            thumbnail
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8a9a7b]">
-            P{page.pageNumber}
-          </div>
-        )}
+        <div className="relative max-h-full max-w-full overflow-hidden" style={thumbnailFitStyle}>
+          {renderPreview ? (
+            <PreviewIframe
+              key={`browse-${page.id}-${previewVersion}`}
+              src={page.sourceUrl}
+              htmlPath={page.htmlPath}
+              pageId={page.pageId}
+              title={`browse-page-${page.pageNumber}`}
+              slideSize={slideSize}
+              inspectable={false}
+              thumbnail
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8a9a7b]">
+              P{page.pageNumber}
+            </div>
+          )}
+        </div>
       </div>
       <div className="px-3 py-2.5">
         <span className="inline-block rounded-full bg-[#d4e4c1]/60 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-[#5c6c47]">
@@ -100,6 +117,7 @@ function SortableBrowseCard({
   exportEditableLabel,
   exportImageOnlyLabel,
   isExportingPptx,
+  canExportPptx,
   pageCount,
   onExportPagePptx,
   onRenamePage,
@@ -117,6 +135,7 @@ function SortableBrowseCard({
   exportEditableLabel: string
   exportImageOnlyLabel: string
   isExportingPptx: boolean
+  canExportPptx: boolean
   pageCount: number
   onExportPagePptx: (page: SessionPreviewPage, options?: { imageOnly?: boolean }) => void
   onRenamePage: (page: SessionPreviewPage) => void
@@ -181,7 +200,7 @@ function SortableBrowseCard({
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
-                    disabled={disabled || isExportingPptx}
+                    disabled={disabled || isExportingPptx || !canExportPptx}
                     onClick={(event) => event.stopPropagation()}
                     className="rounded bg-white/90 p-1 text-[#5d6b4d] shadow-sm transition-colors hover:bg-[#f5f1e8] hover:text-[#3e4a32] disabled:cursor-not-allowed disabled:opacity-50"
                     aria-label={exportLabel}
@@ -245,6 +264,9 @@ export function BrowseView(props: { sessionId: string }): React.JSX.Element {
   const { sessionId } = props
   const t = useT()
   const currentPages = useGenerateStore((state) => state.currentPages)
+  const currentSession = useSessionStore((state) => state.currentSession)
+  const slideSize = trySessionSlideSize(currentSession)
+  const canExportPptx = slideSize ? isDefaultSlideSize(slideSize) : false
   const isGenerating = useGenerateStore((state) => state.isGenerating)
   const previewKey = useSessionDetailUiStore((state) => state.previewKey)
   const thumbnailVersions = useSessionDetailUiStore((state) => state.thumbnailVersions)
@@ -387,6 +409,7 @@ export function BrowseView(props: { sessionId: string }): React.JSX.Element {
                       exportEditableLabel={t('sessionDetail.exportPptxEditable')}
                       exportImageOnlyLabel={t('sessionDetail.exportPptxImageOnly')}
                       isExportingPptx={pageActions.isExportingPptx}
+                      canExportPptx={canExportPptx}
                       pageCount={pages.length}
                       onExportPagePptx={pageActions.exportPagePptx}
                       onRenamePage={pageActions.renamePage}

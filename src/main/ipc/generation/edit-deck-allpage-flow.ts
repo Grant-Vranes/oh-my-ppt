@@ -227,6 +227,7 @@ export async function executeDeckAllPageEditGeneration(
     styleKey: context.styleKey,
     styleName: context.styleName,
     styleVersion: context.styleVersion,
+    slideSize: context.slideSize,
     appLocale: context.appLocale,
     topic: context.topic,
     deckTitle: context.deckTitle,

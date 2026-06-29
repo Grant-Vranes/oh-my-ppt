@@ -5,6 +5,7 @@ import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { GenerationPreviewGrid } from '../../../src/renderer/src/components/session-generating/GenerationPreviewGrid'
+import { requireSlideSizePreset } from '../../../src/shared/slide-size'
 
 vi.mock('../../../src/renderer/src/components/preview/PreviewIframe', () => ({
   PreviewIframe: () => React.createElement('div', { 'data-testid': 'generation-preview' })
@@ -22,6 +23,7 @@ describe('generation preview visibility', () => {
     const container = document.createElement('div')
     document.body.appendChild(container)
     const root = createRoot(container)
+    const slideSize = requireSlideSizePreset('wide-16-9')
     const pages = [
       {
         id: 'page-1',
@@ -34,7 +36,7 @@ describe('generation preview visibility', () => {
     ]
 
     await act(async () => {
-      root.render(React.createElement(GenerationPreviewGrid, { pages }))
+      root.render(React.createElement(GenerationPreviewGrid, { pages, slideSize }))
     })
     expect(container.querySelector('[data-testid="generation-preview"]')).toBeNull()
 

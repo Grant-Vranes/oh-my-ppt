@@ -1,8 +1,17 @@
 (function () {
   'use strict';
-  // @ohmyppt-index-runtim:arcsin1:v2.0.16
+  // @ohmyppt-index-runtim:arcsin1:v2.0.19
 
   var pages = JSON.parse(document.getElementById('pages-data')?.textContent || '[]');
+  var deckMetadata = (function () {
+    try {
+      return JSON.parse(document.getElementById('deck-metadata')?.textContent || '{}');
+    } catch (_) {
+      return {};
+    }
+  })();
+  var slideWidth = Number(deckMetadata.width) > 0 ? Number(deckMetadata.width) : 1600;
+  var slideHeight = Number(deckMetadata.height) > 0 ? Number(deckMetadata.height) : 900;
   var frameViewport = document.getElementById('frameViewport');
   var thumbs = document.getElementById('thumbs');
   var deckSwitcher = document.getElementById('deckSwitcher');
@@ -486,10 +495,10 @@
   function applyFrameFit(frame) {
     if (!frame || !frameViewport) return;
     var rect = frameViewport.getBoundingClientRect();
-    var rawScale = Math.min(rect.width / 1600, rect.height / 900);
+    var rawScale = Math.min(rect.width / slideWidth, rect.height / slideHeight);
     var scale = Number.isFinite(rawScale) && rawScale > 0 ? rawScale : 1;
-    var offsetX = Math.max(0, (rect.width - 1600 * scale) / 2);
-    var offsetY = Math.max(0, (rect.height - 900 * scale) / 2);
+    var offsetX = Math.max(0, (rect.width - slideWidth * scale) / 2);
+    var offsetY = Math.max(0, (rect.height - slideHeight * scale) / 2);
     frame.style.setProperty(
       '--ppt-fit-transform',
       'translate(' + offsetX + 'px, ' + offsetY + 'px) scale(' + scale + ')'

@@ -7,7 +7,10 @@ import type { GenerateChunkEvent } from '../../../src/shared/generation'
 
 const terminalEvent = (
   type: 'run_completed' | 'run_error',
-  options: { cancelled?: boolean; activityKind?: 'edit' | 'style-switch' | 'single-page-retry' } = {}
+  options: {
+    cancelled?: boolean
+    activityKind?: 'edit' | 'style-switch' | 'single-page-retry' | 'addPage'
+  } = {}
 ): GenerateChunkEvent =>
   ({
     type,

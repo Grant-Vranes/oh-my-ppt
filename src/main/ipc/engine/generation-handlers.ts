@@ -754,6 +754,7 @@ export function registerGenerationHandlers(ctx: IpcContext): void {
         sessionId: addPageCtx.sessionId,
         runId: addPageCtx.runId,
         mode: 'addPage',
+        activityKind: 'addPage',
         previousSessionStatus: addPageCtx.previousSessionStatus,
         totalPages: 1
       })

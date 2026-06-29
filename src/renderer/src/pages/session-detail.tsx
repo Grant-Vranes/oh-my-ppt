@@ -49,14 +49,11 @@ import { buildArtTextHtmlFragment, type ArtTextTemplateId } from '../lib/artText
 import { escapeHtmlText } from '../lib/utils'
 import { useT } from '../i18n'
 import { nanoid } from 'nanoid'
+import { requireSessionSlideSize } from '@shared/slide-size'
 
-const PPT_PAGE_WIDTH = 1600
-const PPT_PAGE_HEIGHT = 900
 const ADDED_ELEMENT_EDGE_PADDING = 20
 const ADDED_TEXT_WIDTH = 420
 const ADDED_TEXT_MIN_HEIGHT = 96
-const ADDED_TEXT_BASE_LEFT = 590
-const ADDED_TEXT_BASE_TOP = 360
 const ADDED_TEXT_OFFSET_STEP = 28
 const ADDED_ART_TEXT_WIDTH = 560
 const ADDED_ART_TEXT_MIN_HEIGHT = 130
@@ -85,6 +82,7 @@ export function SessionDetailPage(): React.JSX.Element {
     addMessage,
     resetRuntimeState
   } = useSessionStore()
+  const slideSize = currentSession ? requireSessionSlideSize(currentSession) : null
   const { updateProgress, currentPages } = useGenerateStore()
   const chatType = useSessionDetailUiStore((state) => state.chatType)
   const selectedPageId = useSessionDetailUiStore((state) => state.selectedPageId)
@@ -574,12 +572,12 @@ export function SessionDetailPage(): React.JSX.Element {
     const w = ADDED_TEXT_WIDTH
     const h = ADDED_TEXT_MIN_HEIGHT
     const left = Math.min(
-      ADDED_TEXT_BASE_LEFT + offset,
-      PPT_PAGE_WIDTH - w - ADDED_ELEMENT_EDGE_PADDING
+      Math.max(ADDED_ELEMENT_EDGE_PADDING, (slideSize.width - w) / 2) + offset,
+      slideSize.width - w - ADDED_ELEMENT_EDGE_PADDING
     )
     const top = Math.min(
-      ADDED_TEXT_BASE_TOP + offset,
-      PPT_PAGE_HEIGHT - h - ADDED_ELEMENT_EDGE_PADDING
+      Math.max(ADDED_ELEMENT_EDGE_PADDING, (slideSize.height - h) / 2) + offset,
+      slideSize.height - h - ADDED_ELEMENT_EDGE_PADDING
     )
     const zIdx = 10 + existingCount
     const defaultText = t('editMode.defaultText')
@@ -638,12 +636,12 @@ export function SessionDetailPage(): React.JSX.Element {
     const w = ADDED_ART_TEXT_WIDTH
     const h = ADDED_ART_TEXT_MIN_HEIGHT
     const left = Math.min(
-      ADDED_TEXT_BASE_LEFT + offset,
-      PPT_PAGE_WIDTH - w - ADDED_ELEMENT_EDGE_PADDING
+      Math.max(ADDED_ELEMENT_EDGE_PADDING, (slideSize.width - w) / 2) + offset,
+      slideSize.width - w - ADDED_ELEMENT_EDGE_PADDING
     )
     const top = Math.min(
-      ADDED_TEXT_BASE_TOP + offset,
-      PPT_PAGE_HEIGHT - h - ADDED_ELEMENT_EDGE_PADDING
+      Math.max(ADDED_ELEMENT_EDGE_PADDING, (slideSize.height - h) / 2) + offset,
+      slideSize.height - h - ADDED_ELEMENT_EDGE_PADDING
     )
     const zIdx = 10 + existingCount
     const htmlFragment = buildArtTextHtmlFragment(templateId, {
@@ -697,14 +695,20 @@ export function SessionDetailPage(): React.JSX.Element {
       (e) => e.pageId === selectedPage.pageId
     ).length
     const offset = existingCount * ADDED_MEDIA_OFFSET_STEP
-    const w = isBackground ? PPT_PAGE_WIDTH : isVideo ? 640 : 400
-    const h = isBackground ? PPT_PAGE_HEIGHT : isVideo ? 360 : 300
+    const w = isBackground ? slideSize.width : isVideo ? 640 : 400
+    const h = isBackground ? slideSize.height : isVideo ? 360 : 300
     const left = isBackground
       ? 0
-      : Math.min(400 + offset, PPT_PAGE_WIDTH - w - ADDED_ELEMENT_EDGE_PADDING)
+      : Math.min(
+          Math.max(ADDED_ELEMENT_EDGE_PADDING, (slideSize.width - w) / 2) + offset,
+          slideSize.width - w - ADDED_ELEMENT_EDGE_PADDING
+        )
     const top = isBackground
       ? 0
-      : Math.min(200 + offset, PPT_PAGE_HEIGHT - h - ADDED_ELEMENT_EDGE_PADDING)
+      : Math.min(
+          Math.max(ADDED_ELEMENT_EDGE_PADDING, (slideSize.height - h) / 2) + offset,
+          slideSize.height - h - ADDED_ELEMENT_EDGE_PADDING
+        )
     const zIdx = isBackground ? 0 : 10 + existingCount
     const insertIndex = -1
     const objectFit = isBackground ? 'cover' : 'contain'
@@ -817,7 +821,7 @@ export function SessionDetailPage(): React.JSX.Element {
     onAddArtText: (templateId) => void handleAddArtTextElement(templateId)
   })
 
-  if (!id) {
+  if (!id || !slideSize) {
     return <div className="h-full bg-[#f5f1e8]" />
   }
 

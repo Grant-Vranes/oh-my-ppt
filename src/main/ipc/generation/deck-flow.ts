@@ -80,6 +80,7 @@ export async function resolveDeckContext(
     styleKey: common.styleKey,
     styleName: common.styleName,
     styleVersion: common.styleVersion,
+    slideSize: common.slideSize,
     userProvidedOutlineTitles,
     totalPages,
     provider: common.provider,
@@ -195,7 +196,8 @@ export async function executeDeckGeneration(
   const scaffoldPromise = scaffoldProjectFiles({
     deckTitle: context.deckTitle,
     indexPath,
-    pages: pageRefs
+    pages: pageRefs,
+    slideSize: context.slideSize
   }).then(() => {
     emitDeckChunk({
       type: 'llm_status',
@@ -328,7 +330,8 @@ export async function executeDeckGeneration(
           title: page.title,
           htmlPath: path.basename(page.htmlPath)
         })
-      )
+      ),
+      context.slideSize
     ),
     'utf-8'
   )
@@ -485,6 +488,7 @@ export async function executeDeckGeneration(
     styleKey: context.styleKey,
     styleName: context.styleName,
     styleVersion: context.styleVersion,
+    slideSize: context.slideSize,
     appLocale: context.appLocale,
     animationPreferences: context.animationPreferences,
     topic: context.topic,

@@ -1,6 +1,8 @@
 import { readFileSync } from 'fs'
 import path from 'path'
 import { describe, expect, it } from 'vitest'
+import { buildCanvasConstraints } from '../../../src/main/prompt/shared'
+import { resolveSlideSize } from '../../../src/shared/slide-size'
 
 const projectRoot = process.cwd()
 
@@ -9,7 +11,7 @@ const readProjectFile = (filePath: string) =>
 
 describe('layout prompt budget guardrails', () => {
   it('keeps fullscreen backgrounds separate from conservative content budget', () => {
-    const sharedPrompt = readProjectFile('src/main/prompt/shared.ts')
+    const sharedPrompt = buildCanvasConstraints(resolveSlideSize({ id: 'wide-16-9' }))
     const layoutSkill = readProjectFile('resources/skills/oh-my-ppt-layout/SKILL.md')
 
     expect(sharedPrompt).toContain('背景可铺满 1600×900')
@@ -69,22 +71,22 @@ describe('layout prompt budget guardrails', () => {
   })
 
   it('delivery guard blocks top-heavy half-screen layouts across rewrite-capable paths', () => {
-    const sharedPrompt = readProjectFile('src/main/prompt/shared.ts')
+    const scenarioPrompt = readProjectFile('src/main/prompt/canvas-scenario.ts')
     const deckSystem = readProjectFile('src/main/prompt/deck-system.ts')
     const generationUser = readProjectFile('src/main/prompt/generation-user.ts')
     const editSystem = readProjectFile('src/main/prompt/edit-system.ts')
 
-    expect(sharedPrompt).toContain('LAYOUT_DELIVERY_GUARD')
-    expect(sharedPrompt).toContain('形服务于魂')
-    expect(sharedPrompt).toContain('3 秒可读的主旨')
-    expect(sharedPrompt).toContain('正文不能全部停在上半屏')
-    expect(sharedPrompt).toContain('flex-1` 巨大空卡片')
-    expect(sharedPrompt).toContain('220–280px')
-    expect(sharedPrompt).toContain('60% 高度')
-    expect(sharedPrompt).toContain('视觉重心可以略高于几何中心')
+    expect(scenarioPrompt).toContain('buildCanvasScenarioDeliveryGuard')
+    expect(scenarioPrompt).toContain('形服务于魂')
+    expect(scenarioPrompt).toContain('3 秒可读的主旨')
+    expect(scenarioPrompt).toContain('正文不能全部停在上半屏')
+    expect(scenarioPrompt).toContain('220–280px')
+    expect(scenarioPrompt).toContain('视觉重心可以略高于几何中心')
+    expect(scenarioPrompt).toContain('首屏必须有吸引点')
+    expect(scenarioPrompt).toContain('收藏价值')
 
-    expect(deckSystem).toContain('LAYOUT_DELIVERY_GUARD')
-    expect(generationUser).toContain('LAYOUT_DELIVERY_GUARD')
+    expect(deckSystem).toContain('buildCanvasScenarioDeliveryGuard')
+    expect(generationUser).toContain('buildCanvasScenarioDeliveryGuard')
 
     const containerEdit = editSystem.slice(
       editSystem.indexOf('function buildContainerEditPrompt('),
@@ -100,14 +102,15 @@ describe('layout prompt budget guardrails', () => {
     )
     const deckEdit = editSystem.slice(editSystem.indexOf('function buildDeckEditPrompt('))
 
-    expect(singlePageEdit).toContain('LAYOUT_DELIVERY_GUARD')
-    expect(deckEdit).toContain('LAYOUT_DELIVERY_GUARD')
-    expect(selectorEdit).not.toContain('LAYOUT_DELIVERY_GUARD')
-    expect(containerEdit).not.toContain('LAYOUT_DELIVERY_GUARD')
+    expect(singlePageEdit).toContain('buildCanvasScenarioDeliveryGuard')
+    expect(deckEdit).toContain('buildCanvasScenarioDeliveryGuard')
+    expect(selectorEdit).not.toContain('buildCanvasScenarioDeliveryGuard')
+    expect(containerEdit).not.toContain('buildCanvasScenarioDeliveryGuard')
   })
 
   it('keeps layout guidance density-driven and requires a pre-write size self-check', () => {
     const sharedPrompt = readProjectFile('src/main/prompt/shared.ts')
+    const scenarioPrompt = readProjectFile('src/main/prompt/canvas-scenario.ts')
     const layoutSkill = readProjectFile('resources/skills/oh-my-ppt-layout/SKILL.md')
     const chartSkill = readProjectFile('resources/skills/oh-my-ppt-chart/SKILL.md')
     const chartReference = readProjectFile('resources/skills/oh-my-ppt-chart/references/chart.md')
@@ -119,11 +122,11 @@ describe('layout prompt budget guardrails', () => {
     // the mechanics canvas block (distribute EXISTING content, no fill, density by content).
     expect(sharedPrompt).toContain('观众先看哪')
     expect(sharedPrompt).toContain('让版面协调')
-    expect(sharedPrompt).toContain('flex flex-col h-full')
+    expect(sharedPrompt).toContain('对应逻辑画布宽 ${slideSize.width}px、高 ${slideSize.height}px')
     expect(sharedPrompt).toContain('不为填满而新增')
     expect(sharedPrompt).toContain('密度由内容决定')
     expect(sharedPrompt).toContain('内容够了就不扩展')
-    expect(sharedPrompt).toContain('过密先自我总结')
+    expect(scenarioPrompt).toContain('过密先自我总结')
     expect(sharedPrompt).toContain('内容过多先总结再布局')
     expect(sharedPrompt).toContain('不要靠缩小字号、增加卡片、堆更多行')
     expect(layoutSkill).toContain('presentation-like breathing room')

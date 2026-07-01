@@ -179,6 +179,7 @@ export async function executeRetryFailedPages(
       styleVersion: context.styleVersion,
       appLocale: context.appLocale,
       totalPages: sessionPages.length,
+      slideSize: context.slideSize,
       topic: context.topic,
       userMessage: context.userMessage,
       fontSelection: context.fontSelection,

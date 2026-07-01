@@ -10,7 +10,7 @@ import {
 import type { TemplateListItem } from '@renderer/lib/ipc'
 import { useT } from '@renderer/i18n'
 import dayjs from 'dayjs'
-import { requireSlideSize } from '@shared/slide-size'
+import { resolveSlideSize } from '@shared/slide-size'
 
 export function TemplateCard({
   template,
@@ -33,7 +33,7 @@ export function TemplateCard({
   const thumbnailUrl = template.thumbnailPath
     ? `local-asset://${encodeURI(template.thumbnailPath.replace(/\\/g, '/'))}`
     : ''
-  const slideSize = requireSlideSize({
+  const slideSize = resolveSlideSize({
     id: template.slideSizeId,
     width: template.slideWidth,
     height: template.slideHeight

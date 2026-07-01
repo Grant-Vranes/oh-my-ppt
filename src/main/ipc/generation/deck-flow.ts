@@ -280,6 +280,7 @@ export async function executeDeckGeneration(
       styleVersion: context.styleVersion,
       appLocale: context.appLocale,
       totalPages: context.totalPages,
+      slideSize: context.slideSize,
       topic: context.topic,
       userMessage: context.userMessage,
       fontSelection: context.fontSelection,

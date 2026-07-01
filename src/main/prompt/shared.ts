@@ -177,9 +177,12 @@ export const CONTENT_WRITING_RULES = [
 ].join('\n')
 
 export const STYLE_FIDELITY_RULES = [
-  '## 风格一致性闸门',
+  '## 尺寸布局与风格合成闸门',
+  '- 当前画布尺寸与已注入的 layout skill/catalog 是页面结构的唯一来源：由它们决定阅读路径、分区、列数、密度和空间预算。',
   '- 当前风格规则是视觉语言的唯一来源：颜色、字体气质、圆角/线条/阴影、背景、装饰符号、图表质感都必须从当前 style 与 design contract 派生。',
-  '- layout skill/catalog 只决定结构、阅读路径和高度预算，不提供新的视觉风格；不要因为选择了某个 layout pattern 就改成另一套审美。',
+  '- 先依据 layout skill/catalog 选择适合当前尺寸的页面结构，再把 style 的视觉语言应用到这些结构区域；layout 不提供新的审美，style 不替代尺寸结构。',
+  '- style 中出现的左右分栏、固定列数、横向色带或固定位置只表达视觉构图倾向；必须在当前尺寸与 layout pattern 中重新表达，不能直接作为页面骨架。',
+  '- size-aware layoutMotif 负责连接当前尺寸与 style 的构图气质，但不能覆盖当前画布尺寸或 layout skill/catalog。',
   '- 单页生成也必须像整套 deck 一样遵守当前 style。可以变化构图和节奏，但不能自创无关配色、组件语言、插画/装饰风格或字体气质。',
   '- 写入前做一次 style check：如果把当前 style 名字遮住，页面仍应能从配色、形状、字体和装饰语言上看出属于同一套演示。'
 ].join('\n')
@@ -221,8 +224,8 @@ export function formatDesignContract(contract?: DesignContract): string {
     `- Canvas background: ${contract.background}`,
     `- Palette: ${contract.palette.join(', ')}`,
     `- Title style: ${contract.titleStyle}`,
-    `- Layout motif: ${contract.layoutMotif}`,
-    '- Use the layout motif as the deck-level layout language. Keep pages varied within this motif instead of repeating one template.',
+    `- Size-adapted composition motif: ${contract.layoutMotif}`,
+    '- Apply this motif within the current canvas layout rules. Keep pages varied within the motif instead of repeating one template.',
     `- Chart style: ${contract.chartStyle}`,
     `- Shape language: ${contract.shapeLanguage}`
   ]

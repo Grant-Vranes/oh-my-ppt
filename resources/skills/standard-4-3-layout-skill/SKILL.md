@@ -1,50 +1,72 @@
 ---
 name: standard-4-3-layout-skill
-description: Must be read before creating, relaying out, or repairing standard 4:3 Oh My PPT pages. Defines square-ish presentation composition, column limits, chart/table budgeting, and anti-wide-dashboard rules for 1600x1200 canvases.
+description: Must be read before creating, relaying out, or repairing standard 4:3 Oh My PPT pages. Defines square-ish presentation layout, two-zone and 2x2 structures, chart/table budgeting, column discipline, plus catalog and checklist references for 1600x1200 canvases.
 ---
 
 # Standard 4:3 Layout Skill
 
 This skill is the layout source of truth for `standard-4-3` pages, usually 1600x1200.
 
-A 4:3 canvas is presentation-like but not wide. It supports clear two-zone layouts, balanced chart + insight pairs, and compact grids. It does not have enough width for many 16:9 dashboard patterns.
+A 4:3 page is a square-ish presentation canvas. It supports readable talk-track slides, balanced data + insight pairs, compact matrices, and diagrams with generous margins. Its best layouts use depth through hierarchy, not by spreading many columns across the width.
 
-## Use this skill when
+Deep details live in the references:
 
-- The selected slide size is `standard-4-3`
-- The prompt says the canvas is 1600x1200 or 4:3
-- Creating, relaying out, or repairing a squarer presentation page
+- `references/catalog.md` - named 4:3 presentation patterns and 1600x1200 zone skeletons.
+- `references/checklist.md` - P0/P1/P2 structural self-check for delivery.
 
-## Composition
+## Preflight
 
-Good structures:
+Before writing HTML, decide:
 
-- title band + 2-column body
-- chart/data zone + explanation panel
-- 2x2 matrix
-- central concept + side annotations
-- table-like rows with few columns
-- balanced image/diagram plus takeaways
+1. **Message** - the one sentence this slide should make the audience remember.
+2. **Primary object** - chart, table, matrix, diagram, hero number, conclusion block, image, or comparison.
+3. **Reading path** - title/claim -> primary object -> interpretation/action.
+4. **Density** - low for cover/quote/hero number, medium for most slides, high only for compact tables or matrices.
+5. **Pattern** - choose one structure from `references/catalog.md` before writing HTML.
+6. **Budget** - estimate width and height together; 4:3 failures are often width pressure, not only height pressure.
 
-Avoid:
+Use the canvas dimensions from the prompt. If custom dimensions are supplied, preserve the same square-ish relationships.
 
-- six-metric horizontal bands
-- long horizontal timelines
-- three or four dense equal columns
-- wide tables with many narrow columns
-- bottom rows copied from 16:9 PPT
+## Canvas Grammar
 
-## Rules
+- Favor one-column, two-zone, 2x2, or center + rail structures.
+- Two real content columns are usually enough. Three columns work only for short metric chips or labels.
+- Keep side margins and gutters generous enough for projection readability.
+- Use row-based tables and grouped insight rows when information has several dimensions.
+- Use grid/flex document flow for text-bearing modules. Absolute positioning is only for background accents, connector lines, and non-text decoration.
+- Body copy, ordinary labels, and card descriptions stay at least `text-lg` (18px); headings stay at least `text-2xl` (24px); auxiliary source/footer text stays at least 12px.
 
-- Use fewer columns than a 16:9 slide. Two columns is usually the limit.
-- Keep side margins and gutters generous enough for readability.
-- Body text stays at least 18px; headings stay at least 24px.
-- Use current canvas dimensions from the prompt, never 1600x900 defaults.
-- Charts can be larger than in vertical formats, but legends and labels must remain readable.
-- If content feels cramped, convert wide structures into stacked rows or a 2x2 matrix.
+## Pattern Quick Lookup
 
-## Repair checklist
+| Intent | Patterns |
+| --- | --- |
+| main + support | `title-plus-two-zone` · `center-concept-rails` |
+| data | `chart-insight-pair` · `compact-table-rows` |
+| framework | `matrix-2x2` |
+| visual | `diagram-plus-takeaways` |
 
-- If the page has narrow columns, reduce column count.
-- If a timeline stretches edge to edge, convert to rows or a compact sequence.
-- If a table is clipped, keep only key columns or turn it into grouped insight cards.
+Use `references/catalog.md` for the full structure recipe before writing a new or heavily repaired page.
+
+## Height And Width Budget
+
+Calculate before writing:
+
+1. Canvas: usually 1600px wide x 1200px tall.
+2. Outer padding: commonly 64-112px total per axis.
+3. Title/subtitle: usually 80-140px after wrapping.
+4. Gaps between zones.
+5. Footer/source/reserve: 40-72px when present.
+6. Remaining area is the body slot.
+
+Then budget width: subtract horizontal padding and gaps, then check whether each column, chart label, table cell, or matrix quadrant has enough readable width.
+
+For charts, reserve a specific frame height and keep the `@ppt-chart-height=N` marker aligned with the `h-[Npx]` class. In a two-zone layout, columns share width, not height; each column still uses the same vertical body slot.
+
+## Repair And Self-check
+
+- If the page feels cramped, reduce real content columns or convert to rows / 2x2.
+- If hierarchy is flat, promote one object to primary and compress the rest into rails, chips, or rows.
+- If a table is clipped, keep only key columns or turn dimensions into grouped insight rows.
+- If a timeline or process lacks space, use stacked phases or compact sequence bands.
+- If a support zone is mostly empty, shrink it or give the primary object more space.
+- Before delivery, run `references/checklist.md`.

@@ -1,54 +1,72 @@
 ---
 name: vertical-9-16-layout-skill
-description: Must be read before creating, relaying out, or repairing 9:16 vertical Oh My PPT pages. Defines vertical-story composition, height budgeting, scan order, and anti-horizontal-PPT rules for 900x1600 canvases.
+description: Must be read before creating, relaying out, or repairing 9:16 vertical Oh My PPT pages. Defines mobile-story layout, top/middle/bottom zone planning, vertical flow patterns, height budgeting, readable chart/list composition, plus catalog and checklist references for 900x1600 canvases.
 ---
 
 # Vertical 9:16 Layout Skill
 
 This skill is the layout source of truth for `vertical-9-16` pages, usually 900x1600.
 
-Do not use 16:9 PPT skeletons here. A 9:16 page is a vertical story canvas: it needs a clear top hook, a middle value zone, and a bottom conclusion or support area.
+A 9:16 page is a vertical story screen. Its strongest layouts feel like a designed reading sequence: a top hook, a middle value zone, and a bottom conclusion or support area. The job is to make the page scan from top to bottom without becoming a stack of unrelated cards.
 
-## Use this skill when
+Deep details live in the references:
 
-- The selected slide size is `vertical-9-16`
-- The prompt says the canvas is 900x1600 or 9:16
-- Creating, relaying out, or repairing a vertical story/page/poster slide
+- `references/catalog.md` - named vertical story patterns and 900x1600 zone skeletons.
+- `references/checklist.md` - P0/P1/P2 structural self-check for delivery.
 
-## Composition
+## Preflight
 
-1. Top hook/title: 15-25% of height.
-2. Main visual/value zone: 45-60% of height.
-3. Bottom takeaway/support: 15-25% of height.
+Before writing HTML, decide:
 
-Good structures:
+1. **Message** - the one sentence this screen should make the viewer remember.
+2. **Hook** - the first visual/text anchor: claim, question, number, quote, or compact image/data object.
+3. **Main value** - the proof, explanation, comparison, steps, or data that makes the hook useful.
+4. **Bottom role** - takeaway, implication, source, callout, or final support.
+5. **Density** - low for hero claim/quote, medium for most explainers, high only for compact ranked lists or step pages.
+6. **Pattern** - choose one structure from `references/catalog.md` before writing HTML.
+7. **Budget** - estimate title wrapping, section heights, gaps, chart/list height, and bottom reserve against the current canvas.
 
-- stacked story sections
-- vertical timeline
-- hero claim plus support cards
-- one chart plus interpretation below
-- numbered step stack
-- before/after vertical pair
+Use the canvas dimensions from the prompt. If custom dimensions are supplied, scale the same vertical relationships to that height and width.
 
-Avoid:
+## Canvas Grammar
 
-- wide 3-column dashboards
-- horizontal timelines
-- dense comparison tables
-- bottom-only card rows copied from PPT
-- tiny typography used to force a horizontal layout to fit
+- Work in a vertical stack. The page should have a clear top, middle, and bottom.
+- Use one dominant focal object, then 2-4 supporting modules.
+- Keep the middle zone load-bearing. A page with only small modules near the top feels unfinished.
+- Use full-width sections by default. A compact two-column pocket is acceptable only inside one short section when both columns stay readable.
+- Use grid/flex document flow for text-bearing modules. Absolute positioning is only for background accents, connector lines, and non-text decoration.
+- Body copy, ordinary labels, and card descriptions stay at least `text-lg` (18px); headings stay at least `text-2xl` (24px); auxiliary source/footer text stays at least 12px.
 
-## Rules
+## Pattern Quick Lookup
 
-- Use the full vertical canvas; do not leave the bottom half decorative and empty.
-- Prefer one dominant focal object, then 2-4 supporting modules.
-- Body text stays at least 18px; headings stay at least 24px.
-- Use current canvas dimensions from the prompt, never 1600x900 defaults.
-- Charts should be compact and vertically readable. Use the chart skill for API details and explicit chart frame height.
-- If content is dense, summarize and group into rows or cards. Do not shrink text below the floor.
+| Intent | Patterns |
+| --- | --- |
+| hook / summary | `hook-value-takeaway` · `hero-claim` |
+| process | `vertical-step-story` |
+| comparison | `stacked-comparison` |
+| data | `data-takeaway` · `ranked-list` |
 
-## Repair checklist
+Use `references/catalog.md` for the full structure recipe before writing a new or heavily repaired page.
 
-- If the page looks like a squeezed landscape slide, rebuild it as a vertical stack.
-- If the lower canvas is empty, move takeaway/support content there.
-- If a chart/table is unreadable, convert to a hero metric, rank list, compact bars, or grouped rows.
+## Height Budget
+
+Calculate before writing:
+
+1. Canvas height: usually 1600px.
+2. Outer vertical padding: commonly 64-112px total.
+3. Hook/title zone: usually 180-360px after wrapping.
+4. Gaps between sections.
+5. Bottom takeaway/support/source: usually 160-320px when present.
+6. Safety reserve: 40-64px.
+7. Remaining height is the main value zone.
+
+For charts, reserve a specific frame height and keep the `@ppt-chart-height=N` marker aligned with the `h-[Npx]` class. Prefer compact bars, rank lists, simple trends, or hero metric + interpretation when the data has many labels.
+
+## Repair And Self-check
+
+- If the page feels top-heavy, enlarge or move the main value object into the middle and give the bottom a real takeaway.
+- If the page feels like a long list, group items into 2-4 sections or promote one item to hero.
+- If text feels cramped, shorten copy and group evidence; do not reduce semantic font floors.
+- If a chart/list is hard to read, switch to a hero metric, rank list, compact bars, or grouped rows.
+- If the bottom is decorative only, replace decoration with conclusion, implication, source, or final support.
+- Before delivery, run `references/checklist.md`.

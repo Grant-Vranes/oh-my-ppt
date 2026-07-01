@@ -16,7 +16,7 @@ import { ipc, type TemplateListItem } from '../lib/ipc'
 import { useT } from '../i18n'
 import { useModelAction } from '@renderer/hooks/useModelAction'
 import { useThumbnailUpdates } from '@renderer/hooks/useThumbnailUpdates'
-import { requireSlideSize } from '@shared/slide-size'
+import { resolveSlideSize } from '@shared/slide-size'
 
 const MAX_PPTX_SIZE_MB = 80
 const MAX_PPTX_SIZE_BYTES = MAX_PPTX_SIZE_MB * 1024 * 1024
@@ -60,7 +60,7 @@ export function TemplatesPage(): React.JSX.Element {
   const [importingPptxTemplate, setImportingPptxTemplate] = useState(false)
   const [pptxTemplateProgress, setPptxTemplateProgress] = useState<string | null>(null)
   const previewSlideSize = previewTarget
-    ? requireSlideSize({
+    ? resolveSlideSize({
         id: previewTarget.slideSizeId,
         width: previewTarget.slideWidth,
         height: previewTarget.slideHeight

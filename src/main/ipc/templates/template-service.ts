@@ -37,7 +37,11 @@ import {
   resolveTemplateManifestPath,
   resolveTemplateRelativePath
 } from './template-paths'
-import { requireSessionSlideSize, requireSlideSize } from '@shared/slide-size'
+import {
+  requireSessionSlideSize,
+  requireSlideSize,
+  requireSlideSizePreset
+} from '@shared/slide-size'
 
 type CacheValue = { manifest: TemplateManifest; templateDir: string }
 type PreparedTemplatePage = {
@@ -537,6 +541,7 @@ export async function importPptxAsTemplate(
       label: '正在生成模板设计契约',
       totalPages: imported.pageCount
     })
+    const slideSize = requireSlideSizePreset('wide-16-9')
     const designContract = await buildDesignContractWithLLM({
       provider: activeModel.provider,
       apiKey: activeModel.apiKey,
@@ -547,6 +552,7 @@ export async function importPptxAsTemplate(
       styleSkillPrompt: styleResult.styleSkill,
       modelTimeoutMs: modelTimeouts.document,
       totalPages: imported.pageCount,
+      slideSize,
       topic: title
     })
 
@@ -571,9 +577,9 @@ export async function importPptxAsTemplate(
       pageCount: imported.pageCount,
       tags: [],
       styleId,
-      slideSizeId: 'wide-16-9',
-      slideWidth: 1600,
-      slideHeight: 900,
+      slideSizeId: slideSize.id,
+      slideWidth: slideSize.width,
+      slideHeight: slideSize.height,
       designContract,
       pages: imported.pages.map((page, index) => {
         const relativeHtmlPath = path.relative(tempDir, page.htmlPath).split(path.sep).join('/')

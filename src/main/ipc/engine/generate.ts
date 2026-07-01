@@ -21,6 +21,7 @@ import type {
 import { normalizeLayoutIntent, type LayoutIntent } from '@shared/layout-intent'
 import { resolveModelTimeoutMs, type ModelTimeoutProfile } from '@shared/model-timeout'
 import { progressLabel, progressText } from '@shared/progress'
+import type { SlideSizePreset } from '@shared/slide-size'
 import type { DeckEditScope, DesignContract, OutlineItem } from '../../tools/types'
 import { isPlaceholderPageHtml } from '../../tools/html-utils'
 import {
@@ -594,6 +595,7 @@ export const buildDesignContractWithLLM = async (args: {
   appLocale?: AppLocale
   modelTimeoutMs?: number
   totalPages: number
+  slideSize: SlideSizePreset
   topic?: string
   userMessage?: string
   fontSelection?: FontSelection
@@ -623,7 +625,8 @@ export const buildDesignContractWithLLM = async (args: {
     styleSkill: args.styleSkillPrompt,
     availableFonts,
     requestedFontPair,
-    languageHint
+    languageHint,
+    slideSize: args.slideSize
   })
   const userPrompt = buildDesignContractUserPrompt()
   const parseDesignContract = async (responseText: string): Promise<DesignContract> => {

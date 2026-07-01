@@ -1,5 +1,6 @@
 import { CONTENT_LANGUAGE_RULES, SOURCE_MATERIAL_PLANNING_RULES } from './shared'
 import type { AvailableFont } from '../tools/font-registry'
+import { requireSlideSize, type SlideSizePreset } from '@shared/slide-size'
 
 export function buildPlanningSystemPrompt(totalPages: number = 0): string {
   return [
@@ -38,15 +39,17 @@ export function buildPlanningSystemPrompt(totalPages: number = 0): string {
   ].join('\n')
 }
 
-export function buildDesignContractSystemPrompt(args?: {
+export function buildDesignContractSystemPrompt(args: {
   styleSkill?: string | null
   availableFonts?: AvailableFont[]
   requestedFontPair?: { titleFont: string; bodyFont: string } | null
   languageHint?: string | null
+  slideSize: SlideSizePreset
 }): string {
-  const styleSkill = args?.styleSkill
-  const availableFonts = args?.availableFonts || []
-  const requestedFontPair = args?.requestedFontPair || null
+  const styleSkill = args.styleSkill
+  const availableFonts = args.availableFonts || []
+  const requestedFontPair = args.requestedFontPair || null
+  const slideSize = requireSlideSize(args.slideSize)
   const fontInstruction = requestedFontPair
     ? [
         '- titleFont and bodyFont are fixed by the user selection. Copy them exactly:',
@@ -66,15 +69,23 @@ export function buildDesignContractSystemPrompt(args?: {
     'Use the style specification below as the primary source of truth. Translate it into reusable visual guardrails, not a fixed page template.',
     styleSkill || '(No style preset specified. Choose a coherent restrained visual direction.)',
     '',
+    '## Target canvas',
+    `- Slide size id: ${slideSize.id}`,
+    `- Exact dimensions: ${slideSize.width}x${slideSize.height}`,
+    '- Generate layoutMotif for this exact canvas. The target dimensions override any different canvas ratio, width, or height implied by the style source.',
+    '- layoutMotif should adapt the style into a flexible reading direction, visual-weight distribution, whitespace rhythm, and composition tendency for this canvas.',
+    '- Do not prescribe one fixed page template that every slide must repeat.',
+    '',
     'Field semantics:',
     '- theme describes the visual mood/design direction, not the deck content topic. Do not repeat the topic, title, year, or industry name.',
-    '- background, palette, titleStyle, layoutMotif, chartStyle, and shapeLanguage must be derived from the style specification.',
+    '- background, palette, titleStyle, chartStyle, and shapeLanguage must be derived from the style specification.',
+    '- layoutMotif must combine the style specification with the exact target canvas above.',
     fontInstruction,
     '- The design contract should keep the deck visually coherent while allowing slide-level variation in composition, density, and emphasis.',
     '- Avoid over-prescribing exact placements, repeated templates, or one layout that every page must copy.',
     '- Keep fields concrete and actionable, but phrase them as ranges, tendencies, and reusable tokens when the source style allows flexibility.',
     '',
-    `languageHint: ${args?.languageHint || 'unknown'}`,
+    `languageHint: ${args.languageHint || 'unknown'}`,
     'availableFonts:',
     JSON.stringify(availableFonts),
     '',

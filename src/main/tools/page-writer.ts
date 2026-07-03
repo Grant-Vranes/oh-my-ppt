@@ -134,14 +134,22 @@ export const buildBasePageStyleTag = (input: SlideSizePreset): string => {
 
 export const buildFitScript = (input: SlideSizePreset): string => {
   const slideSize = requireSlideSize(input)
+  // Min font floors scale with canvas height so the readability floor lands at
+  // the same physical size after the presentation's contain-fit scaling.
+  // 900h is the baseline (matches wide-16-9); taller canvases get larger floors.
+  const heightScale = slideSize.height / 900
+  const legacyMinFont = Math.round(14 * heightScale)
+  const auxiliaryMinFont = Math.round(12 * heightScale)
+  const bodyMinFont = Math.round(18 * heightScale)
+  const headingMinFont = Math.round(24 * heightScale)
   return `<script id="ppt-page-fit">
 (() => {
   const WIDTH = ${slideSize.width};
   const HEIGHT = ${slideSize.height};
-  const LEGACY_MIN_FONT = 14;
-  const AUXILIARY_MIN_FONT = 12;
-  const BODY_MIN_FONT = 18;
-  const HEADING_MIN_FONT = 24;
+  const LEGACY_MIN_FONT = ${legacyMinFont};
+  const AUXILIARY_MIN_FONT = ${auxiliaryMinFont};
+  const BODY_MIN_FONT = ${bodyMinFont};
+  const HEADING_MIN_FONT = ${headingMinFont};
   const AUXILIARY_TEXT_SELECTOR = [
     "footer",
     "small",

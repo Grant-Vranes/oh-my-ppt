@@ -35,7 +35,7 @@ Use the canvas dimensions from the prompt. If custom dimensions are supplied, pr
 - Use at most two real columns or a 2x2 grid.
 - Corners matter. Fill them only with meaningful support, not decorative leftovers.
 - Use grid/flex document flow for text-bearing modules. Absolute positioning is only for background accents, connector lines, and non-text decoration.
-- Body copy, ordinary labels, and card descriptions stay at least `text-lg` (18px); headings stay at least `text-2xl` (24px); auxiliary source/footer text stays at least 12px.
+- Body copy, ordinary labels, and card descriptions must be at least **24px** (Tailwind `text-2xl` is 24px, or use `style="font-size:24px"` / `text-[24px]`); headings must be at least **32px** (`text-3xl` or larger); auxiliary source/footer text must be at least **16px** (`text-base` or `text-[16px]`). These floors compensate for the smaller fit-scale a 1200h canvas gets in presentation mode — `text-lg`/`text-xl` (18px/20px) are too small here, do not use them for body copy.
 
 ## Pattern Quick Lookup
 

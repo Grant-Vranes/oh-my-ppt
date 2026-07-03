@@ -20,6 +20,17 @@ describe('style fidelity prompt placement', () => {
     expect(shared).toContain('Size-adapted composition motif')
   })
 
+  it('prescribes content-overload priority in shared content rules', () => {
+    const shared = readSource('src/main/prompt/shared.ts')
+
+    // When content oversupply exceeds a canvas's capacity, the model must
+    // compress/merge/drop first; it must NOT resolve overload by shrinking
+    // fonts below floors or by overflowing the canvas.
+    expect(shared).toContain('内容超载时按这个优先级解决')
+    expect(shared).toContain('绝不靠缩字号到下限以下')
+    expect(shared).toContain('竖版/小红书/方图本来就是低密度载体')
+  })
+
   it('moves the deck-generation style preset to the end of the system prompt', () => {
     const deckSystem = readSource('src/main/prompt/deck-system.ts')
     const deckFn = deckSystem.slice(deckSystem.indexOf('export function buildDeckAgentSystemPrompt'))

@@ -79,4 +79,34 @@ describe('size layout skills', () => {
       expect(combined).not.toContain('Do not use')
     }
   })
+
+  it('low-density vertical/poster skills cap content capacity and prescribe overload priority', () => {
+    // These canvases are social/card formats, not compressed slides. They MUST
+    // declare a hard capacity ceiling and an overload priority so the page agent
+    // compresses content instead of shrinking fonts or overflowing.
+    const lowDensitySkills = [
+      'vertical-9-16-layout-skill',
+      'vertical-3-4-layout-skill',
+      'red-layout-skill'
+    ]
+
+    for (const name of lowDensitySkills) {
+      const source = readProjectFile(`resources/skills/${name}/SKILL.md`)
+
+      // Hard capacity ceiling is declared.
+      expect(source).toContain('Capacity ceiling (hard)')
+      // Vertical fill rule forces flex-1 / justify-between so the page never
+      // leaves an accidental bottom gap (LLMs cannot pixel-estimate accurately;
+      // CSS auto-distribution is the reliable fix).
+      expect(source).toContain('Vertical fill (hard)')
+      expect(source).toContain('flex-1')
+      expect(source).toContain('no accidental top-stack or bottom gap')
+      // Overload priority explicitly forbids going below font floors or
+      // exceeding canvas height as a way to fit more content.
+      expect(source).toContain('resolve overload in this priority')
+      expect(source).toContain('Never resolve overload by going below the font floors')
+      // Recognises the format as a low-density carrier, not a compressed slide.
+      expect(source).toContain('not a compressed slide')
+    }
+  })
 })

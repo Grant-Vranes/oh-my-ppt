@@ -834,7 +834,7 @@ export function SessionDetailPage(): React.JSX.Element {
               isMac ? '' : 'pr-[calc(var(--app-titlebar-control-safe-area)+16px)]'
             }`}
           >
-            <div className="app-no-drag flex-1">
+            <div className="flex-1">
               <SessionToolbar sessionId={id} isSavingEdits={isSavingEdits} />
             </div>
           </div>

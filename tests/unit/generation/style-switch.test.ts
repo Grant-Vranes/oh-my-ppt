@@ -204,4 +204,21 @@ describe('style switch generation', () => {
     expect(handlerSource).toContain('persistUserMessage: false')
     expect(editFlowSource).toContain('if (input.persistUserMessage)')
   })
+
+  it('keeps the activity dialog open while failed style-switch pages are pending retry', () => {
+    const activityDialogSource = fs.readFileSync(
+      path.resolve('src/renderer/src/components/session-detail/modal/GenerationActivityDialog.tsx'),
+      'utf8'
+    )
+
+    // 失败状态 + 有 retryContext + 有 failedPageCount 时弹窗不可关：
+    // 失败 + 走开 + 回来，retryContext 仍在线，能直接点「重试失败页面」。
+    // 这避免了 styleId 已提交、retryContext 被清、再也无法重试的死锁。
+    expect(activityDialogSource).toContain(
+      'const blockClose = status === \'running\' || (retryContext !== null && failedPageCount > 0)'
+    )
+    expect(activityDialogSource).toContain('if (!nextOpen && blockClose) return')
+    expect(activityDialogSource).toContain('showClose={!blockClose}')
+    expect(activityDialogSource).toContain('if (blockClose) event.preventDefault()')
+  })
 })

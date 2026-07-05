@@ -68,11 +68,25 @@ export interface DocumentPlanPageSkeletonItem {
   reason: string
 }
 
+export const SECTION_AGENDA_OUTLINE_MARKER = 'Page role: section-agenda'
+export const SECTION_AGENDA_REASON_PREFIX_ZH = '章节目录页'
+export const SECTION_AGENDA_REASON_PREFIX_EN = 'Section agenda page'
+
+export const isSectionAgendaReason = (reason: string): boolean =>
+  new RegExp(
+    `^(?:${SECTION_AGENDA_REASON_PREFIX_ZH}|${SECTION_AGENDA_REASON_PREFIX_EN})\\s*[:：]`,
+    'i'
+  ).test(reason.trim())
+
+export const isSectionAgendaOutline = (outline: string): boolean =>
+  /Page role:\s*section-agenda/i.test(outline)
+
 export const isInternalDocumentPlanPageReason = (reason: string): boolean => {
   const normalized = reason.toLowerCase()
   return (
     normalized.includes('major # heading') ||
     normalized.includes('leaf ## section') ||
+    normalized.includes('top-level ## section') ||
     normalized.includes('standalone level-') ||
     normalized.includes('section has substantial own body')
   )

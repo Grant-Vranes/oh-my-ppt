@@ -3,6 +3,10 @@ import { gfmFromMarkdown } from 'mdast-util-gfm'
 import { toString } from 'mdast-util-to-string'
 import { gfm } from 'micromark-extension-gfm'
 import type { ListItem, Nodes, Root } from 'mdast'
+import {
+  SECTION_AGENDA_REASON_PREFIX_EN,
+  SECTION_AGENDA_REASON_PREFIX_ZH
+} from '@shared/generation'
 
 export interface MarkdownHeadingNode {
   level: number
@@ -62,6 +66,9 @@ const headingToLine = (node: MarkdownHeadingNode): string =>
 const headingSourceLabel = (heading: MarkdownHeadingNode): string =>
   `${'#'.repeat(heading.level)} ${heading.title}`
 
+const textContainsCjk = (value: string): boolean =>
+  /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af\uf900-\ufaff]/.test(value)
+
 const flattenHeadings = (nodes: MarkdownHeadingNode[]): MarkdownHeadingNode[] =>
   nodes.flatMap((node) => [node, ...flattenHeadings(node.children)])
 
@@ -107,9 +114,56 @@ const isLevel2ContentSlideCandidate = (heading: MarkdownHeadingNode): boolean =>
   (!hasStandaloneSlideCandidateChild(heading) ||
     directBodyCharCount(heading) >= H2_OWN_BODY_SLIDE_CHAR_COUNT)
 
+const hasSingleDocumentTitle = (headings: MarkdownHeadingNode[]): boolean =>
+  headings.filter((heading) => heading.level === 1).length === 1
+
+const topLevelSectionHeadings = (headings: MarkdownHeadingNode[]): MarkdownHeadingNode[] =>
+  headings.filter((heading) => heading.level === 2)
+
+const shouldPreferTopLevelSections = (headings: MarkdownHeadingNode[]): boolean =>
+  hasSingleDocumentTitle(headings) && topLevelSectionHeadings(headings).length > 0
+
+const directLevel3Children = (heading: MarkdownHeadingNode): MarkdownHeadingNode[] =>
+  heading.children.filter((child) => child.level === 3)
+
+const shouldCreateSectionAgendaPage = (heading: MarkdownHeadingNode): boolean =>
+  directLevel3Children(heading).length >= 2
+
+const formatSectionAgendaReason = (heading: MarkdownHeadingNode): string => {
+  const allChildTitles = directLevel3Children(heading).map((child) => child.title)
+  const childTitles = allChildTitles.slice(0, 12)
+  const useChineseLabels = textContainsCjk(`${heading.title}\n${childTitles.join('\n')}`)
+  if (childTitles.length === 0) {
+    return useChineseLabels
+      ? `${SECTION_AGENDA_REASON_PREFIX_ZH}：概览本章结构。`
+      : `${SECTION_AGENDA_REASON_PREFIX_EN}: overview this chapter structure.`
+  }
+  const suffix =
+    allChildTitles.length > childTitles.length
+      ? useChineseLabels
+        ? `等共 ${allChildTitles.length} 个子主题`
+        : `and ${allChildTitles.length} child topics in total`
+      : ''
+  const joinedTitles = [childTitles.join(useChineseLabels ? '、' : ', '), suffix]
+    .filter(Boolean)
+    .join(useChineseLabels ? '，' : ', ')
+  return useChineseLabels
+    ? `${SECTION_AGENDA_REASON_PREFIX_ZH}：概览本章下的子主题，包括：${joinedTitles}。`
+    : `${SECTION_AGENDA_REASON_PREFIX_EN}: overview this chapter child topics, including: ${joinedTitles}.`
+}
+
 const level2CandidateLineEnd = (heading: MarkdownHeadingNode): number => {
   if (!hasStandaloneSlideCandidateChild(heading)) return heading.lineEnd
   const firstChildLineStart = flattenHeadings(heading.children)
+    .map((child) => child.lineStart)
+    .sort((a, b) => a - b)[0]
+  return firstChildLineStart
+    ? Math.max(heading.lineStart, firstChildLineStart - 1)
+    : heading.lineEnd
+}
+
+const level2AgendaLineEnd = (heading: MarkdownHeadingNode): number => {
+  const firstChildLineStart = directLevel3Children(heading)
     .map((child) => child.lineStart)
     .sort((a, b) => a - b)[0]
   return firstChildLineStart
@@ -122,9 +176,48 @@ export const deriveOutlinePageCandidates = (
 ): DocumentOutlinePageCandidate[] => {
   const headings = meaningfulHeadings(scan)
   if (headings.length === 0) return []
+  if (shouldPreferTopLevelSections(headings)) {
+    return topLevelSectionHeadings(headings).flatMap((heading) => {
+      const childCandidates = directLevel3Children(heading)
+      if (!shouldCreateSectionAgendaPage(heading)) {
+        return [
+          {
+            role: 'content' as const,
+            title: heading.title,
+            sourceHeading: headingSourceLabel(heading),
+            headingLevel: heading.level,
+            lineStart: heading.lineStart,
+            lineEnd: heading.lineEnd,
+            reason: 'top-level ## section in a structured document outline'
+          }
+        ]
+      }
+      return [
+        {
+          role: 'content' as const,
+          title: heading.title,
+          sourceHeading: headingSourceLabel(heading),
+          headingLevel: heading.level,
+          lineStart: heading.lineStart,
+          lineEnd: level2AgendaLineEnd(heading),
+          reason: formatSectionAgendaReason(heading)
+        },
+        ...childCandidates.map((child) => ({
+          role: 'content' as const,
+          title: child.title,
+          sourceHeading: headingSourceLabel(child),
+          headingLevel: child.level,
+          lineStart: child.lineStart,
+          lineEnd: child.lineEnd,
+          reason: `standalone level-${child.level} section`
+        }))
+      ]
+    })
+  }
+
   let seenMeaningfulH1 = false
 
-  return headings.flatMap((heading): DocumentOutlinePageCandidate[] => {
+  const candidates = headings.flatMap((heading): DocumentOutlinePageCandidate[] => {
     if (heading.level === 1) {
       if (!seenMeaningfulH1) {
         seenMeaningfulH1 = true
@@ -176,6 +269,8 @@ export const deriveOutlinePageCandidates = (
 
     return []
   })
+
+  return candidates
 }
 
 const appendHeading = (
@@ -427,9 +522,21 @@ export const estimateOutlinePageCount = (
   const chapterDividerCount = chapterDividerHeadings(scan).length
   const h2ContentPageCount = headings.filter(isLevel2ContentSlideCandidate).length
   const pageCandidates = pageCandidatesOverride ?? deriveOutlinePageCandidates(scan)
+  const preferTopLevelSections = shouldPreferTopLevelSections(headings)
+  const topLevelSections = topLevelSectionHeadings(headings)
+  const sectionAgendaPageCount = topLevelSections.filter(
+    shouldCreateSectionAgendaPage
+  ).length
+  const directLevel3PageCount = topLevelSections.filter(shouldCreateSectionAgendaPage).reduce(
+    (sum, heading) => sum + directLevel3Children(heading).length,
+    0
+  )
+  const nonAgendaTopLevelSectionCount = topLevelSections.length - sectionAgendaPageCount
 
   const naturalSectionCount =
-    h2Count > 0
+    preferTopLevelSections
+      ? sectionAgendaPageCount + directLevel3PageCount + nonAgendaTopLevelSectionCount
+      : h2Count > 0
       ? h2ContentPageCount + standaloneSectionCount
       : Math.max(
           chapterDividerCount,
@@ -456,6 +563,8 @@ export const estimateOutlinePageCount = (
     preferredPageCount,
     minPageCount,
     maxPageCount,
-    basis: `Based on ${chapterDividerCount} chapter divider headings, ${h2ContentPageCount} level-2 content slide candidates, and ${standaloneSectionCount} standalone level-3+ slide candidates${pageCandidates.length > MAX_PROMPT_PAGE_CANDIDATES ? `, capped to ${MAX_PROMPT_PAGE_CANDIDATES} visible page candidates for parsing` : ''}.`
+    basis: preferTopLevelSections
+      ? `Based on ${h2Count} top-level level-2 document sections, including ${sectionAgendaPageCount} section agenda pages with at least 2 child sections and ${directLevel3PageCount} direct level-3 content pages${pageCandidates.length > MAX_PROMPT_PAGE_CANDIDATES ? `, capped to ${MAX_PROMPT_PAGE_CANDIDATES} visible page candidates for parsing` : ''}.`
+      : `Based on ${chapterDividerCount} chapter divider headings, ${h2ContentPageCount} level-2 content slide candidates, and ${standaloneSectionCount} standalone level-3+ slide candidates${pageCandidates.length > MAX_PROMPT_PAGE_CANDIDATES ? `, capped to ${MAX_PROMPT_PAGE_CANDIDATES} visible page candidates for parsing` : ''}.`
   }
 }

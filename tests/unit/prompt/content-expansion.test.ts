@@ -134,6 +134,54 @@ describe('content expansion rules — always-on, not source-gated', () => {
     )
   })
 
+  it('section agenda page prompts do not request source document reading', () => {
+    const pagePrompt = buildSinglePageGenerationPrompt({
+      topic: 'AI动漫报告',
+      deckTitle: 'AI动漫报告',
+      pageId: 'page-2',
+      pageNumber: 2,
+      pageTitle: '二、技术参数与技术效率明细',
+      pageOutline: [
+        'Page role: section-agenda',
+        'Page purpose: 章节目录页：概览本章下的子主题，包括：2.1 主流AI动漫工具性能对比、2.2 训练数据规模、2.3 效率实证。'
+      ].join('\n'),
+      slideSize: baseContext.slideSize,
+      sourceDocumentPaths: ['/docs/source.md'],
+      referenceDocumentSnippets: '[片段 1] /docs/source.md#L18-L50\n内容：should not appear'
+    })
+
+    expect(pagePrompt).toContain('Section agenda page requirements')
+    expect(pagePrompt).toContain('Use only the child topic names already listed')
+    expect(pagePrompt).not.toContain('Source document requirements')
+    expect(pagePrompt).not.toContain('Range-bound source reading')
+    expect(pagePrompt).not.toContain('参考文档检索片段')
+    expect(pagePrompt).not.toContain('should not appear')
+  })
+
+  it('section agenda single-page system prompts ignore source document paths', () => {
+    const deckPrompt = buildDeckAgentSystemPrompt('test-style', {
+      ...baseContext,
+      sourceDocumentPaths: ['/docs/source.md'],
+      selectedPageId: 'page-1',
+      selectedPageNumber: 1,
+      outlineTitles: ['二、技术参数与技术效率明细'],
+      outlineItems: [
+        {
+          title: '二、技术参数与技术效率明细',
+          contentOutline: [
+            'Page role: section-agenda',
+            'Page purpose: 章节目录页：概览本章下的子主题，包括：2.1 主流AI动漫工具性能对比、2.2 训练数据规模、2.3 效率实证。'
+          ].join('\n'),
+          layoutIntent: 'summary'
+        }
+      ]
+    })
+
+    expect(deckPrompt).not.toContain('## Source documents')
+    expect(deckPrompt).not.toContain('source-reading skill')
+    expect(deckPrompt).not.toContain('/docs/source.md')
+  })
+
   it('scenario content rules own the form guidance while scenario expansion owns enrichment', () => {
     const scenario = readSource('src/main/prompt/canvas-scenario.ts')
     const deckSystem = readSource('src/main/prompt/deck-system.ts')

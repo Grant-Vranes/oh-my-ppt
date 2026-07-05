@@ -88,4 +88,34 @@ describe('source page skeleton planning', () => {
     expect(item.contentOutline).not.toContain('Page purpose:')
     expect(item.contentOutline).not.toContain('leaf ## section')
   })
+
+  it('maps section agenda rows without source headings or ranges', () => {
+    const sourcePlan = sourcePlanFromSkeletonRows([
+      {
+        page_number: 1,
+        title: '二、技术参数与技术效率明细',
+        role: 'content',
+        source_document_path: '/docs/source.md',
+        source_heading: '## 二、技术参数与技术效率明细',
+        heading_level: 2,
+        line_start: 18,
+        line_end: 19,
+        reason:
+          '章节目录页：概览本章下的子主题，包括：2.1 主流AI动漫工具性能对比、2.2 训练数据规模、2.3 效率实证。',
+        confidence: 'high'
+      }
+    ])
+    expect(sourcePlan).not.toBeNull()
+
+    const [item] = mapSourcePlanToOutlineItems(sourcePlan!)
+
+    expect(item).toMatchObject({
+      title: '二、技术参数与技术效率明细',
+      layoutIntent: 'summary'
+    })
+    expect(item.contentOutline).toContain('Page role: section-agenda')
+    expect(item.contentOutline).toContain('2.1 主流AI动漫工具性能对比')
+    expect(item.contentOutline).not.toContain('Source heading:')
+    expect(item.contentOutline).not.toContain('Source range:')
+  })
 })

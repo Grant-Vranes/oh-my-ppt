@@ -1,4 +1,5 @@
 import type { SessionDeckGenerationContext } from '../tools/types'
+import { isSectionAgendaOutline } from '@shared/generation'
 import {
   buildLayoutCollisionRules,
   buildPageSemanticStructure,
@@ -45,6 +46,10 @@ export function buildDeckAgentSystemPrompt(
       (Array.isArray(context.selectPageIds) && context.selectPageIds.length === 1) ||
       (Array.isArray(context.allowedPageIds) && context.allowedPageIds.length === 1) ||
       context.outlineTitles.length === 1)
+  const isSectionAgendaSinglePageTask =
+    isSinglePageTask &&
+    context.outlineItems.length === 1 &&
+    isSectionAgendaOutline(context.outlineItems[0]?.contentOutline || '')
   const isTemplateGeneration = context.templatePageReadRequired === true
   const singlePageWriteToolName = isTemplateGeneration
     ? 'update_template_page_file'
@@ -54,7 +59,9 @@ export function buildDeckAgentSystemPrompt(
       ? '3. Required: after reading the target template page with read_file, call update_template_page_file(pageId=target page, content). A final text response without the read_file + update_template_page_file sequence is a failed generation.'
       : '3. Required: call update_single_page_file(pageId=target page, content). A final text response without this tool call is a failed generation.'
     : '3. Call update_page_file(content) page by page. For multi-page generation, write each target page file in order. You may pass pageId to override automatic targeting.'
-  const sourceDocumentPaths = (context.sourceDocumentPaths || []).filter(Boolean)
+  const sourceDocumentPaths = isSectionAgendaSinglePageTask
+    ? []
+    : (context.sourceDocumentPaths || []).filter(Boolean)
   const isRetryMode = context.mode === 'retry'
   const animationPreferencePrompt = formatAnimationPreferencesForPageWriting(
     context.animationPreferences

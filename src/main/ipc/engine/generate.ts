@@ -18,6 +18,7 @@ import type {
   FontSelection,
   GenerateChunkEvent
 } from '@shared/generation'
+import { isSectionAgendaOutline } from '@shared/generation'
 import { normalizeLayoutIntent, type LayoutIntent } from '@shared/layout-intent'
 import { resolveModelTimeoutMs, type ModelTimeoutProfile } from '@shared/model-timeout'
 import { progressLabel, progressText } from '@shared/progress'
@@ -1068,7 +1069,9 @@ export const runDeepAgentDeckGeneration = async (args: {
       outlineLength: (page.outline || '').length
     })
 
-    const referenceDocumentSnippets = referenceDocumentRetriever
+    const isSectionAgendaPage = isSectionAgendaOutline(page.outline || '')
+    const pageSourceDocumentPaths = isSectionAgendaPage ? [] : args.sourceDocumentPaths
+    const referenceDocumentSnippets = referenceDocumentRetriever && !isSectionAgendaPage
       ? formatReferenceDocumentSnippets(
           referenceDocumentRetriever.search({
             pageId: page.pageId,
@@ -1083,7 +1086,7 @@ export const runDeepAgentDeckGeneration = async (args: {
       pageId: page.pageId,
       pageNumber: page.pageNumber,
       title: page.title,
-      hasSourceDocuments: Boolean(args.sourceDocumentPaths?.length),
+      hasSourceDocuments: Boolean(pageSourceDocumentPaths?.length),
       hasRetriever: Boolean(referenceDocumentRetriever),
       injected: referenceDocumentSnippets.trim().length > 0,
       injectedCharacterCount: referenceDocumentSnippets.length
@@ -1119,7 +1122,7 @@ export const runDeepAgentDeckGeneration = async (args: {
         outlineItems: [
           { title: page.title, contentOutline: page.outline, layoutIntent: page.layoutIntent }
         ],
-        sourceDocumentPaths: args.sourceDocumentPaths,
+        sourceDocumentPaths: pageSourceDocumentPaths,
         mode: args.generationMode ?? 'generate',
         pageFileMap: { [page.pageId]: currentPagePath },
         selectedPageId: page.pageId,
@@ -1159,7 +1162,7 @@ export const runDeepAgentDeckGeneration = async (args: {
                   pageOutline: page.outline,
                   slideSize: args.slideSize,
                   layoutIntent: page.layoutIntent,
-                  sourceDocumentPaths: args.sourceDocumentPaths,
+                  sourceDocumentPaths: pageSourceDocumentPaths,
                   referenceDocumentSnippets,
                   isRetryMode: args.generationMode === 'retry',
                   writeToolName,

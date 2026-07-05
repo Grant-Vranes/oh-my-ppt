@@ -1,5 +1,6 @@
 import type { SessionDeckGenerationContext } from '../tools/types'
 import { formatLayoutIntentPrompt } from '@shared/layout-intent'
+import { isSectionAgendaOutline } from '@shared/generation'
 import { CHART_SKILL_NAME, formatSkillUsageRequirement } from '../skills/skill-contract'
 import {
   buildCanvasScenarioContentRules,
@@ -50,6 +51,7 @@ export function buildSinglePageGenerationPrompt(args: {
     /模板骨架|skeleton|background\/decorative|背景\/装饰资源|CSS url|SVG image|local asset/i.test(
       previousError
     )
+  const isSectionAgendaPage = isSectionAgendaOutline(args.pageOutline || '')
   const retryInstructions = args.retryContext
     ? [
         '',
@@ -72,7 +74,7 @@ export function buildSinglePageGenerationPrompt(args: {
       ].filter(Boolean)
     : []
   const sourceDocumentInstructions =
-    args.sourceDocumentPaths && args.sourceDocumentPaths.length > 0
+    !isSectionAgendaPage && args.sourceDocumentPaths && args.sourceDocumentPaths.length > 0
       ? args.referenceDocumentSnippets && args.referenceDocumentSnippets.trim().length > 0
         ? [
             '',
@@ -106,7 +108,7 @@ export function buildSinglePageGenerationPrompt(args: {
   const hasSourceRange = /Source range:\s*lines\s+\d+\s*-\s*\d+/i.test(args.pageOutline || '')
   const canvasScenario = resolveCanvasScenario(args.slideSize)
   const sourceRangeInstructions =
-    args.sourceDocumentPaths && args.sourceDocumentPaths.length > 0 && hasSourceRange
+    !isSectionAgendaPage && args.sourceDocumentPaths && args.sourceDocumentPaths.length > 0 && hasSourceRange
       ? [
           '',
           'Range-bound source reading:',
@@ -115,6 +117,16 @@ export function buildSinglePageGenerationPrompt(args: {
           '- Do not pull facts from unrelated sections just because they match keywords.'
         ]
       : []
+  const sectionAgendaInstructions = isSectionAgendaPage
+    ? [
+        '',
+        'Section agenda page requirements:',
+        '- This slide is a chapter agenda/table-of-contents page.',
+        '- Use only the child topic names already listed in Content points.',
+        '- Do not inspect, retrieve, cite, summarize, or expand from the source document for this slide.',
+        '- Keep it as a presentation agenda: chapter title plus concise child-topic list.'
+      ]
+    : []
   return [
     `Generate and write only this ${canvasScenario.pageName}. Do not modify other pages.`,
     '',
@@ -128,6 +140,7 @@ export function buildSinglePageGenerationPrompt(args: {
     `Slide title: ${args.pageTitle}`,
     `Content points: ${args.pageOutline || 'Expand from the topic with moderate information density.'}`,
     args.layoutIntent ? formatLayoutIntentPrompt(args.layoutIntent) : '',
+    ...sectionAgendaInstructions,
     ...sourceDocumentInstructions,
     ...sourceRangeInstructions,
     '',

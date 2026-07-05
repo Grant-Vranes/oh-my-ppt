@@ -214,6 +214,87 @@ describe('editSessionStore flush barrier (drag-twice-then-save)', () => {
   })
 })
 
+describe('editSessionStore drag-then-resize-then-save (same element)', () => {
+  beforeEach(() => {
+    useEditHistoryStore.getState().clear()
+    useEditSessionStore.getState().reset()
+    vi.mocked(ipc.saveEditBatch).mockClear()
+  })
+
+  it('flushPendingDrags keeps the post-resize position for one element dragged then resized', async () => {
+    // After drag+resize the live DOM reports the post-resize layout.
+    primeStore(async () => ({ isAbsoluteMode: false, x: 120, y: 100, width: 200, height: 150 }))
+    const editHistory = useEditHistoryStore.getState()
+    // 1) handleMoved for the drag: x/y set, size null
+    useEditSessionStore.getState().handleMoved({
+      selector: SELECTOR,
+      x: 100,
+      y: 100,
+      deltaX: 100,
+      deltaY: 100,
+      layoutMode: 'translate'
+    } as unknown as Parameters<typeof useEditSessionStore.getState>['handleMoved'][0])
+    // 2) handleMoved for the resize on the same selector: x shifts (W handle), width/height set
+    useEditSessionStore.getState().handleMoved({
+      selector: SELECTOR,
+      x: 120,
+      y: 100,
+      deltaX: 20,
+      deltaY: 0,
+      layoutMode: 'translate',
+      width: 200,
+      height: 150,
+      childUpdates: []
+    } as unknown as Parameters<typeof useEditSessionStore.getState>['handleMoved'][0])
+
+    await useEditSessionStore.getState().flushPendingDrags()
+
+    const dragEdits = editHistory.getSnapshotForPage(PAGE_ID).dragEdits
+    expect(dragEdits).toHaveLength(1)
+    expect(dragEdits[0]).toMatchObject({
+      selector: SELECTOR,
+      x: 120,
+      y: 100,
+      width: 200,
+      height: 150
+    })
+  })
+
+  it('save persists the post-resize position to disk for one element dragged then resized', async () => {
+    primeStore(async () => ({ isAbsoluteMode: false, x: 120, y: 100, width: 200, height: 150 }))
+    useEditSessionStore.getState().handleMoved({
+      selector: SELECTOR,
+      x: 100,
+      y: 100,
+      deltaX: 100,
+      deltaY: 100,
+      layoutMode: 'translate'
+    } as unknown as Parameters<typeof useEditSessionStore.getState>['handleMoved'][0])
+    useEditSessionStore.getState().handleMoved({
+      selector: SELECTOR,
+      x: 120,
+      y: 100,
+      deltaX: 20,
+      deltaY: 0,
+      layoutMode: 'translate',
+      width: 200,
+      height: 150,
+      childUpdates: []
+    } as unknown as Parameters<typeof useEditSessionStore.getState>['handleMoved'][0])
+
+    const result = await useEditSessionStore.getState().save()
+
+    expect(result.saved).toBe(true)
+    expect(vi.mocked(ipc.saveEditBatch)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dragEdits: expect.arrayContaining([
+          expect.objectContaining({ selector: SELECTOR, x: 120, y: 100, width: 200, height: 150 })
+        ])
+      })
+    )
+  })
+})
+
 describe('editSessionStore save re-entry guard', () => {
   beforeEach(() => {
     useEditHistoryStore.getState().clear()

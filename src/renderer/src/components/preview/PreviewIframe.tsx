@@ -988,6 +988,13 @@ export const PreviewIframe = forwardRef<
   onSelectorSelectedRef.current = onSelectorSelected
   const onElementMovedRef = useRef(onElementMoved)
   onElementMovedRef.current = onElementMoved
+  // Serialize 'moved' events per webview: each event awaits ensureAnchoredAnchor
+  // before dispatching handleMoved. Without serialization, a slow anchor (first
+  // edit on an unanchored element, or any IPC scheduling jitter) can let a later
+  // 'moved' resolve before an earlier one, so a stale drag's x/y (or null
+  // width/height) overwrites a fresh resize. The promise chain guarantees
+  // emission order === dispatch order.
+  const movedChainRef = useRef<Promise<unknown>>(Promise.resolve())
   const onElementSelectedRef = useRef(onElementSelected)
   onElementSelectedRef.current = onElementSelected
   const onInspectExitRef = useRef(onInspectExit)
@@ -1158,50 +1165,60 @@ export const PreviewIframe = forwardRef<
           return
         }
 
-        // Edit mode: element moved/resized
+        // Edit mode: element moved/resized.
+        // Serialized via movedChainRef: each event must finish ensureAnchoredAnchor
+        // → handleMoved before the next one starts, so emission order === dispatch
+        // order. Without this, a stale 'moved' (e.g. a drag whose anchor IPC was
+        // slow) can resolve after a fresh resize and clobber the resize's x/y or
+        // null-out its width/height in upsertDragEdit.
         if (isEditModeMessage && parsed.type === 'moved' && parsed.selector) {
-          void (async () => {
-            const anchor = await ensureAnchoredAnchor({
-              selector: parsed.selector || '',
-              elementTag: parsed.elementTag,
-              reason: 'drag',
-              formula: parsed.snapshot?.formula
-            })
-            if (webviewRef.current !== webview) return
-            onElementMovedRef.current?.({
-              selector: anchor.selector,
-              blockId: anchor.blockId || parsed.blockId,
-              label: anchor.selector,
-              elementTag: parsed.elementTag || '',
-              layoutMode: parsed.layoutMode,
-              x: Number(parsed.x || 0),
-              y: Number(parsed.y || 0),
-              deltaX: Number(parsed.deltaX || 0),
-              deltaY: Number(parsed.deltaY || 0),
-              visualX: parsed.visualX === undefined ? undefined : Number(parsed.visualX),
-              visualY: parsed.visualY === undefined ? undefined : Number(parsed.visualY),
-              width: parsed.width === undefined ? undefined : Number(parsed.width),
-              height: parsed.height === undefined ? undefined : Number(parsed.height),
-              scale: parsed.scale === undefined ? undefined : Number(parsed.scale),
-              childUpdates: Array.isArray(parsed.childUpdates)
-                ? parsed.childUpdates
-                    .map((item) => ({
-                      path: Array.isArray(item.path)
-                        ? item.path
-                            .map((value) => Number(value))
-                            .filter((value) => Number.isInteger(value) && value >= 0)
-                        : [],
-                      width: item.width === undefined ? undefined : Number(item.width),
-                      height: item.height === undefined ? undefined : Number(item.height)
-                    }))
-                    .filter(
-                      (item) =>
-                        item.path.length > 0 &&
-                        (item.width !== undefined || item.height !== undefined)
-                    )
-                : undefined
-            })
-          })().catch(() => {})
+          movedChainRef.current = movedChainRef.current
+            .catch(() => {})
+            .then(() =>
+              (async () => {
+                const anchor = await ensureAnchoredAnchor({
+                  selector: parsed.selector || '',
+                  elementTag: parsed.elementTag,
+                  reason: 'drag',
+                  formula: parsed.snapshot?.formula
+                })
+                if (webviewRef.current !== webview) return
+                onElementMovedRef.current?.({
+                  selector: anchor.selector,
+                  blockId: anchor.blockId || parsed.blockId,
+                  label: anchor.selector,
+                  elementTag: parsed.elementTag || '',
+                  layoutMode: parsed.layoutMode,
+                  x: Number(parsed.x || 0),
+                  y: Number(parsed.y || 0),
+                  deltaX: Number(parsed.deltaX || 0),
+                  deltaY: Number(parsed.deltaY || 0),
+                  visualX: parsed.visualX === undefined ? undefined : Number(parsed.visualX),
+                  visualY: parsed.visualY === undefined ? undefined : Number(parsed.visualY),
+                  width: parsed.width === undefined ? undefined : Number(parsed.width),
+                  height: parsed.height === undefined ? undefined : Number(parsed.height),
+                  scale: parsed.scale === undefined ? undefined : Number(parsed.scale),
+                  childUpdates: Array.isArray(parsed.childUpdates)
+                    ? parsed.childUpdates
+                        .map((item) => ({
+                          path: Array.isArray(item.path)
+                            ? item.path
+                                .map((value) => Number(value))
+                                .filter((value) => Number.isInteger(value) && value >= 0)
+                            : [],
+                          width: item.width === undefined ? undefined : Number(item.width),
+                          height: item.height === undefined ? undefined : Number(item.height)
+                        }))
+                        .filter(
+                          (item) =>
+                            item.path.length > 0 &&
+                            (item.width !== undefined || item.height !== undefined)
+                        )
+                    : undefined
+                })
+              })()
+            )
+            .catch(() => {})
           return
         }
 

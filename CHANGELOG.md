@@ -1,5 +1,24 @@
 # 更新日志 / Changelog
 
+## 2026-07-06 · v2.0.19
+
+### 中文
+
+- 新增多尺寸创作：一套工具覆盖横屏演示、竖版长图、4:3 投屏、方图和小红书等多种场景，会话、模板、预览、导出全程保留真实比例，不再被拉伸裁切。
+- 新增内置技能更贴近实际场景：多尺寸布局和图表生成规则更完整，模型调用更稳定，生成结果更少跑偏。
+- 优化PPTX 导入更接近原稿：改进形状还原和颜色层级，减少圆形变椭圆、胶囊失真、文字偏位等问题。
+- 优化长文档生成带章节结构：自动为适合的章节生成”本章概览”过渡页，长资料不再是逐页平铺，而是有节奏、有结构的演示叙事。
+- 优化 Windows 顶部拖拽也更顺手。
+- 修复编辑保存与交互细节：移动、改字、调整元素后更可靠地进入待保存状态，风格切换进度更清晰。
+
+### English
+
+- Multi-format canvas: create widescreen decks, vertical scrolls, 4:3 slides, square cards, and posters from one workspace — sessions, templates, previews, and exports keep the true proportions throughout.
+- Long Markdown sources become structured decks: section hierarchy is recognized on import, and suitable chapters automatically get “chapter overview” transition pages, turning long material into a paced, readable presentation.
+- PPTX import is closer to the original: improved shape fidelity and color/layer accuracy, reducing ovalized circles, distorted pills, and shifted text.
+- Built-in skills are more production-ready: richer multi-format layout and chart guidance, with more stable model calls and fewer generation drifts.
+- Fixed edit-save states and interaction details: moving, editing, or resizing elements now reliably triggers save state; style-switching progress is clearer; Windows toolbar dragging is smoother.
+
 ## 2026-06-28 · v2.0.18
 
 ### 中文

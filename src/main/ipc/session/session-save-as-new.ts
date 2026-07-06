@@ -3,6 +3,7 @@ import log from 'electron-log/main.js'
 import crypto from 'crypto'
 import fs from 'fs'
 import path from 'path'
+import { requireSessionSlideSize } from '@shared/slide-size'
 import type { IpcContext } from '../context'
 import { readAppLocale, uiText } from '../config/locale-utils'
 import { ensureHistoryBaselineSafe } from '../../history/git-history-service'
@@ -253,6 +254,7 @@ export function registerSessionSaveAsNewHandler(ctx: IpcContext): void {
         sourceSessionId,
         newSessionId
       )
+      const slideSize = requireSessionSlideSize(sourceSession)
 
       await db.createSession({
         id: newSessionId,
@@ -260,6 +262,9 @@ export function registerSessionSaveAsNewHandler(ctx: IpcContext): void {
         topic: sourceSession.topic || baseTitle,
         styleId: sourceSession.styleId ?? undefined,
         pageCount: sourcePages.length,
+        slideSizeId: slideSize.id,
+        slideWidth: slideSize.width,
+        slideHeight: slideSize.height,
         referenceDocumentPath,
         provider: sourceProvider,
         model: sourceModel

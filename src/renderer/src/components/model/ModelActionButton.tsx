@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react'
+import { useEffect, useState, type ReactElement } from 'react'
 import { Check, ChevronDown, Loader2, type LucideIcon } from 'lucide-react'
 import { useT } from '@renderer/i18n'
 import { cn } from '@renderer/lib/utils'
@@ -40,33 +40,42 @@ interface ModelSelectButtonProps {
 }
 
 const runModelAction = (
-  modelConfigId: string,
+  modelConfigId: string | undefined,
+  modelAction: ModelActionState,
   onRun: (modelConfigId: string) => void | Promise<void>
 ): void => {
-  void Promise.resolve()
-    .then(() => onRun(modelConfigId))
+  void modelAction
+    .ensureModelActive(modelConfigId)
+    .then((resolvedModelConfigId) => {
+      if (!resolvedModelConfigId) return undefined
+      return onRun(resolvedModelConfigId)
+    })
     .catch((error) => {
       console.error('[ModelActionButton] model action failed', error)
     })
 }
 
-function ModelMenuItems({ modelAction }: { modelAction: ModelActionState }): ReactElement {
+function ModelMenuItems({
+  modelAction,
+  selectedModelConfigId,
+  onSelectModel
+}: {
+  modelAction: ModelActionState
+  selectedModelConfigId: string
+  onSelectModel: (modelConfigId: string) => void
+}): ReactElement {
   return (
     <>
       {modelAction.modelConfigs.map((config) => (
         <DropdownMenuItem
           key={config.id}
           className="py-1.5 text-xs"
-          onSelect={() => {
-            void modelAction.ensureModelActive(config.id).catch((error) => {
-              console.error('[ModelActionButton] model activation failed', error)
-            })
-          }}
+          onSelect={() => onSelectModel(config.id)}
         >
           <Check
             className={cn(
               'h-4 w-4 shrink-0',
-              config.id === modelAction.selectedModelConfigId ? 'opacity-100' : 'opacity-0'
+              config.id === selectedModelConfigId ? 'opacity-100' : 'opacity-0'
             )}
           />
           <span className="min-w-0 flex-1">
@@ -104,6 +113,27 @@ export function ModelSplitButton({
   const disabledState = disabled || busy
   const isPrimary = tone === 'primary'
   const RunningIcon = busy ? Loader2 : Icon
+  const [pendingModelConfigId, setPendingModelConfigId] = useState<string | null>(null)
+
+  useEffect(() => {
+    setPendingModelConfigId((current) => {
+      if (!current || modelAction.modelConfigs.some((config) => config.id === current)) {
+        return current
+      }
+      return null
+    })
+  }, [modelAction.modelConfigs])
+
+  const effectiveModelConfigId =
+    pendingModelConfigId ||
+    modelAction.selectedModelConfigId ||
+    modelAction.modelConfigs[0]?.id ||
+    ''
+
+  const runSelectedModelAction = (): void => {
+    setPendingModelConfigId(null)
+    runModelAction(effectiveModelConfigId || undefined, modelAction, onRun)
+  }
 
   return (
     <ButtonGroup
@@ -123,21 +153,7 @@ export function ModelSplitButton({
         type="button"
         variant={isPrimary && !hasMultiple ? 'default' : 'ghost'}
         size={size}
-        onClick={() => {
-          const modelConfigId = modelAction.selectedModelConfigId
-          if (!modelConfigId) {
-            void modelAction
-              .ensureModelActive()
-              .then((resolvedModelConfigId) => {
-                if (resolvedModelConfigId) runModelAction(resolvedModelConfigId, onRun)
-              })
-              .catch((error) => {
-                console.error('[ModelActionButton] model activation failed', error)
-              })
-            return
-          }
-          runModelAction(modelConfigId, onRun)
-        }}
+        onClick={runSelectedModelAction}
         disabled={disabledState}
         className={cn(
           hasMultiple
@@ -184,7 +200,11 @@ export function ModelSplitButton({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align={dropdownAlign} className="w-64">
-              <ModelMenuItems modelAction={modelAction} />
+              <ModelMenuItems
+                modelAction={modelAction}
+                selectedModelConfigId={effectiveModelConfigId}
+                onSelectModel={setPendingModelConfigId}
+              />
             </DropdownMenuContent>
           </DropdownMenu>
         </>
@@ -225,7 +245,15 @@ export function ModelSelectButton({
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align={dropdownAlign} className="w-64">
-        <ModelMenuItems modelAction={modelAction} />
+        <ModelMenuItems
+          modelAction={modelAction}
+          selectedModelConfigId={modelAction.selectedModelConfigId}
+          onSelectModel={(modelConfigId) => {
+            void modelAction.ensureModelActive(modelConfigId).catch((error) => {
+              console.error('[ModelActionButton] model activation failed', error)
+            })
+          }}
+        />
       </DropdownMenuContent>
     </DropdownMenu>
   )

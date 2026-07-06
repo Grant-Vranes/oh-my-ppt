@@ -13,6 +13,7 @@ import { buildDesignContractWithLLM } from '../engine/generate'
 import { customAlphabet } from 'nanoid'
 import { recordHistoryOperationStrict } from '../../history/git-history-service'
 import { createDefaultDesignContract } from '../../utils/design-contract'
+import { requireSlideSizePreset } from '@shared/slide-size'
 
 const nanoidLower = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 12)
 
@@ -123,6 +124,9 @@ export function registerPptxImportHandlers(ctx: IpcContext): void {
         topic: imported.title,
         styleId: initialStyleId,
         pageCount: imported.pageCount,
+        slideSizeId: 'wide-16-9',
+        slideWidth: 1600,
+        slideHeight: 900,
         provider: 'import',
         model: 'pptx-import'
       })
@@ -248,6 +252,7 @@ export function registerPptxImportHandlers(ctx: IpcContext): void {
           styleSkillPrompt: styleResult.styleSkill,
           modelTimeoutMs: modelTimeouts.document,
           totalPages: imported.pageCount,
+          slideSize: requireSlideSizePreset('wide-16-9'),
           topic: title
         })
         await db.updateSessionDesignContract(sessionId, designContract)

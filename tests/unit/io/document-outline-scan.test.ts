@@ -81,6 +81,171 @@ describe('document outline scan', () => {
     expect(promptText).toContain('authoritative first-pass outline')
   })
 
+  it('uses level-2 sections as pages without adding a synthetic contents page', () => {
+    const scan = scanDocumentOutline(
+      ['# ss', '', '## dd', 'Details.', '', '## Ff', 'More.'].join('\n')
+    )
+    const candidates = deriveOutlinePageCandidates(scan)
+
+    expect(candidates.map((candidate) => candidate.title)).toEqual(['dd', 'Ff'])
+    expect(candidates[0]).toMatchObject({
+      role: 'content',
+      sourceHeading: '## dd',
+      headingLevel: 2,
+      lineStart: 3,
+      lineEnd: 5
+    })
+    expect(estimateOutlinePageCount(scan)?.preferredPageCount).toBe(2)
+  })
+
+  it('keeps a level-2 section as one page when it has only one direct level-3 child', () => {
+    const scan = scanDocumentOutline(
+      [
+        '# Quarterly Report',
+        '',
+        '## Market Review',
+        'Intro.',
+        '',
+        '### Channel Metrics',
+        '- GMV grew 15%',
+        '- Conversion improved 8%',
+        '',
+        '## Next Steps',
+        'Follow-up actions.'
+      ].join('\n')
+    )
+    const candidates = deriveOutlinePageCandidates(scan)
+
+    expect(candidates.map((candidate) => candidate.sourceHeading)).toEqual([
+      '## Market Review',
+      '## Next Steps'
+    ])
+    expect(candidates[0]).toMatchObject({
+      headingLevel: 2,
+      lineStart: 3,
+      lineEnd: 9,
+      reason: 'top-level ## section in a structured document outline'
+    })
+    expect(candidates[0].reason).not.toContain('Section agenda page')
+    expect(estimateOutlinePageCount(scan)?.preferredPageCount).toBe(2)
+  })
+
+  it('marks truncated section agenda child lists', () => {
+    const source = [
+      '# Large Agenda',
+      '',
+      '## Detailed Chapter',
+      ...Array.from({ length: 13 }, (_, index) => [
+        `### Topic ${index + 1}`,
+        `Details ${index + 1}.`
+      ]).flat()
+    ].join('\n')
+    const candidates = deriveOutlinePageCandidates(scanDocumentOutline(source))
+
+    expect(candidates[0].reason).toContain('Topic 12')
+    expect(candidates[0].reason).not.toContain('Topic 13')
+    expect(candidates[0].reason).toContain('13 child topics in total')
+  })
+
+  it('uses level-2 chapters with direct level-3 children as section agenda pages', () => {
+    const scan = scanDocumentOutline(
+      [
+        '# 2026 AI动漫的发展与未来：数据驱动下的产业变革',
+        '',
+        '## 一、2026年全球AI动漫产业关键数据（预测/推演）',
+        '| 指标 | 2023年实际 | 2026年（预估） |',
+        '| --- | --- | --- |',
+        '| 全球动漫市场规模 | 342亿美元 | 528亿美元 |',
+        '',
+        '## 二、技术参数与技术效率明细',
+        '### 2.1 主流AI动漫工具性能对比（2026版）',
+        '| 工具名称 | 主要用途 |',
+        '| --- | --- |',
+        '| AniDiffu X4 | 中割生成 |',
+        '### 2.2 训练数据规模（头部动漫AI模型）',
+        '- 训练使用的动漫帧数：约 1.2亿张',
+        '### 2.3 效率实证：传统流程 vs AI辅助流程',
+        '| 工序 | 传统人力工时 | AI辅助工时 |',
+        '| --- | --- | --- |',
+        '| 脚本/大纲 | 40小时 | 12小时 |',
+        '',
+        '## 三、市场与观众数据洞察',
+        '### 3.1 观众对AI动漫的认知与接受度调查',
+        '| 问题 | 是（%） | 否（%） |',
+        '| --- | --- | --- |',
+        '| 能接受AI辅助中割/上色的动漫 | 78.4 | 9.2 |',
+        '### 3.2 B站/AI类动漫标签表现',
+        '| 标签 | 作品数 | 总播放量 |',
+        '| --- | --- | --- |',
+        '| AI辅助 | 340部 | 28.7亿 |',
+        '',
+        '## 四、行业就业与经济结构数据',
+        '### 4.1 日本动画师岗位变化',
+        '| 岗位类型 | 2022年人数 | 2026年人数 |',
+        '| --- | --- | --- |',
+        '| 原画师 | 4,200 | 4,950 |',
+        '### 4.2 薪资对比',
+        '| 国家 | 传统动画师 | AI辅助动画师 |',
+        '| --- | --- | --- |',
+        '| 日本 | 3.2 | 4.8 |',
+        '',
+        '## 五、版权争议与法律数据（2024–2026上半年）',
+        '| 争议类型 | 案件数量 |',
+        '| --- | --- |',
+        '| 使用未授权动画帧训练AI | 日本37件 |',
+        '',
+        '## 六、未来量化预测（2027–2029）',
+        '| 年份 | 预测事件 |',
+        '| --- | --- |',
+        '| 2027 | 实时AI转绘VR动画设备普及 |',
+        '',
+        '## 七、结论与关键洞察',
+        '- 效率与成本是最大驱动力',
+        '- 观众并非一概拒绝AI'
+      ].join('\n')
+    )
+    const candidates = deriveOutlinePageCandidates(scan)
+    const estimate = estimateOutlinePageCount(scan)
+
+    expect(candidates.map((candidate) => candidate.sourceHeading)).toEqual([
+      '## 一、2026年全球AI动漫产业关键数据（预测/推演）',
+      '## 二、技术参数与技术效率明细',
+      '### 2.1 主流AI动漫工具性能对比（2026版）',
+      '### 2.2 训练数据规模（头部动漫AI模型）',
+      '### 2.3 效率实证：传统流程 vs AI辅助流程',
+      '## 三、市场与观众数据洞察',
+      '### 3.1 观众对AI动漫的认知与接受度调查',
+      '### 3.2 B站/AI类动漫标签表现',
+      '## 四、行业就业与经济结构数据',
+      '### 4.1 日本动画师岗位变化',
+      '### 4.2 薪资对比',
+      '## 五、版权争议与法律数据（2024–2026上半年）',
+      '## 六、未来量化预测（2027–2029）',
+      '## 七、结论与关键洞察'
+    ])
+    expect(candidates).toHaveLength(14)
+    expect(candidates.map((candidate) => candidate.headingLevel)).toEqual([
+      2, 2, 3, 3, 3, 2, 3, 3, 2, 3, 3, 2, 2, 2
+    ])
+    expect(candidates[0]).toMatchObject({
+      title: '一、2026年全球AI动漫产业关键数据（预测/推演）',
+      lineStart: 3,
+      lineEnd: 7
+    })
+    expect(candidates[1]).toMatchObject({
+      title: '二、技术参数与技术效率明细',
+      lineStart: 8,
+      lineEnd: 8
+    })
+    expect(candidates[1].reason).toContain('2.1 主流AI动漫工具性能对比')
+    expect(candidates[1].reason).toContain('2.2 训练数据规模')
+    expect(candidates[1].reason).toContain('2.3 效率实证')
+    expect(estimate?.preferredPageCount).toBe(14)
+    expect(estimate?.basis).toContain('7 top-level level-2 document sections')
+    expect(estimate?.basis).toContain('3 section agenda pages')
+    expect(estimate?.basis).toContain('7 direct level-3 content pages')
+  })
+
   it('uses GFM task lists as standalone slide signals', () => {
     const scan = scanDocumentOutline(
       [
@@ -168,11 +333,12 @@ describe('document outline scan', () => {
     expect(candidates[0]).toMatchObject({
       lineStart: 3,
       lineEnd: 5,
-      reason: '## section has substantial own body before standalone child sections'
+      reason:
+        '章节目录页：概览本章下的子主题，包括：增长指标、渠道策略。'
     })
   })
 
-  it('promotes substantial level-4 sections to standalone page candidates', () => {
+  it('keeps a single direct level-3 child inside its level-2 page', () => {
     const deepDetails = 'implementation detail '.repeat(18)
     const scan = scanDocumentOutline(
       [
@@ -188,10 +354,11 @@ describe('document outline scan', () => {
     )
     const candidates = deriveOutlinePageCandidates(scan)
 
-    expect(candidates.map((candidate) => candidate.sourceHeading)).toContain('#### Canary Strategy')
-    expect(candidates.find((candidate) => candidate.sourceHeading === '#### Canary Strategy')).toMatchObject({
-      headingLevel: 4,
-      reason: 'standalone level-4 section'
+    expect(candidates.map((candidate) => candidate.sourceHeading)).toEqual(['## Deployment'])
+    expect(candidates[0]).toMatchObject({
+      headingLevel: 2,
+      lineStart: 3,
+      lineEnd: 8
     })
   })
 

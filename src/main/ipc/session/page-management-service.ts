@@ -10,6 +10,7 @@ import { carryIndexTransitionConfig } from '../../session/index-transition'
 import { validatePersistedPageHtml } from '../../tools/html-utils'
 import type { SessionPageStatus } from '../../db/schema'
 import { resolveOutlinesForPages } from './page-outline-utils'
+import { requireSessionSlideSize } from '@shared/slide-size'
 
 const pageSlugId = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 10)
 
@@ -103,7 +104,11 @@ export async function persistManagedPages(
     title: p.title,
     htmlPath: path.basename(p.htmlPath)
   }))
-  const rebuiltIndexHtml = buildProjectIndexHtml(args.deckTitle, deckPages)
+  const rebuiltIndexHtml = buildProjectIndexHtml(
+    args.deckTitle,
+    deckPages,
+    requireSessionSlideSize(await db.getSession(args.sessionId))
+  )
   const indexHtml = fs.existsSync(args.indexPath)
     ? carryIndexTransitionConfig(
         await fs.promises.readFile(args.indexPath, 'utf-8'),

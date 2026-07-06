@@ -14,6 +14,7 @@ import {
   type GenerationStageKey
 } from '../components/session-generating'
 import { useModelAction } from '../hooks/useModelAction'
+import { trySessionSlideSize, type SlideSizePreset } from '@shared/slide-size'
 
 type LocationState = {
   initialPrompt?: string
@@ -35,6 +36,19 @@ type SessionGeneratedPage = {
   sourceUrl?: string
   status?: string
   error?: string | null
+}
+
+type GenerationSessionSnapshot = {
+  status?: string
+  title?: string | null
+  page_count?: number | null
+  metadata?: string | null
+  slideSizeId?: string | null
+  slideWidth?: number | null
+  slideHeight?: number | null
+  slide_size_id?: string | null
+  slide_width?: number | null
+  slide_height?: number | null
 }
 
 const NEUTRAL_GENERATION_PROMPT =
@@ -321,6 +335,7 @@ export function SessionGeneratingPage({
   const [previewPages, setPreviewPages] = useState<GenerationPreviewPage[]>(() =>
     buildPagePlaceholders(1, lang)
   )
+  const [slideSize, setSlideSize] = useState<SlideSizePreset | null>(null)
   const [presentationTitle, setPresentationTitle] = useState<string>('')
   const [cancelPending, setCancelPending] = useState(false)
   const generatingPath =
@@ -619,13 +634,9 @@ export function SessionGeneratingPage({
           .getSession(id)
           .then(({ session, generatedPages }) => {
             if (!active) return
-            const snapshot = session as {
-              status?: string
-              title?: string | null
-              page_count?: number | null
-              metadata?: string | null
-            } | null
+            const snapshot = session as GenerationSessionSnapshot | null
             setPresentationTitle(String(snapshot?.title || ''))
+            setSlideSize(trySessionSlideSize(snapshot))
             setEditorGate(
               getEditorGate(snapshot)
             )
@@ -729,13 +740,9 @@ export function SessionGeneratingPage({
             .getSession(id)
             .then(({ session, generatedPages }) => {
               if (!active) return
-              const snapshot = session as {
-                status?: string
-                title?: string | null
-                page_count?: number | null
-                metadata?: string | null
-              } | null
+              const snapshot = session as GenerationSessionSnapshot | null
               setPresentationTitle(String(snapshot?.title || ''))
+              setSlideSize(trySessionSlideSize(snapshot))
               setEditorGate(
                 getEditorGate(snapshot)
               )
@@ -755,15 +762,11 @@ export function SessionGeneratingPage({
       .then(([sessionResult, runState]) => {
         if (!active) return
         const { session, generatedPages } = sessionResult
-        const snapshot = (session || {}) as {
-          status?: string
-          title?: string | null
-          page_count?: number | null
-          metadata?: string | null
-        }
+        const snapshot = (session || {}) as GenerationSessionSnapshot
         const currentStatus = snapshot.status || 'active'
         const snapshotGate = getEditorGate(snapshot)
         setPresentationTitle(String(snapshot.title || ''))
+        setSlideSize(trySessionSlideSize(snapshot))
         setEditorGate(snapshotGate)
         if (typeof snapshot.page_count === 'number' && snapshot.page_count > 0) {
           setTotalPages(Math.floor(snapshot.page_count))
@@ -1068,7 +1071,7 @@ export function SessionGeneratingPage({
             onCancel={handleCancelGeneration}
           />
 
-          <GenerationPreviewGrid pages={previewPages} />
+          <GenerationPreviewGrid pages={previewPages} slideSize={slideSize} />
         </main>
       </div>
     </div>

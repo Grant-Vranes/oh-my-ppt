@@ -16,6 +16,7 @@ import { ipc, type TemplateListItem } from '../lib/ipc'
 import { useT } from '../i18n'
 import { useModelAction } from '@renderer/hooks/useModelAction'
 import { useThumbnailUpdates } from '@renderer/hooks/useThumbnailUpdates'
+import { resolveSlideSize } from '@shared/slide-size'
 
 const MAX_PPTX_SIZE_MB = 80
 const MAX_PPTX_SIZE_BYTES = MAX_PPTX_SIZE_MB * 1024 * 1024
@@ -58,6 +59,13 @@ export function TemplatesPage(): React.JSX.Element {
   const pptxImportModelConfigIdRef = useRef<string>('')
   const [importingPptxTemplate, setImportingPptxTemplate] = useState(false)
   const [pptxTemplateProgress, setPptxTemplateProgress] = useState<string | null>(null)
+  const previewSlideSize = previewTarget
+    ? resolveSlideSize({
+        id: previewTarget.slideSizeId,
+        width: previewTarget.slideWidth,
+        height: previewTarget.slideHeight
+      })
+    : null
 
   useThumbnailUpdates('template', (task) => {
     if (task.variant !== 'cover' || !task.thumbnailPath) return
@@ -329,7 +337,7 @@ export function TemplatesPage(): React.JSX.Element {
               {previewTarget?.name || t('templates.previewTitle')}
             </DialogTitle>
           </DialogHeader>
-          {previewTarget ? (
+          {previewTarget && previewSlideSize ? (
             <div className="max-h-[min(72vh,720px)] w-[min(84vw,920px)] overflow-y-auto pr-1">
               <div className="grid justify-center gap-3 [grid-template-columns:repeat(auto-fill,260px)]">
                 {(previewTarget.previewPages.length > 0
@@ -349,11 +357,20 @@ export function TemplatesPage(): React.JSX.Element {
                     key={`${previewTarget.id}-${page.pageId}-${page.pageNumber}`}
                     className="overflow-hidden rounded-lg border border-[#ded2bd]/80 bg-[#fffdf8] shadow-[0_8px_18px_rgba(74,59,42,0.09)]"
                   >
-                    <div className="relative aspect-video overflow-hidden bg-white">
+                    <div
+                      className="relative overflow-hidden bg-white"
+                      style={{
+                        aspectRatio: `${previewSlideSize.width}/${previewSlideSize.height}`
+                      }}
+                    >
                       <iframe
                         src={templateThumbnailUrl(page.htmlPath)}
-                        className="absolute left-0 top-0 h-[900px] w-[1600px] origin-top-left border-0 bg-white"
-                        style={{ transform: 'scale(0.1625)' }}
+                        className="absolute left-0 top-0 origin-top-left border-0 bg-white"
+                        style={{
+                          width: previewSlideSize.width,
+                          height: previewSlideSize.height,
+                          transform: `scale(${260 / previewSlideSize.width})`
+                        }}
                         title={`${previewTarget.name} page ${page.pageNumber}`}
                       />
                     </div>

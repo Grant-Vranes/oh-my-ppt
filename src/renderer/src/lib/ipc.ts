@@ -50,6 +50,7 @@ import type { ThinkingParameterMode } from '@shared/model-config.js'
 import type { ExportProgressPayload } from '@shared/export-progress.js'
 import type { PageMergeDisabledReason } from '@shared/page-merge'
 import type { ModelUsagePeriod, ModelUsageStats } from '@shared/model-usage'
+import type { SlideSizePresetId } from '@shared/slide-size'
 
 type IpcRendererLike = Window['electron']['ipcRenderer']
 
@@ -164,6 +165,9 @@ export interface MergeSourceSessionSummary {
   id: string
   title: string
   pageCount: number
+  slideSizeId: SlideSizePresetId
+  slideWidth: number
+  slideHeight: number
   updatedAt: number
   status: string
   selectable: boolean
@@ -176,6 +180,9 @@ export interface MergeSourcePageSummary {
   pageNumber: number
   title: string
   contentOutline?: string | null
+  slideSizeId: SlideSizePresetId
+  slideWidth: number
+  slideHeight: number
   htmlPath?: string
   sourceUrl?: string
   status?: string
@@ -199,6 +206,9 @@ export interface TemplateListItem {
   source: 'user'
   pageCount: number
   tags: string[]
+  slideSizeId?: import('@shared/slide-size').SlideSizePresetId
+  slideWidth?: number
+  slideHeight?: number
   previewHtmlPath: string | null
   thumbnailPath: string | null
   previewPages: Array<{
@@ -286,6 +296,7 @@ export interface CreateSessionPayload {
   styleId: string
   modelConfigId?: string
   pageCount?: number
+  slideSizeId?: import('@shared/slide-size').SlideSizePresetId
   referenceDocumentPath?: string
   fontSelection?: FontSelection
   sourcePlan?: SourceDocumentPlan

@@ -37,6 +37,11 @@ import {
   resolveTemplateManifestPath,
   resolveTemplateRelativePath
 } from './template-paths'
+import {
+  requireSessionSlideSize,
+  requireSlideSize,
+  requireSlideSizePreset
+} from '@shared/slide-size'
 
 type CacheValue = { manifest: TemplateManifest; templateDir: string }
 type PreparedTemplatePage = {
@@ -123,7 +128,9 @@ async function attachTemplateCoverThumbnails(
     items.map((item) => ({
       templateId: item.id,
       sourcePath: item.previewHtmlPath,
-      pageId: item.previewPages[0]?.pageId
+      pageId: item.previewPages[0]?.pageId,
+      width: item.slideWidth,
+      height: item.slideHeight
     })),
     delayMs
   )
@@ -140,7 +147,9 @@ function warmCreatedTemplateCover(templateDir: string, manifest: TemplateManifes
       {
         templateId: manifest.id,
         sourcePath: paths.previewHtmlPath,
-        pageId: paths.previewPages[0]?.pageId
+        pageId: paths.previewPages[0]?.pageId,
+        width: manifest.slideWidth,
+        height: manifest.slideHeight
       }
     ],
     0
@@ -410,6 +419,7 @@ export async function createTemplateFromSession(
   const metadata = parseJsonObject(session.metadata)
   const designContract = resolveTemplateDesignContract(session.designContract, metadata)
   const styleId = session.styleId || null
+  const slideSize = requireSessionSlideSize(session)
 
   const inputName = typeof record.name === 'string' ? record.name.trim() : ''
   const inputDescription = typeof record.description === 'string' ? record.description.trim() : ''
@@ -424,6 +434,9 @@ export async function createTemplateFromSession(
     pageCount: templatePages.length,
     tags: normalizeTags(record.tags),
     styleId,
+    slideSizeId: slideSize.id,
+    slideWidth: slideSize.width,
+    slideHeight: slideSize.height,
     designContract,
     pages: templatePages.map(({ page, htmlPath }, index) => {
       return {
@@ -528,6 +541,7 @@ export async function importPptxAsTemplate(
       label: '正在生成模板设计契约',
       totalPages: imported.pageCount
     })
+    const slideSize = requireSlideSizePreset('wide-16-9')
     const designContract = await buildDesignContractWithLLM({
       provider: activeModel.provider,
       apiKey: activeModel.apiKey,
@@ -538,6 +552,7 @@ export async function importPptxAsTemplate(
       styleSkillPrompt: styleResult.styleSkill,
       modelTimeoutMs: modelTimeouts.document,
       totalPages: imported.pageCount,
+      slideSize,
       topic: title
     })
 
@@ -562,6 +577,9 @@ export async function importPptxAsTemplate(
       pageCount: imported.pageCount,
       tags: [],
       styleId,
+      slideSizeId: slideSize.id,
+      slideWidth: slideSize.width,
+      slideHeight: slideSize.height,
       designContract,
       pages: imported.pages.map((page, index) => {
         const relativeHtmlPath = path.relative(tempDir, page.htmlPath).split(path.sep).join('/')
@@ -590,7 +608,9 @@ export async function importPptxAsTemplate(
     await captureTemplateCoverThumbnail({
       templateId: manifest.id,
       sourcePath: paths.previewHtmlPath,
-      pageId: paths.previewPages[0]?.pageId
+      pageId: paths.previewPages[0]?.pageId,
+      width: manifest.slideWidth,
+      height: manifest.slideHeight
     })
 
     onProgress?.({
@@ -635,6 +655,11 @@ export async function createSessionFromTemplate(
 
   const templatesRoot = await ensureTemplatesRoot()
   const { manifest, templateDir } = await readManifest(templatesRoot, templateId)
+  const slideSize = requireSlideSize({
+    id: manifest.slideSizeId,
+    width: manifest.slideWidth,
+    height: manifest.slideHeight
+  })
   if (manifest.pages.length === 0) throw new Error('模板没有可创建的页面')
 
   const modelConfigId =
@@ -668,7 +693,11 @@ export async function createSessionFromTemplate(
     htmlPath: path.basename(page.htmlPath)
   }))
   const indexPath = path.join(projectDir, 'index.html')
-  await fs.promises.writeFile(indexPath, buildProjectIndexHtml(deckTitle, indexPages), 'utf-8')
+  await fs.promises.writeFile(
+    indexPath,
+    buildProjectIndexHtml(deckTitle, indexPages, slideSize),
+    'utf-8'
+  )
   const userReferenceDocumentPath = await copyReferenceDocumentToSession({
     sourcePath: referenceDocumentPath,
     storageRoot,
@@ -683,6 +712,7 @@ export async function createSessionFromTemplate(
     topic: deckTitle,
     styleId,
     pageCount: resolvedPageCount,
+    slideSize,
     referenceDocumentPath: userReferenceDocumentPath
   })
   if (sourcePlan && userReferenceDocumentPath) {
@@ -739,6 +769,11 @@ export async function createEditableSessionFromTemplate(
 
   const templatesRoot = await ensureTemplatesRoot()
   const { manifest, templateDir } = await readManifest(templatesRoot, templateId)
+  const slideSize = requireSlideSize({
+    id: manifest.slideSizeId,
+    width: manifest.slideWidth,
+    height: manifest.slideHeight
+  })
   if (manifest.pages.length === 0) throw new Error('模板没有可创建的页面')
 
   const storagePath = await ctx.resolveStoragePath()
@@ -763,7 +798,11 @@ export async function createEditableSessionFromTemplate(
     htmlPath: path.basename(page.htmlPath)
   }))
   const indexPath = path.join(projectDir, 'index.html')
-  await fs.promises.writeFile(indexPath, buildProjectIndexHtml(deckTitle, indexPages), 'utf-8')
+  await fs.promises.writeFile(
+    indexPath,
+    buildProjectIndexHtml(deckTitle, indexPages, slideSize),
+    'utf-8'
+  )
 
   await ctx.db.createSession({
     id: sessionId,
@@ -771,6 +810,9 @@ export async function createEditableSessionFromTemplate(
     topic: deckTitle,
     styleId,
     pageCount: preparedPages.length,
+    slideSizeId: slideSize.id,
+    slideWidth: slideSize.width,
+    slideHeight: slideSize.height,
     provider: 'import',
     model: 'template-direct-edit'
   })

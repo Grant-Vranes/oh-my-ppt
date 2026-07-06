@@ -27,7 +27,7 @@ describe('preview edit mode reference lines', () => {
 
     document.body.setAttribute('data-page-id', 'page')
     document.body.innerHTML = `
-      <main class="ppt-page-root" data-ppt-guard-root="1">
+      <main class="ppt-page-root" data-ppt-guard-root="1" data-ppt-width="1000" data-ppt-height="600">
         <main data-block-id="content" data-role="content">
           <div data-block-id="drag">Drag</div>
           <div data-block-id="target">Target</div>
@@ -139,5 +139,42 @@ describe('preview edit mode reference lines', () => {
     })
     dragFromTo(510, 607)
     expect(drag.style.getPropertyValue('--ppt-drag-x')).toBe('500.0px')
+  })
+
+  it('fails loudly when the page root is missing slide size metadata', () => {
+    const window = new Window({ url: 'http://localhost/page.html' }) as unknown as Window & {
+      ResizeObserver: typeof ResizeObserver
+      eval: (code: string) => void
+    }
+    const { document } = window
+
+    document.body.setAttribute('data-page-id', 'page')
+    document.body.innerHTML = `
+      <main class="ppt-page-root" data-ppt-guard-root="1">
+        <main data-block-id="content" data-role="content">
+          <div data-block-id="target">Target</div>
+        </main>
+      </main>
+    `
+
+    window.HTMLElement.prototype.getBoundingClientRect = function () {
+      return rect(0, 0, 1000, 600)
+    }
+    window.HTMLElement.prototype.getClientRects = function () {
+      return [this.getBoundingClientRect()]
+    }
+    window.ResizeObserver = class {
+      observe() {}
+      disconnect() {}
+    } as unknown as typeof ResizeObserver
+
+    window.eval(buildEditModeInjectScript())
+    const editWindow = window as unknown as Window & {
+      __pptEditModeReadSnapPoints: () => { x: number[]; y: number[] }
+    }
+
+    expect(() => editWindow.__pptEditModeReadSnapPoints()).toThrow(
+      'missing page root slide size metadata'
+    )
   })
 })

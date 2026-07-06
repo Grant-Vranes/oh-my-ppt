@@ -31,6 +31,7 @@ import type {
   ExportProgressPayload,
   ExportProgressStage
 } from '@shared/export-progress'
+import { assertPptxExportSupported, requireSessionSlideSize } from '@shared/slide-size'
 
 type PptxExportPayload = {
   sessionId?: unknown
@@ -306,6 +307,7 @@ export function registerExportHandlers(ctx: IpcContext): void {
     }
 
     const { session, pages, projectDir } = await resolveSessionPageFiles(sessionId)
+    const slideSize = requireSessionSlideSize(session)
     const sessionTitle =
       typeof session.title === 'string' && session.title.trim().length > 0
         ? session.title.trim()
@@ -336,8 +338,15 @@ export function registerExportHandlers(ctx: IpcContext): void {
         total: pages.length
       })
       const mergedPdf = await PDFDocument.create()
-      const pdfPageWidth = 16 * 72
-      const pdfPageHeight = 9 * 72
+      const longEdgePoints = 16 * 72
+      const pdfPageWidth =
+        slideSize.width >= slideSize.height
+          ? longEdgePoints
+          : longEdgePoints * (slideSize.width / slideSize.height)
+      const pdfPageHeight =
+        slideSize.height >= slideSize.width
+          ? longEdgePoints
+          : longEdgePoints * (slideSize.height / slideSize.width)
 
       for (let start = 0; start < pages.length; start += EXPORT_PAGE_RENDER_CONCURRENCY) {
         const pageBatch = pages.slice(start, start + EXPORT_PAGE_RENDER_CONCURRENCY)
@@ -349,7 +358,8 @@ export function registerExportHandlers(ctx: IpcContext): void {
           })
           return renderPageToPdfBuffer({
             page,
-            timeoutMs: EXPORT_PAGE_READY_TIMEOUT_MS
+            timeoutMs: EXPORT_PAGE_READY_TIMEOUT_MS,
+            slideSize
           })
         })
 
@@ -416,7 +426,8 @@ export function registerExportHandlers(ctx: IpcContext): void {
       throw new Error('sessionId 不能为空')
     }
 
-    const { pages, projectDir } = await resolveSessionPageFiles(sessionId)
+    const { session, pages, projectDir } = await resolveSessionPageFiles(sessionId)
+    const slideSize = requireSessionSlideSize(session)
 
     const ownerWindow =
       BrowserWindow.fromWebContents(event.sender) ?? BrowserWindow.getFocusedWindow() ?? mainWindow
@@ -455,7 +466,8 @@ export function registerExportHandlers(ctx: IpcContext): void {
           })
           const rendered = await renderPageToPdfBuffer({
             page,
-            timeoutMs: EXPORT_PAGE_READY_TIMEOUT_MS
+            timeoutMs: EXPORT_PAGE_READY_TIMEOUT_MS,
+            slideSize
           })
           await fs.promises.writeFile(
             path.join(outputDir, buildPngFileName(page.pageNumber, page.title)),
@@ -514,6 +526,8 @@ export function registerExportHandlers(ctx: IpcContext): void {
     const requestedPageId = parseExportPageId(payload)
 
     const { session, pages: allPages, projectDir } = await resolveSessionPageFiles(sessionId)
+    const slideSize = requireSessionSlideSize(session)
+    assertPptxExportSupported(slideSize)
     const pages = requestedPageId
       ? allPages.filter((page) => page.id === requestedPageId)
       : allPages
@@ -705,6 +719,7 @@ export function registerExportHandlers(ctx: IpcContext): void {
     )
 
     const { session, pages: allPages, projectDir } = await resolveSessionPageFiles(sessionId)
+    const slideSize = requireSessionSlideSize(session)
     const pages = requestedPageId
       ? allPages.filter((page) => page.id === requestedPageId)
       : allPages
@@ -751,12 +766,15 @@ export function registerExportHandlers(ctx: IpcContext): void {
         filePath: saveResult.filePath,
         fps,
         secondsPerPage,
+        slideWidth: slideSize.width,
+        slideHeight: slideSize.height,
         sessionPageId: requestedPageId || undefined
       })
       const exported = await exportHtmlPagesToVideo({
         pages,
         outputPath: saveResult.filePath,
         tempRootDir: path.dirname(projectDir),
+        slideSize,
         fps,
         captureFps:
           payload && typeof payload === 'object'

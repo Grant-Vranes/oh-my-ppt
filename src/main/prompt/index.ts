@@ -10,4 +10,12 @@ export {
   buildPlanningUserPrompt,
   buildEditUserPrompt,
 } from "./runtime-user";
-export { PAGE_SEMANTIC_STRUCTURE, CONTENT_LANGUAGE_RULES } from "./shared";
+export { CONTENT_LANGUAGE_RULES } from "./shared";
+export {
+  buildCanvasScenarioBrief,
+  buildCanvasScenarioContentRules,
+  buildCanvasScenarioDeliveryGuard,
+  buildCanvasScenarioExpansionRules,
+  resolveCanvasScenario,
+  type CanvasScenarioId,
+} from "./canvas-scenario";

@@ -1,3 +1,8 @@
+import {
+  requirePersistedSlideSize,
+  type SlideSizePresetId
+} from '@shared/slide-size'
+
 export type TemplateSource = 'user'
 
 export interface TemplateManifestPage {
@@ -18,6 +23,9 @@ export interface TemplateManifest {
   pageCount: number
   tags: string[]
   styleId?: string | null
+  slideSizeId: SlideSizePresetId
+  slideWidth: number
+  slideHeight: number
   designContract?: unknown
   pages: TemplateManifestPage[]
 }
@@ -29,6 +37,9 @@ export interface TemplateListItem {
   source: TemplateSource
   pageCount: number
   tags: string[]
+  slideSizeId: SlideSizePresetId
+  slideWidth: number
+  slideHeight: number
   previewHtmlPath: string | null
   thumbnailPath: string | null
   previewPages: Array<{
@@ -52,6 +63,11 @@ export function parseTemplateManifest(raw: unknown): TemplateManifest {
   const name = asString(record.name)
   if (!id) throw new Error('模板 manifest 缺少 id')
   if (!name) throw new Error('模板 manifest 缺少 name')
+  const slideSize = requirePersistedSlideSize({
+    id: asString(record.slideSizeId),
+    width: asNumber(record.slideWidth),
+    height: asNumber(record.slideHeight)
+  })
 
   const rawPages = Array.isArray(record.pages) ? record.pages : []
   const pages = rawPages
@@ -81,6 +97,9 @@ export function parseTemplateManifest(raw: unknown): TemplateManifest {
       ? record.tags.map((tag) => asString(tag)).filter(Boolean).slice(0, 12)
       : [],
     styleId: asString(record.styleId) || null,
+    slideSizeId: slideSize.id,
+    slideWidth: slideSize.width,
+    slideHeight: slideSize.height,
     designContract: record.designContract,
     pages
   }
@@ -100,6 +119,9 @@ export function manifestToListItem(
     source: 'user',
     pageCount: manifest.pageCount || manifest.pages.length,
     tags: manifest.tags,
+    slideSizeId: manifest.slideSizeId,
+    slideWidth: manifest.slideWidth,
+    slideHeight: manifest.slideHeight,
     previewHtmlPath: paths.previewHtmlPath,
     thumbnailPath: null,
     previewPages: paths.previewPages,

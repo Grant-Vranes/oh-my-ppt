@@ -12,6 +12,7 @@ import { normalizePagesForSelection } from '../shared/pageUtils'
 import type { SessionPreviewPage } from '../shared/types'
 import { useSessionPageActions } from '../hooks/useSessionPageActions'
 import { useSessionReorderPages } from '../hooks/useSessionReorderPages'
+import { isDefaultSlideSize, trySessionSlideSize } from '@shared/slide-size'
 
 export function usePageSidebarController(sessionId: string) {
   const t = useT()
@@ -32,6 +33,8 @@ export function usePageSidebarController(sessionId: string) {
   )
   const openBlankPageDialog = useSessionDetailUiStore((state) => state.openBlankPageDialog)
   const loadSession = useSessionStore((state) => state.loadSession)
+  const currentSession = useSessionStore((state) => state.currentSession)
+  const slideSize = trySessionSlideSize(currentSession)
   const toastError = useToastStore((state) => state.error)
   const pageActions = useSessionPageActions(sessionId)
   const pages = useMemo(() => normalizePagesForSelection(currentPages), [currentPages])
@@ -107,6 +110,7 @@ export function usePageSidebarController(sessionId: string) {
     onRenamePage: pageActions.renamePage,
     onUpdatePageOutline: handleUpdatePageOutline,
     onExportPagePptx: pageActions.exportPagePptx,
+    canExportPptx: slideSize ? isDefaultSlideSize(slideSize) : false,
     onDownloadAllOutlines: pageActions.exportOutlinesMarkdown,
     onToggleCollapsed: toggleSidebarCollapsed
   }

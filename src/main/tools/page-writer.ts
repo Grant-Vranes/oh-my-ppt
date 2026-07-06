@@ -14,18 +14,27 @@ import {
 import { buildSessionAssetHeadTags } from '../ipc/engine/page-assets'
 import { normalizeCreativePageFragment } from './page-fragment-normalizer'
 import { validateTemplateSkeletonPreserved } from '../ipc/templates/template-skeleton-validator'
+import {
+  SLIDE_SIZE_PRESETS,
+  requireSlideSize,
+  type SlideSizePreset
+} from '@shared/slide-size'
 
 const uiText = (locale: 'zh' | 'en' | undefined, zh: string, en: string): string =>
   locale === 'en' ? en : zh
 
-export const BASE_PAGE_STYLE_TAG = `<style id="ppt-page-guard-style">
+export const buildBasePageStyleTag = (input: SlideSizePreset): string => {
+  const slideSize = requireSlideSize(input)
+  return `<style id="ppt-page-guard-style">
   :root {
     --ppt-page-bg: #ffffff;
+    --ppt-slide-width: ${slideSize.width}px;
+    --ppt-slide-height: ${slideSize.height}px;
   }
   html, body {
     margin: 0;
-    width: 1600px;
-    height: 900px;
+    width: var(--ppt-slide-width);
+    height: var(--ppt-slide-height);
     overflow: hidden;
     font-family: "SF Pro Text", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
     background: var(--ppt-page-bg);
@@ -34,8 +43,8 @@ export const BASE_PAGE_STYLE_TAG = `<style id="ppt-page-guard-style">
   *, *::before, *::after { box-sizing: border-box; }
   .ppt-page-root[data-ppt-guard-root="1"] {
     position: relative;
-    width: 1600px;
-    height: 900px;
+    width: var(--ppt-slide-width);
+    height: var(--ppt-slide-height);
     overflow: hidden;
     isolation: isolate;
     background: var(--ppt-page-bg);
@@ -121,15 +130,26 @@ export const BASE_PAGE_STYLE_TAG = `<style id="ppt-page-guard-style">
     font-size: 48px !important;
   }
 </style>`
+}
 
-export const FIT_SCRIPT = `<script id="ppt-page-fit">
+export const buildFitScript = (input: SlideSizePreset): string => {
+  const slideSize = requireSlideSize(input)
+  // Min font floors scale with canvas height so the readability floor lands at
+  // the same physical size after the presentation's contain-fit scaling.
+  // 900h is the baseline (matches wide-16-9); taller canvases get larger floors.
+  const heightScale = slideSize.height / 900
+  const legacyMinFont = Math.round(14 * heightScale)
+  const auxiliaryMinFont = Math.round(12 * heightScale)
+  const bodyMinFont = Math.round(18 * heightScale)
+  const headingMinFont = Math.round(24 * heightScale)
+  return `<script id="ppt-page-fit">
 (() => {
-  const WIDTH = 1600;
-  const HEIGHT = 900;
-  const LEGACY_MIN_FONT = 14;
-  const AUXILIARY_MIN_FONT = 12;
-  const BODY_MIN_FONT = 18;
-  const HEADING_MIN_FONT = 24;
+  const WIDTH = ${slideSize.width};
+  const HEIGHT = ${slideSize.height};
+  const LEGACY_MIN_FONT = ${legacyMinFont};
+  const AUXILIARY_MIN_FONT = ${auxiliaryMinFont};
+  const BODY_MIN_FONT = ${bodyMinFont};
+  const HEADING_MIN_FONT = ${headingMinFont};
   const AUXILIARY_TEXT_SELECTOR = [
     "footer",
     "small",
@@ -270,6 +290,7 @@ export const FIT_SCRIPT = `<script id="ppt-page-fit">
   window.addEventListener("resize", fitPage);
 })();
 </script>`
+}
 
 export const VIDEO_INTERACTION_SCRIPT = `<script id="ppt-video-interaction">
 (() => {
@@ -516,11 +537,30 @@ function syncRootBackgroundFromScaffold(html: string): string {
   }
 }
 
+const PRESET_DIMENSIONS_PATTERN = Array.from(
+  new Set(SLIDE_SIZE_PRESETS.flatMap((preset) => [preset.width, preset.height]))
+).join('|')
+const PRESET_ASPECTS_PATTERN = SLIDE_SIZE_PRESETS.flatMap((preset) => [
+  `${preset.width}\\/${preset.height}`,
+  preset.id === 'wide-16-9'
+    ? '16\\/9'
+    : preset.id === 'vertical-9-16'
+      ? '9\\/16'
+      : preset.id === 'standard-4-3'
+        ? '4\\/3'
+        : preset.id === 'square-1-1'
+          ? '1\\/1'
+          : '3\\/4'
+]).join('|')
+
 const CANVAS_LOCK_CLASS_PATTERNS = [
-  /^(w|h|min-w|min-h|max-w|max-h)-\[(1600px|900px|100vw|100vh|100dvw|100dvh)\]$/i,
+  new RegExp(
+    `^(w|h|min-w|min-h|max-w|max-h)-\\[(?:(?:${PRESET_DIMENSIONS_PATTERN})px|100vw|100vh|100dvw|100dvh)\\]$`,
+    'i'
+  ),
   /^(w|h|min-w|min-h|max-w|max-h)-screen$/i,
-  /^aspect-\[(16\/9|1600\/900)\]$/i,
-  /^size-\[(1600px|900px)\]$/i
+  new RegExp(`^aspect-\\[(?:${PRESET_ASPECTS_PATTERN})\\]$`, 'i'),
+  new RegExp(`^size-\\[(?:${PRESET_DIMENSIONS_PATTERN})px\\]$`, 'i')
 ]
 
 function stripCanvasLockClasses(classAttr: string): string {
@@ -538,8 +578,19 @@ function stripCanvasInlineSizes(styleAttr: string): string {
     .filter(Boolean)
   const kept = declarations.filter((decl) => {
     const normalized = decl.toLowerCase().replace(/\s+/g, ' ')
-    if (/^(width|min-width|max-width): (1600px|100vw|100dvw)$/.test(normalized)) return false
-    if (/^(height|min-height|max-height): (900px|100vh|100dvh)$/.test(normalized)) return false
+    const dimensionValuePattern = `(?:${PRESET_DIMENSIONS_PATTERN})px`
+    if (
+      new RegExp(
+        `^(width|min-width|max-width): (${dimensionValuePattern}|100vw|100dvw)$`
+      ).test(normalized)
+    )
+      return false
+    if (
+      new RegExp(
+        `^(height|min-height|max-height): (${dimensionValuePattern}|100vh|100dvh)$`
+      ).test(normalized)
+    )
+      return false
     return true
   })
   return kept.join('; ')
@@ -760,6 +811,7 @@ const normalizeAndInjectPageRuntime = (
   content: string,
   pageId: string,
   projectDir: string,
+  slideSize: SlideSizePreset,
   designFonts?: { titleFont: string; bodyFont: string }
 ): Promise<string> => {
   const fragment = normalizeCreativePageFragment(preprocessPageHtml(content))
@@ -768,6 +820,7 @@ const normalizeAndInjectPageRuntime = (
     innerContent: fragment,
     includeDefaultMotion: hasDataAnim(content) || !hasCustomPageAnimation(content),
     projectDir,
+    slideSize,
     designFonts
   }).then(syncRootBackgroundFromScaffold)
 }
@@ -848,8 +901,9 @@ async function buildScaffoldDocument(args: {
   includeDefaultMotion: boolean
   projectDir: string
   designFonts?: { titleFont: string; bodyFont: string }
+  slideSize: SlideSizePreset
 }): Promise<string> {
-  const { pageId, innerContent, includeDefaultMotion, projectDir, designFonts } = args
+  const { pageId, innerContent, includeDefaultMotion, projectDir, designFonts, slideSize } = args
   const motionScript = includeDefaultMotion ? `\n    ${DEFAULT_MOTION_SCRIPT}` : ''
   const fontInjection =
     designFonts
@@ -861,17 +915,17 @@ async function buildScaffoldDocument(args: {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     ${buildSessionAssetHeadTags()}${fontInjection}
-    ${BASE_PAGE_STYLE_TAG}
+    ${buildBasePageStyleTag(slideSize)}
   </head>
   <body data-page-id="${pageId}">
-    <main class="ppt-page-root" data-ppt-guard-root="1">
+    <main class="ppt-page-root" data-ppt-guard-root="1" data-ppt-slide-size-id="${slideSize.id}" data-ppt-width="${slideSize.width}" data-ppt-height="${slideSize.height}">
       <div class="ppt-page-fit-scope">
         <div class="ppt-page-content">
           ${innerContent}
         </div>
       </div>
     </main>
-    ${FIT_SCRIPT}
+    ${buildFitScript(slideSize)}
     ${VIDEO_INTERACTION_SCRIPT}
     ${motionScript}
   </body>
@@ -1044,6 +1098,7 @@ export function createPageWriteTools(args: {
         preparedContent.content,
         resolvedPageId,
         context.projectDir,
+        context.slideSize,
         designFonts
       )
       if (context.templatePageReadRequired) {

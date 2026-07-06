@@ -1,7 +1,8 @@
 /** HTML template builders for multi-page preview architecture. */
 import { escapeHtml } from '../utils'
 import * as cheerio from 'cheerio'
-import { BASE_PAGE_STYLE_TAG, FIT_SCRIPT } from '../../tools'
+import { buildBasePageStyleTag, buildFitScript } from '../../tools'
+import { requireSlideSize, type SlideSizePreset } from '@shared/slide-size'
 import { buildSessionAssetHeadTags } from './page-assets'
 import {
   DEFAULT_INDEX_TRANSITION_CONFIG,
@@ -28,7 +29,8 @@ export const buildPageScaffoldHtml = (page: {
   pageNumber: number
   pageId: string
   title: string
-}): string => {
+}, slideSizeInput: SlideSizePreset): string => {
+  const slideSize = requireSlideSize(slideSizeInput)
   const safeTitle = escapeHtml(page.title || `第 ${page.pageNumber} 页`)
   return `<!doctype html>
 <html lang="zh-CN">
@@ -37,7 +39,7 @@ export const buildPageScaffoldHtml = (page: {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>${safeTitle}</title>
     ${buildSessionAssetHeadTags()}
-    ${BASE_PAGE_STYLE_TAG}
+    ${buildBasePageStyleTag(slideSize)}
     <style>
       .scaffold-card {
         width: 100%;
@@ -61,7 +63,7 @@ export const buildPageScaffoldHtml = (page: {
     </style>
   </head>
   <body data-page-id="${page.pageId}">
-    <main class="ppt-page-root" data-ppt-guard-root="1">
+    <main class="ppt-page-root" data-ppt-guard-root="1" data-ppt-slide-size-id="${slideSize.id}" data-ppt-width="${slideSize.width}" data-ppt-height="${slideSize.height}">
       <div class="ppt-page-fit-scope">
         <div class="ppt-page-content">
           <section class="scaffold-card" data-page-scaffold="1" data-placeholder-page="1">
@@ -73,12 +75,17 @@ export const buildPageScaffoldHtml = (page: {
         </div>
       </div>
     </main>
-    ${FIT_SCRIPT}
+    ${buildFitScript(slideSize)}
   </body>
 </html>`
 }
 
-export const buildProjectIndexHtml = (title: string, pages: DeckPageFile[]): string => {
+export const buildProjectIndexHtml = (
+  title: string,
+  pages: DeckPageFile[],
+  slideSizeInput: SlideSizePreset
+): string => {
+  const slideSize = requireSlideSize(slideSizeInput)
   const safeTitle = escapeHtml(title || 'OhMyPPT Preview')
   const pagesData = JSON.stringify(
     pages.map((page) => ({
@@ -117,6 +124,10 @@ export const buildProjectIndexHtml = (title: string, pages: DeckPageFile[]): str
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>${safeTitle} · Preview</title>
     <style>
+      :root {
+        --ppt-slide-width: ${slideSize.width}px;
+        --ppt-slide-height: ${slideSize.height}px;
+      }
       * { box-sizing: border-box; }
       html, body {
         width: 100%;
@@ -154,8 +165,8 @@ export const buildProjectIndexHtml = (title: string, pages: DeckPageFile[]): str
         position: absolute;
         left: 0;
         top: 0;
-        width: 1600px;
-        height: 900px;
+        width: var(--ppt-slide-width);
+        height: var(--ppt-slide-height);
         transform-origin: top left;
         border: none;
         background: white;
@@ -278,6 +289,11 @@ export const buildProjectIndexHtml = (title: string, pages: DeckPageFile[]): str
       <button class="ppt-control-btn" id="fullscreenBtn">全屏</button>
     </div>
     <script type="application/json" id="pages-data">${pagesData}</script>
+    <script type="application/json" id="deck-metadata">${JSON.stringify({
+      slideSizeId: slideSize.id,
+      width: slideSize.width,
+      height: slideSize.height
+    })}</script>
     ${buildIndexTransitionConfigScript(DEFAULT_INDEX_TRANSITION_CONFIG)}
     <script src="./assets/anime.v4.js"></script>
     <script src="./assets/index-runtime.js"></script>

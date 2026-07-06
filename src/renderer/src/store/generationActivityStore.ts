@@ -13,13 +13,14 @@ export function shouldAutoCloseGenerationActivity(
 }
 
 export function shouldHandleGenerationActivity(
-  activityKind: 'edit' | 'style-switch' | 'single-page-retry' | undefined,
+  activityKind: 'edit' | 'style-switch' | 'single-page-retry' | 'addPage' | undefined,
   retryContext: GenerationRetryContext | null
 ): boolean {
   return (
     activityKind === 'edit' ||
     activityKind === 'style-switch' ||
     activityKind === 'single-page-retry' ||
+    activityKind === 'addPage' ||
     retryContext !== null
   )
 }

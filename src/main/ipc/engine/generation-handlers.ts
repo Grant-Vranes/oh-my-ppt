@@ -368,6 +368,7 @@ export function registerGenerationHandlers(ctx: IpcContext): void {
         styleVersion: context.styleVersion,
         appLocale: context.appLocale,
         totalPages: context.totalPages,
+        slideSize: context.slideSize,
         topic: context.topic,
         userMessage: context.userMessage,
         fontSelection: context.fontSelection,
@@ -754,6 +755,7 @@ export function registerGenerationHandlers(ctx: IpcContext): void {
         sessionId: addPageCtx.sessionId,
         runId: addPageCtx.runId,
         mode: 'addPage',
+        activityKind: 'addPage',
         previousSessionStatus: addPageCtx.previousSessionStatus,
         totalPages: 1
       })

@@ -52,15 +52,20 @@ describe('generationActivityStore', () => {
     expect(shouldHandleGenerationActivity('edit', null)).toBe(true)
     expect(shouldHandleGenerationActivity('style-switch', null)).toBe(true)
     expect(shouldHandleGenerationActivity('single-page-retry', null)).toBe(true)
+    expect(shouldHandleGenerationActivity('addPage', null)).toBe(true)
     expect(
       shouldHandleGenerationActivity(undefined, { kind: 'style-switch', styleId: 'style-2' })
     ).toBe(true)
   })
 
-  it('routes single-page retries into the generation activity dialog', () => {
+  it('routes activity runs into the generation activity dialog', () => {
     const handlerSource = fs.readFileSync(
       path.resolve('src/main/ipc/engine/generation-handlers.ts'),
       'utf8'
+    )
+    const addPageHandler = handlerSource.slice(
+      handlerSource.indexOf("ipcMain.handle('generate:addPage'"),
+      handlerSource.indexOf("ipcMain.handle('generate:retrySinglePage'")
     )
     const retryHandler = handlerSource.slice(
       handlerSource.indexOf("ipcMain.handle('generate:retrySinglePage'"),
@@ -71,7 +76,9 @@ describe('generationActivityStore', () => {
       'utf8'
     )
 
+    expect(addPageHandler).toContain("activityKind: 'addPage'")
     expect(retryHandler).toContain("activityKind: 'single-page-retry'")
+    expect(dialogSource).toContain("event.payload.activityKind === 'addPage'")
     expect(dialogSource).toContain("event.payload.activityKind === 'single-page-retry'")
   })
 })

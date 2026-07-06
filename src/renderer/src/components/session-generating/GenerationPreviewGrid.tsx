@@ -2,11 +2,14 @@ import { useEffect, useState } from 'react'
 import { ScrollArea } from '@renderer/components/ui/ScrollArea'
 import { GenerationThumbnail } from './GenerationThumbnail'
 import type { GenerationPreviewPage } from './types'
+import type { SlideSizePreset } from '@shared/slide-size'
 
 export function GenerationPreviewGrid({
-  pages
+  pages,
+  slideSize
 }: {
   pages: GenerationPreviewPage[]
+  slideSize: SlideSizePreset | null
 }): React.JSX.Element {
   const [previewEnabled, setPreviewEnabled] = useState(
     () => typeof document === 'undefined' || document.visibilityState === 'visible'
@@ -31,7 +34,11 @@ export function GenerationPreviewGrid({
               animation: `gen-page-rise 420ms ease ${Math.min(index * 55, 440)}ms both`
             }}
           >
-            <GenerationThumbnail page={page} previewEnabled={previewEnabled} />
+            <GenerationThumbnail
+              page={page}
+              previewEnabled={previewEnabled}
+              slideSize={slideSize}
+            />
           </div>
         ))}
       </div>

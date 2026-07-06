@@ -163,6 +163,7 @@ export const PageSidebar = memo(function PageSidebar({
     onRenamePage,
     onUpdatePageOutline,
     onExportPagePptx,
+    canExportPptx,
     onDownloadAllOutlines,
     pageManagementDisabled,
     collapsed,
@@ -664,7 +665,7 @@ export const PageSidebar = memo(function PageSidebar({
                                       />
                                     </button>
                                     <div className="flex items-center gap-1">
-                                      {onExportPagePptx ? (
+                                      {canExportPptx ? (
                                         <DropdownMenu>
                                           <Tooltip>
                                             <TooltipTrigger asChild>

@@ -6,6 +6,7 @@ import {
   buildSinglePageGenerationPrompt
 } from '../../../src/main/prompt'
 import type { SessionDeckGenerationContext } from '../../../src/main/tools/types'
+import { resolveSlideSize } from '../../../src/shared/slide-size'
 
 const readSource = (relativePath: string): string =>
   fs.readFileSync(path.join(process.cwd(), relativePath), 'utf-8')
@@ -22,57 +23,56 @@ const baseContext: SessionDeckGenerationContext = {
   userMessage: 'Create a quarterly report.',
   outlineTitles: ['Overview'],
   outlineItems: [{ title: 'Overview', contentOutline: 'Summarize the quarter.' }],
+  slideSize: resolveSlideSize({ id: 'wide-16-9' }),
   appLocale: 'en'
 }
 
 describe('content expansion rules — always-on, not source-gated', () => {
-  it('CONTENT_EXPANSION_RULES expands only when the page is truly thin', () => {
-    const shared = readSource('src/main/prompt/shared.ts')
+  it('scenario expansion rules expand only when the page is truly thin', () => {
+    const scenario = readSource('src/main/prompt/canvas-scenario.ts')
 
     // Expansion is conditional: enough content means choose, group, and budget —
     // not more modules. This guards against dense source pages overflowing.
-    expect(shared).toContain('export const CONTENT_EXPANSION_RULES')
-    expect(shared).toContain('内容丰富与优化规则')
-    expect(shared).toContain('先判断是否真的不足')
-    expect(shared).toContain('写 HTML 前必须先判断内容是否需要丰富或优化')
-    expect(shared).toContain('内容够了就不扩展')
-    expect(shared).toContain('已有完整表格、多指标对比、图表 + 读图结论')
-    expect(shared).toContain('不要再新增卡片、注释区或第二套总结')
-    expect(shared).toContain('不要捏造') // boundary: no fabrication
-    expect(shared).toContain('能少量讲清就不再加') // boundary: fits one page
-    expect(shared).toContain('1600×900')
+    expect(scenario).toContain('export function buildCanvasScenarioExpansionRules')
+    expect(scenario).toContain('内容丰富与优化规则')
+    expect(scenario).toContain('够了就压缩')
+    expect(scenario).toContain('禁止捏造')
+    expect(scenario).toContain('收在当前画布内')
+    expect(scenario).toContain('演示页的“够”')
+    expect(scenario).toContain('竖屏的“够”')
+    expect(scenario).toContain('小红书页的“够”')
   })
 
-  it('density control is single-sourced in CANVAS_CONSTRAINTS (always-on, all paths), not duplicated in CONTENT_EXPANSION_RULES', () => {
+  it('density control is single-sourced in canvas constraints, not duplicated in scenario expansion rules', () => {
     const shared = readSource('src/main/prompt/shared.ts')
-    const expansionStart = shared.indexOf('export const CONTENT_EXPANSION_RULES')
-    const expansionBlock = shared.slice(
+    const scenario = readSource('src/main/prompt/canvas-scenario.ts')
+    const expansionStart = scenario.indexOf('export function buildCanvasScenarioExpansionRules')
+    const expansionBlock = scenario.slice(
       expansionStart,
-      shared.indexOf('export const', expansionStart + 1)
+      scenario.indexOf('export function buildCanvasScenarioDeliveryGuard', expansionStart)
     )
-    const canvasStart = shared.indexOf('export const CANVAS_CONSTRAINTS')
-    const canvasBlock = shared.slice(canvasStart, shared.indexOf('export const', canvasStart + 1))
+    const canvasStart = shared.indexOf('export function buildCanvasConstraints')
+    const canvasBlock = shared.slice(
+      canvasStart,
+      shared.indexOf('export function buildLayoutCollisionRules', canvasStart)
+    )
 
     // Density control lives once, in the always-on canvas block that reaches
-    // generation AND edit. CONTENT_EXPANSION_RULES only owns the expansion trigger
+    // generation AND edit. Scenario expansion only owns the expansion trigger
     // and guardrails, so it must not drift into layout-specific recipes.
     expect(canvasBlock).toContain('密度由内容决定')
     expect(expansionBlock).not.toContain('扩展不是堆卡片')
-    expect(expansionBlock).toContain('先判断是否真的不足')
+    expect(expansionBlock).toContain('偏薄')
   })
 
-  it('is imported by the real deck-agent entry (deck-system.ts) and single-page generation', () => {
+  it('is imported by the real deck-agent entry and single-page generation', () => {
     const deckSystem = readSource('src/main/prompt/deck-system.ts')
     const generationUser = readSource('src/main/prompt/generation-user.ts')
 
     // The deck path runs through buildDeckAgentSystemPrompt (called in agent.ts).
     // Wire the rule where it actually ships.
-    expect(deckSystem.slice(0, deckSystem.indexOf("} from './shared'"))).toContain(
-      'CONTENT_EXPANSION_RULES'
-    )
-    expect(generationUser.slice(0, generationUser.indexOf("} from './shared'"))).toContain(
-      'CONTENT_EXPANSION_RULES'
-    )
+    expect(deckSystem).toContain('buildCanvasScenarioExpansionRules')
+    expect(generationUser).toContain('buildCanvasScenarioExpansionRules')
   })
 
   it('the dead deck helper is gone (deck runs through buildDeckAgentSystemPrompt, not a never-called helper)', () => {
@@ -88,7 +88,7 @@ describe('content expansion rules — always-on, not source-gated', () => {
     // It sits in the main return array, after the source-document block spread,
     // so it applies whether or not source documents are present.
     const afterSourceBlock = deckFn.slice(deckFn.indexOf('...sourceDocumentInstructions'))
-    expect(afterSourceBlock).toContain('CONTENT_EXPANSION_RULES')
+    expect(afterSourceBlock).toContain('buildCanvasScenarioExpansionRules(context.slideSize)')
   })
 
   it('single-page generation wires it into the always-on return, not the source-gated block', () => {
@@ -100,10 +100,10 @@ describe('content expansion rules — always-on, not source-gated', () => {
     // Present in the main return array (after retryInstructions), not inside the
     // sourceDocumentInstructions ternary that only fires with source documents.
     const afterRetry = singlePageSource.slice(singlePageSource.indexOf('...retryInstructions'))
-    expect(afterRetry).toContain('CONTENT_EXPANSION_RULES')
+    expect(afterRetry).toContain('buildCanvasScenarioExpansionRules(args.slideSize)')
   })
 
-  it('generation prompts keep slide form in SLIDE_THESIS_RULES and content enrichment in CONTENT_EXPANSION_RULES', () => {
+  it('generation prompts keep page form in scenario rules and content enrichment in scenario expansion rules', () => {
     const deckPrompt = buildDeckAgentSystemPrompt('test-style', {
       ...baseContext,
       animationPreferences: { ids: ['fade'] }
@@ -114,43 +114,90 @@ describe('content expansion rules — always-on, not source-gated', () => {
       pageId: 'page-1',
       pageNumber: 1,
       pageTitle: 'Overview',
-      pageOutline: 'Summarize the quarter.'
+      pageOutline: 'Summarize the quarter.',
+      slideSize: baseContext.slideSize
     })
 
     expect(pagePrompt).toContain('Required content enrichment decision before writing')
-    expect(pagePrompt).toContain('First follow SLIDE_THESIS_RULES to decide the slide form')
-    expect(pagePrompt).toContain('CONTENT_EXPANSION_RULES only to decide whether the content itself needs enrichment')
-    expect(pagePrompt).toContain('the page is thin: enrich the argument structure')
+    expect(pagePrompt).toContain('First use the Canvas scenario rules to decide the page form')
+    expect(pagePrompt).toContain('scenario expansion rules only to decide whether the content itself needs enrichment')
+    expect(pagePrompt).toContain('the page is thin: enrich the warranted structure')
     expect(pagePrompt).toContain('animation is downstream only')
-    expect(pagePrompt).toContain('must follow the slide form, source grounding, and warranted content enrichment')
+    expect(pagePrompt).toContain('must follow the current canvas scenario, source grounding, and warranted content enrichment')
 
     expect(deckPrompt).toContain('Animation preferences for page writing only')
     expect(deckPrompt).toContain('Animation is downstream only')
     expect(deckPrompt).toContain('Never reduce, skip, or reshape warranted content enrichment')
-    expect(deckPrompt).toContain('写 HTML 前必须先判断内容是否需要丰富或优化')
-    expect(deckPrompt.indexOf('写 HTML 前必须先判断内容是否需要丰富或优化')).toBeLessThan(
+    expect(deckPrompt).toContain('写 HTML 前判断')
+    expect(deckPrompt.indexOf('写 HTML 前判断')).toBeLessThan(
       deckPrompt.indexOf('Animation preferences for page writing only')
     )
   })
 
-  it('slide-thesis rules own the form guidance while content expansion owns enrichment', () => {
-    const shared = readSource('src/main/prompt/shared.ts')
+  it('section agenda page prompts do not request source document reading', () => {
+    const pagePrompt = buildSinglePageGenerationPrompt({
+      topic: 'AI动漫报告',
+      deckTitle: 'AI动漫报告',
+      pageId: 'page-2',
+      pageNumber: 2,
+      pageTitle: '二、技术参数与技术效率明细',
+      pageOutline: [
+        'Page role: section-agenda',
+        'Page purpose: 章节目录页：概览本章下的子主题，包括：2.1 主流AI动漫工具性能对比、2.2 训练数据规模、2.3 效率实证。'
+      ].join('\n'),
+      slideSize: baseContext.slideSize,
+      sourceDocumentPaths: ['/docs/source.md'],
+      referenceDocumentSnippets: '[片段 1] /docs/source.md#L18-L50\n内容：should not appear'
+    })
+
+    expect(pagePrompt).toContain('Section agenda page requirements')
+    expect(pagePrompt).toContain('Use only the child topic names already listed')
+    expect(pagePrompt).not.toContain('Source document requirements')
+    expect(pagePrompt).not.toContain('Range-bound source reading')
+    expect(pagePrompt).not.toContain('参考文档检索片段')
+    expect(pagePrompt).not.toContain('should not appear')
+  })
+
+  it('section agenda single-page system prompts ignore source document paths', () => {
+    const deckPrompt = buildDeckAgentSystemPrompt('test-style', {
+      ...baseContext,
+      sourceDocumentPaths: ['/docs/source.md'],
+      selectedPageId: 'page-1',
+      selectedPageNumber: 1,
+      outlineTitles: ['二、技术参数与技术效率明细'],
+      outlineItems: [
+        {
+          title: '二、技术参数与技术效率明细',
+          contentOutline: [
+            'Page role: section-agenda',
+            'Page purpose: 章节目录页：概览本章下的子主题，包括：2.1 主流AI动漫工具性能对比、2.2 训练数据规模、2.3 效率实证。'
+          ].join('\n'),
+          layoutIntent: 'summary'
+        }
+      ]
+    })
+
+    expect(deckPrompt).not.toContain('## Source documents')
+    expect(deckPrompt).not.toContain('source-reading skill')
+    expect(deckPrompt).not.toContain('/docs/source.md')
+  })
+
+  it('scenario content rules own the form guidance while scenario expansion owns enrichment', () => {
+    const scenario = readSource('src/main/prompt/canvas-scenario.ts')
     const deckSystem = readSource('src/main/prompt/deck-system.ts')
     const generationUser = readSource('src/main/prompt/generation-user.ts')
 
-    // The thesis helper lives once in shared.ts as a constant — not inlined duplicated prose.
-    expect(shared).toContain('export const SLIDE_THESIS_RULES')
-    expect(shared).toContain('3 秒主旨')
-    expect(shared).toContain('PPT 是演讲辅助')
-    expect(shared).toContain('一个焦点')
-    expect(shared).toContain('构图平衡')
-    expect(shared).toContain('留白是设计，不是待填的空')
-    expect(shared).toContain('量的多少不是问题，平衡才是')
-    expect(shared).toContain('按焦点取舍而非逐条上屏')
+    expect(scenario).toContain('export function buildCanvasScenarioContentRules')
+    expect(scenario).toContain('3 秒主旨')
+    expect(scenario).toContain('PPT 是演讲辅助')
+    expect(scenario).toContain('移动端竖屏')
+    expect(scenario).toContain('小红书图文笔记')
+    expect(scenario).toContain('一个焦点')
+    expect(scenario).toContain('构图平衡')
 
     // Both real generation entries import and foreground it (DRY — one source).
-    expect(deckSystem).toContain('SLIDE_THESIS_RULES')
-    expect(generationUser).toContain('SLIDE_THESIS_RULES')
+    expect(deckSystem).toContain('buildCanvasScenarioContentRules')
+    expect(generationUser).toContain('buildCanvasScenarioContentRules')
 
     // Form guidance and source-grounded content enrichment live ONLY in the
     // rewrite-capable edit paths (single-page + deck). Selector (element-level)
@@ -172,15 +219,15 @@ describe('content expansion rules — always-on, not source-gated', () => {
     )
     const deckEdit = editSystem.slice(editSystem.indexOf('function buildDeckEditPrompt('))
 
-    expect(singlePageEdit).toContain('SLIDE_THESIS_RULES')
-    expect(deckEdit).toContain('SLIDE_THESIS_RULES')
-    expect(selectorEdit).not.toContain('SLIDE_THESIS_RULES')
-    expect(containerEdit).not.toContain('SLIDE_THESIS_RULES')
+    expect(singlePageEdit).toContain('buildCanvasScenarioContentRules')
+    expect(deckEdit).toContain('buildCanvasScenarioContentRules')
+    expect(selectorEdit).not.toContain('buildCanvasScenarioContentRules')
+    expect(containerEdit).not.toContain('buildCanvasScenarioContentRules')
 
-    expect(singlePageEdit).toContain('CONTENT_EXPANSION_RULES')
-    expect(deckEdit).toContain('CONTENT_EXPANSION_RULES')
-    expect(selectorEdit).not.toContain('CONTENT_EXPANSION_RULES')
-    expect(containerEdit).not.toContain('CONTENT_EXPANSION_RULES')
+    expect(singlePageEdit).toContain('buildCanvasScenarioExpansionRules')
+    expect(deckEdit).toContain('buildCanvasScenarioExpansionRules')
+    expect(selectorEdit).not.toContain('buildCanvasScenarioExpansionRules')
+    expect(containerEdit).not.toContain('buildCanvasScenarioExpansionRules')
 
     // SOURCE_GROUNDED_EXPANSION_RULES ("enrich the slide") is gated to the rewrite
     // paths via includeExpansion; selector/container must not enable it.

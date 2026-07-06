@@ -1,6 +1,8 @@
 import type { OutlineItem } from '../../tools/types'
 import {
+  SECTION_AGENDA_OUTLINE_MARKER,
   isInternalDocumentPlanPageReason,
+  isSectionAgendaReason,
   type SourceDocumentPlan
 } from '../../../shared/generation'
 
@@ -138,6 +140,7 @@ const inferLayoutIntentFromSkeletonTitle = (
   item: SourceDocumentPlan['pageSkeleton'][number]
 ): OutlineItem['layoutIntent'] => {
   const text = `${item.title}\n${item.sourceHeading}`
+  if (isSectionAgendaReason(item.reason)) return 'summary'
   if (item.role === 'chapter-divider') return 'cover'
   if (/指标|数据|收入|增长|下降|比例|金额|率|metric|revenue|growth|decline|kpi|%|\d/.test(text)) {
     return 'data-focus'
@@ -152,14 +155,17 @@ const inferLayoutIntentFromSkeletonTitle = (
 export const mapSourcePlanToOutlineItems = (sourcePlan: SourceDocumentPlan): OutlineItem[] =>
   sourcePlan.pageSkeleton.map((item) => {
     const inferredLayoutIntent = inferLayoutIntentFromSkeletonTitle(item)
+    const isSectionAgenda = isSectionAgendaReason(item.reason)
     return {
       title: item.title,
-      contentOutline: [
-        `Source heading: ${item.sourceHeading}`,
-        `Source range: lines ${item.lineStart}-${item.lineEnd}`,
-        `Page role: ${item.role}`,
-        item.reason ? `Page purpose: ${item.reason}` : ''
-      ]
+      contentOutline: (isSectionAgenda
+        ? [SECTION_AGENDA_OUTLINE_MARKER, `Page purpose: ${item.reason}`]
+        : [
+            `Source heading: ${item.sourceHeading}`,
+            `Source range: lines ${item.lineStart}-${item.lineEnd}`,
+            `Page role: ${item.role}`,
+            item.reason ? `Page purpose: ${item.reason}` : ''
+          ])
         .filter(Boolean)
         .join('\n'),
       layoutIntent: LAYOUT_INTENTS.has(inferredLayoutIntent || '')

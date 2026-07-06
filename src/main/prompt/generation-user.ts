@@ -1,15 +1,16 @@
 import type { SessionDeckGenerationContext } from '../tools/types'
 import { formatLayoutIntentPrompt } from '@shared/layout-intent'
+import { isSectionAgendaOutline } from '@shared/generation'
 import { CHART_SKILL_NAME, formatSkillUsageRequirement } from '../skills/skill-contract'
 import {
-  CANVAS_CONSTRAINTS,
-  CONTENT_EXPANSION_RULES,
+  buildCanvasScenarioContentRules,
+  buildCanvasScenarioDeliveryGuard,
+  buildCanvasScenarioExpansionRules,
+  buildLayoutCollisionRules,
+  buildPageSemanticStructure,
+  buildCanvasConstraints,
   CONTENT_LANGUAGE_RULES,
   FRONTEND_CAPABILITIES,
-  LAYOUT_COLLISION_RULES,
-  LAYOUT_DELIVERY_GUARD,
-  PAGE_SEMANTIC_STRUCTURE,
-  SLIDE_THESIS_RULES,
   SOURCE_DOCUMENT_FACT_RULE,
   SOURCE_DOCUMENT_LOCATE_THEN_READ_RULE,
   SOURCE_DOCUMENT_READ_STRATEGY,
@@ -17,6 +18,7 @@ import {
   SOURCE_UNSUPPORTED_CLAIMS,
   STABLE_HTML_FRAGMENT_PROTOCOL
 } from './shared'
+import { buildCanvasScenarioBrief, resolveCanvasScenario } from './canvas-scenario'
 
 export function buildSinglePageGenerationPrompt(args: {
   topic: string
@@ -25,6 +27,7 @@ export function buildSinglePageGenerationPrompt(args: {
   pageNumber: number
   pageTitle: string
   pageOutline: string
+  slideSize: import('@shared/slide-size').SlideSizePreset
   layoutIntent?: SessionDeckGenerationContext['outlineItems'][number]['layoutIntent']
   sourceDocumentPaths?: string[]
   referenceDocumentSnippets?: string
@@ -48,6 +51,7 @@ export function buildSinglePageGenerationPrompt(args: {
     /模板骨架|skeleton|background\/decorative|背景\/装饰资源|CSS url|SVG image|local asset/i.test(
       previousError
     )
+  const isSectionAgendaPage = isSectionAgendaOutline(args.pageOutline || '')
   const retryInstructions = args.retryContext
     ? [
         '',
@@ -70,7 +74,7 @@ export function buildSinglePageGenerationPrompt(args: {
       ].filter(Boolean)
     : []
   const sourceDocumentInstructions =
-    args.sourceDocumentPaths && args.sourceDocumentPaths.length > 0
+    !isSectionAgendaPage && args.sourceDocumentPaths && args.sourceDocumentPaths.length > 0
       ? args.referenceDocumentSnippets && args.referenceDocumentSnippets.trim().length > 0
         ? [
             '',
@@ -102,8 +106,9 @@ export function buildSinglePageGenerationPrompt(args: {
           ].filter(Boolean)
       : []
   const hasSourceRange = /Source range:\s*lines\s+\d+\s*-\s*\d+/i.test(args.pageOutline || '')
+  const canvasScenario = resolveCanvasScenario(args.slideSize)
   const sourceRangeInstructions =
-    args.sourceDocumentPaths && args.sourceDocumentPaths.length > 0 && hasSourceRange
+    !isSectionAgendaPage && args.sourceDocumentPaths && args.sourceDocumentPaths.length > 0 && hasSourceRange
       ? [
           '',
           'Range-bound source reading:',
@@ -112,10 +117,22 @@ export function buildSinglePageGenerationPrompt(args: {
           '- Do not pull facts from unrelated sections just because they match keywords.'
         ]
       : []
+  const sectionAgendaInstructions = isSectionAgendaPage
+    ? [
+        '',
+        'Section agenda page requirements:',
+        '- This slide is a chapter agenda/table-of-contents page.',
+        '- Use only the child topic names already listed in Content points.',
+        '- Do not inspect, retrieve, cite, summarize, or expand from the source document for this slide.',
+        '- Keep it as a presentation agenda: chapter title plus concise child-topic list.'
+      ]
+    : []
   return [
-    'Generate and write only this slide. Do not modify other slides.',
+    `Generate and write only this ${canvasScenario.pageName}. Do not modify other pages.`,
     '',
-    SLIDE_THESIS_RULES,
+    buildCanvasScenarioBrief(args.slideSize),
+    '',
+    buildCanvasScenarioContentRules(args.slideSize),
     '',
     `Topic: ${args.topic}`,
     `Deck title: ${args.deckTitle}`,
@@ -123,31 +140,32 @@ export function buildSinglePageGenerationPrompt(args: {
     `Slide title: ${args.pageTitle}`,
     `Content points: ${args.pageOutline || 'Expand from the topic with moderate information density.'}`,
     args.layoutIntent ? formatLayoutIntentPrompt(args.layoutIntent) : '',
+    ...sectionAgendaInstructions,
     ...sourceDocumentInstructions,
     ...sourceRangeInstructions,
     '',
     CONTENT_LANGUAGE_RULES,
     '',
-    PAGE_SEMANTIC_STRUCTURE,
+    buildPageSemanticStructure(args.slideSize),
     '',
-    CANVAS_CONSTRAINTS,
+    buildCanvasConstraints(args.slideSize),
     '',
-    LAYOUT_COLLISION_RULES,
+    buildLayoutCollisionRules(args.slideSize),
     '',
-    LAYOUT_DELIVERY_GUARD,
+    buildCanvasScenarioDeliveryGuard(args.slideSize),
     '',
     FRONTEND_CAPABILITIES,
     '',
     STABLE_HTML_FRAGMENT_PROTOCOL,
     ...retryInstructions,
     '',
-    CONTENT_EXPANSION_RULES,
+    buildCanvasScenarioExpansionRules(args.slideSize),
     '',
     'Required content enrichment decision before writing:',
-    '- First follow SLIDE_THESIS_RULES to decide the slide form and focal message; then use CONTENT_EXPANSION_RULES only to decide whether the content itself needs enrichment or optimization.',
-    '- If the content points are only a title, one short sentence, or 1-2 seed phrases, the page is thin: enrich the argument structure before writing the final content.',
+    '- First use the Canvas scenario rules to decide the page form and focal message; then use the scenario expansion rules only to decide whether the content itself needs enrichment or optimization.',
+    '- If the content points are only a title, one short sentence, or 1-2 seed phrases, the page is thin: enrich the warranted structure before writing the final content.',
     '- If the content points already contain enough facts, the page is not thin: group and compress instead of adding more visible modules.',
-    '- This content decision happens before animation and final HTML; animation is downstream only and must follow the slide form, source grounding, and warranted content enrichment.',
+    '- This content decision happens before animation and final HTML; animation is downstream only and must follow the current canvas scenario, source grounding, and warranted content enrichment.',
     '',
     'Expansion selection guardrails:',
     '- Treat content points as short seed phrases, not as a checklist that must become one visible card/row per point. Decide which points are primary, grouped support, compact annotations, or lower-priority detail based on the slide title, source range, and available space.',
@@ -169,7 +187,7 @@ export function buildSinglePageGenerationPrompt(args: {
     '- The content must not contain <!doctype>, <html>, <head>, <body>, .ppt-page-root, .ppt-page-content, .ppt-page-fit-scope, or data-ppt-guard-root.',
     '- The content must be complete and balanced: close your main layout containers and leave no unfinished trailing tags.',
     '- After the tool call succeeds, final response should be a short summary only. Do not paste the HTML in the final response.',
-    '- Do not modify other slides.',
+    '- Do not modify other pages.',
     '',
     'Tool context (pre-injected):',
     `- Target file: ${args.pageId}.html (virtual path: /${args.pageId}.html)`,

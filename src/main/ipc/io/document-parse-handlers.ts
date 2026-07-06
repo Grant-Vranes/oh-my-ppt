@@ -16,6 +16,7 @@ import type {
   PrepareReferenceDocumentPayload,
   PreparedReferenceDocumentResult
 } from '@shared/generation'
+import { isSectionAgendaReason } from '@shared/generation'
 import { resolveModelTimeoutMs } from '@shared/model-timeout'
 import { resolveGlobalModelTimeouts, resolveModelConfigForTask } from '../config/model-config-utils'
 import { assertImageWasRead, isImageUnsupportedError } from '../../utils/style-image-import'
@@ -830,6 +831,7 @@ const summarizePageSkeletonContentInBatches = async (args: {
   const sourceText = await fs.promises.readFile(args.file.workspacePath, 'utf-8')
   const sourceLines = stripControlChars(sourceText).split('\n')
   const summaryTargets = args.pageSkeleton
+    .filter((item) => !isSectionAgendaReason(item.reason))
     .slice(0, MAX_PAGE_SUMMARY_TOTAL_PAGES)
     .map((item) => ({
       id: item.id || `page-${item.pageNumber}`,

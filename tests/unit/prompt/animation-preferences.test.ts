@@ -5,6 +5,7 @@ import {
   formatAnimationPreferencesForPageWriting
 } from '../../../src/main/prompt'
 import type { SessionDeckGenerationContext } from '../../../src/main/tools/types'
+import { resolveSlideSize } from '../../../src/shared/slide-size'
 
 const baseContext: SessionDeckGenerationContext = {
   sessionId: 'session-1',
@@ -18,6 +19,7 @@ const baseContext: SessionDeckGenerationContext = {
   userMessage: 'Create a quarterly report.',
   outlineTitles: ['Overview'],
   outlineItems: [{ title: 'Overview', contentOutline: 'Summarize the quarter.' }],
+  slideSize: resolveSlideSize({ id: 'wide-16-9' }),
   appLocale: 'en'
 }
 
@@ -51,7 +53,8 @@ describe('animation preferences prompt', () => {
       pageId: 'page-1',
       pageNumber: 1,
       pageTitle: 'Overview',
-      pageOutline: 'Summarize the quarter.'
+      pageOutline: 'Summarize the quarter.',
+      slideSize: baseContext.slideSize
     })
 
     expect(deckPrompt).toContain('## Animation preferences for page writing only')

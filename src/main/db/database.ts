@@ -24,6 +24,7 @@ import type {
 } from '@shared/model-usage'
 import type { AnimationPreferencesPayload } from '@shared/generation'
 import { normalizeThinkingParameterMode } from '@shared/model-config'
+import { requirePersistedSlideSize, type SlideSizePresetId } from '@shared/slide-size'
 
 type SessionStatus = 'active' | 'completed' | 'failed' | 'archived'
 type MessageRole = 'user' | 'assistant' | 'system' | 'tool'
@@ -56,6 +57,9 @@ export interface Session {
   topic: string | null
   styleId: string | null
   page_count: number | null
+  slideSizeId?: SlideSizePresetId
+  slideWidth?: number
+  slideHeight?: number
   reference_document_path: string | null
   referenceDocumentPath?: string | null
   status: SessionStatus
@@ -416,12 +420,21 @@ export class PPTDatabase {
     topic?: string
     styleId?: string
     pageCount?: number
+    slideSizeId?: SlideSizePresetId
+    slideWidth?: number
+    slideHeight?: number
     referenceDocumentPath?: string | null
     provider: string
     model: string
   }): Promise<string> {
     const id = data.id || crypto.randomUUID()
     const now = Math.floor(Date.now() / 1000)
+
+    const slideSize = requirePersistedSlideSize({
+      id: data.slideSizeId,
+      width: data.slideWidth,
+      height: data.slideHeight
+    })
 
     await this.db
       .insert(schema.sessions)
@@ -431,6 +444,9 @@ export class PPTDatabase {
         topic: data.topic || null,
         styleId: data.styleId || null,
         pageCount: data.pageCount || null,
+        slideSizeId: slideSize.id,
+        slideWidth: slideSize.width,
+        slideHeight: slideSize.height,
         referenceDocumentPath: data.referenceDocumentPath || null,
         status: 'active',
         provider: data.provider,

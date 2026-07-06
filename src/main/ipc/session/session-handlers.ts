@@ -9,6 +9,7 @@ import type { IpcContext } from '../context'
 import { resolveModelConfigForTask } from '../config/model-config-utils'
 import { readAppLocale, uiText } from '../config/locale-utils'
 import { normalizeFontSelection } from '@shared/generation'
+import { requireSlideSizePreset } from '@shared/slide-size'
 import { normalizeSourcePlan } from '../generation/source-plan'
 import { ensureSessionRuntimeCompatible } from './runtime-assets'
 import { GitHistoryService } from '../../history/git-history-service'
@@ -348,6 +349,7 @@ export function registerSessionHandlers(ctx: IpcContext): void {
     const record = payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {}
     const { topic, styleId } = record
     const pageCount = normalizeRequestedPageCount(record.pageCount)
+    const slideSize = requireSlideSizePreset(record.slideSizeId)
     const fontSelection = normalizeFontSelection(record.fontSelection)
     const sourcePlan = normalizeSourcePlan(record.sourcePlan)
     const referenceDocumentPath =
@@ -457,6 +459,7 @@ export function registerSessionHandlers(ctx: IpcContext): void {
       topic: normalizedTopic,
       styleId: normalizedStyleId,
       pageCount,
+      slideSize,
       referenceDocumentPath: sessionReferenceDocumentPath
     })
     if (sourcePlan && sessionReferenceDocumentPath) {
@@ -508,7 +511,9 @@ export function registerSessionHandlers(ctx: IpcContext): void {
       snapshots.map(({ session, snapshot }) => ({
         sessionId: session.id,
         pageId: snapshot.pages[0]?.pageId,
-        sourcePath: snapshot.pages[0]?.htmlPath
+        sourcePath: snapshot.pages[0]?.htmlPath,
+        width: session.slideWidth,
+        height: session.slideHeight
       }))
     )
     const enrichedSessions = await Promise.all(

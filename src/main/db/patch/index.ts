@@ -71,6 +71,9 @@ CREATE TABLE IF NOT EXISTS sessions (
   topic TEXT,
   style_id TEXT,
   page_count INTEGER,
+  slide_size_id TEXT NOT NULL DEFAULT 'wide-16-9',
+  slide_width INTEGER NOT NULL DEFAULT 1600,
+  slide_height INTEGER NOT NULL DEFAULT 900,
   reference_document_path TEXT,
   status TEXT NOT NULL DEFAULT 'active',
   provider TEXT NOT NULL,
@@ -505,6 +508,33 @@ const enforceSessionsSchema = async (client: LibSqlClient): Promise<void> => {
   if (!columns.has('reference_document_path')) {
     await client.execute('ALTER TABLE sessions ADD COLUMN reference_document_path TEXT')
   }
+  if (!columns.has('slide_size_id')) {
+    await client.execute(
+      "ALTER TABLE sessions ADD COLUMN slide_size_id TEXT NOT NULL DEFAULT 'wide-16-9'"
+    )
+  }
+  if (!columns.has('slide_width')) {
+    await client.execute('ALTER TABLE sessions ADD COLUMN slide_width INTEGER NOT NULL DEFAULT 1600')
+  }
+  if (!columns.has('slide_height')) {
+    await client.execute('ALTER TABLE sessions ADD COLUMN slide_height INTEGER NOT NULL DEFAULT 900')
+  }
+  await client.execute({
+    sql: `
+      UPDATE sessions
+      SET
+        slide_size_id = 'wide-16-9',
+        slide_width = 1600,
+        slide_height = 900
+      WHERE
+        slide_size_id IS NULL
+        OR TRIM(slide_size_id) = ''
+        OR slide_width IS NULL
+        OR slide_width <= 0
+        OR slide_height IS NULL
+        OR slide_height <= 0
+    `
+  })
   if (!columns.has('current_operation_id')) {
     await client.execute('ALTER TABLE sessions ADD COLUMN current_operation_id TEXT')
   }

@@ -14,9 +14,28 @@ import {
   type ImportedElementAnimation,
   type SlideAnimationPlan
 } from './pptx-animation-import'
+import {
+  parsePptxXmlDeckMetadata,
+  type PptxXmlShapeMetadata,
+  type PptxXmlSlideMetadata
+} from './pptx-xml-shape-metadata'
+import {
+  getSvgPathBounds,
+  getSvgShapeViewBox,
+  renderXmlPresetShapePath,
+  type SvgPathBounds
+} from './pptx-svg-shape-geometry'
+import { renderPptxOoxmlCustomGeometryPath } from './pptx-ooxml-path-renderer'
+import type { SlideSizePreset } from '@shared/slide-size'
 
 const PAGE_WIDTH = 1600
 const PAGE_HEIGHT = 900
+const PPTX_IMPORT_SLIDE_SIZE: SlideSizePreset = {
+  id: 'wide-16-9',
+  label: '宽屏 16:9',
+  width: PAGE_WIDTH,
+  height: PAGE_HEIGHT
+}
 
 type ImportWarning = {
   pageNumber?: number
@@ -471,7 +490,13 @@ const ALLOWED_TEXT_STYLE_PROPS = new Set([
   'text-shadow',
   'line-height',
   'vertical-align',
-  'letter-spacing'
+  'letter-spacing',
+  'margin',
+  'margin-top',
+  'margin-right',
+  'margin-bottom',
+  'margin-left',
+  'text-indent'
 ])
 
 const IMPORTED_FONT_REPLACEMENTS = new Map<string, string>([
@@ -497,6 +522,23 @@ const normalizeImportedSymbols = (value: string): string =>
     // PowerPoint stores Wingdings 3 glyph 0xC4 in Unicode's private-use area.
     .replace(/\uf0c4/gi, '➜')
 
+const scaleCssLengthToken = (value: string, scale: number): string | null => {
+  const trimmed = value.trim()
+  if (/^0(?:\.0+)?(?:px|pt)?$/i.test(trimmed)) return '0'
+  const ptMatch = trimmed.match(/^(-?[0-9.]+)pt$/i)
+  if (ptMatch) return `${(clampNumber(ptMatch[1]) * scale).toFixed(1)}px`
+  const pxMatch = trimmed.match(/^(-?[0-9.]+)px$/i)
+  if (pxMatch) return `${clampNumber(pxMatch[1]).toFixed(1)}px`
+  return null
+}
+
+const sanitizeCssBoxLength = (value: string, scale: number): string | null => {
+  const tokens = value.trim().split(/\s+/)
+  if (tokens.length < 1 || tokens.length > 4) return null
+  const scaled = tokens.map((token) => scaleCssLengthToken(token, scale))
+  return scaled.every((token): token is string => Boolean(token)) ? scaled.join(' ') : null
+}
+
 const sanitizeCssValue = (property: string, rawValue: string, scale: number): string | null => {
   const value = rawValue.trim()
   if (!value) return null
@@ -514,6 +556,13 @@ const sanitizeCssValue = (property: string, rawValue: string, scale: number): st
       const px = Math.max(8, clampNumber(ptMatch[1]) * scale)
       return `${px.toFixed(1)}px`
     }
+  }
+  if (
+    normalizedProperty === 'text-indent' ||
+    normalizedProperty === 'margin' ||
+    normalizedProperty.startsWith('margin-')
+  ) {
+    return sanitizeCssBoxLength(value, scale)
   }
   if (normalizedProperty === 'font-family') {
     if (!/^[\p{L}\p{N}\s,.'"_-]+$/u.test(value)) return null
@@ -1062,6 +1111,46 @@ const titleFromSlide = (slide: Slide, pageNumber: number): string => {
   return title?.slice(0, 80) || `第 ${pageNumber} 页`
 }
 
+const textAnchorCss = (xmlShape?: PptxXmlShapeMetadata): string[] => {
+  const anchor = xmlShape?.textAnchor?.toLowerCase()
+  if (anchor !== 'ctr' && anchor !== 'b') return []
+  return [
+    'display:flex',
+    'flex-direction:column',
+    `justify-content:${anchor === 'b' ? 'flex-end' : 'center'}`
+  ]
+}
+
+const textInsetCss = (xmlShape?: PptxXmlShapeMetadata, scale = 1): string[] => {
+  const insets = xmlShape?.textInsets
+  if (!insets) return ['padding:0.1px']
+  const top = insets.top ?? 0
+  const right = insets.right ?? 0
+  const bottom = insets.bottom ?? 0
+  const left = insets.left ?? 0
+  if (top === 0 && right === 0 && bottom === 0 && left === 0) return ['padding:0.1px']
+  return [
+    `padding:${(top * scale).toFixed(1)}px ${(right * scale).toFixed(1)}px ${(bottom * scale).toFixed(1)}px ${(left * scale).toFixed(1)}px`
+  ]
+}
+
+const applyXmlShapeFrame = (
+  element: Record<string, unknown>,
+  xmlShape?: PptxXmlShapeMetadata
+): Record<string, unknown> => {
+  if (!xmlShape) return element
+  return {
+    ...element,
+    left: xmlShape.left ?? element.left,
+    top: xmlShape.top ?? element.top,
+    width: xmlShape.width ?? element.width,
+    height: xmlShape.height ?? element.height,
+    rotate: xmlShape.rotate ?? element.rotate,
+    isFlipH: Boolean(element.isFlipH) || Boolean(xmlShape.flipH),
+    isFlipV: Boolean(element.isFlipV) || Boolean(xmlShape.flipV)
+  }
+}
+
 const buildTextBlock = async (args: {
   element: Record<string, unknown>
   blockId: string
@@ -1078,6 +1167,7 @@ const buildTextBlock = async (args: {
   pageNumber?: number
   warnings?: ImportWarning[]
   textValidator?: PptxTextValidator
+  xmlShape?: PptxXmlShapeMetadata
 }): Promise<string> => {
   const fillCss = await fillToCss(args.element.fill as Fill | undefined, args.imagesDir, args.registry)
   const rawContent = String(args.element.content || '')
@@ -1104,7 +1194,13 @@ const buildTextBlock = async (args: {
     zIndex: args.zIndex,
     offsetX: args.offsetX,
     offsetY: args.offsetY,
-    extra: [...fillCss, ...borderCss(args.element, args.textScale), 'padding:0.1px', ...adjustment.extraCss]
+    extra: [
+      ...fillCss,
+      ...borderCss(args.element, args.textScale),
+      ...textInsetCss(args.xmlShape, args.textScale),
+      ...textAnchorCss(args.xmlShape),
+      ...adjustment.extraCss
+    ]
   })
   const roleAttr = args.role ? ` data-role="${escapeHtml(args.role)}"` : ''
   const animationAttrs = buildAnimationAttrs(args.animation)
@@ -1154,118 +1250,23 @@ type SvgShapeFill = {
   content?: string
 }
 
-type SvgPathBounds = {
-  minX: number
-  minY: number
-  width: number
-  height: number
-}
-
-const getSvgPathBounds = (pathData: string): SvgPathBounds | null => {
-  const tokens = pathData.match(/[MmLlHhVvCcSsQqTtAaZz]|[-+]?(?:\d*\.\d+|\d+)(?:[eE][-+]?\d+)?/g)
-  if (!tokens?.length) return null
-  const parameterCounts: Record<string, number> = {
-    M: 2,
-    L: 2,
-    H: 1,
-    V: 1,
-    C: 6,
-    S: 4,
-    Q: 4,
-    T: 2,
-    A: 7,
-    Z: 0
-  }
-  let command = ''
-  let index = 0
-  let x = 0
-  let y = 0
-  let startX = 0
-  let startY = 0
-  let minX = Number.POSITIVE_INFINITY
-  let minY = Number.POSITIVE_INFINITY
-  let maxX = Number.NEGATIVE_INFINITY
-  let maxY = Number.NEGATIVE_INFINITY
-  const include = (nextX: number, nextY: number): void => {
-    if (!Number.isFinite(nextX) || !Number.isFinite(nextY)) return
-    minX = Math.min(minX, nextX)
-    minY = Math.min(minY, nextY)
-    maxX = Math.max(maxX, nextX)
-    maxY = Math.max(maxY, nextY)
-  }
-  while (index < tokens.length) {
-    if (/^[a-z]$/i.test(tokens[index])) {
-      command = tokens[index]
-      index += 1
-      if (command.toUpperCase() === 'Z') {
-        x = startX
-        y = startY
-        include(x, y)
-        continue
-      }
-    }
-    if (!command) return null
-    const upper = command.toUpperCase()
-    const parameterCount = parameterCounts[upper]
-    if (!parameterCount || index + parameterCount > tokens.length) break
-    const values = tokens.slice(index, index + parameterCount).map(Number)
-    if (values.some((value) => !Number.isFinite(value))) return null
-    index += parameterCount
-    const relative = command === command.toLowerCase()
-    const point = (pointX: number, pointY: number): [number, number] => [
-      relative ? x + pointX : pointX,
-      relative ? y + pointY : pointY
-    ]
-    if (upper === 'H') {
-      x = relative ? x + values[0] : values[0]
-      include(x, y)
-    } else if (upper === 'V') {
-      y = relative ? y + values[0] : values[0]
-      include(x, y)
-    } else if (upper === 'A') {
-      const radius = Math.max(Math.abs(values[0]), Math.abs(values[1]))
-      const [nextX, nextY] = point(values[5], values[6])
-      include(x - radius, y - radius)
-      include(x + radius, y + radius)
-      include(nextX - radius, nextY - radius)
-      include(nextX + radius, nextY + radius)
-      x = nextX
-      y = nextY
-    } else {
-      for (let valueIndex = 0; valueIndex < values.length; valueIndex += 2) {
-        const [nextX, nextY] = point(values[valueIndex], values[valueIndex + 1])
-        include(nextX, nextY)
-      }
-      const [nextX, nextY] = point(
-        values[values.length - 2],
-        values[values.length - 1]
-      )
-      x = nextX
-      y = nextY
-      if (upper === 'M') {
-        startX = x
-        startY = y
-        command = relative ? 'l' : 'L'
-      }
-    }
-  }
-  if (![minX, minY, maxX, maxY].every(Number.isFinite)) return null
-  return {
-    minX,
-    minY,
-    width: Math.max(0.0001, maxX - minX),
-    height: Math.max(0.0001, maxY - minY)
-  }
+type ZIndexCounter = {
+  value: number
 }
 
 const svgResourceId = (blockId: string, suffix: string): string =>
   `pptx-${blockId}-${suffix}`.replace(/[^a-zA-Z0-9_-]/g, '-')
 
+const OPEN_SHAPE_PRESETS = new Set(['arc', 'line', 'straightconnector1'])
+
+const isOpenXmlShape = (xmlShape?: PptxXmlShapeMetadata): boolean =>
+  Boolean(xmlShape?.preset && OPEN_SHAPE_PRESETS.has(xmlShape.preset.toLowerCase()))
+
 const resolveSvgShapeFill = async (args: {
   fill?: Fill
   blockId: string
   safePath: string
-  pathBounds: SvgPathBounds
+  viewBox: SvgPathBounds
   imagesDir: string
   registry: ImageRegistry
 }): Promise<SvgShapeFill> => {
@@ -1337,7 +1338,7 @@ const resolveSvgShapeFill = async (args: {
     return {
       defs: [`<clipPath id="${clipId}"><path d="${escapeHtml(args.safePath)}" /></clipPath>`],
       paint: 'none',
-      content: `<image href="${escapeHtml(source)}" x="${args.pathBounds.minX.toFixed(4)}" y="${args.pathBounds.minY.toFixed(4)}" width="${args.pathBounds.width.toFixed(4)}" height="${args.pathBounds.height.toFixed(4)}" preserveAspectRatio="xMidYMid slice" opacity="${opacity.toFixed(3)}" clip-path="url(#${clipId})" />`
+      content: `<image href="${escapeHtml(source)}" x="${args.viewBox.minX.toFixed(4)}" y="${args.viewBox.minY.toFixed(4)}" width="${args.viewBox.width.toFixed(4)}" height="${args.viewBox.height.toFixed(4)}" preserveAspectRatio="xMidYMid slice" opacity="${opacity.toFixed(3)}" clip-path="url(#${clipId})" />`
     }
   }
   return { defs: [], paint: 'none' }
@@ -1359,20 +1360,42 @@ const buildShapeBlock = async (args: {
   pageNumber?: number
   warnings?: ImportWarning[]
   textValidator?: PptxTextValidator
+  xmlShape?: PptxXmlShapeMetadata
 }): Promise<string> => {
-  if (typeof args.element.content === 'string' && stripHtml(args.element.content).length > 0) {
-    return buildTextBlock(args)
-  }
-  const rawPath = typeof args.element.path === 'string' ? args.element.path.trim() : ''
+  const element = applyXmlShapeFrame(args.element, args.xmlShape)
+  const rawContent = typeof element.content === 'string' ? element.content : ''
+  const hasTextContent = stripHtml(rawContent).length > 0
+  const customGeometryPath = args.xmlShape?.customGeometry
+    ? renderPptxOoxmlCustomGeometryPath(
+        args.xmlShape.customGeometry,
+        clampNumber(element.width),
+        clampNumber(element.height)
+      )
+    : ''
+  const presetGeometryPath =
+    !customGeometryPath && args.xmlShape?.preset
+      ? renderXmlPresetShapePath(
+          args.xmlShape.preset,
+          clampNumber(element.width),
+          clampNumber(element.height),
+          args.xmlShape.adjustments
+        )
+      : ''
+  const rawPath =
+    customGeometryPath || presetGeometryPath || (typeof element.path === 'string' ? element.path.trim() : '')
   const safePath = /^[MmLlHhVvCcSsQqTtAaZz0-9eE+.,\s-]+$/.test(rawPath) ? rawPath : ''
-  const fill = args.element.fill as Fill | undefined
+  const fill = element.fill as Fill | undefined
   const pathBounds = safePath ? getSvgPathBounds(safePath) : null
+  if (hasTextContent && !(safePath && pathBounds)) {
+    return buildTextBlock({ ...args, element })
+  }
   if (safePath && pathBounds) {
-    const shadow = args.element.shadow as
+    const viewBox = getSvgShapeViewBox(element, pathBounds, safePath, args.xmlShape)
+    const shadow = element.shadow as
       | { h?: number; v?: number; blur?: number; color?: string }
       | undefined
     const css = buildBlockStyle({
-      element: args.element,
+      element,
       scaleX: args.scaleX,
       scaleY: args.scaleY,
       zIndex: args.zIndex,
@@ -1380,23 +1403,33 @@ const buildShapeBlock = async (args: {
       offsetY: args.offsetY,
       overflow: shadow ? 'visible' : 'hidden'
     })
-    const svgFill = await resolveSvgShapeFill({
-      fill,
-      blockId: args.blockId,
-      safePath,
-      pathBounds,
-      imagesDir: args.imagesDir,
-      registry: args.registry
-    })
-    const strokeWidth = Math.max(0, clampNumber(args.element.borderWidth)) * (4 / 3)
+    const isOpenShape = isOpenXmlShape(args.xmlShape)
+    const svgFill = isOpenShape
+      ? { defs: [], paint: 'none' }
+      : args.xmlShape?.fillColor
+      ? { defs: [], paint: args.xmlShape.fillColor }
+      : await resolveSvgShapeFill({
+          fill,
+          blockId: args.blockId,
+          safePath,
+          viewBox,
+          imagesDir: args.imagesDir,
+          registry: args.registry
+        })
+    const strokeWidth = Math.max(
+      0,
+      args.xmlShape?.lineWidth !== undefined
+        ? args.xmlShape.lineWidth
+        : clampNumber(element.borderWidth)
+    ) * (4 / 3)
     const strokeColor = strokeWidth > 0
-      ? sanitizeImportedCssColor(args.element.borderColor) || '#000000'
+      ? args.xmlShape?.lineColor || sanitizeImportedCssColor(element.borderColor) || '#000000'
       : 'none'
-    let dashArray = typeof args.element.borderStrokeDasharray === 'string' &&
-      /^[0-9.,\s-]+$/.test(args.element.borderStrokeDasharray)
-      ? args.element.borderStrokeDasharray
+    let dashArray = typeof element.borderStrokeDasharray === 'string' &&
+      /^[0-9.,\s-]+$/.test(element.borderStrokeDasharray)
+      ? element.borderStrokeDasharray
       : ''
-    const borderType = String(args.element.borderType || '').toLowerCase()
+    const borderType = String(element.borderType || '').toLowerCase()
     if (!dashArray && strokeWidth > 0 && borderType === 'dashed') {
       dashArray = `${(strokeWidth * 4).toFixed(2)} ${(strokeWidth * 2).toFixed(2)}`
     } else if (!dashArray && strokeWidth > 0 && borderType === 'dotted') {
@@ -1412,27 +1445,53 @@ const buildShapeBlock = async (args: {
       )
       filterAttribute = ` filter="url(#${shadowId})"`
     }
-    const flipX = args.element.isFlipH ? -1 : 1
-    const flipY = args.element.isFlipV ? -1 : 1
+    const markerAttributes: string[] = []
+    if (strokeColor !== 'none' && args.xmlShape?.headEnd && args.xmlShape.headEnd !== 'none') {
+      const markerId = svgResourceId(args.blockId, 'head-arrow')
+      defs.push(
+        `<marker id="${markerId}" viewBox="0 0 10 10" refX="2" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 10 0 L 0 5 L 10 10 z" fill="${strokeColor}"></path></marker>`
+      )
+      markerAttributes.push(`marker-start="url(#${markerId})"`)
+    }
+    if (strokeColor !== 'none' && args.xmlShape?.tailEnd && args.xmlShape.tailEnd !== 'none') {
+      const markerId = svgResourceId(args.blockId, 'tail-arrow')
+      defs.push(
+        `<marker id="${markerId}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="${strokeColor}"></path></marker>`
+      )
+      markerAttributes.push(`marker-end="url(#${markerId})"`)
+    }
+    const flipX = element.isFlipH ? -1 : 1
+    const flipY = element.isFlipV ? -1 : 1
     const svgTransform = flipX === 1 && flipY === 1
       ? ''
       : `transform:scale(${flipX},${flipY});transform-origin:center;`
     const animationAttrs = buildAnimationAttrs(args.animation)
     const animationAttrText = animationAttrs ? ` ${animationAttrs}` : ''
     const defsMarkup = defs.length > 0 ? `<defs>${defs.join('')}</defs>` : ''
-    const shapeMarkup = `${svgFill.content || ''}<path d="${escapeHtml(safePath)}" fill="${svgFill.paint}" stroke="${strokeColor}" stroke-width="${strokeWidth.toFixed(3)}"${dashArray ? ` stroke-dasharray="${dashArray}"` : ''} stroke-linecap="round" stroke-linejoin="round" />`
-    return `<figure data-block-id="${escapeHtml(args.blockId)}" data-pptx-kind="vector-shape"${animationAttrText} style="${css};margin:0"><svg viewBox="${pathBounds.minX.toFixed(4)} ${pathBounds.minY.toFixed(4)} ${pathBounds.width.toFixed(4)} ${pathBounds.height.toFixed(4)}" preserveAspectRatio="none" style="width:100%;height:100%;display:block;overflow:visible;${svgTransform}" aria-hidden="true">${defsMarkup}<g${filterAttribute}>${shapeMarkup}</g></svg></figure>`
+    const markerAttrText = markerAttributes.length ? ` ${markerAttributes.join(' ')}` : ''
+    const shapeMarkup = `${svgFill.content || ''}<path d="${escapeHtml(safePath)}" fill="${svgFill.paint}" stroke="${strokeColor}" stroke-width="${strokeWidth.toFixed(3)}"${dashArray ? ` stroke-dasharray="${dashArray}"` : ''} stroke-linecap="round" stroke-linejoin="round"${markerAttrText} />`
+    const overlayCss = [
+      'position:absolute',
+      'inset:0',
+      'overflow:visible',
+      ...textInsetCss(args.xmlShape, args.textScale),
+      ...textAnchorCss(args.xmlShape)
+    ].join(';')
+    const textOverlay = hasTextContent
+      ? `<div style="${overlayCss}">${sanitizeContentHtml(rawContent, args.textScale)}</div>`
+      : ''
+    return `<figure data-block-id="${escapeHtml(args.blockId)}" data-pptx-kind="vector-shape"${animationAttrText} style="${css};margin:0"><svg viewBox="${viewBox.minX.toFixed(4)} ${viewBox.minY.toFixed(4)} ${viewBox.width.toFixed(4)} ${viewBox.height.toFixed(4)}" preserveAspectRatio="none" style="width:100%;height:100%;display:block;overflow:visible;${svgTransform}" aria-hidden="true">${defsMarkup}<g${filterAttribute}>${shapeMarkup}</g></svg>${textOverlay}</figure>`
   }
-  const fillCss = await fillToCss(args.element.fill as Fill | undefined, args.imagesDir, args.registry)
+  const fillCss = await fillToCss(element.fill as Fill | undefined, args.imagesDir, args.registry)
   const css = buildBlockStyle({
-    element: args.element,
+    element,
     scaleX: args.scaleX,
     scaleY: args.scaleY,
     zIndex: args.zIndex,
     offsetX: args.offsetX,
     offsetY: args.offsetY,
     overflow: 'hidden',
-    extra: [...fillCss, ...borderCss(args.element, args.textScale)]
+    extra: [...fillCss, ...borderCss(element, args.textScale)]
   })
   const animationAttrs = buildAnimationAttrs(args.animation)
   const animationAttrText = animationAttrs ? ` ${animationAttrs}` : ''
@@ -1720,6 +1779,7 @@ const buildChartBlock = (args: {
 
 export const __pptxImporterTestUtils = {
   buildShapeBlock,
+  buildTextBlock,
   buildTableBlock,
   buildChartBlock,
   collectPptxTableStyleIds,
@@ -1742,7 +1802,8 @@ const renderElement = async (args: {
   scaleX: number
   scaleY: number
   textScale: number
-  zIndex: number
+  zIndexCounter: ZIndexCounter
+  xmlShapes?: PptxXmlSlideMetadata
   offsetX: number
   offsetY: number
   titleAssigned: boolean
@@ -1756,6 +1817,8 @@ const renderElement = async (args: {
     return `${prefix}-${args.blockCounters[prefix]}`
   }
   const record = args.element as unknown as Record<string, unknown>
+  const xmlShapeName = typeof record.name === 'string' ? record.name : ''
+  const xmlShape = xmlShapeName ? args.xmlShapes?.byName.get(xmlShapeName) : undefined
   const elementAnimation =
     resolveElementAnimation(args.animationContext, record, args.offsetX, args.offsetY) ||
     args.inheritedAnimation
@@ -1797,7 +1860,7 @@ const renderElement = async (args: {
         scaleY: args.scaleY,
         offsetX: args.offsetX,
         offsetY: args.offsetY,
-        zIndex: args.zIndex
+        zIndex: args.zIndexCounter.value++
       }),
       titleAssigned: args.titleAssigned
     }
@@ -1813,7 +1876,7 @@ const renderElement = async (args: {
         textScale: args.textScale,
         offsetX: args.offsetX,
         offsetY: args.offsetY,
-        zIndex: args.zIndex
+        zIndex: args.zIndexCounter.value++
       }),
       titleAssigned: args.titleAssigned
     }
@@ -1825,11 +1888,12 @@ const renderElement = async (args: {
     const canvasId = chartCanvasId(args.pageId, chartIndex)
     const animationAttrs = buildAnimationAttrs(elementAnimation)
     const animationAttrText = animationAttrs ? ` ${animationAttrs}` : ''
+    const zIndex = args.zIndexCounter.value++
     const frameStyle = buildChartFrameStyle({
       element: args.element,
       scaleX: args.scaleX,
       scaleY: args.scaleY,
-      zIndex: args.zIndex,
+      zIndex,
       offsetX: args.offsetX,
       offsetY: args.offsetY
     })
@@ -1843,7 +1907,7 @@ const renderElement = async (args: {
       scaleY: args.scaleY,
       offsetX: args.offsetX,
       offsetY: args.offsetY,
-      zIndex: args.zIndex,
+      zIndex,
       pageNumber: args.pageNumber,
       warnings: args.warnings,
       suppressUnsupportedWarning: true
@@ -1902,10 +1966,11 @@ const renderElement = async (args: {
         textScale: args.textScale,
         offsetX: args.offsetX,
         offsetY: args.offsetY,
-        zIndex: args.zIndex,
+        zIndex: args.zIndexCounter.value++,
         pageNumber: args.pageNumber,
         warnings: args.warnings,
-        textValidator: args.textValidator
+        textValidator: args.textValidator,
+        xmlShape
       }),
       titleAssigned: args.titleAssigned || shouldBeTitle
     }
@@ -1926,7 +1991,8 @@ const renderElement = async (args: {
         textScale: args.textScale,
         offsetX: args.offsetX,
         offsetY: args.offsetY,
-        zIndex: args.zIndex,
+        zIndex: args.zIndexCounter.value++,
+        xmlShape,
         pageNumber: args.pageNumber,
         warnings: args.warnings,
         textValidator: args.textValidator
@@ -1940,7 +2006,7 @@ const renderElement = async (args: {
       element: record,
       scaleX: args.scaleX,
       scaleY: args.scaleY,
-      zIndex: args.zIndex,
+      zIndex: args.zIndexCounter.value++,
       offsetX: args.offsetX,
       offsetY: args.offsetY,
       extra: ['background:#f8fafc', 'border:1px dashed #cbd5e1', 'padding:12px', 'color:#475569']
@@ -2001,6 +2067,7 @@ const buildSlideHtml = async (args: {
   animationPlan?: SlideAnimationPlan
   projectDir: string
   registry: ImageRegistry
+  xmlShapes?: PptxXmlSlideMetadata
   textValidator?: PptxTextValidator
   chartRewrite?: PptxChartRewriteHandler
 }): Promise<{ html: string; contentOutline: string; warnings: ImportWarning[] }> => {
@@ -2020,6 +2087,7 @@ const buildSlideHtml = async (args: {
     (a, b) => clampNumber((a as unknown as Record<string, unknown>).order) - clampNumber((b as unknown as Record<string, unknown>).order)
   )
   const rendered: string[] = []
+  const zIndexCounter: ZIndexCounter = { value: 2 }
   let titleAssigned = false
   for (const [index, element] of elements.entries()) {
     try {
@@ -2033,7 +2101,8 @@ const buildSlideHtml = async (args: {
         scaleX,
         scaleY,
         textScale,
-        zIndex: index + 2,
+        zIndexCounter,
+        xmlShapes: args.xmlShapes,
         offsetX: slideFit.offsetX,
         offsetY: slideFit.offsetY,
         titleAssigned,
@@ -2077,7 +2146,7 @@ ${hasImportedAnimations ? buildImportedPptxMotionScript() : ''}`
     pageNumber: args.pageNumber,
     pageId: args.pageId,
     title: args.title
-  })
+  }, PPTX_IMPORT_SLIDE_SIZE)
   const $ = cheerio.load(scaffold, { scriptingEnabled: false })
   $('.ppt-page-root').first().removeClass('p-2 p-8').attr('style', 'padding:0;')
   $('.ppt-page-content').first().html(body)
@@ -2135,6 +2204,7 @@ export async function importPptxToEditableHtml(args: {
   const buffer = await fs.promises.readFile(args.filePath)
   const normalizedTables = normalizePptxTableStyleFlags(buffer)
   const normalizedCharts = normalizePptxChartValueCaches(Buffer.from(normalizedTables.arrayBuffer))
+  const xmlMetadata = parsePptxXmlDeckMetadata(Buffer.from(normalizedCharts.arrayBuffer))
   args.onProgress?.({ stage: 'parsing', progress: 14, label: '正在解析 PPTX 结构' })
   const parsed = await parse(normalizedCharts.arrayBuffer, {
     imageMode: 'base64',
@@ -2198,6 +2268,7 @@ export async function importPptxToEditableHtml(args: {
         animationPlan: animationPlans[i],
         projectDir: args.projectDir,
         registry,
+        xmlShapes: xmlMetadata.slides.get(selectedSlide.originalIndex + 1),
         textValidator,
         chartRewrite: args.chartRewrite
       })
@@ -2227,7 +2298,8 @@ export async function importPptxToEditableHtml(args: {
           title: page.title,
           htmlPath: path.basename(page.htmlPath)
         })
-      )
+      ),
+      PPTX_IMPORT_SLIDE_SIZE
     ),
     'utf-8'
   )

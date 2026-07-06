@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { ipc } from '@renderer/lib/ipc'
 import type { FontSelection, SourceDocumentPlan } from '@shared/generation'
+import type { SlideSizePresetId } from '@shared/slide-size'
 
 export interface Session {
   id: string
@@ -8,6 +9,9 @@ export interface Session {
   topic: string | null
   styleId: string | null
   page_count: number | null
+  slideSizeId?: SlideSizePresetId
+  slideWidth?: number
+  slideHeight?: number
   referenceDocumentPath?: string | null
   reference_document_path?: string | null
   status: string
@@ -67,6 +71,7 @@ interface SessionStore {
     styleId: string
     modelConfigId?: string
     pageCount?: number
+    slideSizeId?: SlideSizePresetId
     referenceDocumentPath?: string
     fontSelection?: FontSelection
     sourcePlan?: SourceDocumentPlan

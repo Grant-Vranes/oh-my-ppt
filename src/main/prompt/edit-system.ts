@@ -2,15 +2,15 @@ import type { SessionDeckGenerationContext } from '../tools/types'
 import { progressText } from '@shared/progress'
 import { INDEX_TRANSITION_TYPES } from '../../shared/index-transition'
 import {
-  CANVAS_CONSTRAINTS,
+  buildCanvasScenarioContentRules,
+  buildCanvasScenarioDeliveryGuard,
+  buildCanvasScenarioExpansionRules,
+  buildLayoutCollisionRules,
+  buildPageSemanticStructure,
+  buildCanvasConstraints,
   CONTENT_LANGUAGE_RULES,
-  CONTENT_EXPANSION_RULES,
   CONTENT_WRITING_RULES,
   FRONTEND_CAPABILITIES,
-  LAYOUT_COLLISION_RULES,
-  LAYOUT_DELIVERY_GUARD,
-  PAGE_SEMANTIC_STRUCTURE,
-  SLIDE_THESIS_RULES,
   SOURCE_DOCUMENT_FACT_RULE,
   SOURCE_DOCUMENT_READ_STRATEGY,
   SOURCE_GROUNDED_EXPANSION_RULES,
@@ -20,6 +20,7 @@ import {
   formatDesignContract,
   resolveContextStylePrompt
 } from './shared'
+import { buildCanvasScenarioBrief, resolveCanvasScenario } from './canvas-scenario'
 
 /**
  * task
@@ -206,11 +207,11 @@ function buildSelectorEditPrompt(
     context.designContract ? '\n设计契约（本次演示的统一视觉参考，修改时保持协调即可）：' : '',
     context.designContract ? formatDesignContract(context.designContract) : '',
     '',
-    CANVAS_CONSTRAINTS,
+    buildCanvasConstraints(context.slideSize),
     '',
-    LAYOUT_COLLISION_RULES,
+    buildLayoutCollisionRules(context.slideSize),
     '',
-    PAGE_SEMANTIC_STRUCTURE,
+    buildPageSemanticStructure(context.slideSize),
     '',
     FRONTEND_CAPABILITIES,
     sourceDocumentInstructions ? '\n' + sourceDocumentInstructions : '',
@@ -260,12 +261,15 @@ function buildSinglePageEditPrompt(
   const sourceDocumentInstructions = buildSourceDocumentEditInstructions(context, {
     includeExpansion: true
   })
+  const canvasScenario = resolveCanvasScenario(context.slideSize)
 
   return [
-    'You are a PPT incremental editing expert focused on modifying a single target page.',
+    canvasScenario.editIdentity,
     `Your responsibility is to modify only the target page: ${targetPageId}. Keep other pages and index.html unchanged.`,
     '',
-    SLIDE_THESIS_RULES,
+    buildCanvasScenarioBrief(context.slideSize),
+    '',
+    buildCanvasScenarioContentRules(context.slideSize),
     '',
     CONTENT_LANGUAGE_RULES,
     '',
@@ -284,20 +288,20 @@ function buildSinglePageEditPrompt(
     '',
     STABLE_HTML_FRAGMENT_PROTOCOL,
     '',
-    CONTENT_EXPANSION_RULES,
+    buildCanvasScenarioExpansionRules(context.slideSize),
     '',
     '## 编辑策略',
     '- 如果用户只要求小范围修改（加插画、改标题颜色、删除某个模块、调整局部文案），保留当前布局意图，只改必要的局部内容。',
     '- 如果用户要求重新布局、整体重做、换版式、简化、重构或明确说当前布局不合理，可以重写整页 fragment。',
     '- 整页重写时也必须遵守 Stable HTML fragment protocol：一个根 div、浅层 grid/flex、不要重建 page shell、不要用深层 wrapper chain。',
     '',
-    CANVAS_CONSTRAINTS,
+    buildCanvasConstraints(context.slideSize),
     '',
-    LAYOUT_COLLISION_RULES,
+    buildLayoutCollisionRules(context.slideSize),
     '',
-    LAYOUT_DELIVERY_GUARD,
+    buildCanvasScenarioDeliveryGuard(context.slideSize),
     '',
-    PAGE_SEMANTIC_STRUCTURE,
+    buildPageSemanticStructure(context.slideSize),
     '',
     FRONTEND_CAPABILITIES,
     sourceDocumentInstructions ? '\n' + sourceDocumentInstructions : '',
@@ -354,12 +358,15 @@ function buildDeckEditPrompt(
   const sourceDocumentInstructions = buildSourceDocumentEditInstructions(context, {
     includeExpansion: true
   })
+  const canvasScenario = resolveCanvasScenario(context.slideSize)
 
   return [
-    'You are a PPT incremental editing expert focused on modifying multiple pages across the deck.',
+    canvasScenario.editIdentity,
     "Your responsibility is to modify the relevant /<pageId>.html files according to the user's main-session instruction. You must keep index.html unchanged.",
     '',
-    SLIDE_THESIS_RULES,
+    buildCanvasScenarioBrief(context.slideSize),
+    '',
+    buildCanvasScenarioContentRules(context.slideSize),
     '',
     CONTENT_LANGUAGE_RULES,
     '',
@@ -377,19 +384,19 @@ function buildDeckEditPrompt(
     '',
     STABLE_HTML_FRAGMENT_PROTOCOL,
     '',
-    CONTENT_EXPANSION_RULES,
+    buildCanvasScenarioExpansionRules(context.slideSize),
     '',
     '## 编辑策略',
     '- 对每个相关页面判断用户意图：小范围修改时保留页面原有结构；要求重新布局/重构/整体重做时才重写整页 fragment。',
     '- 整页重写必须使用稳定、扁平的 fragment：一个根 div、浅层 grid/flex、无 section/main/page shell、无深层装饰 wrapper。',
     '',
-    CANVAS_CONSTRAINTS,
+    buildCanvasConstraints(context.slideSize),
     '',
-    LAYOUT_COLLISION_RULES,
+    buildLayoutCollisionRules(context.slideSize),
     '',
-    LAYOUT_DELIVERY_GUARD,
+    buildCanvasScenarioDeliveryGuard(context.slideSize),
     '',
-    PAGE_SEMANTIC_STRUCTURE,
+    buildPageSemanticStructure(context.slideSize),
     '',
     FRONTEND_CAPABILITIES,
     sourceDocumentInstructions ? '\n' + sourceDocumentInstructions : '',

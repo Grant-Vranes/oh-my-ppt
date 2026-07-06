@@ -18,9 +18,11 @@ import type {
   FontSelection,
   GenerateChunkEvent
 } from '@shared/generation'
+import { isSectionAgendaOutline } from '@shared/generation'
 import { normalizeLayoutIntent, type LayoutIntent } from '@shared/layout-intent'
 import { resolveModelTimeoutMs, type ModelTimeoutProfile } from '@shared/model-timeout'
 import { progressLabel, progressText } from '@shared/progress'
+import type { SlideSizePreset } from '@shared/slide-size'
 import type { DeckEditScope, DesignContract, OutlineItem } from '../../tools/types'
 import { isPlaceholderPageHtml } from '../../tools/html-utils'
 import {
@@ -594,6 +596,7 @@ export const buildDesignContractWithLLM = async (args: {
   appLocale?: AppLocale
   modelTimeoutMs?: number
   totalPages: number
+  slideSize: SlideSizePreset
   topic?: string
   userMessage?: string
   fontSelection?: FontSelection
@@ -623,7 +626,8 @@ export const buildDesignContractWithLLM = async (args: {
     styleSkill: args.styleSkillPrompt,
     availableFonts,
     requestedFontPair,
-    languageHint
+    languageHint,
+    slideSize: args.slideSize
   })
   const userPrompt = buildDesignContractUserPrompt()
   const parseDesignContract = async (responseText: string): Promise<DesignContract> => {
@@ -814,6 +818,7 @@ export const runDeepAgentDeckGeneration = async (args: {
   styleKey?: string
   styleName?: string
   styleVersion?: string
+  slideSize: import('@shared/slide-size').SlideSizePreset
   appLocale?: AppLocale
   animationPreferences?: AnimationPreferencesPayload | null
   modelTimeoutMs?: number
@@ -1064,7 +1069,9 @@ export const runDeepAgentDeckGeneration = async (args: {
       outlineLength: (page.outline || '').length
     })
 
-    const referenceDocumentSnippets = referenceDocumentRetriever
+    const isSectionAgendaPage = isSectionAgendaOutline(page.outline || '')
+    const pageSourceDocumentPaths = isSectionAgendaPage ? [] : args.sourceDocumentPaths
+    const referenceDocumentSnippets = referenceDocumentRetriever && !isSectionAgendaPage
       ? formatReferenceDocumentSnippets(
           referenceDocumentRetriever.search({
             pageId: page.pageId,
@@ -1079,7 +1086,7 @@ export const runDeepAgentDeckGeneration = async (args: {
       pageId: page.pageId,
       pageNumber: page.pageNumber,
       title: page.title,
-      hasSourceDocuments: Boolean(args.sourceDocumentPaths?.length),
+      hasSourceDocuments: Boolean(pageSourceDocumentPaths?.length),
       hasRetriever: Boolean(referenceDocumentRetriever),
       injected: referenceDocumentSnippets.trim().length > 0,
       injectedCharacterCount: referenceDocumentSnippets.length
@@ -1105,6 +1112,7 @@ export const runDeepAgentDeckGeneration = async (args: {
         styleKey: args.styleKey,
         styleName: args.styleName,
         styleVersion: args.styleVersion,
+        slideSize: args.slideSize,
         appLocale: args.appLocale,
         animationPreferences: args.animationPreferences,
         designContract: args.designContract,
@@ -1114,7 +1122,7 @@ export const runDeepAgentDeckGeneration = async (args: {
         outlineItems: [
           { title: page.title, contentOutline: page.outline, layoutIntent: page.layoutIntent }
         ],
-        sourceDocumentPaths: args.sourceDocumentPaths,
+        sourceDocumentPaths: pageSourceDocumentPaths,
         mode: args.generationMode ?? 'generate',
         pageFileMap: { [page.pageId]: currentPagePath },
         selectedPageId: page.pageId,
@@ -1152,8 +1160,9 @@ export const runDeepAgentDeckGeneration = async (args: {
                   pageNumber: page.pageNumber,
                   pageTitle: page.title,
                   pageOutline: page.outline,
+                  slideSize: args.slideSize,
                   layoutIntent: page.layoutIntent,
-                  sourceDocumentPaths: args.sourceDocumentPaths,
+                  sourceDocumentPaths: pageSourceDocumentPaths,
                   referenceDocumentSnippets,
                   isRetryMode: args.generationMode === 'retry',
                   writeToolName,
@@ -1474,6 +1483,7 @@ type RunDeepAgentEditBaseArgs = {
   styleKey?: string
   styleName?: string
   styleVersion?: string
+  slideSize: import('@shared/slide-size').SlideSizePreset
   appLocale?: AppLocale
   modelTimeoutMs?: number
   topic: string
@@ -1536,6 +1546,7 @@ const runDeepAgentScopedEdit = async (args: RunDeepAgentScopedEditArgs): Promise
       styleKey: args.styleKey,
       styleName: args.styleName,
       styleVersion: args.styleVersion,
+      slideSize: args.slideSize,
       appLocale: args.appLocale,
       designContract: args.designContract,
       userMessage: args.userMessage,

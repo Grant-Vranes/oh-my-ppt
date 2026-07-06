@@ -13,6 +13,8 @@ export type TemplateThumbnailEntry = {
   templateId: string
   pageId?: string | null
   sourcePath?: string | null
+  width?: number
+  height?: number
 }
 
 function entryToRequest(entry: TemplateThumbnailEntry): HtmlThumbnailRequest | null {
@@ -24,7 +26,14 @@ function entryToRequest(entry: TemplateThumbnailEntry): HtmlThumbnailRequest | n
     resourceId: templateId,
     variant: TEMPLATE_COVER_VARIANT,
     sourcePath,
-    pageId: typeof entry.pageId === 'string' ? entry.pageId.trim() : ''
+    pageId: typeof entry.pageId === 'string' ? entry.pageId.trim() : '',
+    captureWidth: entry.width,
+    captureHeight: entry.height,
+    thumbnailWidth: 640,
+    thumbnailHeight:
+      entry.width && entry.height
+        ? Math.max(64, Math.round((640 * entry.height) / entry.width))
+        : undefined
   }
 }
 

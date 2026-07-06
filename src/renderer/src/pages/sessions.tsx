@@ -16,6 +16,7 @@ import { useThumbnailUpdates } from '../hooks/useThumbnailUpdates'
 import sessionPlaceholder from '../assets/images/space.webp'
 import dayjs from 'dayjs'
 import duration from 'dayjs/plugin/duration'
+import { resolveSessionSlideSize } from '@shared/slide-size'
 
 dayjs.extend(duration)
 
@@ -485,6 +486,7 @@ export function SessionsPage(): React.JSX.Element {
             })
             const SourceIcon = sourceTag.Icon
             const thumbnailPath = thumbnailPaths[session.id] || session.thumbnailPath || ''
+            const slideSize = resolveSessionSlideSize(session)
             const sourceTagBaseClass =
               'inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[11px] font-semibold leading-none'
             const statusClassName = activeRun
@@ -504,21 +506,26 @@ export function SessionsPage(): React.JSX.Element {
                 title={isPartialComplete ? t('sessions.statusPartialCompleteTip') : undefined}
                 onClick={() => navigate(getSessionRoute(session))}
               >
-                <div className="relative aspect-video w-full shrink-0 overflow-hidden bg-[#f5f1e8]">
+                <div
+                  className="relative flex h-[230px] w-full shrink-0 items-center justify-center overflow-hidden bg-[#f5f1e8]"
+                  data-session-thumbnail-frame
+                >
                   {thumbnailPath ? (
                     <img
                       src={localAssetUrl(thumbnailPath)}
                       loading="lazy"
                       alt=""
                       aria-hidden="true"
-                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.015]"
+                      className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-[1.015]"
+                      style={{ aspectRatio: `${slideSize.width}/${slideSize.height}` }}
                     />
                   ) : (
                     <img
                       src={sessionPlaceholder}
                       alt=""
                       aria-hidden="true"
-                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.015]"
+                      className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-[1.015]"
+                      style={{ aspectRatio: `${slideSize.width}/${slideSize.height}` }}
                     />
                   )}
                   <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/45 via-black/10 to-transparent" />

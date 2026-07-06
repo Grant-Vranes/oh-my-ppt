@@ -108,7 +108,8 @@ export function GenerationActivityDialog({ sessionId }: { sessionId: string }): 
         'activityKind' in event.payload &&
         (event.payload.activityKind === 'edit' ||
           event.payload.activityKind === 'style-switch' ||
-          event.payload.activityKind === 'single-page-retry')
+          event.payload.activityKind === 'single-page-retry' ||
+          event.payload.activityKind === 'addPage')
           ? event.payload.activityKind
           : undefined
       if (!shouldHandleGenerationActivity(activityKind, activeRetryContext)) return
@@ -189,8 +190,12 @@ export function GenerationActivityDialog({ sessionId }: { sessionId: string }): 
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [logs.length])
 
+  // 失败后保留弹窗：用户必须先点「重试失败页面」把状态推进，不能直接关掉丢掉重试入口。
+  // 这避免了「关掉后 styleId 已提交、retryContext 已 reset、再也无法重试」的死锁。
+  const blockClose = status === 'running' || (retryContext !== null && failedPageCount > 0)
+
   const requestClose = (nextOpen: boolean): void => {
-    if (!nextOpen && status === 'running') return
+    if (!nextOpen && blockClose) return
     setOpen(nextOpen)
     if (!nextOpen) useGenerationActivityStore.getState().reset()
   }
@@ -255,13 +260,13 @@ export function GenerationActivityDialog({ sessionId }: { sessionId: string }): 
   return (
     <Dialog open={open} onOpenChange={requestClose}>
       <DialogContent
-        showClose={status !== 'running'}
+        showClose={!blockClose}
         className="max-w-[500px] gap-3 bg-[#fff9ef] p-3.5"
         onEscapeKeyDown={(event) => {
-          if (status === 'running') event.preventDefault()
+          if (blockClose) event.preventDefault()
         }}
         onPointerDownOutside={(event) => {
-          if (status === 'running') event.preventDefault()
+          if (blockClose) event.preventDefault()
         }}
       >
         <DialogHeader className="min-h-8 justify-center pr-14">

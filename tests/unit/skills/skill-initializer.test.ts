@@ -4,7 +4,22 @@ import path from 'node:path'
 import { CompositeBackend, FilesystemBackend } from 'deepagents'
 import { describe, expect, it } from 'vitest'
 import { compareVersion, initializeSkills } from '../../../src/main/skills/skill-initializer'
-import { PRODUCT_SKILLS_ROUTE, SYSTEM_SKILLS_SOURCE_PATH } from '../../../src/main/skills/skill-contract'
+import { attachProductSkillsBackend } from '../../../src/main/skills/product-skills-backend'
+import { setSkillsRuntime } from '../../../src/main/skills/skill-runtime'
+import {
+  CHART_SKILL_NAME,
+  DATA_ANIM_SKILL_NAME,
+  LAYOUT_SKILL_NAME,
+  PRODUCT_SKILLS_ROUTE,
+  RED_LAYOUT_SKILL_NAME,
+  REQUIRED_PRODUCT_SKILL_NAMES,
+  SOURCE_READING_SKILL_NAME,
+  SQUARE_1_1_LAYOUT_SKILL_NAME,
+  STANDARD_4_3_LAYOUT_SKILL_NAME,
+  SYSTEM_SKILLS_SOURCE_PATH,
+  VERTICAL_3_4_LAYOUT_SKILL_NAME,
+  VERTICAL_9_16_LAYOUT_SKILL_NAME
+} from '../../../src/main/skills/skill-contract'
 
 async function makeSkill(root: string, name: string, version: string, body = '# Skill\n'): Promise<void> {
   const skillPath = path.join(root, name)
@@ -133,5 +148,73 @@ describe('initializeSkills', () => {
       readFile(path.join(installed, 'system', 'oh-my-ppt-data-anim', 'SKILL.md'), 'utf8')
     ).resolves.toContain('new body')
     expect(upgraded.manifest.skills['legacy-skill'].missingFromBundle).toBe(true)
+  })
+
+  it('exposes only the selected canvas product skills through the DeepAgents source', async () => {
+    const tmp = await mkdtemp(path.join(os.tmpdir(), 'ohmyppt-filtered-skills-'))
+    const bundled = path.join(tmp, 'bundled')
+    const installed = path.join(tmp, 'installed')
+    await makeSkill(bundled, VERTICAL_9_16_LAYOUT_SKILL_NAME, '1.0.0', '# Portrait Layout\n')
+    await makeSkill(bundled, STANDARD_4_3_LAYOUT_SKILL_NAME, '1.0.0', '# Standard Layout\n')
+    await makeSkill(bundled, DATA_ANIM_SKILL_NAME, '1.0.0', '# Data Anim\n')
+    await makeSkill(bundled, CHART_SKILL_NAME, '1.0.0', '# Chart\n')
+    await makeSkill(bundled, SOURCE_READING_SKILL_NAME, '1.0.0', '# Source Reading\n')
+    await initializeSkills({
+      builtinSourcePath: bundled,
+      installedRootPath: installed
+    })
+    setSkillsRuntime({ installedSkillsPath: installed, ready: Promise.resolve(null) })
+
+    const agentBackend = attachProductSkillsBackend(
+      new FilesystemBackend({ rootDir: tmp, virtualMode: true }),
+      'session-deck',
+      [
+        VERTICAL_9_16_LAYOUT_SKILL_NAME,
+        DATA_ANIM_SKILL_NAME,
+        CHART_SKILL_NAME,
+        SOURCE_READING_SKILL_NAME
+      ]
+    )
+
+    const listed = await agentBackend.backend.ls(agentBackend.skillSource)
+    expect(listed.error).toBeUndefined()
+    expect(listed.files?.map((file) => file.path).sort()).toEqual([
+      `${agentBackend.skillSource}${CHART_SKILL_NAME}/`,
+      `${agentBackend.skillSource}${DATA_ANIM_SKILL_NAME}/`,
+      `${agentBackend.skillSource}${SOURCE_READING_SKILL_NAME}/`,
+      `${agentBackend.skillSource}${VERTICAL_9_16_LAYOUT_SKILL_NAME}/`
+    ])
+
+    const allowedRead = await agentBackend.backend.read(
+      `${agentBackend.skillSource}${VERTICAL_9_16_LAYOUT_SKILL_NAME}/SKILL.md`
+    )
+    expect(allowedRead.error).toBeUndefined()
+    expect(allowedRead.content).toContain('Portrait Layout')
+
+    const blockedRead = await agentBackend.backend.read(
+      `${agentBackend.skillSource}${STANDARD_4_3_LAYOUT_SKILL_NAME}/SKILL.md`
+    )
+    expect(blockedRead.error).toContain('Product skill is not enabled for this canvas')
+  })
+
+  it('bundles dedicated layout skills for every supported canvas', async () => {
+    for (const skillName of [
+      LAYOUT_SKILL_NAME,
+      VERTICAL_9_16_LAYOUT_SKILL_NAME,
+      STANDARD_4_3_LAYOUT_SKILL_NAME,
+      SQUARE_1_1_LAYOUT_SKILL_NAME,
+      VERTICAL_3_4_LAYOUT_SKILL_NAME,
+      RED_LAYOUT_SKILL_NAME
+    ]) {
+      expect(REQUIRED_PRODUCT_SKILL_NAMES).toContain(skillName)
+      const raw = await readFile(
+        path.join(process.cwd(), 'resources', 'skills', skillName, 'skill.json'),
+        'utf8'
+      )
+      expect(JSON.parse(raw)).toMatchObject({ name: skillName, source: 'builtin' })
+      await expect(
+        readFile(path.join(process.cwd(), 'resources', 'skills', skillName, 'SKILL.md'), 'utf8')
+      ).resolves.toContain(`name: ${skillName}`)
+    }
   })
 })

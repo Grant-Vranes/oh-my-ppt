@@ -49,6 +49,7 @@ export type GenerationContext = {
   styleKey: string
   styleName: string
   styleVersion: string
+  slideSize: CommonGenerationContext['slideSize']
   userProvidedOutlineTitles: string[]
   totalPages: number
   provider: string

@@ -38,6 +38,11 @@ import {
   type DocumentPlanSuggestionDraft
 } from '../components/session-create/SessionCreateSuggestionDialog'
 import { AnimationPreferenceChips } from '../components/session-create/AnimationPreferenceChips'
+import {
+  DEFAULT_SLIDE_SIZE_ID,
+  SLIDE_SIZE_PRESETS,
+  type SlideSizePresetId
+} from '@shared/slide-size'
 const MIN_PAGE_COUNT = 1
 const MAX_PAGE_COUNT = 500
 const DEFAULT_PAGE_COUNT = 5
@@ -54,8 +59,10 @@ type AttachedReferenceFile = ParsedDocumentPlanResult['files'][number]
 
 const compactInputClass =
   'h-10 border-[#d8ccb5]/70 bg-white/75 px-3 py-2 text-sm shadow-[inset_0_1px_2px_rgba(73,61,44,0.04)] placeholder:text-[#9aa18b]'
-const compactSelectTriggerClass =
-  'h-10 border-[#d8ccb5]/70 bg-white/75 px-3 py-2 text-sm shadow-[inset_0_1px_2px_rgba(73,61,44,0.04)]'
+const settingsInputClass =
+  'h-8 border-[#d8ccb5]/70 bg-white/75 px-2.5 py-1.5 text-xs shadow-[inset_0_1px_2px_rgba(73,61,44,0.04)] placeholder:text-[#9aa18b]'
+const settingsSelectTriggerClass =
+  'h-8 border-[#d8ccb5]/70 bg-white/75 px-2.5 py-1.5 text-xs shadow-[inset_0_1px_2px_rgba(73,61,44,0.04)]'
 const compactSelectContentClass = 'text-xs'
 const compactSelectItemClass = 'px-2.5 py-1.5 text-xs'
 const delay = (ms: number): Promise<void> =>
@@ -94,6 +101,7 @@ export function SessionCreatePage(): ReactElement {
     AnimationPreferenceId[]
   >([])
   const [pageCount, setPageCount] = useState(String(DEFAULT_PAGE_COUNT))
+  const [slideSizeId, setSlideSizeId] = useState<SlideSizePresetId>(DEFAULT_SLIDE_SIZE_ID)
   const [selectedStyleId, setSelectedStyleId] = useState('')
   const [selectedTitleFontId, setSelectedTitleFontId] = useState('auto')
   const [selectedBodyFontId, setSelectedBodyFontId] = useState('auto')
@@ -294,6 +302,7 @@ export function SessionCreatePage(): ReactElement {
         styleId: selectedStyleId,
         modelConfigId: resolvedModelConfigId,
         pageCount: safePageCount,
+        slideSizeId,
         referenceDocumentPath: referenceDocumentPath || undefined,
         sourcePlan: acceptedSourcePlan,
         fontSelection
@@ -511,6 +520,35 @@ export function SessionCreatePage(): ReactElement {
   const bodyFontOptions = fontOptions.filter((font) => font.role.includes('body'))
   const availableTitleFonts = titleFontOptions.length > 0 ? titleFontOptions : fontOptions
   const availableBodyFonts = bodyFontOptions.length > 0 ? bodyFontOptions : fontOptions
+  const getSelectedFontLabel = (id: string): string => {
+    if (id === 'auto') return t('home.fontSchemeAuto')
+    const selectedFont = fontOptions.find((font) => `${font.source}:${font.id}` === id)
+    return selectedFont?.family || t('home.fontSchemeAuto')
+  }
+  const renderFontSelectItem = (font: FontListItem, roleLabel: string): ReactElement => {
+    const isUploaded = font.source === 'uploaded'
+    const sourceLabel = isUploaded ? t('home.fontSourceUploaded') : t('home.fontSourceBuiltIn')
+    return (
+      <SelectItem
+        key={`${font.source}:${font.id}`}
+        value={`${font.source}:${font.id}`}
+        textValue={font.family}
+        className={compactSelectItemClass}
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          <span
+            className={`shrink-0 rounded px-1 py-0.5 text-[10px] font-medium ${
+              isUploaded ? 'bg-[#eef9ec] text-[#4a7a46]' : 'bg-[#eef6ff] text-[#3e6685]'
+            }`}
+          >
+            {sourceLabel}
+          </span>
+          <span className="min-w-0 truncate">{font.family}</span>
+          <span className="ml-auto shrink-0 text-[10px] text-[#8b927f]">{roleLabel}</span>
+        </span>
+      </SelectItem>
+    )
+  }
   const fontSelectHint =
     selectedTitleFontId === 'auto' && selectedBodyFontId === 'auto'
       ? t('home.fontSchemeAutoHint')
@@ -519,8 +557,8 @@ export function SessionCreatePage(): ReactElement {
         : t('home.fontSchemePartialHint')
 
   return (
-    <div className="session-create-page mx-auto flex w-full max-w-7xl flex-col gap-5 px-6 py-6">
-      <div className="flex max-w-4xl flex-col items-start gap-2 border-b border-[#e0d8c8] px-1 pb-6">
+    <div className="session-create-page mx-auto flex min-h-full w-full max-w-7xl flex-col gap-4 px-5 py-4 sm:px-6">
+      <div className="flex max-w-4xl flex-col items-start gap-1.5 border-b border-[#e0d8c8] px-1 pb-4">
         <p className="rounded bg-[#d4e4c1]/78 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#3e4a32]">
           {t('home.eyebrow')}
         </p>
@@ -548,12 +586,12 @@ export function SessionCreatePage(): ReactElement {
 
         <Card
           data-session-create-workspace
-          className="session-create-workspace mb-4 overflow-hidden rounded-2xl border border-[#ded8cb] shadow-[0_12px_28px_rgba(86,73,54,0.06)]"
+          className="session-create-workspace overflow-hidden rounded-2xl border border-[#ded8cb] shadow-[0_12px_28px_rgba(86,73,54,0.06)]"
         >
           <CardContent className="grid p-0 lg:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.85fr)] [&_label]:text-[13px] [&_label]:font-semibold [&_label]:text-[#3e4a32]">
             <main
               data-session-create-main
-              className="flex min-w-0 flex-col gap-6 bg-transparent p-5 sm:p-6 lg:p-7"
+              className="flex min-w-0 flex-col gap-5 bg-transparent p-5 lg:p-6"
             >
               <div>
                 <label className="mb-2 block">{t('home.topic')}</label>
@@ -600,17 +638,17 @@ export function SessionCreatePage(): ReactElement {
                   {briefMode === 'edit' ? (
                     <Textarea
                       placeholder={t('home.briefPlaceholder')}
-                      rows={6}
+                      rows={8}
                       value={brief}
                       required
                       onChange={(e) => {
                         setAcceptedSourcePlan(undefined)
                         setBrief(e.target.value)
                       }}
-                      className="min-h-[250px] resize-y border-0 bg-transparent px-4 py-3 text-xs leading-5 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                      className="min-h-[300px] resize-y border-0 bg-transparent px-4 py-3 text-xs leading-5 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
                     />
                   ) : (
-                    <ScrollArea className="h-[274px] bg-transparent" viewportClassName="p-4">
+                    <ScrollArea className="h-[300px] bg-transparent" viewportClassName="p-4">
                       <ReactMarkdown
                         components={{
                           h1: ({ children }) => (
@@ -663,7 +701,7 @@ export function SessionCreatePage(): ReactElement {
                 </div>
                 <div
                   data-session-create-reference-actions
-                  className="mt-3 flex flex-wrap items-center justify-end gap-2"
+                  className="mt-2 flex flex-wrap items-center justify-end gap-2"
                 >
                   {attachedReferenceFile && (
                     <div className="flex min-w-0 max-w-full">
@@ -807,9 +845,9 @@ export function SessionCreatePage(): ReactElement {
 
             <aside
               data-session-create-settings
-              className="min-w-0 bg-transparent p-5 sm:p-6 lg:border-l lg:border-[#ded8cb] lg:p-7"
+              className="min-w-0 bg-transparent p-5 lg:border-l lg:border-[#ded8cb] lg:p-6"
             >
-              <div className="space-y-7">
+              <div className="space-y-6">
                 <section>
                   <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_88px] lg:grid-cols-[minmax(0,1fr)_82px]">
                     <div>
@@ -820,7 +858,7 @@ export function SessionCreatePage(): ReactElement {
                         options={styleOptions}
                         placeholder={t('home.stylePlaceholder')}
                         compact
-                        className="h-10 border-[#c8d6ba] bg-[#fffdf8]/90 shadow-none"
+                        className="h-8 border-[#c8d6ba] bg-[#fffdf8]/90 px-2.5 py-1.5 text-xs shadow-none"
                         dropdownAlign="end"
                         dropdownClassName="w-[min(700px,calc(100vw-3rem))]"
                       />
@@ -848,89 +886,98 @@ export function SessionCreatePage(): ReactElement {
                         onBlur={() => {
                           setPageCount(String(resolvePageCount(pageCount)))
                         }}
-                        className={compactInputClass}
+                        className={settingsInputClass}
                       />
                     </div>
+                  </div>
+                  <div className="mt-3">
+                    <label className="mb-2 block">{t('home.slideSize')}</label>
+                    <Select
+                      value={slideSizeId}
+                      onValueChange={(value) => setSlideSizeId(value as SlideSizePresetId)}
+                    >
+                      <SelectTrigger className={settingsSelectTriggerClass}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className={compactSelectContentClass}>
+                        {SLIDE_SIZE_PRESETS.map((preset) => (
+                          <SelectItem
+                            key={preset.id}
+                            value={preset.id}
+                            className={compactSelectItemClass}
+                          >
+                            {preset.id === 'wide-16-9'
+                              ? t('home.slideSizeWide')
+                              : preset.id === 'vertical-9-16'
+                                ? t('home.slideSizeVertical')
+                                : preset.id === 'standard-4-3'
+                                  ? t('home.slideSizeStandard')
+                                  : preset.id === 'square-1-1'
+                                    ? t('home.slideSizeSquare')
+                                    : preset.id === 'vertical-3-4'
+                                      ? t('home.slideSizePortrait')
+                                      : t('home.slideSizeXiaohongshu')}
+                            <span className="ml-2 text-[10px] text-[#8b927f]">
+                              {preset.width}×{preset.height}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </section>
 
                 <section>
                   <label className="mb-2 block">{t('home.fontScheme')}</label>
-                  <div className="grid gap-2">
+                  <div className="grid min-w-0 grid-cols-2 overflow-hidden rounded-lg border border-[#d8ccb5]/70 bg-white/75 shadow-[inset_0_1px_2px_rgba(73,61,44,0.04)]">
                     <Select value={selectedTitleFontId} onValueChange={setSelectedTitleFontId}>
-                      <SelectTrigger className={compactSelectTriggerClass}>
-                        <SelectValue placeholder={t('home.fontSchemeAuto')} />
+                      <SelectTrigger className="h-8 min-w-0 rounded-none border-0 border-r border-[#d8ccb5]/70 bg-transparent px-2.5 py-1.5 text-xs shadow-none focus:ring-1">
+                        <span className="min-w-0 flex-1 truncate text-left">
+                          <span className="mr-1.5 text-[10px] font-medium text-[#8b927f]">
+                            {t('home.fontPairTitle')}
+                          </span>
+                          <SelectValue placeholder={t('home.fontSchemeAuto')}>
+                            {getSelectedFontLabel(selectedTitleFontId)}
+                          </SelectValue>
+                        </span>
                       </SelectTrigger>
                       <SelectContent className={compactSelectContentClass}>
                         <SelectItem value="auto" className={compactSelectItemClass}>
-                          {t('home.fontSchemeAuto')}
+                          <span className="flex min-w-0 items-center gap-2">
+                            <span className="min-w-0 truncate">{t('home.fontSchemeAuto')}</span>
+                            <span className="ml-auto shrink-0 text-[10px] text-[#8b927f]">
+                              {t('home.fontPairTitle')}
+                            </span>
+                          </span>
                         </SelectItem>
-                        {availableTitleFonts.map((font) => {
-                          const isUploaded = font.source === 'uploaded'
-                          const sourceLabel = isUploaded
-                            ? t('home.fontSourceUploaded')
-                            : t('home.fontSourceBuiltIn')
-                          return (
-                            <SelectItem
-                              key={`${font.source}:${font.id}`}
-                              value={`${font.source}:${font.id}`}
-                              className={compactSelectItemClass}
-                            >
-                              <span className="flex items-center gap-2">
-                                <span
-                                  className={`shrink-0 rounded px-1 py-0.5 text-[10px] font-medium ${
-                                    isUploaded
-                                      ? 'bg-[#eef9ec] text-[#4a7a46]'
-                                      : 'bg-[#eef6ff] text-[#3e6685]'
-                                  }`}
-                                >
-                                  {sourceLabel}
-                                </span>
-                                <span className="truncate">
-                                  {t('home.fontPairTitle')} · {font.family}
-                                </span>
-                              </span>
-                            </SelectItem>
-                          )
-                        })}
+                        {availableTitleFonts.map((font) =>
+                          renderFontSelectItem(font, t('home.fontPairTitle'))
+                        )}
                       </SelectContent>
                     </Select>
                     <Select value={selectedBodyFontId} onValueChange={setSelectedBodyFontId}>
-                      <SelectTrigger className={compactSelectTriggerClass}>
-                        <SelectValue placeholder={t('home.fontSchemeAuto')} />
+                      <SelectTrigger className="h-8 min-w-0 rounded-none border-0 bg-transparent px-2.5 py-1.5 text-xs shadow-none focus:ring-1">
+                        <span className="min-w-0 flex-1 truncate text-left">
+                          <span className="mr-1.5 text-[10px] font-medium text-[#8b927f]">
+                            {t('home.fontPairBody')}
+                          </span>
+                          <SelectValue placeholder={t('home.fontSchemeAuto')}>
+                            {getSelectedFontLabel(selectedBodyFontId)}
+                          </SelectValue>
+                        </span>
                       </SelectTrigger>
                       <SelectContent className={compactSelectContentClass}>
                         <SelectItem value="auto" className={compactSelectItemClass}>
-                          {t('home.fontSchemeAuto')}
+                          <span className="flex min-w-0 items-center gap-2">
+                            <span className="min-w-0 truncate">{t('home.fontSchemeAuto')}</span>
+                            <span className="ml-auto shrink-0 text-[10px] text-[#8b927f]">
+                              {t('home.fontPairBody')}
+                            </span>
+                          </span>
                         </SelectItem>
-                        {availableBodyFonts.map((font) => {
-                          const isUploaded = font.source === 'uploaded'
-                          const sourceLabel = isUploaded
-                            ? t('home.fontSourceUploaded')
-                            : t('home.fontSourceBuiltIn')
-                          return (
-                            <SelectItem
-                              key={`${font.source}:${font.id}`}
-                              value={`${font.source}:${font.id}`}
-                              className={compactSelectItemClass}
-                            >
-                              <span className="flex items-center gap-2">
-                                <span
-                                  className={`shrink-0 rounded px-1 py-0.5 text-[10px] font-medium ${
-                                    isUploaded
-                                      ? 'bg-[#eef9ec] text-[#4a7a46]'
-                                      : 'bg-[#eef6ff] text-[#3e6685]'
-                                  }`}
-                                >
-                                  {sourceLabel}
-                                </span>
-                                <span className="truncate">
-                                  {t('home.fontPairBody')} · {font.family}
-                                </span>
-                              </span>
-                            </SelectItem>
-                          )
-                        })}
+                        {availableBodyFonts.map((font) =>
+                          renderFontSelectItem(font, t('home.fontPairBody'))
+                        )}
                       </SelectContent>
                     </Select>
                   </div>

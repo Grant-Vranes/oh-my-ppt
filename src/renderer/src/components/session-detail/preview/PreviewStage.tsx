@@ -1,11 +1,12 @@
 import { useCallback, useEffect, forwardRef, useRef, useState } from 'react'
 import { Sparkles } from 'lucide-react'
-import { useSessionDetailUiStore } from '@renderer/store'
+import { useSessionDetailUiStore, useSessionStore } from '@renderer/store'
 import { PreviewIframe, type PreviewIframeHandle } from '../../preview/PreviewIframe'
 import type { EditModeMovePayload, EditSelectionPayload } from '../../preview/edit-mode-script'
 import type { SessionPreviewPage } from '../shared/types'
 import { useT } from '@renderer/i18n'
 import { EDITOR_INSET, EditorGuidesOverlay } from './EditorGuidesOverlay'
+import { trySessionSlideSize } from '@shared/slide-size'
 
 export const PreviewStage = forwardRef<
   PreviewIframeHandle,
@@ -47,6 +48,8 @@ export const PreviewStage = forwardRef<
   const restoreTimerRef = useRef<number | null>(null)
   const [previewReloadSignal, setPreviewReloadSignal] = useState(0)
   const previewKey = useSessionDetailUiStore((state) => state.previewKey)
+  const currentSession = useSessionStore((state) => state.currentSession)
+  const slideSize = trySessionSlideSize(currentSession)
   const interactionMode = useSessionDetailUiStore((state) => state.interactionMode)
   const setInteractionMode = useSessionDetailUiStore((state) => state.setInteractionMode)
   const setWorkspaceTab = useSessionDetailUiStore((state) => state.setWorkspaceTab)
@@ -236,6 +239,10 @@ export const PreviewStage = forwardRef<
     setWorkspaceTab
   ])
 
+  if (!slideSize) {
+    return <div className="min-h-0 flex-1 bg-[#f5f1e8]" />
+  }
+
   return (
     <main className="flex min-h-0 flex-1 flex-col px-3 pb-3 pt-1">
       <div className="relative min-h-0 flex-1 overflow-hidden rounded-[2rem] bg-[#e8e0d0]/54 p-3 shadow-[0_18px_38px_rgba(93,107,77,0.11)]">
@@ -262,6 +269,7 @@ export const PreviewStage = forwardRef<
                 htmlPath={selectedPage.htmlPath}
                 pageId={selectedPage.pageId}
                 title={`preview-page-${selectedPage.pageNumber}`}
+                slideSize={slideSize}
                 inspectable
                 interactionMode={interactionMode}
                 inspecting={isInspecting}
@@ -290,6 +298,7 @@ export const PreviewStage = forwardRef<
                 canvasHostRef={canvasHostRef}
                 previewIframeRef={previewIframeRef}
                 reloadSignal={previewReloadSignal}
+                slideSize={slideSize}
               />
             )}
             {selectedPage.status === 'failed' && (

@@ -10,10 +10,25 @@ describe('style fidelity prompt placement', () => {
     const shared = readSource('src/main/prompt/shared.ts')
 
     expect(shared).toContain('export const STYLE_FIDELITY_RULES')
-    expect(shared).toContain('风格一致性闸门')
+    expect(shared).toContain('尺寸布局与风格合成闸门')
+    expect(shared).toContain('当前画布尺寸与已注入的 layout skill/catalog 是页面结构的唯一来源')
     expect(shared).toContain('视觉语言的唯一来源')
-    expect(shared).toContain('layout skill/catalog 只决定结构')
+    expect(shared).toContain('先依据 layout skill/catalog 选择适合当前尺寸的页面结构')
+    expect(shared).toContain('不能直接作为页面骨架')
+    expect(shared).toContain('size-aware layoutMotif')
     expect(shared).toContain('单页生成也必须像整套 deck 一样遵守当前 style')
+    expect(shared).toContain('Size-adapted composition motif')
+  })
+
+  it('prescribes content-overload priority in shared content rules', () => {
+    const shared = readSource('src/main/prompt/shared.ts')
+
+    // When content oversupply exceeds a canvas's capacity, the model must
+    // compress/merge/drop first; it must NOT resolve overload by shrinking
+    // fonts below floors or by overflowing the canvas.
+    expect(shared).toContain('内容超载时按这个优先级解决')
+    expect(shared).toContain('绝不靠缩字号到下限以下')
+    expect(shared).toContain('竖版/小红书/方图本来就是低密度载体')
   })
 
   it('moves the deck-generation style preset to the end of the system prompt', () => {

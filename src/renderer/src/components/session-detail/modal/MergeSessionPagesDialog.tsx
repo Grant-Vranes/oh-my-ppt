@@ -5,6 +5,7 @@ import { ipc, type MergeSourcePageSummary, type MergeSourceSessionSummary } from
 import { useGenerateStore, useSessionDetailUiStore, useToastStore } from '@renderer/store'
 import { readPageMergeErrorCode } from '@shared/page-merge'
 import type { PageMergeDisabledReason } from '@shared/page-merge'
+import { requireSlideSize } from '@shared/slide-size'
 import { PreviewIframe } from '../../preview/PreviewIframe'
 import { Button } from '../../ui/Button'
 import { Checkbox } from '../../ui/Checkbox'
@@ -34,14 +35,24 @@ function MergePagePreview({
   page: MergeSourcePageSummary
   renderPreview: boolean
 }): React.JSX.Element {
+  const slideSize = requireSlideSize({
+    id: page.slideSizeId,
+    width: page.slideWidth,
+    height: page.slideHeight
+  })
+
   return (
-    <div className="h-full w-full">
+    <div
+      className="h-full w-full overflow-hidden"
+      style={{ aspectRatio: `${slideSize.width}/${slideSize.height}` }}
+    >
       {renderPreview && (page.htmlPath || page.sourceUrl) ? (
         <PreviewIframe
           src={page.sourceUrl}
           htmlPath={page.htmlPath}
           pageId={page.pageId}
           title={`merge-source-page-${page.pageNumber}`}
+          slideSize={slideSize}
           inspectable={false}
           thumbnail
         />
@@ -93,6 +104,8 @@ export function MergeSessionPagesDialog({
           return t('sessionDetail.mergeErrorSessionNotFound')
         case 'PAGE_MERGE_SESSION_BUSY':
           return t('sessionDetail.mergeErrorSessionBusy')
+        case 'PAGE_MERGE_SLIDE_SIZE_MISMATCH':
+          return t('sessionDetail.mergeErrorSlideSizeMismatch')
         case 'PAGE_MERGE_SOURCE_PAGE_NOT_FOUND':
           return t('sessionDetail.mergeErrorPageNotFound')
         case 'PAGE_MERGE_SOURCE_PAGE_UNAVAILABLE':
@@ -115,6 +128,8 @@ export function MergeSessionPagesDialog({
           return t('sessionDetail.mergeDisabledSessionBusy')
         case 'PAGE_MERGE_SESSION_EMPTY':
           return t('sessionDetail.mergeDisabledSessionEmpty')
+        case 'PAGE_MERGE_SLIDE_SIZE_MISMATCH':
+          return t('sessionDetail.mergeDisabledSlideSizeMismatch')
         case 'PAGE_MERGE_PAGE_INCOMPLETE':
           return t('sessionDetail.mergeDisabledPageIncomplete')
         case 'PAGE_MERGE_PAGE_FILE_MISSING':
@@ -411,6 +426,11 @@ export function MergeSessionPagesDialog({
                   <div className="grid grid-cols-2 gap-3 xl:grid-cols-3">
                     {sourcePages.map((page) => {
                       const selected = selectedSourcePageIds.has(page.id)
+                      const slideSize = requireSlideSize({
+                        id: page.slideSizeId,
+                        width: page.slideWidth,
+                        height: page.slideHeight
+                      })
                       return (
                         <div
                           key={page.id}
@@ -429,7 +449,10 @@ export function MergeSessionPagesDialog({
                               : 'cursor-pointer'
                           }`}
                         >
-                          <div className="relative h-[118px] overflow-hidden rounded-lg bg-[#eee7d9]">
+                          <div
+                            className="relative w-full overflow-hidden rounded-lg bg-[#eee7d9]"
+                            style={{ aspectRatio: `${slideSize.width}/${slideSize.height}` }}
+                          >
                             <MergePagePreview
                               page={page}
                               renderPreview={previewPageIds.has(page.id)}

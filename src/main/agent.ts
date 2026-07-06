@@ -1,16 +1,13 @@
 import type { PPTDatabase } from './db/database'
-import path from 'path'
 import { ChatAnthropic } from '@langchain/anthropic'
 import { ChatOpenAICompletions } from '@langchain/openai'
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai'
 import type { BaseLanguageModel } from '@langchain/core/language_models/base'
-import { createMiddleware } from 'langchain'
 import {
   CompositeBackend,
   FilesystemBackend,
   GENERAL_PURPOSE_SUBAGENT,
   createDeepAgent,
-  createSkillsMiddleware,
   type EditResult,
   type WriteResult
 } from 'deepagents'
@@ -31,15 +28,16 @@ import {
 import { ModelUsageCallbackHandler } from './model-usage'
 import { CompatibleChatOpenAIResponses } from './openai-responses-compat'
 import { createSessionBoundDeckTools, type SessionDeckGenerationContext } from './tools'
+import type { SlideSizePreset } from '@shared/slide-size'
 import { buildDeckAgentSystemPrompt, buildEditAgentSystemPrompt } from './prompt'
 import {
-  PRODUCT_SKILLS_ROUTE,
-  REQUIRED_PRODUCT_SKILL_NAMES,
   type RequiredProductSkillName,
-  getInstalledSkillsPath,
-  getSystemSkillsSourcePath,
-  waitForSkillsReady
+  getRequiredProductSkillNamesForSlideSize,
 } from './skills'
+import {
+  attachProductSkillsBackend,
+  createProductSkillsMiddlewareSet
+} from './skills/product-skills-backend'
 
 export {
   SHARED_PAGE_STYLES_START,
@@ -115,47 +113,6 @@ class GuardedFilesystemBackend extends FilesystemBackend {
   }
 }
 
-class ReadOnlyFilesystemBackend extends FilesystemBackend {
-  async write(filePath: string, _content: string): Promise<WriteResult> {
-    return { error: `Product skills are read-only: ${filePath}` }
-  }
-
-  async edit(
-    filePath: string,
-    _oldString: string,
-    _newString: string,
-    _replaceAll?: boolean
-  ): Promise<EditResult> {
-    return { error: `Product skills are read-only: ${filePath}` }
-  }
-}
-
-class FilteredReadOnlySkillsBackend extends ReadOnlyFilesystemBackend {
-  constructor(
-    options: { rootDir?: string; virtualMode?: boolean; maxFileSizeMb?: number } & {
-      allowedSkillNames: readonly string[]
-    }
-  ) {
-    super(options)
-    this.allowedSkillNames = new Set(options.allowedSkillNames)
-  }
-
-  private readonly allowedSkillNames: Set<string>
-
-  async ls(dirPath: string) {
-    const result = await super.ls(dirPath)
-    if (result.error || !result.files) return result
-    return {
-      ...result,
-      files: result.files.filter((file) => {
-        const normalized = file.path.replace(/\\/g, '/').replace(/\/$/, '')
-        const name = normalized.split('/').filter(Boolean).pop() || ''
-        return !file.is_dir || this.allowedSkillNames.has(name)
-      })
-    }
-  }
-}
-
 function shouldBlockNativeEditFile(context: SessionDeckGenerationContext): boolean {
   if (context.editScope === 'presentation-container') return true
   return !Boolean(context.selectedSelector?.trim())
@@ -168,123 +125,12 @@ function shouldBlockNativeWriteFile(context: SessionDeckGenerationContext): bool
   return context.mode === 'edit'
 }
 
-const SKILLS_READY_TIMEOUT_MS = 3000
-
-function waitWithTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T | null> {
-  return Promise.race([
-    promise,
-    new Promise<null>((resolve) => {
-      setTimeout(() => resolve(null), timeoutMs)
-    })
-  ])
-}
-
-function createSkillsReadyMiddleware(
-  backend: CompositeBackend,
-  skillSource: string,
-  scope: string,
-  requiredSkillNames: readonly RequiredProductSkillName[] = REQUIRED_PRODUCT_SKILL_NAMES
-) {
-  let hasLoggedReadySkills = false
-  return createMiddleware({
-    name: 'OhMyPptSkillsReadyMiddleware',
-    async beforeAgent() {
-      const initResult = await waitWithTimeout(waitForSkillsReady(), SKILLS_READY_TIMEOUT_MS)
-      if (initResult === null) {
-        throw new Error(
-          '产品 skill 初始化未完成，无法创建生成/编辑 Agent。请重启应用或检查 resources/skills。'
-        )
-      }
-
-      const readySkillNames: string[] = []
-      for (const skillName of requiredSkillNames) {
-        const skillPath = `${skillSource}${skillName}/SKILL.md`
-        const readResult = await backend.read(skillPath, 0, 20)
-        if (readResult.error) {
-          throw new Error(`必需产品 skill 不可用：${skillPath}。${readResult.error}`)
-        }
-        readySkillNames.push(skillName)
-      }
-
-      if (!hasLoggedReadySkills) {
-        hasLoggedReadySkills = true
-        log.info('[skills] required product skills ready', {
-          scope,
-          source: skillSource,
-          skills: readySkillNames
-        })
-      }
-      return undefined
-    }
-  })
-}
-
-function createProductSkillsMiddlewareSet(
-  backend: CompositeBackend,
-  skillSource: string,
-  scope: string,
-  requiredSkillNames: readonly RequiredProductSkillName[] = REQUIRED_PRODUCT_SKILL_NAMES
-): any[] {
-  return [
-    createSkillsReadyMiddleware(backend, skillSource, scope, requiredSkillNames),
-    createSkillsMiddleware({
-      backend,
-      sources: [skillSource]
-    })
-  ]
-}
-
-export function attachProductSkillsBackend(
-  projectBackend: FilesystemBackend,
-  scope = 'main',
-  requiredSkillNames: readonly RequiredProductSkillName[] = REQUIRED_PRODUCT_SKILL_NAMES
-): {
-  backend: FilesystemBackend | CompositeBackend
-  middleware: any[]
-  skillSource: string
-  enabled: boolean
-} {
-  const installedSkillsPath = getInstalledSkillsPath()
-  if (!installedSkillsPath) {
-    throw new Error('产品 skill 运行时路径未初始化，无法创建生成/编辑 Agent。')
-  }
-
-  const usesAllProductSkills = requiredSkillNames.length === REQUIRED_PRODUCT_SKILL_NAMES.length
-  const skillRoute = usesAllProductSkills
-    ? PRODUCT_SKILLS_ROUTE
-    : `${PRODUCT_SKILLS_ROUTE}${scope}/`
-  const backend = new CompositeBackend(projectBackend, {
-    [skillRoute]: usesAllProductSkills
-      ? new ReadOnlyFilesystemBackend({
-          rootDir: installedSkillsPath,
-          virtualMode: true
-        })
-      : new FilteredReadOnlySkillsBackend({
-          rootDir: path.join(
-            installedSkillsPath,
-            getSystemSkillsSourcePath().replace(/^\/|\/$/g, '')
-          ),
-          virtualMode: true,
-          allowedSkillNames: requiredSkillNames
-        })
-  })
-  const skillSource = usesAllProductSkills
-    ? `${PRODUCT_SKILLS_ROUTE}${getSystemSkillsSourcePath().replace(/^\//, '')}`
-    : skillRoute
-
-  return {
-    backend,
-    middleware: createProductSkillsMiddlewareSet(backend, skillSource, scope, requiredSkillNames),
-    skillSource,
-    enabled: true
-  }
-}
-
 function createProductGeneralPurposeSubagent(args: {
   model: BaseLanguageModel
   tools: unknown[]
   backend: FilesystemBackend | CompositeBackend
   skillSource: string
+  requiredSkillNames: readonly RequiredProductSkillName[]
 }): any[] {
   if (!(args.backend instanceof CompositeBackend)) return []
   return [
@@ -295,7 +141,8 @@ function createProductGeneralPurposeSubagent(args: {
       middleware: createProductSkillsMiddlewareSet(
         args.backend,
         args.skillSource,
-        'general-purpose'
+        'general-purpose',
+        args.requiredSkillNames
       )
     }
   ]
@@ -339,7 +186,8 @@ export function createSessionEditAgent(args: {
     writeBlockedReason:
       '当前编辑任务禁止使用 write_file。请使用 update_single_page_file(pageId, content)、update_page_file(pageId, content) 或允许的 edit_file。'
   })
-  const agentBackend = attachProductSkillsBackend(backend)
+  const requiredSkillNames = getRequiredProductSkillNamesForSlideSize(context.slideSize)
+  const agentBackend = attachProductSkillsBackend(backend, 'session-edit', requiredSkillNames)
   const tools = createSessionBoundDeckTools(context)
   const systemPrompt = buildEditAgentSystemPrompt(args.styleId, context)
   const hasSelector = Boolean(context.selectedSelector?.trim())
@@ -365,7 +213,8 @@ export function createSessionEditAgent(args: {
     disableNativeEditFile,
     disableNativeWriteFile,
     promptMode,
-    skillsEnabled: agentBackend.enabled
+    skillsEnabled: agentBackend.enabled,
+    requiredSkillNames
   })
 
   return createDeepAgent({
@@ -378,7 +227,8 @@ export function createSessionEditAgent(args: {
       model,
       tools,
       backend: agentBackend.backend,
-      skillSource: agentBackend.skillSource
+      skillSource: agentBackend.skillSource,
+      requiredSkillNames
     })
   })
 }
@@ -415,7 +265,8 @@ export function createSessionDeckAgent(args: {
       ? '当前模板生成任务禁止使用 edit_file。请使用 update_template_page_file(pageId, content)。'
       : '当前生成/全局编辑任务禁止使用 edit_file。请使用 update_single_page_file(pageId, content) 或 update_page_file(pageId, content)。'
   })
-  const agentBackend = attachProductSkillsBackend(backend)
+  const requiredSkillNames = getRequiredProductSkillNamesForSlideSize(context.slideSize)
+  const agentBackend = attachProductSkillsBackend(backend, 'session-deck', requiredSkillNames)
   const getToolName = (tool: unknown): string => {
     const maybe = tool as { name?: unknown; lc_kwargs?: { name?: unknown } }
     if (typeof maybe.name === 'string') return maybe.name
@@ -439,6 +290,7 @@ export function createSessionDeckAgent(args: {
     indexPath: context.indexPath,
     selectedPageId: context.selectedPageId,
     skillsEnabled: agentBackend.enabled,
+    requiredSkillNames,
     selectedPagePath:
       context.selectedPageId && context.pageFileMap[context.selectedPageId]
         ? context.pageFileMap[context.selectedPageId]
@@ -457,7 +309,8 @@ export function createSessionDeckAgent(args: {
       model,
       tools,
       backend: agentBackend.backend,
-      skillSource: agentBackend.skillSource
+      skillSource: agentBackend.skillSource,
+      requiredSkillNames
     })
   })
 }
@@ -587,6 +440,7 @@ export class AgentManager {
       topic?: string
       styleId?: string
       pageCount?: number
+      slideSize?: SlideSizePreset
       referenceDocumentPath?: string | null
     }
   ): Promise<string> {
@@ -604,12 +458,19 @@ export class AgentManager {
       projectDir: config.projectDir
     })
 
+    if (!config.slideSize) {
+      throw new Error('创建会话失败：缺少画布尺寸。')
+    }
+
     const sessionId = await this.db.createSession({
       id: config.sessionId,
       title: `PPT: ${config.topic || 'Untitled'}`,
       topic: config.topic,
       styleId: config.styleId,
       pageCount: config.pageCount,
+      slideSizeId: config.slideSize?.id,
+      slideWidth: config.slideSize?.width,
+      slideHeight: config.slideSize?.height,
       referenceDocumentPath: config.referenceDocumentPath,
       provider: config.provider,
       model

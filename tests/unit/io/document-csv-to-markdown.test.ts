@@ -30,9 +30,11 @@ describe('document CSV to Markdown conversion', () => {
     expect(markdown).toContain('| 部门 | 季度 | 收入 | 负责人 |')
     expect(scan.headingCount).toBe(4)
     expect(candidates.map((candidate) => candidate.sourceHeading)).toEqual([
+      '## 按部门拆分',
       '### 销售',
       '### 市场'
     ])
+    expect(candidates[0].reason).toContain('销售、市场')
   })
 
   it('keeps ungrouped CSV files as a markdown table section', () => {
@@ -68,9 +70,11 @@ describe('document CSV to Markdown conversion', () => {
     expect(markdown).toContain('### 新能源')
     expect(markdown).toContain('### 售后')
     expect(candidates.map((candidate) => candidate.sourceHeading)).toEqual([
+      '## 按业务线拆分',
       '### 新能源',
       '### 售后'
     ])
+    expect(candidates[0].reason).toContain('新能源、售后')
   })
 
   it('preserves quoted commas and markdown table pipes safely', () => {

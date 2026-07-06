@@ -9,8 +9,8 @@ import { spawn } from 'child_process'
 import type { SessionPageFile } from '../../ipc/context'
 import type { ExportProgressStage } from '@shared/export-progress'
 
-const VIDEO_WIDTH = 1600
-const VIDEO_HEIGHT = 900
+const VIDEO_WIDTH = 2560
+const VIDEO_HEIGHT = 1440
 const DEFAULT_FPS = 30
 const DEFAULT_CAPTURE_FPS = 15
 const DEFAULT_SECONDS_PER_PAGE = 4
@@ -359,6 +359,10 @@ export type VideoExportOptions = {
   pages: VideoExportPage[]
   outputPath: string
   tempRootDir: string
+  slideSize?: {
+    width: number
+    height: number
+  }
   waitForPrintReadySignal: (args: {
     win: BrowserWindow
     pageId: string
@@ -369,6 +373,8 @@ export type VideoExportOptions = {
   fps?: number
   captureFps?: number
   secondsPerPage?: number
+  width?: number
+  height?: number
   onProgress?: (payload: {
     stage: Extract<ExportProgressStage, 'rendering' | 'writing'>
     current?: number
@@ -391,6 +397,16 @@ type VideoPageTimeline = {
   suggestedDurationMs: number
 }
 
+export type VideoExportFrameLayout = {
+  frameWidth: number
+  frameHeight: number
+  slideWidth: number
+  slideHeight: number
+  scale: number
+  left: number
+  top: number
+}
+
 const clampInteger = (value: unknown, fallback: number, min: number, max: number): number => {
   const n = Math.floor(Number(value))
   if (!Number.isFinite(n)) return fallback
@@ -405,6 +421,66 @@ export const normalizeVideoExportCaptureFps = (value: unknown, outputFps = DEFAU
 
 export const normalizeVideoExportSecondsPerPage = (value: unknown): number =>
   clampInteger(value, DEFAULT_SECONDS_PER_PAGE, 1, 30)
+
+export const resolveVideoExportFrameLayout = (args: {
+  frameWidth: number
+  frameHeight: number
+  slideWidth: number
+  slideHeight: number
+}): VideoExportFrameLayout => {
+  const frameWidth = clampInteger(args.frameWidth, VIDEO_WIDTH, 1, 8192)
+  const frameHeight = clampInteger(args.frameHeight, VIDEO_HEIGHT, 1, 8192)
+  const slideWidth = clampInteger(args.slideWidth, frameWidth, 1, 8192)
+  const slideHeight = clampInteger(args.slideHeight, frameHeight, 1, 8192)
+  const scale = Math.min(frameWidth / slideWidth, frameHeight / slideHeight)
+  const renderedWidth = slideWidth * scale
+  const renderedHeight = slideHeight * scale
+  return {
+    frameWidth,
+    frameHeight,
+    slideWidth,
+    slideHeight,
+    scale,
+    left: Math.max(0, (frameWidth - renderedWidth) / 2),
+    top: Math.max(0, (frameHeight - renderedHeight) / 2)
+  }
+}
+
+const buildApplyVideoFrameLayoutScript = (layout: VideoExportFrameLayout): string => `
+(() => {
+  const frameWidth = ${JSON.stringify(layout.frameWidth)};
+  const frameHeight = ${JSON.stringify(layout.frameHeight)};
+  const slideWidth = ${JSON.stringify(layout.slideWidth)};
+  const slideHeight = ${JSON.stringify(layout.slideHeight)};
+  const scale = ${JSON.stringify(layout.scale)};
+  const left = ${JSON.stringify(layout.left)};
+  const top = ${JSON.stringify(layout.top)};
+  const root =
+    document.querySelector('.ppt-page-root[data-ppt-guard-root="1"]') ||
+    document.querySelector('.ppt-page-root') ||
+    document.body;
+  document.documentElement.style.width = frameWidth + 'px';
+  document.documentElement.style.height = frameHeight + 'px';
+  document.documentElement.style.margin = '0';
+  document.documentElement.style.overflow = 'hidden';
+  document.documentElement.style.background = '#000';
+  document.body.style.width = frameWidth + 'px';
+  document.body.style.height = frameHeight + 'px';
+  document.body.style.margin = '0';
+  document.body.style.overflow = 'hidden';
+  document.body.style.background = '#000';
+  if (root) {
+    root.style.position = 'absolute';
+    root.style.left = left + 'px';
+    root.style.top = top + 'px';
+    root.style.width = slideWidth + 'px';
+    root.style.height = slideHeight + 'px';
+    root.style.transformOrigin = 'top left';
+    root.style.transform = 'scale(' + scale.toFixed(6) + ')';
+  }
+  return true;
+})()
+`
 
 const platformArchKey = (): string => `${process.platform}-${process.arch}`
 
@@ -471,11 +547,11 @@ export const resolveBundledFfmpegPath = async (): Promise<string | null> => {
   return null
 }
 
-const createVideoBrowserWindow = (): BrowserWindow => {
+const createVideoBrowserWindow = (width: number, height: number): BrowserWindow => {
   const win = new BrowserWindow({
     show: false,
-    width: VIDEO_WIDTH,
-    height: VIDEO_HEIGHT,
+    width,
+    height,
     backgroundColor: '#ffffff',
     webPreferences: {
       contextIsolation: true,
@@ -486,13 +562,14 @@ const createVideoBrowserWindow = (): BrowserWindow => {
     }
   })
   win.webContents.setZoomFactor(1)
-  win.setContentSize(VIDEO_WIDTH, VIDEO_HEIGHT)
+  win.setContentSize(width, height)
   return win
 }
 
 const loadVideoPage = async (args: {
   win: BrowserWindow
   page: VideoExportPage
+  layout: VideoExportFrameLayout
   timeoutMs: number
   settleMs: number
   waitForPrintReadySignal: VideoExportOptions['waitForPrintReadySignal']
@@ -513,6 +590,7 @@ const loadVideoPage = async (args: {
   })
 
   await args.win.loadURL(pageUrl.toString())
+  await args.win.webContents.executeJavaScript(buildApplyVideoFrameLayoutScript(args.layout), true)
   const readyResult = await readyWaitPromise
   if (readyResult.timedOut) {
     log.warn('[export:video] print ready timeout', {
@@ -522,31 +600,40 @@ const loadVideoPage = async (args: {
     })
   }
   await sleep(args.settleMs)
+  await args.win.webContents.executeJavaScript(buildApplyVideoFrameLayoutScript(args.layout), true)
   await args.win.webContents.executeJavaScript(WAIT_FOR_VIDEO_CAPTURE_FRAME_SCRIPT, true)
   return readyResult
 }
 
-const captureFullFrame = async (win: BrowserWindow): Promise<NativeImage> => {
+const captureFullFrame = async (
+  win: BrowserWindow,
+  width = VIDEO_WIDTH,
+  height = VIDEO_HEIGHT
+): Promise<NativeImage> => {
   await win.webContents.executeJavaScript(WAIT_FOR_VIDEO_CAPTURE_FRAME_SCRIPT, true)
   return win.webContents.capturePage({
     x: 0,
     y: 0,
-    width: VIDEO_WIDTH,
-    height: VIDEO_HEIGHT
+    width,
+    height
   })
 }
 
-const warmUpCapture = async (win: BrowserWindow): Promise<void> => {
+const warmUpCapture = async (win: BrowserWindow, width: number, height: number): Promise<void> => {
   await win.webContents.executeJavaScript(WAIT_FOR_VIDEO_CAPTURE_FRAME_SCRIPT, true)
   await sleep(process.platform === 'win32' ? 120 : 60)
-  await captureFullFrame(win).catch(() => null)
+  await captureFullFrame(win, width, height).catch(() => null)
   await win.webContents.executeJavaScript(WAIT_FOR_VIDEO_CAPTURE_FRAME_SCRIPT, true)
 }
 
-export const normalizeCapturedVideoFrameImage = (image: NativeImage): NativeImage =>
+export const normalizeCapturedVideoFrameImage = (
+  image: NativeImage,
+  width: number = VIDEO_EXPORT_FRAME_SIZE.width,
+  height: number = VIDEO_EXPORT_FRAME_SIZE.height
+): NativeImage =>
   image.resize({
-    width: VIDEO_EXPORT_FRAME_SIZE.width,
-    height: VIDEO_EXPORT_FRAME_SIZE.height,
+    width,
+    height,
     quality: 'best'
   })
 
@@ -645,8 +732,14 @@ const writeCapturedFrame = async (args: {
   win: BrowserWindow
   frameDir: string
   frameIndex: number
+  width: number
+  height: number
 }): Promise<string> => {
-  const image = normalizeCapturedVideoFrameImage(await captureFullFrame(args.win))
+  const image = normalizeCapturedVideoFrameImage(
+    await captureFullFrame(args.win, args.width, args.height),
+    args.width,
+    args.height
+  )
   const png = image.toPNG({ scaleFactor: 1 })
   const imagePath = path.join(args.frameDir, `frame-${String(args.frameIndex).padStart(6, '0')}.png`)
   await fs.promises.writeFile(imagePath, png)
@@ -679,6 +772,14 @@ export const exportHtmlPagesToVideo = async (
   const fps = normalizeVideoExportFps(options.fps)
   const captureFps = normalizeVideoExportCaptureFps(options.captureFps, fps)
   const secondsPerPage = normalizeVideoExportSecondsPerPage(options.secondsPerPage)
+  const width = clampInteger(options.width, VIDEO_WIDTH, 1, 8192)
+  const height = clampInteger(options.height, VIDEO_HEIGHT, 1, 8192)
+  const layout = resolveVideoExportFrameLayout({
+    frameWidth: width,
+    frameHeight: height,
+    slideWidth: options.slideSize?.width ?? width,
+    slideHeight: options.slideSize?.height ?? height
+  })
   const framesPerPage = fps * secondsPerPage
   const tempRootDir = path.join(options.tempRootDir || os.tmpdir(), '.ohmyppt-tmp')
   await fs.promises.mkdir(tempRootDir, { recursive: true })
@@ -690,7 +791,7 @@ export const exportHtmlPagesToVideo = async (
   const warnings: string[] = []
   let imageIndex = 0
   let frameCount = 0
-  const win = createVideoBrowserWindow()
+  const win = createVideoBrowserWindow(width, height)
   const concatEntries: string[] = []
   let lastConcatImagePath = ''
 
@@ -706,6 +807,7 @@ export const exportHtmlPagesToVideo = async (
       const readyResult = await loadVideoPage({
         win,
         page,
+        layout,
         timeoutMs: options.timeoutMs,
         settleMs: options.settleMs,
         waitForPrintReadySignal: options.waitForPrintReadySignal
@@ -734,11 +836,17 @@ export const exportHtmlPagesToVideo = async (
           pageDurationMs
         })
         await win.webContents.executeJavaScript(SEEK_PAGE_FOR_ANIMATED_VIDEO_SCRIPT(0), true)
-        await warmUpCapture(win)
+        await warmUpCapture(win, width, height)
         const firstAnimatedFrameIndex = pageIndex === 0 ? 1 : 0
         if (pageIndex === 0) {
           imageIndex += 1
-          const posterImagePath = await writeCapturedFrame({ win, frameDir, frameIndex: imageIndex })
+          const posterImagePath = await writeCapturedFrame({
+            win,
+            frameDir,
+            frameIndex: imageIndex,
+            width,
+            height
+          })
           appendConcatImage({
             concatEntries,
             imagePath: posterImagePath,
@@ -755,7 +863,13 @@ export const exportHtmlPagesToVideo = async (
           const timeMs = Math.min(pageDurationMs, Math.round(i * frameDurationSeconds * 1000))
           await win.webContents.executeJavaScript(SEEK_PAGE_FOR_ANIMATED_VIDEO_SCRIPT(timeMs), true)
           imageIndex += 1
-          const imagePath = await writeCapturedFrame({ win, frameDir, frameIndex: imageIndex })
+          const imagePath = await writeCapturedFrame({
+            win,
+            frameDir,
+            frameIndex: imageIndex,
+            width,
+            height
+          })
           appendConcatImage({
             concatEntries,
             imagePath,
@@ -775,13 +889,19 @@ export const exportHtmlPagesToVideo = async (
 
       await win.webContents.executeJavaScript(PREPARE_PAGE_FOR_STATIC_VIDEO_SCRIPT, true)
       await sleep(120)
-      await warmUpCapture(win)
+      await warmUpCapture(win, width, height)
       const staticDurationSeconds = Math.max(
         secondsPerPage,
         timeline.suggestedDurationMs > 0 ? timeline.suggestedDurationMs / 1000 : 0
       )
       imageIndex += 1
-      const imagePath = await writeCapturedFrame({ win, frameDir, frameIndex: imageIndex })
+      const imagePath = await writeCapturedFrame({
+        win,
+        frameDir,
+        frameIndex: imageIndex,
+        width,
+        height
+      })
       appendConcatImage({
         concatEntries,
         imagePath,

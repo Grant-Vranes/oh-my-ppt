@@ -28,6 +28,7 @@ import { mapPageMergeConcurrent } from './page-merge-concurrency'
 import { buildFontHeadTags } from '../../tools/font-registry'
 import { normalizeDesignContract } from '../../utils/design-contract'
 import { PageMergeError, type PageMergeDisabledReason } from '../../../shared/page-merge'
+import { requireSessionSlideSize, type SlideSizePresetId } from '@shared/slide-size'
 
 export const MAX_MERGE_PAGE_COUNT = 50
 const pageSlugId = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 10)
@@ -40,6 +41,9 @@ export interface MergeSourceSessionSummary {
   id: string
   title: string
   pageCount: number
+  slideSizeId: SlideSizePresetId
+  slideWidth: number
+  slideHeight: number
   updatedAt: number
   status: string
   selectable: boolean
@@ -52,6 +56,9 @@ export interface MergeSourcePageSummary {
   pageNumber: number
   title: string
   contentOutline?: string | null
+  slideSizeId: SlideSizePresetId
+  slideWidth: number
+  slideHeight: number
   htmlPath?: string
   sourceUrl?: string
   status?: string
@@ -343,7 +350,11 @@ export async function listMergeSourceSessions(
   ctx: IpcContext,
   targetSessionId: string
 ): Promise<MergeSourceSessionSummary[]> {
-  const sessions = await ctx.db.listSessionsWithPageCounts(500)
+  const [sessions, targetSession] = await Promise.all([
+    ctx.db.listSessionsWithPageCounts(500),
+    ctx.db.getSession(targetSessionId)
+  ])
+  const targetSlideSize = requireSessionSlideSize(targetSession)
   return sessions
     .filter(({ session }) => session.id !== targetSessionId)
     .map(({ session, pageCount }) => {
@@ -352,11 +363,18 @@ export async function listMergeSourceSessions(
         session.status === 'active' ||
         runState?.status === 'queued' ||
         runState?.status === 'running'
-      const selectable = pageCount > 0 && !running
+      const sourceSlideSize = requireSessionSlideSize(session)
+      const sizeMatches =
+        sourceSlideSize.width === targetSlideSize.width &&
+        sourceSlideSize.height === targetSlideSize.height
+      const selectable = pageCount > 0 && !running && sizeMatches
       return {
         id: session.id,
         title: session.title || '',
         pageCount,
+        slideSizeId: sourceSlideSize.id,
+        slideWidth: sourceSlideSize.width,
+        slideHeight: sourceSlideSize.height,
         updatedAt: session.updated_at,
         status: session.status,
         selectable,
@@ -364,6 +382,8 @@ export async function listMergeSourceSessions(
           ? 'PAGE_MERGE_SESSION_BUSY'
           : pageCount === 0
             ? 'PAGE_MERGE_SESSION_EMPTY'
+            : !sizeMatches
+              ? 'PAGE_MERGE_SLIDE_SIZE_MISMATCH'
             : undefined
       }
     })
@@ -373,7 +393,8 @@ export async function listMergeSourcePages(
   ctx: IpcContext,
   sourceSessionId: string
 ): Promise<MergeSourcePageSummary[]> {
-  const { pages, projectDir } = await loadEditableSessionPages(ctx, sourceSessionId)
+  const { session, pages, projectDir } = await loadEditableSessionPages(ctx, sourceSessionId)
+  const slideSize = requireSessionSlideSize(session)
   return Promise.all(
     pages.map(async (page) => {
       const safeHtmlPath = await resolveMergeFileInside(page.htmlPath, projectDir)
@@ -384,6 +405,9 @@ export async function listMergeSourcePages(
         pageNumber: page.pageNumber,
         title: page.title,
         contentOutline: page.contentOutline?.trim() || null,
+        slideSizeId: slideSize.id,
+        slideWidth: slideSize.width,
+        slideHeight: slideSize.height,
         htmlPath: safeHtmlPath || undefined,
         sourceUrl: safeHtmlPath ? ctx.getPageSourceUrl(safeHtmlPath) : undefined,
         status: page.status,
@@ -446,6 +470,17 @@ export async function mergeSessionPages(
   ])
   if (!sourceSession || !targetSession) {
     throw new PageMergeError('PAGE_MERGE_SESSION_NOT_FOUND', '源会话或当前会话不存在')
+  }
+  const sourceSlideSize = requireSessionSlideSize(sourceSession)
+  const targetSlideSize = requireSessionSlideSize(targetSession)
+  if (
+    sourceSlideSize.width !== targetSlideSize.width ||
+    sourceSlideSize.height !== targetSlideSize.height
+  ) {
+    throw new PageMergeError(
+      'PAGE_MERGE_SLIDE_SIZE_MISMATCH',
+      '源会话与当前会话的画布尺寸不同，不能混合添加页面'
+    )
   }
   for (const session of [sourceSession, targetSession]) {
     const runState = ctx.sessionRunStates.get(session.id)

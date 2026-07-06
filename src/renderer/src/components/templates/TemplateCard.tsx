@@ -10,6 +10,7 @@ import {
 import type { TemplateListItem } from '@renderer/lib/ipc'
 import { useT } from '@renderer/i18n'
 import dayjs from 'dayjs'
+import { resolveSlideSize } from '@shared/slide-size'
 
 export function TemplateCard({
   template,
@@ -32,6 +33,11 @@ export function TemplateCard({
   const thumbnailUrl = template.thumbnailPath
     ? `local-asset://${encodeURI(template.thumbnailPath.replace(/\\/g, '/'))}`
     : ''
+  const slideSize = resolveSlideSize({
+    id: template.slideSizeId,
+    width: template.slideWidth,
+    height: template.slideHeight
+  })
 
   return (
     <Card
@@ -40,7 +46,8 @@ export function TemplateCard({
     >
       <button
         type="button"
-        className="relative block aspect-video w-full overflow-hidden bg-[#f3ecdf] text-left"
+        className="relative block w-full overflow-hidden bg-[#f3ecdf] text-left"
+        style={{ aspectRatio: `${slideSize.width}/${slideSize.height}` }}
         onClick={() => onPreview(template)}
         disabled={!template.previewHtmlPath}
         aria-label={t('common.preview')}

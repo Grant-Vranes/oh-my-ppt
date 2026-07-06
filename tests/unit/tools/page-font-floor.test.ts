@@ -17,9 +17,12 @@ vi.mock('@electron-toolkit/utils', () => ({
   }
 }))
 
-import { BASE_PAGE_STYLE_TAG, FIT_SCRIPT } from '../../../src/main/tools/page-writer'
+import { buildBasePageStyleTag, buildFitScript } from '../../../src/main/tools/page-writer'
+import { requireSlideSizePreset } from '../../../src/shared/slide-size'
 
 describe('generated page font floors', () => {
+  const slideSize = requireSlideSizePreset('wide-16-9')
+
   afterEach(() => {
     document.head.innerHTML = ''
     document.body.innerHTML = ''
@@ -27,7 +30,7 @@ describe('generated page font floors', () => {
   })
 
   it('enforces semantic font floors in the generated page DOM', () => {
-    document.head.innerHTML = `${BASE_PAGE_STYLE_TAG}<style>.text-sm { font-size: 14px; }</style>`
+    document.head.innerHTML = `${buildBasePageStyleTag(slideSize)}<style>.text-sm { font-size: 14px; }</style>`
     document.body.innerHTML = `
       <main class="ppt-page-root" data-ppt-guard-root="1">
         <div class="ppt-page-fit-scope">
@@ -47,7 +50,7 @@ describe('generated page font floors', () => {
       return 1
     })
 
-    const script = FIT_SCRIPT.replace(/^<script[^>]*>/, '').replace(/<\/script>$/, '')
+    const script = buildFitScript(slideSize).replace(/^<script[^>]*>/, '').replace(/<\/script>$/, '')
     Function(script)()
     window.dispatchEvent(new Event('load'))
 

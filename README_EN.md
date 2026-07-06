@@ -97,10 +97,12 @@ Output is pure HTML slides: instant browser preview, no extra software, easy to 
 
 
 <p>
-<img width="30%" alt="Oh My PPT - 9" src="./docs/images/home.webp" />
-<img width="30%" alt="Oh My PPT - 10" src="./docs/images/10.webp" />
-<img width="30%" alt="Oh My PPT - 11" src="./docs/images/11.webp" />
+<img width="30%" alt="Oh My PPT - 9" src="https://arcsin1.github.io/imgs/home.webp" />
+<img width="30%" alt="Oh My PPT - 10" src="https://arcsin1.github.io/imgs/exp.webp" />
+<img width="30%" alt="Oh My PPT - 11" src="https://arcsin1.github.io/imgs/anime.webp" />
 </p>
+
+<img width="600"  src="https://arcsin1.github.io/imgs/chat.webp" />
 
 <a id="workflow"></a>
 ## 🔄 Workflow

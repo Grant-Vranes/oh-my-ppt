@@ -96,11 +96,12 @@
 - 💾 **会话生成的创意PPT导入导出** — 编辑页面一键导出会话生成的创意 PPT，另一台电脑导入后可继续二次编辑，跨设备协作无缝衔接
 
 <p>
-<img width="30%" alt="Oh My PPT - 9" src="./docs/images/home.webp" />
-<img width="30%" alt="Oh My PPT - 10" src="./docs/images/10.webp" />
-<img width="30%" alt="Oh My PPT - 11" src="./docs/images/11.webp" />
+<img width="30%" alt="Oh My PPT - 9" src="https://arcsin1.github.io/imgs/home.webp" />
+<img width="30%" alt="Oh My PPT - 10" src="https://arcsin1.github.io/imgs/exp.webp" />
+<img width="30%" alt="Oh My PPT - 11" src="https://arcsin1.github.io/imgs/anime.webp" />
 </p>
 
+<img width="600"  src="https://arcsin1.github.io/imgs/chat.webp" />
 
 <a id="workflow"></a>
 ## 🔄 使用流程

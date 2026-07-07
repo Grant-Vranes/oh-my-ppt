@@ -18,6 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/Popove
 import { useLang, useT, type I18nKey } from '../i18n'
 import { Clock3, FileText, History, Loader2, Plus, Trash2 } from 'lucide-react'
 import type { SourceDocumentPlan } from '@shared/generation'
+import type { SlideSizePresetId } from '@shared/slide-size'
 import type {
   ThinkingChatMessage,
   ThinkingSource,
@@ -260,6 +261,7 @@ export function ThinkingDetailPage(): ReactElement {
     pageCount: number
     styleId: string
     fontSelection: import('@shared/generation').FontSelection
+    slideSizeId: SlideSizePresetId
     referenceDocumentPath: string
     sourcePlan?: SourceDocumentPlan
     modelConfigId?: string
@@ -272,6 +274,7 @@ export function ThinkingDetailPage(): ReactElement {
         styleId: params.styleId,
         modelConfigId: params.modelConfigId,
         pageCount: params.pageCount,
+        slideSizeId: params.slideSizeId,
         referenceDocumentPath: params.referenceDocumentPath,
         fontSelection: params.fontSelection,
         sourcePlan: params.sourcePlan

@@ -11,9 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { StyleSelect } from '../style/StyleSelect'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
-import { useT } from '@renderer/i18n'
+import { useT, type I18nKey } from '@renderer/i18n'
 import { ipc, type FontListItem } from '@renderer/lib/ipc'
 import type { FontSelection, SourceDocumentPlan } from '@shared/generation'
+import {
+  DEFAULT_SLIDE_SIZE_ID,
+  SLIDE_SIZE_PRESETS,
+  type SlideSizePresetId
+} from '@shared/slide-size'
 import type { ThinkingPrepareGenerationResult } from '@shared/thinking'
 import { Sparkles } from 'lucide-react'
 import { ModelSplitButton } from '../model/ModelActionButton'
@@ -28,6 +33,23 @@ const resolvePageCount = (value: string, fallback: number): number => {
   const parsed = Number.parseInt(value, 10)
   const resolved = Number.isFinite(parsed) ? parsed : fallback
   return Math.min(MAX_PAGE_COUNT, Math.max(MIN_PAGE_COUNT, resolved))
+}
+
+const getSlideSizeLabelKey = (id: SlideSizePresetId): I18nKey => {
+  switch (id) {
+    case 'wide-16-9':
+      return 'home.slideSizeWide'
+    case 'vertical-9-16':
+      return 'home.slideSizeVertical'
+    case 'standard-4-3':
+      return 'home.slideSizeStandard'
+    case 'square-1-1':
+      return 'home.slideSizeSquare'
+    case 'vertical-3-4':
+      return 'home.slideSizePortrait'
+    case 'xiaohongshu-note':
+      return 'home.slideSizeXiaohongshu'
+  }
 }
 
 interface StyleOption {
@@ -123,6 +145,7 @@ interface GenerationConfirmDialogProps {
     pageCount: number
     styleId: string
     fontSelection: FontSelection
+    slideSizeId: SlideSizePresetId
     referenceDocumentPath: string
     sourcePlan?: SourceDocumentPlan
     modelConfigId?: string
@@ -146,6 +169,7 @@ export function GenerationConfirmDialog({
   const [fontOptions, setFontOptions] = useState<FontListItem[]>([])
   const [titleFontId, setTitleFontId] = useState('auto')
   const [bodyFontId, setBodyFontId] = useState('auto')
+  const [slideSizeId, setSlideSizeId] = useState<SlideSizePresetId>(DEFAULT_SLIDE_SIZE_ID)
 
   useEffect(() => {
     if (prepared) {
@@ -248,6 +272,7 @@ export function GenerationConfirmDialog({
         pageCount: resolvedPageCount,
         styleId: resolvedConfirmStyleId,
         fontSelection: resolveFontSelection(),
+        slideSizeId,
         referenceDocumentPath: prepared.thinkingDocumentPath,
         sourcePlan:
           prepared.sourcePlan?.pageSkeleton.length === resolvedPageCount
@@ -277,7 +302,7 @@ export function GenerationConfirmDialog({
             <Input className="min-w-0" value={topic} onChange={(e) => setTopic(e.target.value)} />
           </div>
 
-          <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_6.25rem]">
+          <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-[minmax(20rem,1fr)_6.25rem_minmax(0,12rem)]">
             <div className="min-w-0">
               <label className="block font-medium">{t('home.style')}</label>
               <StyleSelect
@@ -285,7 +310,8 @@ export function GenerationConfirmDialog({
                 onChange={setStyleId}
                 options={styleOptions}
                 placeholder={t('home.stylePlaceholder')}
-                className="min-w-0"
+                className="h-8 min-w-0 py-0 text-xs"
+                dropdownClassName="w-[min(640px,calc(100vw-3rem))]"
               />
             </div>
 
@@ -304,6 +330,25 @@ export function GenerationConfirmDialog({
                   setPageCount(String(resolvePageCount(pageCount, prepared.pageCount)))
                 }}
               />
+            </div>
+
+            <div className="min-w-0">
+              <label className="block font-medium">{t('home.slideSize')}</label>
+              <Select
+                value={slideSizeId}
+                onValueChange={(value) => setSlideSizeId(value as SlideSizePresetId)}
+              >
+                <SelectTrigger className="min-w-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SLIDE_SIZE_PRESETS.map((preset) => (
+                    <SelectItem key={preset.id} value={preset.id}>
+                      {t(getSlideSizeLabelKey(preset.id))}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

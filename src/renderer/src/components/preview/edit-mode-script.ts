@@ -1545,6 +1545,11 @@ export function buildEditModeInjectScript(previewScale = 1): string {
     if (!(element instanceof Element)) return "unknown";
     const tag = element.tagName ? element.tagName.toLowerCase() : "";
     if (isText) return "text";
+    // Elements inserted via the shape/icon registries carry an explicit
+    // edit-kind so we don't have to infer from painted styles (the outer
+    // div has no background of its own; the paint lives on the inner SVG).
+    const editKind = element.getAttribute("data-ppt-edit-kind");
+    if (editKind === "shape" || editKind === "icon") return "shape";
     if (tag === "img" || tag === "video") return "media";
     if (element.matches(".katex, .katex-display") || element.querySelector(".katex, .katex-display, math, annotation, semantics")) return "formula";
     if (tag === "table" || tag === "td" || tag === "th" || element.querySelector("table")) return "table";
@@ -1762,6 +1767,8 @@ export function buildEditModeInjectScript(previewScale = 1): string {
     const currentDragY = parsePx(target.style.getPropertyValue("--ppt-drag-y"));
     const tagKind =
       isText ? "text" :
+      target.getAttribute("data-ppt-edit-kind") === "shape" ||
+      target.getAttribute("data-ppt-edit-kind") === "icon" ? "shape" :
       elementTag === "img" || elementTag === "video" ? "media" :
       target.matches(".katex, .katex-display") || target.querySelector(".katex, .katex-display, math, annotation, semantics") ? "formula" :
       elementTag === "table" || elementTag === "td" || elementTag === "th" || target.querySelector("table") ? "table" :

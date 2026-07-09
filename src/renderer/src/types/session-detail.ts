@@ -2,6 +2,7 @@ import type { GeneratedImageAsset } from '@shared/image-generation.js'
 import type { GeneratedPage } from '@renderer/store/sessionStore'
 import type { GenerateProgress } from '@renderer/store/generateStore'
 import type { ArtTextTemplateId } from '@renderer/lib/artTextTemplates'
+import type { InsertShapeType } from '@renderer/components/session-detail/workspace/insert-shapes'
 
 export type SessionDetailChatType = 'main' | 'page'
 export type SessionDetailAiPanelMode = 'chat' | 'image'
@@ -52,6 +53,8 @@ export interface WorkspaceRibbonRegisteredActions {
   onAddFromLocal: (type: InsertAssetType) => void
   onAddText: () => void
   onAddArtText: (templateId: ArtTextTemplateId) => void
+  onAddShape: (type: InsertShapeType) => void
+  onAddIcon: (iconId: string) => void
 }
 
 export interface ChatPanelController {

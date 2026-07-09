@@ -1,7 +1,14 @@
 import { useState } from 'react'
-import { ChartColumn, ChevronDown, ImagePlus, Sigma, Sparkles, Type, Video } from 'lucide-react'
+import { ChartColumn, ChevronDown, ImagePlus, Shapes, Sigma, Smile, Sparkles, Type, Video } from 'lucide-react'
 import { ART_TEXT_TEMPLATES } from '@renderer/lib/artTextTemplates'
-import { useT } from '@renderer/i18n'
+import {
+  ICON_LIST,
+  ICON_VIEWBOX,
+  SHAPE_LIST,
+  serializeIconInner,
+  type InsertShapeType
+} from '@renderer/components/session-detail/workspace/insert-shapes'
+import { useT, type I18nKey } from '@renderer/i18n'
 import { useSessionDetailRuntimeStore } from '@renderer/store'
 import {
   DropdownMenu,
@@ -236,6 +243,8 @@ const artTextPreviewStyles = `
 export function InsertToolRow({ disabled }: ToolRowProps): React.JSX.Element {
   const t = useT()
   const [artTextOpen, setArtTextOpen] = useState(false)
+  const [shapeOpen, setShapeOpen] = useState(false)
+  const [iconOpen, setIconOpen] = useState(false)
   const actions = useSessionDetailRuntimeStore((state) => state.workspaceRibbonActions)
 
   const renderUnavailableTool = (label: string, Icon: typeof Sparkles): React.JSX.Element => (
@@ -338,6 +347,139 @@ export function InsertToolRow({ disabled }: ToolRowProps): React.JSX.Element {
     </Popover>
   )
 
+  const shapeLabelKey: Record<InsertShapeType, I18nKey> = {
+    rect: 'editMode.shapeRect',
+    'rounded-rect': 'editMode.shapeRoundedRect',
+    ellipse: 'editMode.shapeEllipse',
+    triangle: 'editMode.shapeTriangle',
+    diamond: 'editMode.shapeDiamond',
+    pentagon: 'editMode.shapePentagon',
+    hexagon: 'editMode.shapeHexagon',
+    parallelogram: 'editMode.shapeParallelogram',
+    trapezoid: 'editMode.shapeTrapezoid',
+    'star-5': 'editMode.shapeStar',
+    line: 'editMode.shapeLine',
+    'arrow-right': 'editMode.shapeArrowRight',
+    'chevron-right': 'editMode.shapeChevron'
+  }
+
+  const renderShapePreviewInner = (type: InsertShapeType): string => {
+    const def = SHAPE_LIST.find((s) => s.type === type)
+    if (!def) return ''
+    return def.renderInner(def.defaultWidth, def.defaultHeight, {
+      fill: def.defaultFill,
+      stroke: def.defaultStroke,
+      strokeWidth: def.strokeWidth
+    })
+  }
+
+  const renderShapePopover = (): React.JSX.Element => (
+    <Popover open={shapeOpen} onOpenChange={setShapeOpen}>
+      <PopoverTrigger asChild>
+        <button type="button" className={toolButtonClass} disabled={disabled}>
+          <span className={iconWrapClass}>
+            <Shapes className={iconClass} />
+          </span>
+          {t('editMode.addShape')}
+          <ChevronDown className="h-2.5 w-2.5 opacity-70" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-[280px] max-w-[calc(100vw-2rem)] border-[#d8ccb5]/85 bg-[#fff9ef] p-2"
+      >
+        <div className="grid grid-cols-3 gap-2">
+          {SHAPE_LIST.map((def) => (
+            <button
+              type="button"
+              key={def.type}
+              className="flex min-h-[68px] flex-col items-center justify-center gap-1 rounded-lg border border-[#d8ccb5]/70 bg-white/70 px-2 py-2 text-[10px] font-bold text-[#3e4a32] transition-colors hover:border-[#8fbc8f] hover:bg-white"
+              onClick={() => {
+                actions?.onAddShape(def.type)
+                setShapeOpen(false)
+              }}
+            >
+              <svg
+                viewBox={`0 0 ${def.defaultWidth} ${def.defaultHeight}`}
+                className="h-9 w-12"
+                preserveAspectRatio="xMidYMid meet"
+                dangerouslySetInnerHTML={{ __html: renderShapePreviewInner(def.type) }}
+              />
+              <span>{t(shapeLabelKey[def.type])}</span>
+            </button>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  )
+
+  const strokeIcons = ICON_LIST.filter((icon) => icon.variant !== 'badge')
+  const badgeIcons = ICON_LIST.filter((icon) => icon.variant === 'badge')
+
+  const renderIconGrid = (icons: typeof ICON_LIST): React.JSX.Element => (
+    <div className="grid grid-cols-5 gap-1.5">
+      {icons.map((icon) => {
+        const isBadge = icon.variant === 'badge'
+        return (
+          <button
+            type="button"
+            key={icon.id}
+            title={icon.label}
+            className="flex h-12 items-center justify-center rounded-lg border border-transparent text-[#3e4a32] transition-colors hover:border-[#8fbc8f] hover:bg-white"
+            onClick={() => {
+              actions?.onAddIcon(icon.id)
+              setIconOpen(false)
+            }}
+          >
+            <svg
+              viewBox={`0 0 ${ICON_VIEWBOX} ${ICON_VIEWBOX}`}
+              className={isBadge ? 'h-6 w-6' : 'h-5 w-5'}
+              fill="none"
+              stroke={isBadge ? 'none' : 'currentColor'}
+              strokeWidth={isBadge ? 0 : 2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              dangerouslySetInnerHTML={{ __html: serializeIconInner(icon) }}
+            />
+          </button>
+        )
+      })}
+    </div>
+  )
+
+  const renderIconPopover = (): React.JSX.Element => (
+    <Popover open={iconOpen} onOpenChange={setIconOpen}>
+      <PopoverTrigger asChild>
+        <button type="button" className={toolButtonClass} disabled={disabled}>
+          <span className={iconWrapClass}>
+            <Smile className={iconClass} />
+          </span>
+          {t('editMode.addIcon')}
+          <ChevronDown className="h-2.5 w-2.5 opacity-70" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-[340px] max-w-[calc(100vw-2rem)] border-[#d8ccb5]/85 bg-[#fff9ef] p-2"
+      >
+        <div className="max-h-[360px] space-y-2 overflow-y-auto pr-1">
+          <div>
+            <div className="mb-1 px-1 text-[10px] font-bold uppercase tracking-wide text-[#7a875f]">
+              {t('editMode.iconSectionIcons')}
+            </div>
+            {renderIconGrid(strokeIcons)}
+          </div>
+          <div>
+            <div className="mb-1 px-1 text-[10px] font-bold uppercase tracking-wide text-[#7a875f]">
+              {t('editMode.iconSectionNumbers')}
+            </div>
+            {renderIconGrid(badgeIcons)}
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  )
+
   return (
     <ToolRowShell>
       <button
@@ -352,6 +494,8 @@ export function InsertToolRow({ disabled }: ToolRowProps): React.JSX.Element {
         {t('editMode.addText')}
       </button>
       {renderArtTextDropdown()}
+      {renderShapePopover()}
+      {renderIconPopover()}
       {renderMediaDropdown('image')}
       {renderMediaDropdown('video')}
       {renderUnavailableTool(t('editMode.chart'), ChartColumn)}

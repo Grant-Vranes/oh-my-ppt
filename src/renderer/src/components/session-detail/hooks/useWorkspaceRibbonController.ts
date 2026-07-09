@@ -35,7 +35,9 @@ export function useWorkspaceRibbonActionsRegistration(
       onAddFromLibrary: (type) => actionsRef.current.onAddFromLibrary(type),
       onAddFromLocal: (type) => actionsRef.current.onAddFromLocal(type),
       onAddText: () => actionsRef.current.onAddText(),
-      onAddArtText: (templateId) => actionsRef.current.onAddArtText(templateId)
+      onAddArtText: (templateId) => actionsRef.current.onAddArtText(templateId),
+      onAddShape: (type) => actionsRef.current.onAddShape(type),
+      onAddIcon: (iconId) => actionsRef.current.onAddIcon(iconId)
     }
     setWorkspaceRibbonActions(registeredActions)
     return () => setWorkspaceRibbonActions(null)

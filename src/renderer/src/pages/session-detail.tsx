@@ -46,6 +46,12 @@ import {
 import type { GenerateChunkEvent } from '@shared/generation.js'
 import { getEditorGate, parseSessionMetadata } from '../lib/sessionMetadata'
 import { buildArtTextHtmlFragment, type ArtTextTemplateId } from '../lib/artTextTemplates'
+import {
+  buildIconElementHtml,
+  buildShapeElementHtml,
+  getShapeDefinition,
+  type InsertShapeType
+} from '../components/session-detail/workspace/insert-shapes'
 import { escapeHtmlText } from '../lib/utils'
 import { useT } from '../i18n'
 import { nanoid } from 'nanoid'
@@ -57,6 +63,7 @@ const ADDED_TEXT_MIN_HEIGHT = 96
 const ADDED_TEXT_OFFSET_STEP = 28
 const ADDED_ART_TEXT_WIDTH = 560
 const ADDED_ART_TEXT_MIN_HEIGHT = 130
+const ADDED_ICON_SIZE = 96
 const ADDED_MEDIA_OFFSET_STEP = 30
 
 function escapeCssString(value: string): string {
@@ -677,6 +684,114 @@ export function SessionDetailPage(): React.JSX.Element {
     )
   }
 
+  const handleAddShapeElement = async (type: InsertShapeType): Promise<void> => {
+    if (!id || !selectedPage?.pageId || !selectedPage.htmlPath) return
+    const def = getShapeDefinition(type)
+    if (!def) return
+    const blockId = 'select-arcsin1-' + nanoid(8)
+    const parentSelector = `body[data-page-id="${selectedPage.pageId}"] [data-ppt-guard-root="1"]`
+    const existingCount = editHistory.addElements.filter(
+      (e) => e.pageId === selectedPage.pageId
+    ).length
+    const offset = existingCount * ADDED_TEXT_OFFSET_STEP
+    const w = def.defaultWidth
+    const h = def.defaultHeight
+    const left = Math.min(
+      Math.max(ADDED_ELEMENT_EDGE_PADDING, (slideSize!.width - w) / 2) + offset,
+      slideSize!.width - w - ADDED_ELEMENT_EDGE_PADDING
+    )
+    const top = Math.min(
+      Math.max(ADDED_ELEMENT_EDGE_PADDING, (slideSize!.height - h) / 2) + offset,
+      slideSize!.height - h - ADDED_ELEMENT_EDGE_PADDING
+    )
+    const zIdx = 10 + existingCount
+    const htmlFragment = buildShapeElementHtml({
+      blockId,
+      type,
+      left,
+      top,
+      width: w,
+      height: h,
+      zIndex: zIdx
+    })
+
+    useEditSessionStore.getState().commitCurrentDraft()
+    editHistory.addElement({
+      pageId: selectedPage.pageId,
+      htmlPath: selectedPage.htmlPath,
+      parentSelector,
+      htmlFragment,
+      assignedBlockId: blockId,
+      insertIndex: -1
+    })
+    previewIframeRef.current?.injectElement(parentSelector, htmlFragment)
+
+    const selector = `body[data-page-id="${selectedPage.pageId}"] [data-block-id="${blockId}"]`
+    if (useSessionDetailUiStore.getState().selectedPageId !== selectedPage.id) return
+    const snapshot = await readElementSnapshotWithRetry(selector)
+    if (!snapshot) return
+    useEditSessionStore.getState().selectElement(
+      buildSelectedElementFromSnapshot({
+        selector,
+        blockId,
+        snapshot
+      })
+    )
+  }
+
+  const handleAddIconElement = async (iconId: string): Promise<void> => {
+    if (!id || !selectedPage?.pageId || !selectedPage.htmlPath) return
+    const blockId = 'select-arcsin1-' + nanoid(8)
+    const parentSelector = `body[data-page-id="${selectedPage.pageId}"] [data-ppt-guard-root="1"]`
+    const existingCount = editHistory.addElements.filter(
+      (e) => e.pageId === selectedPage.pageId
+    ).length
+    const offset = existingCount * ADDED_TEXT_OFFSET_STEP
+    const w = ADDED_ICON_SIZE
+    const h = ADDED_ICON_SIZE
+    const left = Math.min(
+      Math.max(ADDED_ELEMENT_EDGE_PADDING, (slideSize!.width - w) / 2) + offset,
+      slideSize!.width - w - ADDED_ELEMENT_EDGE_PADDING
+    )
+    const top = Math.min(
+      Math.max(ADDED_ELEMENT_EDGE_PADDING, (slideSize!.height - h) / 2) + offset,
+      slideSize!.height - h - ADDED_ELEMENT_EDGE_PADDING
+    )
+    const zIdx = 10 + existingCount
+    const htmlFragment = buildIconElementHtml({
+      blockId,
+      iconId,
+      left,
+      top,
+      width: w,
+      height: h,
+      zIndex: zIdx
+    })
+
+    useEditSessionStore.getState().commitCurrentDraft()
+    editHistory.addElement({
+      pageId: selectedPage.pageId,
+      htmlPath: selectedPage.htmlPath,
+      parentSelector,
+      htmlFragment,
+      assignedBlockId: blockId,
+      insertIndex: -1
+    })
+    previewIframeRef.current?.injectElement(parentSelector, htmlFragment)
+
+    const selector = `body[data-page-id="${selectedPage.pageId}"] [data-block-id="${blockId}"]`
+    if (useSessionDetailUiStore.getState().selectedPageId !== selectedPage.id) return
+    const snapshot = await readElementSnapshotWithRetry(selector)
+    if (!snapshot) return
+    useEditSessionStore.getState().selectElement(
+      buildSelectedElementFromSnapshot({
+        selector,
+        blockId,
+        snapshot
+      })
+    )
+  }
+
   const handleAddElement = async (
     relativePath: string,
     _fileName: string,
@@ -818,7 +933,9 @@ export function SessionDetailPage(): React.JSX.Element {
     onAddFromLibrary: handleAddFromLibrary,
     onAddFromLocal: (type) => void handleAddFromLocal(type),
     onAddText: () => void handleAddTextElement(),
-    onAddArtText: (templateId) => void handleAddArtTextElement(templateId)
+    onAddArtText: (templateId) => void handleAddArtTextElement(templateId),
+    onAddShape: (type) => void handleAddShapeElement(type),
+    onAddIcon: (iconId) => void handleAddIconElement(iconId)
   })
 
   if (!id || !slideSize) {

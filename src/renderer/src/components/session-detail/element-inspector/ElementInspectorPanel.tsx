@@ -2,6 +2,7 @@ import { X } from 'lucide-react'
 import type { EditSelectionPayload } from '../../preview/edit-mode-script'
 import { AppearanceInspector } from './AppearanceInspector'
 import { ArtTextInspector } from './ArtTextInspector'
+import { ChartInspector } from './ChartInspector'
 import { FormulaInspector } from './FormulaInspector'
 import { InspectorActions } from './InspectorActions'
 import { LayerInspector } from './LayerInspector'
@@ -85,6 +86,9 @@ export function ElementInspectorPanel({
             )}
             {hasCapability(selection, 'formula') && (
               <FormulaInspector selection={selection} draft={draft} onDraftChange={onDraftChange} />
+            )}
+            {hasCapability(selection, 'chart') && (
+              <ChartInspector selection={selection} draft={draft} onDraftChange={onDraftChange} />
             )}
             {hasCapability(selection, 'appearance') && (
               <AppearanceInspector

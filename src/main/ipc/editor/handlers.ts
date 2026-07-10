@@ -417,11 +417,13 @@ export function registerEditorHandlers(ctx: IpcContext): void {
         const style = patch.style && typeof patch.style === 'object' ? patch.style : undefined
         const attrs = patch.attrs && typeof patch.attrs === 'object' ? patch.attrs : undefined
         const formula = patch.formula && typeof patch.formula === 'object' ? patch.formula : undefined
+        const chart = patch.chart && typeof patch.chart === 'object' ? patch.chart : undefined
         try {
           html = patchGenericElementProperties(html, resolvedSelector, {
             text: typeof patch.text === 'string' ? patch.text : undefined,
             html: typeof patch.html === 'string' ? patch.html : undefined,
             formula: formula as Parameters<typeof patchGenericElementProperties>[2]['formula'],
+            chart: chart as Parameters<typeof patchGenericElementProperties>[2]['chart'],
             textTarget: patch.textTarget,
             style: style as Parameters<typeof patchGenericElementProperties>[2]['style'],
             attrs: attrs as Parameters<typeof patchGenericElementProperties>[2]['attrs']

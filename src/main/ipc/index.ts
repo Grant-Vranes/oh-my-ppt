@@ -18,7 +18,7 @@ import { registerPreviewHandlers } from './session/preview-handlers'
 import { registerPageManagementHandlers } from './session/page-management-handlers'
 import { registerPageMergeHandlers } from './session/page-merge-handlers'
 import { registerFileHandlers } from './io/file-handlers'
-import { registerEditorHandlers } from './editor'
+import { registerChartDataImportHandlers, registerEditorHandlers } from './editor'
 import { registerDocumentParseHandlers } from './io/document-parse-handlers'
 import { registerPptxImportHandlers } from './io/pptx-import-handlers'
 import { registerHistoryHandlers } from './history/history-handlers'
@@ -55,6 +55,7 @@ export function setupIPC(
   registerPreviewHandlers(context)
   registerFileHandlers(context)
   registerEditorHandlers(context)
+  registerChartDataImportHandlers(context)
   registerDocumentParseHandlers(context)
   registerPptxImportHandlers(context)
   registerHistoryHandlers(context)

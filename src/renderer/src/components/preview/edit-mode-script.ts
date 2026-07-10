@@ -20,6 +20,7 @@ export type EditableCapability =
   | 'media'
   | 'border'
   | 'formula'
+  | 'chart'
 
 export interface EditableElementSnapshot {
   selector: string
@@ -76,6 +77,26 @@ export interface EditableElementSnapshot {
     latex: string
     html: string
     displayMode: boolean
+  }
+  chart?: {
+    editable: boolean
+    type: string
+    title: string
+    labels: string[]
+    values: number[]
+    series: Array<{ name: string; values: number[] }>
+    primaryColor: string
+    accentColor: string
+    textColor: string
+    smooth: boolean
+    horizontal: boolean
+    stacked: boolean
+    areaFill: boolean
+    showPoints: boolean
+    showLegend: boolean
+    doughnutCutout: number
+    radarFill: boolean
+    configJson: string
   }
 }
 
@@ -1555,6 +1576,7 @@ export function buildEditModeInjectScript(previewScale = 1): string {
     // div has no background of its own; the paint lives on the inner SVG).
     const editKind = element.getAttribute("data-ppt-edit-kind");
     if (editKind === "shape" || editKind === "icon") return "shape";
+    if (editKind === "chart") return "chart";
     if (tag === "img" || tag === "video") return "media";
     if (element.matches(".katex, .katex-display") || element.querySelector(".katex, .katex-display, math, annotation, semantics")) return "formula";
     if (tag === "table" || tag === "td" || tag === "th" || element.querySelector("table")) return "table";
@@ -1572,15 +1594,29 @@ export function buildEditModeInjectScript(previewScale = 1): string {
     return hasPaint ? "shape" : "unknown";
   };
 
+  const isSupportedSimpleChart = (element) => {
+    if (!(element instanceof Element)) return false;
+    if (element.getAttribute("data-ppt-chart-editable") !== "simple") return false;
+    const holder = element.querySelector('script[data-ppt-chart-config="1"]');
+    if (!holder) return false;
+    try {
+      const config = JSON.parse(holder.textContent || "{}");
+      return ["bar", "line", "pie", "doughnut", "radar"].includes(config && config.type);
+    } catch (_error) {
+      return false;
+    }
+  };
+
   const collectCapabilities = (element, kind, isText) => {
     const capabilities = ["layout", "layer"];
     if (kind === "unknown") return capabilities;
-    if (element instanceof HTMLElement) {
+    if (element instanceof HTMLElement && kind !== "chart") {
       capabilities.push("appearance", "border");
     }
     if (isText) capabilities.push("text");
     if (kind === "media") capabilities.push("media");
     if (kind === "formula") capabilities.push("formula");
+    if (kind === "chart" && isSupportedSimpleChart(element)) capabilities.push("chart");
     return Array.from(new Set(capabilities));
   };
 
@@ -1805,6 +1841,80 @@ export function buildEditModeInjectScript(previewScale = 1): string {
     return true;
   };
 
+  const readSimpleChartMetadata = (element) => {
+    if (!(element instanceof Element)) return undefined;
+    if (!isSupportedSimpleChart(element)) return undefined;
+    const holder = element.querySelector('script[data-ppt-chart-config="1"]');
+    if (!holder) return undefined;
+    const configJson = holder.textContent || "";
+    try {
+      const config = JSON.parse(configJson || "{}");
+      const datasets = config && config.data && Array.isArray(config.data.datasets)
+        ? config.data.datasets
+        : [];
+      const dataset = datasets[0] || {};
+      const series = datasets.map((item, index) => ({
+        name: typeof item.label === "string" && item.label ? item.label : "Series " + (index + 1),
+        values: Array.isArray(item.data)
+          ? item.data.map((value) => Number(value)).map((value) => Number.isFinite(value) ? value : 0)
+          : [],
+      }));
+      const titlePlugin = config && config.options && config.options.plugins
+        ? config.options.plugins.title || {}
+        : {};
+      const editorColors = config && config.options && config.options.plugins
+        ? config.options.plugins.pptEditorColors || {}
+        : {};
+      const backgroundColor = dataset && dataset.backgroundColor;
+      const firstBackgroundColor = Array.isArray(backgroundColor) ? backgroundColor[0] : backgroundColor;
+      const scales = config && config.options && config.options.scales ? config.options.scales : {};
+      const xTicks = scales && scales.x && scales.x.ticks ? scales.x.ticks : {};
+      const cutoutValue = Number.isFinite(Number(editorColors.doughnutCutout))
+        ? Number(editorColors.doughnutCutout)
+        : Number(String(config.options && config.options.cutout || "58").replace("%", ""));
+      return {
+        editable: true,
+        type: typeof config.type === "string" ? config.type : "",
+        title: typeof titlePlugin.text === "string" ? titlePlugin.text : (typeof dataset.label === "string" ? dataset.label : ""),
+        labels: config && config.data && Array.isArray(config.data.labels) ? config.data.labels.map((item) => String(item)) : [],
+        values: series[0] ? series[0].values : [],
+        series,
+        primaryColor: typeof editorColors.primaryColor === "string" ? editorColors.primaryColor : (typeof dataset.borderColor === "string" ? dataset.borderColor : "#5d6b4d"),
+        accentColor: typeof editorColors.accentColor === "string" ? editorColors.accentColor : (typeof firstBackgroundColor === "string" && firstBackgroundColor.charAt(0) === "#" ? firstBackgroundColor : "#8fbc8f"),
+        textColor: typeof editorColors.textColor === "string" ? editorColors.textColor : (typeof titlePlugin.color === "string" ? titlePlugin.color : (typeof xTicks.color === "string" ? xTicks.color : "#2f3b28")),
+        smooth: typeof editorColors.smooth === "boolean" ? editorColors.smooth : Number(dataset.tension || 0) > 0,
+        horizontal: typeof editorColors.horizontal === "boolean" ? editorColors.horizontal : config.options && config.options.indexAxis === "y",
+        stacked: typeof editorColors.stacked === "boolean" ? editorColors.stacked : Boolean(scales.x && scales.x.stacked && scales.y && scales.y.stacked),
+        areaFill: typeof editorColors.areaFill === "boolean" ? editorColors.areaFill : dataset.fill !== false,
+        showPoints: typeof editorColors.showPoints === "boolean" ? editorColors.showPoints : Number(dataset.pointRadius || 0) > 0,
+        showLegend: typeof editorColors.showLegend === "boolean" ? editorColors.showLegend : Boolean(config.options && config.options.plugins && config.options.plugins.legend && config.options.plugins.legend.display),
+        doughnutCutout: Number.isFinite(cutoutValue) ? cutoutValue : 58,
+        radarFill: typeof editorColors.radarFill === "boolean" ? editorColors.radarFill : dataset.fill !== false,
+        configJson,
+      };
+    } catch (_error) {
+      return undefined;
+    }
+  };
+
+  const updateSimpleChart = (element, chart) => {
+    if (!(element instanceof Element) || !chart || typeof chart.configJson !== "string") return false;
+    const holder = element.querySelector('script[data-ppt-chart-config="1"]');
+    const canvas = element.querySelector("canvas");
+    if (!holder || !canvas) return false;
+    try {
+      const config = JSON.parse(chart.configJson || "{}");
+      holder.textContent = chart.configJson;
+      if (window.PPT && typeof window.PPT.createChart === "function") {
+        window.PPT.createChart(canvas, config);
+      }
+      updateOverlay();
+      return true;
+    } catch (_error) {
+      return false;
+    }
+  };
+
   const collectElementSnapshot = (target, selector) => {
     if (!(target instanceof Element)) return null;
     const pageRoot = getPageRoot(target);
@@ -1821,6 +1931,7 @@ export function buildEditModeInjectScript(previewScale = 1): string {
       isText ? "text" :
       target.getAttribute("data-ppt-edit-kind") === "shape" ||
       target.getAttribute("data-ppt-edit-kind") === "icon" ? "shape" :
+      target.getAttribute("data-ppt-edit-kind") === "chart" ? "chart" :
       elementTag === "img" || elementTag === "video" ? "media" :
       target.matches(".katex, .katex-display") || target.querySelector(".katex, .katex-display, math, annotation, semantics") ? "formula" :
       elementTag === "table" || elementTag === "td" || elementTag === "th" || target.querySelector("table") ? "table" :
@@ -1877,6 +1988,7 @@ export function buildEditModeInjectScript(previewScale = 1): string {
         reason: isText ? undefined : "not-text-only",
       },
       formula: kind === "formula" ? readFormulaMetadata(target) : undefined,
+      chart: kind === "chart" ? readSimpleChartMetadata(target) : undefined,
     };
   };
 
@@ -2528,6 +2640,9 @@ export function buildEditModeInjectScript(previewScale = 1): string {
     try {
       const el = document.querySelector(selector);
       if (!el) return;
+      if (patch.chart && updateSimpleChart(el, patch.chart)) {
+        return;
+      }
       if (patch.formula && renderFormulaInto(el, patch.formula)) {
         return;
       }
@@ -2753,6 +2868,16 @@ export function buildEditModeInjectScript(previewScale = 1): string {
           if (!selectable && node instanceof Element && node.getAttribute("data-block-id")) {
             selectable = node;
           }
+        });
+        nodes.forEach((node) => {
+          if (!(node instanceof Element)) return;
+          const scripts = [
+            ...(node.matches('script[data-ppt-generated-chart-script="1"]') ? [node] : []),
+            ...Array.from(node.querySelectorAll('script[data-ppt-generated-chart-script="1"]')),
+          ];
+          scripts.forEach((script) => {
+            try { new Function(script.textContent || "")(); } catch (_error) {}
+          });
         });
         const el = selectable || nodes.find((node) => node instanceof Element) || null;
         if (el && selectAfterInsert) {

@@ -20,6 +20,7 @@ import {
 import { ipc } from '@renderer/lib/ipc'
 import type { InteractionMode } from '@renderer/store'
 import { requireSlideSize, type SlideSizePreset } from '@shared/slide-size'
+import type { InsertChartSeries } from '../session-detail/workspace/insert-charts'
 
 const buildPreviewClickAnimationInjectScript = (): string => `
 (() => {
@@ -88,6 +89,25 @@ export interface PreviewIframeHandle {
         html: string
         displayMode: boolean
         originalLatex?: string
+      }
+      chart?: {
+        type: string
+        title: string
+        labels: string[]
+        values: number[]
+        series: InsertChartSeries[]
+        primaryColor: string
+        accentColor: string
+        textColor: string
+        smooth: boolean
+        horizontal: boolean
+        stacked: boolean
+        areaFill: boolean
+        showPoints: boolean
+        showLegend: boolean
+        doughnutCutout: number
+        radarFill: boolean
+        configJson: string
       }
       style?: { color?: string; fontSize?: string; fontWeight?: string; textAlign?: string }
     }
@@ -418,6 +438,25 @@ export const PreviewIframe = forwardRef<
             html: string
             displayMode: boolean
             originalLatex?: string
+          }
+          chart?: {
+            type: string
+            title: string
+            labels: string[]
+            values: number[]
+            series: InsertChartSeries[]
+            primaryColor: string
+            accentColor: string
+            textColor: string
+            smooth: boolean
+            horizontal: boolean
+            stacked: boolean
+            areaFill: boolean
+            showPoints: boolean
+            showLegend: boolean
+            doughnutCutout: number
+            radarFill: boolean
+            configJson: string
           }
           style?: { color?: string; fontSize?: string; fontWeight?: string; textAlign?: string }
           zIndex?: number
@@ -833,6 +872,7 @@ export const PreviewIframe = forwardRef<
           `if (__existingBlock) return;` +
           `var __anchor = Number.isInteger(__insertIndex) && __insertIndex >= 0 && __insertIndex < __parent.children.length ? __parent.children[__insertIndex] : null;` +
           `__nodes.forEach(function(__node){ if (__anchor) __parent.insertBefore(__node, __anchor); else __parent.appendChild(__node); });` +
+          `__nodes.forEach(function(__node){ if (!(__node instanceof Element)) return; var __scripts = []; if (__node.matches('script[data-ppt-generated-chart-script="1"]')) __scripts.push(__node); __node.querySelectorAll('script[data-ppt-generated-chart-script="1"]').forEach(function(__script){ __scripts.push(__script); }); __scripts.forEach(function(__script){ try { new Function(__script.textContent || "")(); } catch(__e) {} }); });` +
           `})()`
         )
       }

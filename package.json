@@ -82,6 +82,7 @@
     "micromark-extension-gfm": "^3.0.0",
     "nanoid": "^5.1.9",
     "p-limit": "^3.1.0",
+    "papaparse": "^5.5.3",
     "pdf-lib": "^1.17.1",
     "pptxtojson": "^2.0.2",
     "react-colorful": "^5.7.0",
@@ -95,6 +96,7 @@
     "turndown": "^7.2.4",
     "undici": "^8.3.0",
     "woff2-encoder": "^2.0.0",
+    "xlsx": "^0.18.5",
     "zod": "^4.4.3",
     "zustand": "^5.0.3"
   },

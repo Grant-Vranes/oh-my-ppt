@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import type { InsertChartSeries } from '../components/session-detail/workspace/insert-charts'
 
 // ─── Types ────────────────────────────────────────────
 
@@ -39,6 +40,25 @@ export interface PropertyEditItem {
       html: string
       displayMode: boolean
       originalLatex?: string
+    }
+    chart?: {
+      type: string
+      title: string
+      labels: string[]
+      values: number[]
+      series: InsertChartSeries[]
+      primaryColor: string
+      accentColor: string
+      textColor: string
+      smooth: boolean
+      horizontal: boolean
+      stacked: boolean
+      areaFill: boolean
+      showPoints: boolean
+      showLegend: boolean
+      doughnutCutout: number
+      radarFill: boolean
+      configJson: string
     }
     textTarget?: {
       type: 'text-node'
@@ -115,6 +135,17 @@ function cloneSnapshot(s: EditSnapshot): EditSnapshot {
         html: e.patch.html,
         text: e.patch.text,
         formula: e.patch.formula ? { ...e.patch.formula } : undefined,
+        chart: e.patch.chart
+          ? {
+              ...e.patch.chart,
+              labels: [...e.patch.chart.labels],
+              values: [...e.patch.chart.values],
+              series: (e.patch.chart.series || []).map((series) => ({
+                ...series,
+                values: [...series.values]
+              }))
+            }
+          : undefined,
         textTarget: e.patch.textTarget ? { ...e.patch.textTarget } : undefined,
         style: e.patch.style ? { ...e.patch.style } : undefined,
         attrs: e.patch.attrs ? { ...e.patch.attrs } : undefined
@@ -208,6 +239,7 @@ function propertyPatchEquals(a: PropertyEditItem['patch'], b: PropertyEditItem['
     a.text === b.text &&
     a.html === b.html &&
     JSON.stringify(a.formula || null) === JSON.stringify(b.formula || null) &&
+    JSON.stringify(a.chart || null) === JSON.stringify(b.chart || null) &&
     JSON.stringify(a.textTarget || null) === JSON.stringify(b.textTarget || null) &&
     JSON.stringify(aStyle) === JSON.stringify(bStyle) &&
     JSON.stringify(aAttrs) === JSON.stringify(bAttrs)
@@ -394,6 +426,7 @@ export const useEditHistoryStore = create<EditHistoryState>((set, get) => ({
         html: next.html ?? prev.html,
         text: next.text ?? prev.text,
         formula: next.formula ?? prev.formula,
+        chart: next.chart ?? prev.chart,
         textTarget: next.textTarget ?? prev.textTarget,
         style: {
           ...(prev.style || {}),

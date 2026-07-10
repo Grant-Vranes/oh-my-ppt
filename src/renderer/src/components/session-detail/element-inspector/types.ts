@@ -27,6 +27,23 @@ export interface ElementEditDraft {
   formulaLatex: string
   formulaHtml: string
   formulaDisplayMode: boolean
+  chartType: string
+  chartTitle: string
+  chartLabels: string
+  chartValues: string
+  chartDataJson: string
+  chartPrimaryColor: string
+  chartAccentColor: string
+  chartTextColor: string
+  chartSmooth: boolean
+  chartHorizontal: boolean
+  chartStacked: boolean
+  chartAreaFill: boolean
+  chartShowPoints: boolean
+  chartShowLegend: boolean
+  chartDoughnutCutout: string
+  chartRadarFill: boolean
+  chartConfigJson: string
 }
 
 export interface ElementEditorProps {

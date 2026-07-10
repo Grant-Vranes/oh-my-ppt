@@ -69,6 +69,7 @@ export const EDITABLE_TEXT_TAGS = new Set([
 export const EDITABLE_TEXT_CHILD_TAGS = new Set([...EDITABLE_TEXT_TAGS, 'br'])
 
 export const SCAFFOLD_BLOCK_IDS = new Set(['content', 'page', 'root'])
+const SUPPORTED_SIMPLE_CHART_TYPES = new Set(['bar', 'line', 'pie', 'doughnut', 'radar'])
 export const BLOCKED_TAGS = new Set([
   'html',
   'head',
@@ -689,6 +690,21 @@ export function patchGenericElementProperties(
       displayMode?: unknown
       originalLatex?: unknown
     }
+    chart?: {
+      type?: unknown
+      title?: unknown
+      labels?: unknown
+      values?: unknown
+      smooth?: unknown
+      horizontal?: unknown
+      stacked?: unknown
+      areaFill?: unknown
+      showPoints?: unknown
+      showLegend?: unknown
+      doughnutCutout?: unknown
+      radarFill?: unknown
+      configJson?: unknown
+    }
     style?: {
       zIndex?: unknown
       opacity?: unknown
@@ -762,6 +778,22 @@ export function patchGenericElementProperties(
         throw new Error('当前元素包含非文本子元素，暂不支持直接编辑；可以选择更内层的文字。')
       }
       target.text(normalizedText)
+    }
+  }
+
+  if (patch.chart && typeof patch.chart.configJson === 'string') {
+    if (target.attr('data-ppt-chart-editable') === 'simple') {
+      try {
+        const parsed = JSON.parse(patch.chart.configJson)
+        if (!SUPPORTED_SIMPLE_CHART_TYPES.has(String(parsed?.type || ''))) {
+          throw new Error('unsupported-chart-type')
+        }
+        const configJson = JSON.stringify(parsed).replace(/<\//g, '<\\/').replace(/<!--/g, '<\\!--')
+        const holder = target.find('script[data-ppt-chart-config="1"]').first()
+        if (holder.length > 0) holder.text(configJson)
+      } catch {
+        throw new Error('暂不支持编辑这个图表类型')
+      }
     }
   }
 

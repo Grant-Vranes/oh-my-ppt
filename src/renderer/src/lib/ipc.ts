@@ -51,6 +51,7 @@ import type { ExportProgressPayload } from '@shared/export-progress.js'
 import type { PageMergeDisabledReason } from '@shared/page-merge'
 import type { ModelUsagePeriod, ModelUsageStats } from '@shared/model-usage'
 import type { SlideSizePresetId } from '@shared/slide-size'
+import type { ParsedChartDataResult } from '@shared/chart-data'
 
 type IpcRendererLike = Window['electron']['ipcRenderer']
 
@@ -989,6 +990,8 @@ export const ipc = {
       addCount: number
       warnings?: string[]
     }>,
+  chooseAndParseChartData: () =>
+    getIpc().invoke('chart-data:choose-and-parse') as Promise<ParsedChartDataResult>,
   openFile: (filePath: string, sessionId?: string) =>
     getIpc().invoke('file:open', { path: filePath, sessionId }) as Promise<string>,
   revealFile: (filePath: string, sessionId?: string) =>

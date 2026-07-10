@@ -53,6 +53,11 @@ import {
   getShapeDefinition,
   type InsertShapeType
 } from '../components/session-detail/workspace/insert-shapes'
+import {
+  buildChartElementHtml,
+  DEFAULT_CHART_DATA,
+  type InsertChartType
+} from '../components/session-detail/workspace/insert-charts'
 import { escapeHtmlText } from '../lib/utils'
 import { useT } from '../i18n'
 import { nanoid } from 'nanoid'
@@ -67,6 +72,8 @@ const ADDED_ART_TEXT_MIN_HEIGHT = 130
 const ADDED_ICON_SIZE = 96
 const ADDED_FORMULA_WIDTH = 420
 const ADDED_FORMULA_HEIGHT = 112
+const ADDED_CHART_WIDTH = 520
+const ADDED_CHART_HEIGHT = 300
 const DEFAULT_FORMULA_LATEX = 'x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}'
 const ADDED_MEDIA_OFFSET_STEP = 30
 
@@ -573,7 +580,7 @@ export function SessionDetailPage(): React.JSX.Element {
   }
 
   const handleAddTextElement = async (): Promise<void> => {
-    if (!id || !selectedPage?.pageId || !selectedPage.htmlPath) return
+    if (!id || !selectedPage?.pageId || !selectedPage.htmlPath || !slideSize) return
     const blockId = 'select-arcsin1-' + nanoid(8)
     const parentSelector = `body[data-page-id="${selectedPage.pageId}"] [data-ppt-guard-root="1"]`
     const existingCount = editHistory.addElements.filter(
@@ -637,7 +644,7 @@ export function SessionDetailPage(): React.JSX.Element {
   }
 
   const handleAddArtTextElement = async (templateId: ArtTextTemplateId): Promise<void> => {
-    if (!id || !selectedPage?.pageId || !selectedPage.htmlPath) return
+    if (!id || !selectedPage?.pageId || !selectedPage.htmlPath || !slideSize) return
     const blockId = 'select-arcsin1-' + nanoid(8)
     const parentSelector = `body[data-page-id="${selectedPage.pageId}"] [data-ppt-guard-root="1"]`
     const existingCount = editHistory.addElements.filter(
@@ -796,6 +803,61 @@ export function SessionDetailPage(): React.JSX.Element {
     )
   }
 
+  const handleAddChartElement = async (type: InsertChartType): Promise<void> => {
+    if (!id || !selectedPage?.pageId || !selectedPage.htmlPath) return
+    const blockId = 'select-arcsin1-' + nanoid(8)
+    const parentSelector = `body[data-page-id="${selectedPage.pageId}"] [data-ppt-guard-root="1"]`
+    const existingCount = editHistory.addElements.filter(
+      (e) => e.pageId === selectedPage.pageId
+    ).length
+    const offset = existingCount * ADDED_TEXT_OFFSET_STEP
+    const w = ADDED_CHART_WIDTH
+    const h = ADDED_CHART_HEIGHT
+    const left = Math.min(
+      Math.max(ADDED_ELEMENT_EDGE_PADDING, (slideSize!.width - w) / 2) + offset,
+      slideSize!.width - w - ADDED_ELEMENT_EDGE_PADDING
+    )
+    const top = Math.min(
+      Math.max(ADDED_ELEMENT_EDGE_PADDING, (slideSize!.height - h) / 2) + offset,
+      slideSize!.height - h - ADDED_ELEMENT_EDGE_PADDING
+    )
+    const zIdx = 10 + existingCount
+    const htmlFragment = buildChartElementHtml(
+      {
+        blockId,
+        left,
+        top,
+        width: w,
+        height: h,
+        zIndex: zIdx
+      },
+      DEFAULT_CHART_DATA[type] || DEFAULT_CHART_DATA.bar
+    )
+
+    useEditSessionStore.getState().commitCurrentDraft()
+    editHistory.addElement({
+      pageId: selectedPage.pageId,
+      htmlPath: selectedPage.htmlPath,
+      parentSelector,
+      htmlFragment,
+      assignedBlockId: blockId,
+      insertIndex: -1
+    })
+    previewIframeRef.current?.injectElement(parentSelector, htmlFragment)
+
+    const selector = `body[data-page-id="${selectedPage.pageId}"] [data-block-id="${blockId}"]`
+    if (useSessionDetailUiStore.getState().selectedPageId !== selectedPage.id) return
+    const snapshot = await readElementSnapshotWithRetry(selector)
+    if (!snapshot) return
+    useEditSessionStore.getState().selectElement(
+      buildSelectedElementFromSnapshot({
+        selector,
+        blockId,
+        snapshot
+      })
+    )
+  }
+
   const handleAddFormulaElement = async (): Promise<void> => {
     if (!id || !selectedPage?.pageId || !selectedPage.htmlPath) return
     const rendered = renderFormulaToHtml(DEFAULT_FORMULA_LATEX, true)
@@ -864,7 +926,7 @@ export function SessionDetailPage(): React.JSX.Element {
     _fileName: string,
     options: AddSessionElementOptions = {}
   ): Promise<boolean> => {
-    if (!id || !selectedPage?.pageId || !selectedPage.htmlPath) return false
+    if (!id || !selectedPage?.pageId || !selectedPage.htmlPath || !slideSize) return false
     const selectedHtmlPath = selectedPage.htmlPath
     const blockId = 'select-arcsin1-' + nanoid(8)
     const parentSelector = `body[data-page-id="${selectedPage.pageId}"] [data-ppt-guard-root="1"]`
@@ -1003,6 +1065,7 @@ export function SessionDetailPage(): React.JSX.Element {
     onAddArtText: (templateId) => void handleAddArtTextElement(templateId),
     onAddShape: (type) => void handleAddShapeElement(type),
     onAddIcon: (iconId) => void handleAddIconElement(iconId),
+    onAddChart: (type) => void handleAddChartElement(type),
     onAddFormula: () => void handleAddFormulaElement()
   })
 

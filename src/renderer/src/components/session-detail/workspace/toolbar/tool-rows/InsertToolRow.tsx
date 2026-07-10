@@ -499,7 +499,17 @@ export function InsertToolRow({ disabled }: ToolRowProps): React.JSX.Element {
       {renderMediaDropdown('image')}
       {renderMediaDropdown('video')}
       {renderUnavailableTool(t('editMode.chart'), ChartColumn)}
-      {renderUnavailableTool(t('editMode.formula'), Sigma)}
+      <button
+        type="button"
+        className={toolButtonClass}
+        onClick={() => actions?.onAddFormula()}
+        disabled={disabled}
+      >
+        <span className={iconWrapClass}>
+          <Sigma className={iconClass} />
+        </span>
+        {t('editMode.formula')}
+      </button>
     </ToolRowShell>
   )
 }

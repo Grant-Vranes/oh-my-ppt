@@ -572,6 +572,8 @@ export function buildEditModeInjectScript(previewScale = 1): string {
       candidate = parent && parent.nodeType === Node.ELEMENT_NODE ? parent : null;
     }
     if (!formula || !isInsidePageRoot(formula)) return null;
+    const insertedHost = formula.closest('[data-ppt-edit-kind="formula"][data-block-id]');
+    if (insertedHost && isInsidePageRoot(insertedHost)) return insertedHost;
     return formula;
   };
 
@@ -663,7 +665,9 @@ export function buildEditModeInjectScript(previewScale = 1): string {
       if (!a.classList.contains("katex") && b.classList.contains("katex")) return 1;
       return 0;
     });
-    return formulas[0] || null;
+    const formula = formulas[0] || null;
+    const insertedHost = formula ? formula.closest('[data-ppt-edit-kind="formula"][data-block-id]') : null;
+    return insertedHost && isInsidePageRoot(insertedHost) ? insertedHost : formula;
   };
 
   const pickArtTextTarget = (origin) => {
@@ -1766,6 +1770,8 @@ export function buildEditModeInjectScript(previewScale = 1): string {
     if (!(element instanceof Element) || !formula || typeof formula.html !== "string") return false;
     const latex = typeof formula.latex === "string" ? formula.latex.trim() : "";
     if (!latex) return false;
+    const isInsertedFormulaHost =
+      element.matches('[data-ppt-edit-kind="formula"][data-block-id]');
     const renderedTarget = element.matches(".katex, .katex-display")
       ? element
       : element.querySelector(".katex, .katex-display");
@@ -1789,11 +1795,11 @@ export function buildEditModeInjectScript(previewScale = 1): string {
     const metadataTarget = rendered || target;
     metadataTarget.setAttribute("data-ppt-formula-latex", latex);
     metadataTarget.setAttribute("data-ppt-formula-display", formula.displayMode ? "true" : "false");
-    if (oldBlockId && !metadataTarget.getAttribute("data-block-id")) {
+    if (!isInsertedFormulaHost && oldBlockId && !metadataTarget.getAttribute("data-block-id")) {
       metadataTarget.setAttribute("data-block-id", oldBlockId);
     }
-    if (wasSelected && metadataTarget instanceof Element) {
-      setSelected(metadataTarget);
+    if (wasSelected) {
+      setSelected(isInsertedFormulaHost ? element : metadataTarget);
     }
     updateOverlay();
     return true;

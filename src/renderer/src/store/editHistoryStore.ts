@@ -393,6 +393,7 @@ export const useEditHistoryStore = create<EditHistoryState>((set, get) => ({
       const mergePatch = (prev: PropertyEditItem['patch'], next: PropertyEditItem['patch']): PropertyEditItem['patch'] => ({
         html: next.html ?? prev.html,
         text: next.text ?? prev.text,
+        formula: next.formula ?? prev.formula,
         textTarget: next.textTarget ?? prev.textTarget,
         style: {
           ...(prev.style || {}),

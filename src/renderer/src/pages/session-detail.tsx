@@ -31,6 +31,7 @@ import {
 } from '../components/session-detail/shared'
 import { useWorkspaceRibbonActionsRegistration } from '../components/session-detail/hooks/useWorkspaceRibbonController'
 import { buildSelectedElementFromSnapshot } from '../components/session-detail/element-inspector/elementEditUtils'
+import { renderFormulaToHtml } from '../components/session-detail/element-inspector/formulaEditUtils'
 import {
   useEditHistoryStore,
   useEditSessionStore,
@@ -64,6 +65,9 @@ const ADDED_TEXT_OFFSET_STEP = 28
 const ADDED_ART_TEXT_WIDTH = 560
 const ADDED_ART_TEXT_MIN_HEIGHT = 130
 const ADDED_ICON_SIZE = 96
+const ADDED_FORMULA_WIDTH = 420
+const ADDED_FORMULA_HEIGHT = 112
+const DEFAULT_FORMULA_LATEX = 'x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}'
 const ADDED_MEDIA_OFFSET_STEP = 30
 
 function escapeCssString(value: string): string {
@@ -792,6 +796,69 @@ export function SessionDetailPage(): React.JSX.Element {
     )
   }
 
+  const handleAddFormulaElement = async (): Promise<void> => {
+    if (!id || !selectedPage?.pageId || !selectedPage.htmlPath) return
+    const rendered = renderFormulaToHtml(DEFAULT_FORMULA_LATEX, true)
+    if (!rendered.html) return
+    const blockId = 'select-arcsin1-' + nanoid(8)
+    const parentSelector = `body[data-page-id="${selectedPage.pageId}"] [data-ppt-guard-root="1"]`
+    const existingCount = editHistory.addElements.filter(
+      (e) => e.pageId === selectedPage.pageId
+    ).length
+    const offset = existingCount * ADDED_TEXT_OFFSET_STEP
+    const w = ADDED_FORMULA_WIDTH
+    const h = ADDED_FORMULA_HEIGHT
+    const left = Math.min(
+      Math.max(ADDED_ELEMENT_EDGE_PADDING, (slideSize!.width - w) / 2) + offset,
+      slideSize!.width - w - ADDED_ELEMENT_EDGE_PADDING
+    )
+    const top = Math.min(
+      Math.max(ADDED_ELEMENT_EDGE_PADDING, (slideSize!.height - h) / 2) + offset,
+      slideSize!.height - h - ADDED_ELEMENT_EDGE_PADDING
+    )
+    const zIdx = 10 + existingCount
+    const formulaStyle = [
+      'position:absolute',
+      `left:${left}px`,
+      `top:${top}px`,
+      `width:${w}px`,
+      `height:${h}px`,
+      `z-index:${zIdx}`,
+      'display:flex',
+      'align-items:center',
+      'justify-content:center',
+      'box-sizing:border-box',
+      'padding:8px',
+      'color:#111827',
+      'font-size:30px',
+      'line-height:1.2'
+    ].join('; ')
+    const htmlFragment = `<div data-block-id="${blockId}" data-ppt-edit-kind="formula" style="${formulaStyle};">${rendered.html}</div>`
+
+    useEditSessionStore.getState().commitCurrentDraft()
+    editHistory.addElement({
+      pageId: selectedPage.pageId,
+      htmlPath: selectedPage.htmlPath,
+      parentSelector,
+      htmlFragment,
+      assignedBlockId: blockId,
+      insertIndex: -1
+    })
+    previewIframeRef.current?.injectElement(parentSelector, htmlFragment)
+
+    const selector = `body[data-page-id="${selectedPage.pageId}"] [data-block-id="${blockId}"]`
+    if (useSessionDetailUiStore.getState().selectedPageId !== selectedPage.id) return
+    const snapshot = await readElementSnapshotWithRetry(selector)
+    if (!snapshot) return
+    useEditSessionStore.getState().selectElement(
+      buildSelectedElementFromSnapshot({
+        selector,
+        blockId,
+        snapshot
+      })
+    )
+  }
+
   const handleAddElement = async (
     relativePath: string,
     _fileName: string,
@@ -935,7 +1002,8 @@ export function SessionDetailPage(): React.JSX.Element {
     onAddText: () => void handleAddTextElement(),
     onAddArtText: (templateId) => void handleAddArtTextElement(templateId),
     onAddShape: (type) => void handleAddShapeElement(type),
-    onAddIcon: (iconId) => void handleAddIconElement(iconId)
+    onAddIcon: (iconId) => void handleAddIconElement(iconId),
+    onAddFormula: () => void handleAddFormulaElement()
   })
 
   if (!id || !slideSize) {

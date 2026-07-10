@@ -55,6 +55,7 @@ export interface WorkspaceRibbonRegisteredActions {
   onAddArtText: (templateId: ArtTextTemplateId) => void
   onAddShape: (type: InsertShapeType) => void
   onAddIcon: (iconId: string) => void
+  onAddFormula: () => void
 }
 
 export interface ChatPanelController {

@@ -97,7 +97,7 @@ export function buildSelectedElementFromSnapshot(args: {
       fontWeight: snapshot.computed.fontWeight || '',
       textAlign: normalizeTextAlign(snapshot.computed.textAlign),
       lineHeight: snapshot.computed.lineHeight || '',
-      backgroundColor: snapshot.computed.backgroundColor || ''
+      backgroundColor: snapshot.computed.svgPaintColor || snapshot.computed.backgroundColor || ''
     },
     bounds: snapshot.metrics.viewport,
     viewportBounds: snapshot.metrics.viewport,

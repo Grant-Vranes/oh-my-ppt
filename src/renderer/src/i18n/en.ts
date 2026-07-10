@@ -987,6 +987,7 @@ Business presentations, product introductions, project summaries — formal but 
     appearance: 'Appearance',
     opacity: 'Opacity',
     backgroundColor: 'Background',
+    visualColor: 'Color',
     media: 'Media',
     objectFit: 'Object fit',
     alt: 'Alt text',

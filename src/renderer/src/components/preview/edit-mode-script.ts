@@ -41,6 +41,7 @@ export interface EditableElementSnapshot {
     zIndex?: string
     opacity?: string
     backgroundColor?: string
+    svgPaintColor?: string
     color?: string
     fontSize?: string
     fontWeight?: string
@@ -1650,6 +1651,51 @@ export function buildEditModeInjectScript(previewScale = 1): string {
     return attrs;
   };
 
+  const isInsertedSvgVisual = (element) => {
+    if (!(element instanceof Element)) return false;
+    const editKind = element.getAttribute("data-ppt-edit-kind");
+    return editKind === "shape" || editKind === "icon";
+  };
+
+  const getSvgPaintTarget = (element) => {
+    if (!isInsertedSvgVisual(element)) return null;
+    return element.querySelector("svg [fill], svg [stroke], svg path, svg rect, svg circle, svg ellipse, svg line, svg polygon, svg polyline");
+  };
+
+  const readSvgPaintColor = (element) => {
+    const editKind = element.getAttribute("data-ppt-edit-kind");
+    if (editKind === "icon") return window.getComputedStyle(element).color || "";
+    const paintTarget = getSvgPaintTarget(element);
+    if (!paintTarget) return "";
+    const fill = paintTarget.getAttribute("fill") || "";
+    if (fill && fill !== "none" && fill !== "currentColor") return fill;
+    const stroke = paintTarget.getAttribute("stroke") || "";
+    if (stroke && stroke !== "none" && stroke !== "currentColor") return stroke;
+    const computed = window.getComputedStyle(paintTarget);
+    return (computed.fill && computed.fill !== "none" ? computed.fill : computed.stroke) || "";
+  };
+
+  const applySvgPaintColor = (element, color) => {
+    if (!isInsertedSvgVisual(element) || !color) return false;
+    const editKind = element.getAttribute("data-ppt-edit-kind");
+    if (editKind === "icon") {
+      element.style.setProperty("color", color, "important");
+      return true;
+    }
+    const paintTargets = Array.from(element.querySelectorAll("svg [fill], svg [stroke], svg path, svg rect, svg circle, svg ellipse, svg line, svg polygon, svg polyline"));
+    if (paintTargets.length === 0) return false;
+    paintTargets.forEach((target) => {
+      const fill = target.getAttribute("fill");
+      const stroke = target.getAttribute("stroke");
+      if (fill && fill !== "none") target.setAttribute("fill", color);
+      if (stroke && stroke !== "none") target.setAttribute("stroke", color);
+      if ((!fill || fill === "none") && (!stroke || stroke === "none")) {
+        target.setAttribute("fill", color);
+      }
+    });
+    return true;
+  };
+
   const readDelimitedFormula = (text) => {
     const trimmed = String(text || "").trim();
     if (trimmed.startsWith("$$") && trimmed.endsWith("$$") && trimmed.length > 4) {
@@ -1804,6 +1850,7 @@ export function buildEditModeInjectScript(previewScale = 1): string {
         zIndex: computed.zIndex || "",
         opacity: computed.opacity || "",
         backgroundColor: computed.backgroundColor || "",
+        svgPaintColor: isInsertedSvgVisual(target) ? readSvgPaintColor(target) : "",
         color: computed.color || "",
         fontSize: computed.fontSize || "",
         fontWeight: computed.fontWeight || "",
@@ -2538,7 +2585,11 @@ export function buildEditModeInjectScript(previewScale = 1): string {
           el.style.setProperty("z-index", String(patch.style.zIndex), "important");
         }
         if (patch.style.opacity !== undefined) el.style.setProperty("opacity", String(patch.style.opacity), "important");
-        if (patch.style.backgroundColor) el.style.setProperty("background-color", patch.style.backgroundColor, "important");
+        if (patch.style.backgroundColor) {
+          if (!applySvgPaintColor(el, patch.style.backgroundColor)) {
+            el.style.setProperty("background-color", patch.style.backgroundColor, "important");
+          }
+        }
         if (patch.style.color) el.style.setProperty("color", patch.style.color, "important");
         if (patch.style.fontSize !== undefined) {
           const fontSize = String(patch.style.fontSize);

@@ -944,6 +944,7 @@ export const zh = {
     appearance: '外观',
     opacity: '透明度',
     backgroundColor: '背景色',
+    visualColor: '颜色',
     media: '媒体',
     objectFit: '适应方式',
     alt: '替代文本',

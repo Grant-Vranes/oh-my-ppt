@@ -125,7 +125,7 @@ function buildElementPropertyPatch(
   }
   if (
     commitFields.has('backgroundColor') &&
-    draft.backgroundColor !== rgbToHex(initial.computed.backgroundColor)
+    draft.backgroundColor !== rgbToHex(initial.computed.svgPaintColor || initial.computed.backgroundColor)
   ) {
     style.backgroundColor = draft.backgroundColor
   }
@@ -329,7 +329,7 @@ export const useEditSessionStore = create<EditSessionState>((set, get) => ({
           layoutHeight: String(Math.round(bounds.height)),
           layoutZIndex: zValue,
           opacity: opacityToInput(computed.opacity),
-          backgroundColor: rgbToHex(computed.backgroundColor),
+          backgroundColor: rgbToHex(computed.svgPaintColor || computed.backgroundColor),
           objectFit: computed.objectFit || 'contain',
           alt: attrs.alt || '',
           poster: attrs.poster || '',
@@ -355,7 +355,7 @@ export const useEditSessionStore = create<EditSessionState>((set, get) => ({
           layoutHeight: String(Math.round(bounds.height)),
           layoutZIndex: zValue,
           opacity: opacityToInput(computed.opacity),
-          backgroundColor: rgbToHex(computed.backgroundColor),
+          backgroundColor: rgbToHex(computed.svgPaintColor || computed.backgroundColor),
           objectFit: computed.objectFit || 'contain',
           alt: attrs.alt || '',
           poster: attrs.poster || '',

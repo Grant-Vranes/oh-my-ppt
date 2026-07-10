@@ -171,6 +171,37 @@ export function normalizeColor(value: unknown): string | null {
   return null
 }
 
+function applyInsertedSvgPaintColor(
+  $: cheerio.CheerioAPI,
+  target: cheerio.Cheerio<AnyNode>,
+  color: string | null,
+  styleMap: Map<string, string>
+): boolean {
+  if (!color) return false
+  const editKind = target.attr('data-ppt-edit-kind')
+  if (editKind !== 'shape' && editKind !== 'icon') return false
+  if (editKind === 'icon') {
+    styleMap.set('color', color)
+    return true
+  }
+
+  const paintTargets = target.find(
+    'svg [fill], svg [stroke], svg path, svg rect, svg circle, svg ellipse, svg line, svg polygon, svg polyline'
+  )
+  if (paintTargets.length === 0) return false
+  paintTargets.each((_, node) => {
+    const item = $(node)
+    const fill = item.attr('fill')
+    const stroke = item.attr('stroke')
+    if (fill && fill !== 'none') item.attr('fill', color)
+    if (stroke && stroke !== 'none') item.attr('stroke', color)
+    if ((!fill || fill === 'none') && (!stroke || stroke === 'none')) {
+      item.attr('fill', color)
+    }
+  })
+  return true
+}
+
 export function normalizeFontSize(value: unknown): string | null {
   const raw =
     typeof value === 'number' ? String(value) : typeof value === 'string' ? value.trim() : ''
@@ -750,16 +781,20 @@ export function patchGenericElementProperties(
     styleMap.set('z-index', String(zIndex))
   }
   if (opacity) styleMap.set('opacity', opacity)
-  if (backgroundColor) styleMap.set('background-color', backgroundColor)
+  const backgroundAppliedToSvg = applyInsertedSvgPaintColor($, target, backgroundColor, styleMap)
+  if (backgroundColor && !backgroundAppliedToSvg) styleMap.set('background-color', backgroundColor)
   if (color) styleMap.set('color', color)
   if (fontSize) styleMap.set('font-size', fontSize)
   if (fontWeight) styleMap.set('font-weight', fontWeight)
   if (textAlign) styleMap.set('text-align', textAlign)
   if (objectFit) styleMap.set('object-fit', objectFit)
+  const backgroundUpdatesOuterStyle =
+    backgroundAppliedToSvg && target.attr('data-ppt-edit-kind') === 'icon'
   if (
     zIndex !== null ||
     opacity ||
-    backgroundColor ||
+    (backgroundColor && !backgroundAppliedToSvg) ||
+    backgroundUpdatesOuterStyle ||
     color ||
     fontSize ||
     fontWeight ||

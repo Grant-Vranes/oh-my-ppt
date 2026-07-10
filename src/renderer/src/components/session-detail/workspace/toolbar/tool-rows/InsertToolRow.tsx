@@ -417,7 +417,7 @@ export function InsertToolRow({ disabled }: ToolRowProps): React.JSX.Element {
   const badgeIcons = ICON_LIST.filter((icon) => icon.variant === 'badge')
 
   const renderIconGrid = (icons: typeof ICON_LIST): React.JSX.Element => (
-    <div className="grid grid-cols-5 gap-1.5">
+    <div className="grid grid-cols-6 gap-1.5">
       {icons.map((icon) => {
         const isBadge = icon.variant === 'badge'
         return (
@@ -460,7 +460,7 @@ export function InsertToolRow({ disabled }: ToolRowProps): React.JSX.Element {
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="w-[340px] max-w-[calc(100vw-2rem)] border-[#d8ccb5]/85 bg-[#fff9ef] p-2"
+        className="w-[390px] max-w-[calc(100vw-2rem)] border-[#d8ccb5]/85 bg-[#fff9ef] p-2"
       >
         <div className="max-h-[360px] space-y-2 overflow-y-auto pr-1">
           <div>

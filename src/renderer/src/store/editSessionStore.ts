@@ -22,6 +22,7 @@ import {
   type InsertChartType
 } from '../components/session-detail/workspace/insert-charts'
 import { editTargetMatchesDeletedSelector, useEditHistoryStore } from './editHistoryStore'
+import { useGenerateStore } from './generateStore'
 import { useSessionDetailUiStore } from './sessionDetailStore'
 import { useToastStore } from './toastStore'
 
@@ -473,6 +474,7 @@ interface EditSessionState {
   selection: EditSelectionPayload | null
   draft: ElementEditDraft
   isSavingEdits: boolean
+  isApplyingSyncElement: boolean
   ctx: EditSessionContext | null
 
   attach: (ctx: EditSessionContext) => void
@@ -496,6 +498,7 @@ interface EditSessionState {
   commitCurrentDraft: () => boolean
   flushPendingDrags: () => Promise<void>
   save: () => Promise<{ saved: boolean; error?: string }>
+  applySelectedToAllPages: () => Promise<{ applied: boolean; error?: string }>
 }
 
 export const useEditSessionStore = create<EditSessionState>((set, get) => ({
@@ -503,6 +506,7 @@ export const useEditSessionStore = create<EditSessionState>((set, get) => ({
   selection: null,
   draft: EMPTY_ELEMENT_DRAFT,
   isSavingEdits: false,
+  isApplyingSyncElement: false,
   ctx: null,
 
   attach: (ctx) => set({ ctx }),
@@ -1088,6 +1092,65 @@ export const useEditSessionStore = create<EditSessionState>((set, get) => ({
       return { saved: false, error: message }
     } finally {
       set({ isSavingEdits: false })
+    }
+  },
+
+  applySelectedToAllPages: async () => {
+    if (get().isApplyingSyncElement || get().isSavingEdits) return { applied: false }
+    const ctx = get().ctx
+    const iframe = get().iframeHandle
+    const pc = ctx?.getPageContext()
+    const selection = get().selection
+    if (!ctx || !pc || !iframe || !selection?.selector) return { applied: false }
+
+    set({ isApplyingSyncElement: true })
+    try {
+      get().commitCurrentDraft()
+      await get().flushPendingDrags()
+      const sourceHtmlFragment = await iframe.readElementHtml(selection.selector)
+      if (!sourceHtmlFragment) throw new Error(ctx.t('sessionDetail.syncElementReadFailed'))
+
+      const snapshot = useEditHistoryStore.getState().getSnapshotForPage(pc.pageId)
+      const hasPendingEdits =
+        snapshot.dragEdits.length > 0 ||
+        snapshot.textEdits.length > 0 ||
+        snapshot.propertyEdits.length > 0 ||
+        snapshot.deletes.length > 0 ||
+        snapshot.addElements.length > 0
+      if (hasPendingEdits) {
+        const saved = await get().save()
+        if (!saved.saved && saved.error) throw new Error(saved.error)
+      }
+
+      const result = await ipc.applySyncElementToAllPages({
+        sessionId: pc.sessionId,
+        htmlPath: pc.htmlPath,
+        pageId: pc.pageId,
+        sourceHtmlFragment,
+        sourceBlockId: selection.blockId
+      })
+      if (!result.success) throw new Error(ctx.t('sessionDetail.syncElementFailed'))
+
+      const pages = useGenerateStore.getState().currentPages
+      for (const page of pages) {
+        const pageId = page.pageId || page.id
+        if (pageId) ctx.bumpThumbnail(pageId)
+      }
+      iframe.clearEditModeSelection()
+      set({ selection: null, draft: EMPTY_ELEMENT_DRAFT })
+      useSessionDetailUiStore.getState().clearEditSelectedElement()
+      ctx.requestRefresh()
+      useToastStore
+        .getState()
+        .success(ctx.t('sessionDetail.syncElementApplied', { count: result.changedCount }))
+      return { applied: true }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : ctx.t('sessionDetail.syncElementFailed')
+      useToastStore.getState().error(message)
+      return { applied: false, error: message }
+    } finally {
+      set({ isApplyingSyncElement: false })
     }
   }
 }))

@@ -1035,6 +1035,11 @@ Business presentations, product introductions, project summaries — formal but 
     saveAdjustments: 'Save adjustments',
     copyElement: 'Copy',
     copyElementFailed: 'Failed to copy element',
+    applyElementToAllPages: 'Apply to all pages',
+    syncElementApplying: 'Applying...',
+    syncElementApplied: 'Applied to {count} page(s)',
+    syncElementFailed: 'Failed to apply to all pages',
+    syncElementReadFailed: 'Could not read the current element. Select it again and retry.',
     deleteElement: 'Delete element',
     deleteElementConfirm: 'Are you sure you want to delete this element? This cannot be undone.',
     nonTextElementHint:

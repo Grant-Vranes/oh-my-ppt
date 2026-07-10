@@ -1,5 +1,19 @@
 import { useState } from 'react'
-import { ChartColumn, ChevronDown, ImagePlus, Shapes, Sigma, Smile, Sparkles, Type, Video } from 'lucide-react'
+import {
+  ChartColumn,
+  ChevronDown,
+  Copy,
+  ImagePlus,
+  Layers,
+  Loader2,
+  Shapes,
+  Sigma,
+  Smile,
+  Sparkles,
+  Trash2,
+  Type,
+  Video
+} from 'lucide-react'
 import { ART_TEXT_TEMPLATES } from '@renderer/lib/artTextTemplates'
 import {
   ICON_LIST,
@@ -10,7 +24,15 @@ import {
 } from '@renderer/components/session-detail/workspace/insert-shapes'
 import { CHART_TYPE_LIST } from '@renderer/components/session-detail/workspace/insert-charts'
 import { useT, type I18nKey } from '@renderer/i18n'
-import { useSessionDetailRuntimeStore } from '@renderer/store'
+import { useEditSessionStore, useSessionDetailRuntimeStore } from '@renderer/store'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle
+} from '../../../../ui/AlertDialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +40,7 @@ import {
   DropdownMenuTrigger
 } from '../../../../ui/DropdownMenu'
 import { Popover, PopoverContent, PopoverTrigger } from '../../../../ui/Popover'
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../../../ui/Tooltip'
 import type { InsertAssetType } from '../types'
 import { ToolRowShell } from './ToolRowShell'
 import type { ToolRowProps } from './types'
@@ -27,6 +50,8 @@ const toolButtonClass =
 const iconWrapClass =
   'inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[#d4e4c1]/78 text-[#3e4a32] group-hover:bg-[#8fbc8f]/42'
 const iconClass = 'h-2.5 w-2.5'
+const selectedToolButtonClass =
+  'inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-colors disabled:pointer-events-none disabled:opacity-45'
 
 // Keep these compact previews visually aligned with the full-size templates in artTextTemplates.ts.
 const artTextPreviewStyles = `
@@ -244,7 +269,85 @@ export function InsertToolRow({ disabled }: ToolRowProps): React.JSX.Element {
   const [artTextOpen, setArtTextOpen] = useState(false)
   const [shapeOpen, setShapeOpen] = useState(false)
   const [iconOpen, setIconOpen] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const actions = useSessionDetailRuntimeStore((state) => state.workspaceRibbonActions)
+  const selection = useEditSessionStore((state) => state.selection)
+  const isApplyingSyncElement = useEditSessionStore((state) => state.isApplyingSyncElement)
+
+  const renderSelectedElementTools = (): React.JSX.Element | null => {
+    if (!selection) return null
+    return (
+      <div className="absolute right-2 top-1/2 z-10 flex -translate-y-1/2 shrink-0 items-center gap-0.5 rounded-full border border-[#ead29a]/70 bg-[#fff4d8]/92 px-0.5 py-0.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.62),0_4px_12px_rgba(167,116,34,0.1)] backdrop-blur">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className={`${selectedToolButtonClass} bg-[#d8942f] text-white shadow-[0_4px_10px_rgba(168,105,23,0.2)] hover:bg-[#bd7621]`}
+              onClick={() => actions?.onApplySelectedToAllPages()}
+              disabled={disabled || isApplyingSyncElement}
+              aria-label={t('sessionDetail.applyElementToAllPages')}
+            >
+              {isApplyingSyncElement ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Layers className="h-3 w-3" />
+              )}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {isApplyingSyncElement
+              ? t('sessionDetail.syncElementApplying')
+              : t('sessionDetail.applyElementToAllPages')}
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className={`${selectedToolButtonClass} text-[#6b765c] hover:bg-[#f9e7bd] hover:text-[#3e4a32]`}
+              onClick={() => actions?.onCopySelectedElement()}
+              disabled={disabled || isApplyingSyncElement}
+              aria-label={t('sessionDetail.copyElement')}
+            >
+              <Copy className="h-3 w-3" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">{t('sessionDetail.copyElement')}</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className={`${selectedToolButtonClass} text-[#9a5a50] hover:bg-[#f8dfd9] hover:text-[#7d342c]`}
+              onClick={() => setDeleteConfirmOpen(true)}
+              disabled={disabled || isApplyingSyncElement}
+              aria-label={t('sessionDetail.deleteElement')}
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">{t('sessionDetail.deleteElement')}</TooltipContent>
+        </Tooltip>
+        <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogTitle>{t('sessionDetail.deleteElement')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('sessionDetail.deleteElementConfirm')}
+            </AlertDialogDescription>
+            <div className="flex justify-end gap-2">
+              <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-[#c0392b] text-white hover:bg-[#a93226]"
+                onClick={() => actions?.onDeleteSelectedElement()}
+              >
+                {t('common.delete')}
+              </AlertDialogAction>
+            </div>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    )
+  }
 
   const renderMediaDropdown = (type: InsertAssetType): React.JSX.Element => {
     const Icon = type === 'image' ? ImagePlus : Video
@@ -492,35 +595,38 @@ export function InsertToolRow({ disabled }: ToolRowProps): React.JSX.Element {
   )
 
   return (
-    <ToolRowShell>
-      <button
-        type="button"
-        className={toolButtonClass}
-        onClick={() => actions?.onAddText()}
-        disabled={disabled}
-      >
-        <span className={iconWrapClass}>
-          <Type className={iconClass} />
-        </span>
-        {t('editMode.addText')}
-      </button>
-      {renderArtTextDropdown()}
-      {renderShapePopover()}
-      {renderIconPopover()}
-      {renderMediaDropdown('image')}
-      {renderMediaDropdown('video')}
-      {renderChartDropdown()}
-      <button
-        type="button"
-        className={toolButtonClass}
-        onClick={() => actions?.onAddFormula()}
-        disabled={disabled}
-      >
-        <span className={iconWrapClass}>
-          <Sigma className={iconClass} />
-        </span>
-        {t('editMode.formula')}
-      </button>
-    </ToolRowShell>
+    <div className="relative">
+      {renderSelectedElementTools()}
+      <ToolRowShell>
+        <button
+          type="button"
+          className={toolButtonClass}
+          onClick={() => actions?.onAddText()}
+          disabled={disabled}
+        >
+          <span className={iconWrapClass}>
+            <Type className={iconClass} />
+          </span>
+          {t('editMode.addText')}
+        </button>
+        {renderArtTextDropdown()}
+        {renderShapePopover()}
+        {renderIconPopover()}
+        {renderMediaDropdown('image')}
+        {renderMediaDropdown('video')}
+        {renderChartDropdown()}
+        <button
+          type="button"
+          className={toolButtonClass}
+          onClick={() => actions?.onAddFormula()}
+          disabled={disabled}
+        >
+          <span className={iconWrapClass}>
+            <Sigma className={iconClass} />
+          </span>
+          {t('editMode.formula')}
+        </button>
+      </ToolRowShell>
+    </div>
   )
 }

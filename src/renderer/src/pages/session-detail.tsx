@@ -1058,6 +1058,9 @@ export function SessionDetailPage(): React.JSX.Element {
     onRedo: () => useEditSessionStore.getState().redo(),
     onSaveCurrentPage: () => void useEditSessionStore.getState().save(),
     onDiscardAllEdits: () => useEditSessionStore.getState().discardAll(),
+    onApplySelectedToAllPages: () => void useEditSessionStore.getState().applySelectedToAllPages(),
+    onCopySelectedElement: () => void handleCopyElement(),
+    onDeleteSelectedElement: () => useEditSessionStore.getState().deleteSelected(),
     onBackToSessions: handleBackToSessions,
     onAddFromLibrary: handleAddFromLibrary,
     onAddFromLocal: (type) => void handleAddFromLocal(type),
@@ -1130,8 +1133,6 @@ export function SessionDetailPage(): React.JSX.Element {
                           useEditSessionStore.getState().updateDraft(draft, options)
                         }
                         onClose={() => useEditSessionStore.getState().cancelEdit()}
-                        onCopy={handleCopyElement}
-                        onDelete={() => useEditSessionStore.getState().deleteSelected()}
                       />
                     ) : undefined
                   }

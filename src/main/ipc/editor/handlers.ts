@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron'
 import log from 'electron-log/main.js'
 import fs from 'fs'
+import path from 'path'
 import * as cheerio from 'cheerio'
 import type { IpcContext } from '../context'
 import { GitHistoryService } from '../../history/git-history-service'
@@ -25,6 +26,7 @@ import {
   removeLegacyVideoAutoplayScript,
   stableSelectorFor
 } from './shared'
+import { applySyncElementToPageHtml } from './sync-element'
 
 export function registerEditorHandlers(ctx: IpcContext): void {
   const { normalizeSessionId, assertPathInAllowedRoots, db, resolveSessionProjectDir } = ctx
@@ -457,6 +459,115 @@ export function registerEditorHandlers(ctx: IpcContext): void {
     })
 
     return { success: true, dragCount, textCount, propertyCount, deleteCount, addCount, warnings }
+  })
+
+  // ─── element-editor:apply-sync-to-all-pages ─────────────
+
+  ipcMain.handle('element-editor:apply-sync-to-all-pages', async (_event, payload: unknown) => {
+    if (!payload || typeof payload !== 'object') {
+      throw new Error('同步元素参数无效')
+    }
+    const record = payload as {
+      sessionId?: unknown
+      pageId?: unknown
+      htmlPath?: unknown
+      sourceHtmlFragment?: unknown
+      syncElementId?: unknown
+      sourceBlockId?: unknown
+    }
+    const sessionId = normalizeSessionId(record.sessionId)
+    const pageId = typeof record.pageId === 'string' ? record.pageId.trim() : ''
+    const htmlPath = typeof record.htmlPath === 'string' ? record.htmlPath : ''
+    const sourceHtmlFragment =
+      typeof record.sourceHtmlFragment === 'string' ? record.sourceHtmlFragment.trim() : ''
+    const syncElementId =
+      typeof record.syncElementId === 'string' ? record.syncElementId.trim() : undefined
+    const sourceBlockId =
+      typeof record.sourceBlockId === 'string' ? record.sourceBlockId.trim() : undefined
+    if (!sessionId) throw new Error('缺少 sessionId')
+    if (!pageId) throw new Error('缺少 pageId')
+    if (!htmlPath) throw new Error('缺少 htmlPath')
+    if (!sourceHtmlFragment) throw new Error('缺少要同步的元素')
+
+    const session = await db.getSession(sessionId)
+    if (!session) throw new Error('会话不存在或已被删除')
+    const projectDir = await resolveSessionProjectDir(sessionId)
+    const safeSourceHtmlPath = await assertPathInAllowedRoots({
+      filePath: htmlPath,
+      mode: 'write',
+      sessionId,
+      htmlOnly: true
+    })
+    const pages = await db.listSessionPages(sessionId)
+    if (pages.length === 0) throw new Error('没有可同步的页面')
+
+    let resolvedSyncElementId = syncElementId || ''
+    let changedCount = 0
+    let insertedCount = 0
+    let updatedCount = 0
+    const changedPageIds: string[] = []
+
+    for (const page of pages) {
+      const rawPagePath = page.html_path || `${page.file_slug}.html`
+      const candidatePath = path.isAbsolute(rawPagePath)
+        ? rawPagePath
+        : path.join(projectDir, rawPagePath)
+      if (!fs.existsSync(candidatePath)) continue
+      const safePagePath = await assertPathInAllowedRoots({
+        filePath: candidatePath,
+        mode: 'write',
+        sessionId,
+        htmlOnly: true
+      })
+      const isSourcePage = path.resolve(safePagePath) === path.resolve(safeSourceHtmlPath)
+      const result = await withHtmlFileLock(safePagePath, async () => {
+        const html = await fs.promises.readFile(safePagePath, 'utf-8')
+        const patched = applySyncElementToPageHtml({
+          html,
+          sourceHtmlFragment,
+          syncElementId: resolvedSyncElementId || undefined,
+          preserveSourceBlockId: isSourcePage ? sourceBlockId : undefined
+        })
+        if (patched.changed) {
+          await fs.promises.writeFile(safePagePath, patched.html, 'utf-8')
+        }
+        return patched
+      })
+      if (!resolvedSyncElementId) resolvedSyncElementId = result.syncElementId
+      if (result.changed) {
+        changedCount++
+        if (result.inserted) insertedCount++
+        if (result.updated) updatedCount++
+        changedPageIds.push(page.file_slug)
+      }
+    }
+
+    if (changedCount > 0) {
+      await new GitHistoryService(db).recordOperation({
+        sessionId,
+        projectDir,
+        type: 'edit',
+        scope: 'deck',
+        prompt: '同步元素到所有页面',
+        metadata: {
+          action: 'applySyncElementToAllPages',
+          sourcePageId: pageId,
+          syncElementId: resolvedSyncElementId,
+          changedCount,
+          insertedCount,
+          updatedCount,
+          changedPageIds
+        }
+      })
+    }
+
+    return {
+      success: true,
+      syncElementId: resolvedSyncElementId,
+      changedCount,
+      insertedCount,
+      updatedCount
+    }
   })
 
   // ─── drag-editor:update-element-layout ──────────────────

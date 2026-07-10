@@ -990,6 +990,21 @@ export const ipc = {
       addCount: number
       warnings?: string[]
     }>,
+  applySyncElementToAllPages: (payload: {
+    sessionId: string
+    htmlPath: string
+    pageId: string
+    sourceHtmlFragment: string
+    syncElementId?: string
+    sourceBlockId?: string
+  }) =>
+    getIpc().invoke('element-editor:apply-sync-to-all-pages', payload) as Promise<{
+      success: boolean
+      syncElementId: string
+      changedCount: number
+      insertedCount: number
+      updatedCount: number
+    }>,
   chooseAndParseChartData: () =>
     getIpc().invoke('chart-data:choose-and-parse') as Promise<ParsedChartDataResult>,
   openFile: (filePath: string, sessionId?: string) =>

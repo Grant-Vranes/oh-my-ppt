@@ -6,6 +6,7 @@ import {
   FilePlus2,
   Files,
   Image as ImageIcon,
+  LayoutTemplate,
   Loader2,
   Move,
   PanelLeft,
@@ -157,6 +158,7 @@ export const PageSidebar = memo(function PageSidebar({
     onAddBlankPage,
     onAddPage,
     onMergeSessionPages,
+    onMergeTemplatePages,
     onRetryFailedPage,
     onReorderPages,
     onDeletePage,
@@ -397,6 +399,15 @@ export const PageSidebar = memo(function PageSidebar({
                     <Files className="h-3.5 w-3.5 shrink-0 text-[#62758a]" />
                     <span className="whitespace-nowrap">
                       {t('sessionDetail.addPagesFromSession')}
+                    </span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    disabled={pageManagementDisabled}
+                    onSelect={onMergeTemplatePages}
+                  >
+                    <LayoutTemplate className="h-3.5 w-3.5 shrink-0 text-[#7c6a4c]" />
+                    <span className="whitespace-nowrap">
+                      {t('sessionDetail.addPagesFromTemplate')}
                     </span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -812,6 +823,15 @@ export const PageSidebar = memo(function PageSidebar({
                     <Files className="h-3.5 w-3.5 shrink-0 text-[#62758a]" />
                     <span className="whitespace-nowrap">
                       {t('sessionDetail.addPagesFromSession')}
+                    </span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    disabled={pageManagementDisabled}
+                    onSelect={onMergeTemplatePages}
+                  >
+                    <LayoutTemplate className="h-3.5 w-3.5 shrink-0 text-[#7c6a4c]" />
+                    <span className="whitespace-nowrap">
+                      {t('sessionDetail.addPagesFromTemplate')}
                     </span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>

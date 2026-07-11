@@ -175,6 +175,20 @@ export interface MergeSourceSessionSummary {
   disabledReason?: PageMergeDisabledReason
 }
 
+export interface MergeTemplateSourceSummary {
+  id: string
+  title: string
+  pageCount: number
+  slideSizeId: SlideSizePresetId
+  slideWidth: number
+  slideHeight: number
+  updatedAt: number
+  thumbnailPath: string | null
+  selectable: boolean
+  disabledReason?: PageMergeDisabledReason
+  isSource: boolean
+}
+
 export interface MergeSourcePageSummary {
   id: string
   pageId: string
@@ -389,6 +403,42 @@ export const ipc = {
     sourcePageIds: string[]
   }) =>
     getIpc().invoke('session:mergePages', payload) as Promise<{
+      ok: true
+      generatedPages: Array<{
+        id: string
+        pageNumber: number
+        pageId: string
+        title: string
+        contentOutline?: string | null
+        html: string
+        htmlPath: string
+        sourceUrl?: string
+        status?: string
+        error?: string | null
+      }>
+      insertedPageIds: string[]
+      selectedPageId: string
+    }>,
+  listMergeSourceTemplates: (payload: { targetSessionId: string }) =>
+    getIpc().invoke('session:listMergeSourceTemplates', payload) as Promise<
+      MergeTemplateSourceSummary[]
+    >,
+  listMergeSourceTemplatePages: (payload: { targetSessionId: string; templateId: string }) =>
+    getIpc().invoke(
+      'session:listMergeSourcePages',
+      { targetSessionId: payload.targetSessionId, sourceType: 'template', templateId: payload.templateId }
+    ) as Promise<MergeSourcePageSummary[]>,
+  mergeTemplatePages: (payload: {
+    targetSessionId: string
+    templateId: string
+    sourcePageIds: string[]
+  }) =>
+    getIpc().invoke('session:mergePages', {
+      targetSessionId: payload.targetSessionId,
+      sourceType: 'template',
+      templateId: payload.templateId,
+      sourcePageIds: payload.sourcePageIds
+    }) as Promise<{
       ok: true
       generatedPages: Array<{
         id: string

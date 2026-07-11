@@ -194,39 +194,41 @@ function SortableBrowseCard({
           <Move className={`h-4 w-4 ${isDragging ? 'opacity-60' : ''}`} />
         </button>
         <div className="flex items-center gap-1">
-          <DropdownMenu>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    disabled={disabled || isExportingPptx || !canExportPptx}
-                    onClick={(event) => event.stopPropagation()}
-                    className="rounded bg-white/90 p-1 text-[#5d6b4d] shadow-sm transition-colors hover:bg-[#f5f1e8] hover:text-[#3e4a32] disabled:cursor-not-allowed disabled:opacity-50"
-                    aria-label={exportLabel}
-                  >
-                    <Presentation className="h-3.5 w-3.5" />
-                  </button>
-                </DropdownMenuTrigger>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">{exportLabel}</TooltipContent>
-            </Tooltip>
-            <DropdownMenuContent
-              side="bottom"
-              align="end"
-              className="min-w-[9rem]"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <DropdownMenuItem onSelect={() => onExportPagePptx(page)}>
-                <Presentation className="h-3.5 w-3.5 shrink-0 text-[#5f6b50]" />
-                <span className="whitespace-nowrap">{exportEditableLabel}</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => onExportPagePptx(page, { imageOnly: true })}>
-                <ImageIcon className="h-3.5 w-3.5 shrink-0 text-[#7c6a4c]" />
-                <span className="whitespace-nowrap">{exportImageOnlyLabel}</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {canExportPptx ? (
+            <DropdownMenu>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      disabled={disabled || isExportingPptx}
+                      onClick={(event) => event.stopPropagation()}
+                      className="rounded bg-white/90 p-1 text-[#5d6b4d] shadow-sm transition-colors hover:bg-[#f5f1e8] hover:text-[#3e4a32] disabled:cursor-not-allowed disabled:opacity-50"
+                      aria-label={exportLabel}
+                    >
+                      <Presentation className="h-3.5 w-3.5" />
+                    </button>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">{exportLabel}</TooltipContent>
+              </Tooltip>
+              <DropdownMenuContent
+                side="bottom"
+                align="end"
+                className="min-w-[9rem]"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <DropdownMenuItem onSelect={() => onExportPagePptx(page)}>
+                  <Presentation className="h-3.5 w-3.5 shrink-0 text-[#5f6b50]" />
+                  <span className="whitespace-nowrap">{exportEditableLabel}</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onExportPagePptx(page, { imageOnly: true })}>
+                  <ImageIcon className="h-3.5 w-3.5 shrink-0 text-[#7c6a4c]" />
+                  <span className="whitespace-nowrap">{exportImageOnlyLabel}</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
           <button
             type="button"
             disabled={disabled}

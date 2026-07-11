@@ -62,6 +62,7 @@ interface SessionDetailUiStore {
   addPageDialogOpen: boolean
   blankPageDialogOpen: boolean
   mergeSessionPagesDialogOpen: boolean
+  mergeTemplatePagesDialogOpen: boolean
   blankPageSourceId: string
   historyDialogOpen: boolean
   pageTitleEditPageId: string | null
@@ -132,6 +133,7 @@ interface SessionDetailUiStore {
   setAddPageDialogOpen: (open: boolean) => void
   setBlankPageDialogOpen: (open: boolean) => void
   setMergeSessionPagesDialogOpen: (open: boolean) => void
+  setMergeTemplatePagesDialogOpen: (open: boolean) => void
   setBlankPageSourceId: (pageId: string) => void
   openBlankPageDialog: (sourcePageId: string) => void
   setHistoryDialogOpen: (open: boolean) => void
@@ -194,6 +196,7 @@ export const useSessionDetailUiStore = create<SessionDetailUiStore>((set) => ({
   addPageDialogOpen: false,
   blankPageDialogOpen: false,
   mergeSessionPagesDialogOpen: false,
+  mergeTemplatePagesDialogOpen: false,
   blankPageSourceId: '',
   historyDialogOpen: false,
   pageTitleEditPageId: null,
@@ -357,6 +360,8 @@ export const useSessionDetailUiStore = create<SessionDetailUiStore>((set) => ({
   setBlankPageDialogOpen: (blankPageDialogOpen) => set({ blankPageDialogOpen }),
   setMergeSessionPagesDialogOpen: (mergeSessionPagesDialogOpen) =>
     set({ mergeSessionPagesDialogOpen }),
+  setMergeTemplatePagesDialogOpen: (mergeTemplatePagesDialogOpen) =>
+    set({ mergeTemplatePagesDialogOpen }),
   setBlankPageSourceId: (blankPageSourceId) => set({ blankPageSourceId }),
   openBlankPageDialog: (blankPageSourceId) =>
     set({
@@ -452,6 +457,7 @@ export const useSessionDetailUiStore = create<SessionDetailUiStore>((set) => ({
       addPageDialogOpen: false,
       blankPageDialogOpen: false,
       mergeSessionPagesDialogOpen: false,
+      mergeTemplatePagesDialogOpen: false,
       blankPageSourceId: '',
       historyDialogOpen: false,
       pageTitleEditPageId: null,

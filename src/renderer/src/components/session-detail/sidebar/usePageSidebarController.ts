@@ -31,6 +31,9 @@ export function usePageSidebarController(sessionId: string) {
   const setMergeSessionPagesDialogOpen = useSessionDetailUiStore(
     (state) => state.setMergeSessionPagesDialogOpen
   )
+  const setMergeTemplatePagesDialogOpen = useSessionDetailUiStore(
+    (state) => state.setMergeTemplatePagesDialogOpen
+  )
   const openBlankPageDialog = useSessionDetailUiStore((state) => state.openBlankPageDialog)
   const loadSession = useSessionStore((state) => state.loadSession)
   const currentSession = useSessionStore((state) => state.currentSession)
@@ -104,6 +107,7 @@ export function usePageSidebarController(sessionId: string) {
     onAddBlankPage: () => openBlankPageDialog(selectedPage?.id || pages[0]?.id || ''),
     onAddPage: () => setAddPageDialogOpen(true),
     onMergeSessionPages: () => setMergeSessionPagesDialogOpen(true),
+    onMergeTemplatePages: () => setMergeTemplatePagesDialogOpen(true),
     onRetryFailedPage: (page: SessionPreviewPage) => void handleRetryFailedPage(page),
     onReorderPages: handleReorderPages,
     onDeletePage: pageActions.deletePage,

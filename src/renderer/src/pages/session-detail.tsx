@@ -20,6 +20,7 @@ import {
   GenerationActivityDialog,
   HistoryDialog,
   MergeSessionPagesDialog,
+  MergeTemplatePagesDialog,
   PageTitleEditDialog
 } from '../components/session-detail/modal'
 import {
@@ -1146,6 +1147,7 @@ export function SessionDetailPage(): React.JSX.Element {
         <AddBlankPageDialog sessionId={id} />
         <AddPageDialog sessionId={id} />
         <MergeSessionPagesDialog sessionId={id} />
+        <MergeTemplatePagesDialog sessionId={id} />
         <GenerationActivityDialog sessionId={id} />
         <PageTitleEditDialog sessionId={id} />
         <DeletePageDialog sessionId={id} />

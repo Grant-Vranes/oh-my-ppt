@@ -44,6 +44,15 @@ vi.mock('../../../src/main/tools/font-registry', () => ({
   buildFontHeadTags: mocks.buildFontHeadTags
 }))
 
+vi.mock('../../../src/main/ipc/templates/template-service', () => ({
+  loadTemplateManifest: vi.fn(),
+  listTemplates: vi.fn()
+}))
+
+vi.mock('../../../src/main/ipc/templates/template-paths', () => ({
+  resolveTemplateRelativePath: vi.fn()
+}))
+
 import {
   listMergeSourceSessions,
   mergeSessionPages

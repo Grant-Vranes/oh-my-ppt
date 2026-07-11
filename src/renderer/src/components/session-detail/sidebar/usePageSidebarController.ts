@@ -112,6 +112,7 @@ export function usePageSidebarController(sessionId: string) {
     onReorderPages: handleReorderPages,
     onDeletePage: pageActions.deletePage,
     onRenamePage: pageActions.renamePage,
+    onDuplicatePage: pageActions.duplicatePage,
     onUpdatePageOutline: handleUpdatePageOutline,
     onExportPagePptx: pageActions.exportPagePptx,
     canExportPptx: slideSize ? isDefaultSlideSize(slideSize) : false,

@@ -1258,12 +1258,14 @@ Business presentations, product introductions, project summaries — formal but 
     savePageTitle: 'Save title',
     updateTitleFailed: 'Failed to save page title',
     deletePage: 'Delete page',
+    duplicatePage: 'Duplicate page',
     deleteConfirmTitle: 'Delete this page?',
     deleteConfirmDescription: 'The page will be removed from this presentation.',
     deleteConfirmAction: 'Delete',
     deleteLastPageError: 'Cannot delete the last page',
     reorderFailed: 'Failed to reorder pages',
-    deleteFailed: 'Failed to delete page'
+    deleteFailed: 'Failed to delete page',
+    duplicatePageFailed: 'Failed to duplicate page'
   },
   editMode: {
     addText: 'Plain Text',

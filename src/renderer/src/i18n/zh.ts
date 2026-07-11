@@ -1197,12 +1197,14 @@ export const zh = {
     savePageTitle: '保存标题',
     updateTitleFailed: '页面标题保存失败',
     deletePage: '删除页面',
+    duplicatePage: '复制页面',
     deleteConfirmTitle: '删除这一页？',
     deleteConfirmDescription: '删除后会从当前演示中移除该页面。',
     deleteConfirmAction: '删除',
     deleteLastPageError: '不能删除最后一页',
     reorderFailed: '调整页面顺序失败',
-    deleteFailed: '删除页面失败'
+    deleteFailed: '删除页面失败',
+    duplicatePageFailed: '复制页面失败'
   },
   editMode: {
     addText: '普通文字',

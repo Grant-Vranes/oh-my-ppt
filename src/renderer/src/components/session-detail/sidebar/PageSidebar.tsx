@@ -163,6 +163,7 @@ export const PageSidebar = memo(function PageSidebar({
     onReorderPages,
     onDeletePage,
     onRenamePage,
+    onDuplicatePage,
     onUpdatePageOutline,
     onExportPagePptx,
     canExportPptx,
@@ -742,6 +743,21 @@ export const PageSidebar = memo(function PageSidebar({
                                           title={t('pageManagement.editPageTitle')}
                                         >
                                           <PencilLine className="h-3.5 w-3.5" />
+                                        </button>
+                                      ) : null}
+                                      {onDuplicatePage ? (
+                                        <button
+                                          type="button"
+                                          disabled={pageManagementDisabled || disabled}
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            onDuplicatePage(page)
+                                          }}
+                                          className="rounded bg-white/90 p-1 text-[#5d6b4d] shadow-sm transition-colors hover:bg-[#f5f1e8] hover:text-[#3e4a32] disabled:cursor-not-allowed disabled:opacity-50"
+                                          aria-label={t('pageManagement.duplicatePage')}
+                                          title={t('pageManagement.duplicatePage')}
+                                        >
+                                          <Copy className="h-3.5 w-3.5" />
                                         </button>
                                       ) : null}
                                       {onDeletePage ? (

@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  Copy,
   Image as ImageIcon,
   Move,
   PencilLine,
@@ -121,9 +122,11 @@ function SortableBrowseCard({
   pageCount,
   onExportPagePptx,
   onRenamePage,
+  onDuplicatePage,
   onDeletePage,
   registerRef,
   renameLabel,
+  duplicateLabel,
   deleteLabel
 }: {
   page: SessionPreviewPage
@@ -139,9 +142,11 @@ function SortableBrowseCard({
   pageCount: number
   onExportPagePptx: (page: SessionPreviewPage, options?: { imageOnly?: boolean }) => void
   onRenamePage: (page: SessionPreviewPage) => void
+  onDuplicatePage: (page: SessionPreviewPage) => void
   onDeletePage: (page: SessionPreviewPage) => void
   registerRef: (el: HTMLElement | null) => void
   renameLabel: string
+  duplicateLabel: string
   deleteLabel: string
 }): React.JSX.Element {
   const {
@@ -241,6 +246,19 @@ function SortableBrowseCard({
             title={renameLabel}
           >
             <PencilLine className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={(event) => {
+              event.stopPropagation()
+              onDuplicatePage(page)
+            }}
+            className="rounded bg-white/90 p-1 text-[#5d6b4d] shadow-sm transition-colors hover:bg-[#f5f1e8] hover:text-[#3e4a32] disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label={duplicateLabel}
+            title={duplicateLabel}
+          >
+            <Copy className="h-3.5 w-3.5" />
           </button>
           <button
             type="button"
@@ -415,9 +433,11 @@ export function BrowseView(props: { sessionId: string }): React.JSX.Element {
                       pageCount={pages.length}
                       onExportPagePptx={pageActions.exportPagePptx}
                       onRenamePage={pageActions.renamePage}
+                      onDuplicatePage={pageActions.duplicatePage}
                       onDeletePage={pageActions.deletePage}
                       registerRef={getCardRef(page.id)}
                       renameLabel={t('pageManagement.editPageTitle')}
+                      duplicateLabel={t('pageManagement.duplicatePage')}
                       deleteLabel={t('pageManagement.deletePage')}
                     />
                   )

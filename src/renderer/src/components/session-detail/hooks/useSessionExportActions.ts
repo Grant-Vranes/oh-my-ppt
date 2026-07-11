@@ -52,6 +52,7 @@ function getPptxExportNotice(
 export function useSessionExportActions(sessionId: string): {
   exportPdf: () => Promise<void>
   exportPng: () => Promise<void>
+  exportLongImage: () => Promise<void>
   exportVideo: (options?: VideoExportOptions) => Promise<void>
   exportPptx: (options?: PptxExportOptions) => Promise<void>
   canExportPptx: boolean
@@ -257,6 +258,43 @@ export function useSessionExportActions(sessionId: string): {
     }
   }
 
+  const exportLongImage = async (): Promise<void> => {
+    const detailState = useSessionDetailUiStore.getState()
+    if (!sessionId || detailState.isExportingLongImage) return
+    detailState.setIsExportingLongImage(true)
+    const progressToast = createExportProgressToast({
+      kind: 'longImage',
+      title: t('sessionDetail.exportLongImageStart'),
+      description: t('sessionDetail.exportLongImageDescription')
+    })
+    try {
+      const result = await ipc.exportLongImage(sessionId)
+      if (result.cancelled) {
+        progressToast.cancel(t('sessionDetail.exportCancelled'))
+        return
+      }
+      if (!result.success || !result.path) {
+        progressToast.error(t('sessionDetail.exportFailed'))
+        return
+      }
+      if (Array.isArray(result.warnings) && result.warnings.length > 0) {
+        progressToast.success(
+          t('sessionDetail.longImageExported', { count: result.pageCount || 0 }),
+          {
+            description: t('sessionDetail.pageLoadNotice')
+          }
+        )
+        return
+      }
+      progressToast.success(t('sessionDetail.longImageExported', { count: result.pageCount || 0 }))
+    } catch (error) {
+      progressToast.error(error instanceof Error ? error.message : t('sessionDetail.exportFailed'))
+    } finally {
+      progressToast.dispose()
+      useSessionDetailUiStore.getState().setIsExportingLongImage(false)
+    }
+  }
+
   const exportVideo = async (options?: VideoExportOptions): Promise<void> => {
     const detailState = useSessionDetailUiStore.getState()
     if (!sessionId || detailState.isExportingVideo) return
@@ -447,6 +485,7 @@ export function useSessionExportActions(sessionId: string): {
   return {
     exportPdf,
     exportPng,
+    exportLongImage,
     exportVideo,
     exportPptx,
     canExportPptx,

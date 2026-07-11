@@ -40,6 +40,7 @@ interface SessionDetailUiStore {
   previewKey: number
   isExportingPdf: boolean
   isExportingPng: boolean
+  isExportingLongImage: boolean
   isExportingPptx: boolean
   isExportingVideo: boolean
   isExportingSlidePack: boolean
@@ -98,6 +99,7 @@ interface SessionDetailUiStore {
   bumpPreviewKey: () => void
   setIsExportingPdf: (isExporting: boolean) => void
   setIsExportingPng: (isExporting: boolean) => void
+  setIsExportingLongImage: (isExporting: boolean) => void
   setIsExportingPptx: (isExporting: boolean) => void
   setIsExportingVideo: (isExporting: boolean) => void
   setIsExportingSlidePack: (isExporting: boolean) => void
@@ -174,6 +176,7 @@ export const useSessionDetailUiStore = create<SessionDetailUiStore>((set) => ({
   previewKey: 0,
   isExportingPdf: false,
   isExportingPng: false,
+  isExportingLongImage: false,
   isExportingPptx: false,
   isExportingVideo: false,
   isExportingSlidePack: false,
@@ -268,6 +271,7 @@ export const useSessionDetailUiStore = create<SessionDetailUiStore>((set) => ({
   bumpPreviewKey: () => set((state) => ({ previewKey: state.previewKey + 1 })),
   setIsExportingPdf: (isExportingPdf) => set({ isExportingPdf }),
   setIsExportingPng: (isExportingPng) => set({ isExportingPng }),
+  setIsExportingLongImage: (isExportingLongImage) => set({ isExportingLongImage }),
   setIsExportingPptx: (isExportingPptx) => set({ isExportingPptx }),
   setIsExportingVideo: (isExportingVideo) => set({ isExportingVideo }),
   setIsExportingSlidePack: (isExportingSlidePack) => set({ isExportingSlidePack }),

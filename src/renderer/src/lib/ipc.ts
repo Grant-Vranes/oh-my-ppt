@@ -750,6 +750,8 @@ export const ipc = {
     getIpc().invoke('export:pdf', { sessionId }) as Promise<ExportDeckResult>,
   exportPng: (sessionId: string) =>
     getIpc().invoke('export:png', { sessionId }) as Promise<ExportDeckResult>,
+  exportLongImage: (sessionId: string) =>
+    getIpc().invoke('export:longImage', { sessionId }) as Promise<ExportDeckResult>,
   exportVideo: (sessionId: string, options?: { pageId?: string }) =>
     getIpc().invoke('export:video', { sessionId, ...options }) as Promise<ExportDeckResult>,
   exportPptx: (

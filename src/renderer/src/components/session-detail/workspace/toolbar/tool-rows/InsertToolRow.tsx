@@ -1,11 +1,15 @@
 import { useState } from 'react'
 import {
   ChartColumn,
+  ChartLine,
+  ChartPie,
   ChevronDown,
   Copy,
+  Donut,
   ImagePlus,
   Layers,
   Loader2,
+  Radar,
   Shapes,
   Sigma,
   Smile,
@@ -22,7 +26,10 @@ import {
   serializeIconInner,
   type InsertShapeType
 } from '@renderer/components/session-detail/workspace/insert-shapes'
-import { CHART_TYPE_LIST } from '@renderer/components/session-detail/workspace/insert-charts'
+import {
+  CHART_TYPE_LIST,
+  type InsertChartType
+} from '@renderer/components/session-detail/workspace/insert-charts'
 import { useT, type I18nKey } from '@renderer/i18n'
 import { useEditSessionStore, useSessionDetailRuntimeStore } from '@renderer/store'
 import {
@@ -269,6 +276,7 @@ export function InsertToolRow({ disabled }: ToolRowProps): React.JSX.Element {
   const [artTextOpen, setArtTextOpen] = useState(false)
   const [shapeOpen, setShapeOpen] = useState(false)
   const [iconOpen, setIconOpen] = useState(false)
+  const [chartOpen, setChartOpen] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const actions = useSessionDetailRuntimeStore((state) => state.workspaceRibbonActions)
   const selection = useEditSessionStore((state) => state.selection)
@@ -375,9 +383,17 @@ export function InsertToolRow({ disabled }: ToolRowProps): React.JSX.Element {
     )
   }
 
-  const renderChartDropdown = (): React.JSX.Element => (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+  const chartTypeIcons: Record<InsertChartType, typeof ChartColumn> = {
+    bar: ChartColumn,
+    line: ChartLine,
+    pie: ChartPie,
+    doughnut: Donut,
+    radar: Radar
+  }
+
+  const renderChartPopover = (): React.JSX.Element => (
+    <Popover open={chartOpen} onOpenChange={setChartOpen}>
+      <PopoverTrigger asChild>
         <button type="button" className={toolButtonClass} disabled={disabled}>
           <span className={iconWrapClass}>
             <ChartColumn className={iconClass} />
@@ -385,15 +401,32 @@ export function InsertToolRow({ disabled }: ToolRowProps): React.JSX.Element {
           {t('editMode.chart')}
           <ChevronDown className="h-2.5 w-2.5 opacity-70" />
         </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="min-w-[10rem]">
-        {CHART_TYPE_LIST.map((item) => (
-          <DropdownMenuItem key={item.type} onClick={() => actions?.onAddChart(item.type)}>
-            {t(item.labelKey as I18nKey)}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-[280px] max-w-[calc(100vw-2rem)] border-[#d8ccb5]/85 bg-[#fff9ef] p-2"
+      >
+        <div className="grid grid-cols-3 gap-2">
+          {CHART_TYPE_LIST.map((item) => {
+            const Icon = chartTypeIcons[item.type]
+            return (
+              <button
+                type="button"
+                key={item.type}
+                className="flex min-h-[60px] flex-col items-center justify-center gap-1 rounded-lg border border-[#d8ccb5]/70 bg-white/70 px-2 py-2 text-[10px] font-bold text-[#3e4a32] transition-colors hover:border-[#8fbc8f] hover:bg-white"
+                onClick={() => {
+                  actions?.onAddChart(item.type)
+                  setChartOpen(false)
+                }}
+              >
+                <Icon className="h-5 w-5 text-[#5d6b4d]" />
+                <span>{t(item.labelKey as I18nKey)}</span>
+              </button>
+            )
+          })}
+        </div>
+      </PopoverContent>
+    </Popover>
   )
 
   const renderArtTextPreview = (
@@ -614,7 +647,7 @@ export function InsertToolRow({ disabled }: ToolRowProps): React.JSX.Element {
         {renderIconPopover()}
         {renderMediaDropdown('image')}
         {renderMediaDropdown('video')}
-        {renderChartDropdown()}
+        {renderChartPopover()}
         <button
           type="button"
           className={toolButtonClass}

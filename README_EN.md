@@ -70,6 +70,7 @@ Output is pure HTML slides: instant browser preview, no extra software, easy to 
 
 - 💬 **One-prompt generation** — Enter topic + requirements, AI plans outline + palette + layout, then generates a complete deck
 - 🔀 **Multi-task generation** — Submit multiple generation tasks in parallel without waiting for one to finish before starting another, with automatic notifications on completion
+- 📐 **Multi-size, multi-format canvases** — Beyond traditional PPT sizes, create widescreen decks, 4:3 projection slides, vertical 9:16 pages, portrait 3:4 pages, square 1:1 cards, Xiaohongshu/social-note formats, and more, with generation, preview, editing, and export preserving the real aspect ratio
 - 📄 **Document-based creation** — Upload txt, md, csv, or docx files to prepare topic, page count, and description automatically, then keep using the source document during generation
 - 📥 **Import PPTX for editing** — Convert local PPTX files into in-app HTML pages, then continue previewing, adjusting positions, and chat-based editing
 - 🧱 **Template library and template creation** — Save generated or edited decks as templates, import PPTX files as templates, and reuse templates to create new PPT sessions
@@ -88,9 +89,9 @@ Output is pure HTML slides: instant browser preview, no extra software, easy to 
 - 🎬 **Animation support** — 16+ slide transition effects plus Anime.js v4-powered whole-element motion
 - 🎞️ **Per-element animation controls** — Select individual text, image, chart, or other elements while editing, then configure entrance, emphasis, or exit effects with automatic/click triggers, duration, and direction
 - 🧮 **Math formula rendering** — Display common LaTeX formulas for classes, teaching decks, and technical talks
-- 📄 **Multi-format export** — Export to PDF, batch PNG, MP4 video, or editable PPTX with embedded fonts (still being improved)
+- 📄 **Multi-format export** — Export to PDF, batch PNG, PNG long image, MP4 video, or editable PPTX with embedded fonts (still being improved)
 - 🏷️ **Session management** — Session list distinguishes AI-created decks from imported PPTX decks, and deck names can be renamed
-- 🧩 **More reliable slide layout** — Generation follows a fixed 16:9 canvas and content-height budget to reduce overflow
+- 🧩 **More reliable page layout** — Generation follows the selected canvas size and content-height budget to reduce overflow
 - 🔄 **Version history rollback** — Every edit is automatically saved, roll back to any previous version with one click, never worry about mistakes
 - 📦 **One-click packaging** — Bundle your HTML deck into a single executable file, double-click to open and present anywhere, no installation needed (just a browser)
 - 💾 **AI-generated creative deck import & export** — Export your AI-generated creative deck from the editing page and import it on another computer to continue editing, making cross-device collaboration seamless
@@ -107,11 +108,11 @@ Output is pure HTML slides: instant browser preview, no extra software, easy to 
 <a id="workflow"></a>
 ## 🔄 Workflow
 
-> 💡 Choose a creation mode → confirm topic / materials / page count / style / fonts → AI generates the HTML deck → preview, present, and edit → generate speaker scripts → export PDF / PNG / PPTX / MP4 / packaged HTML
+> 💡 Choose a creation mode → confirm topic / materials / page count / canvas format / style / fonts → AI generates the HTML deck → preview, present, and edit → generate speaker scripts → export PDF / PNG / PNG long image / PPTX / MP4 / packaged HTML
 
 The home page supports several common entry points:
 
-- **One-prompt creation**: enter a topic and detailed description to quickly generate a complete deck.
+- **One-prompt creation**: enter a topic, canvas format, and detailed description to quickly generate a complete deck, vertical page, square card, or Xiaohongshu/social-note format.
 - **Chat to Create**: use a multi-turn conversation to clarify the topic, materials, audience, structure, and key points for each slide. This is useful when requirements are still unclear, the source material is complex, or you want to shape the outline together first.
 - **Upload document parsing**: upload txt, md, csv, docx, and other files so the app can prepare the topic, page count, and detailed description, then keep referencing the source file during generation.
 - **Create from template**: choose a saved template from the Templates page to copy it into an editable PPT session, or enter a new topic/outline or upload a document so the app regenerates content while preserving the template's layout, palette, and visual rhythm.
@@ -214,10 +215,11 @@ Supports keyboard navigation (Left/Right), presentation mode, fullscreen present
 <a id="export"></a>
 ### About export
 
-Oh My PPT currently supports four export modes:
+Oh My PPT currently supports five export modes:
 
 - **PDF**: best for sharing, archiving, and printing.
 - **PNG**: batch-export every slide as an image for docs, Notion, articles, or social posts.
+- **PNG long image**: stitch the full set of pages vertically into one long image for social posts, chat sharing, long-document previews, and mobile reading.
 - **PPTX**: export an editable file for PowerPoint / Keynote. Text, images, colors, formulas, and basic layout are preserved where possible, while text overlap, mixed-language layout, and complex chart rendering are still being improved.
 - **MP4**: export the presentation as a video for social posts, client sharing, or playback when a PPT file is not the best fit.
 
@@ -296,6 +298,8 @@ Oh My PPT is currently mainly developed and maintained by one person. If it help
 <a id="references"></a>
 ## Reference
 
+- [@arcsin1/pptx2json](https://github.com/arcsin1/pptx2json) — the foundation package behind Oh My PPT's editable PPTX import, used to parse PPTX files into structured data that can remain editable; it is now open source and will continue improving restoration for complex shapes, charts, tables, animations, and more.
+- [arcsin1/style-generate-skill](https://github.com/arcsin1/style-generate-skill) — the official Oh My PPT style-generation Skill for turning reference designs, palettes, layouts, and scenario requirements into importable style packages.
 - [ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)
 - [html-ppt-skill](https://github.com/lewislulu/html-ppt-skill)
 

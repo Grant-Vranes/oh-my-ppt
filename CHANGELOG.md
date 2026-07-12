@@ -1,5 +1,35 @@
 # 更新日志 / Changelog
 
+## 2026-07-12 · v2.0.20
+
+### 中文
+
+- 新增编辑页形状与图标插入：可直接添加矩形、圆角矩形、圆形、线条、箭头、三角形、菱形、星形等常用形状，以及图标和编号元素，做结构标注、流程图和重点提示更方便。
+- 新增公式插入：编辑时可从工具栏快速添加 LaTeX 公式，并继续在右侧面板修改内容、展示方式和预览效果。
+- 新增可编辑图表：支持插入柱状图、折线图、饼图、环形图和雷达图，可调整标题、数据、颜色、图例、堆叠、横向显示、平滑曲线和面积填充等设置。
+- 新增图表数据导入：图表编辑面板支持导入 CSV、TSV、JSON 和 Excel 数据，分类列与数值列会自动整理为可编辑图表数据。
+- 新增元素应用到所有页面：选中一个元素后可同步到整套演示，适合统一页眉页脚、Logo、角标、版权信息或固定装饰元素。
+- 新增从模板添加页面：可在当前演示中选择模板页面并复制到末尾，保留模板原始页面风格，方便快速补页和复用版式。
+- 新增复制页面：可直接复制当前页面并插入到原页之后，复制后保留页面内容、素材引用和编辑结构。
+- 新增 PNG 长图导出：可将整套演示纵向拼接为一张长图，适合社媒发布、聊天分享和长文档预览。
+- 新增升级可编辑 PPTX 导入底座：开源并重写了底层 PPTX 可编辑导入包（`@arcsin1/pptx2json`）的实现，新的解析链路改进形状、表格、图表、图片、文本层级和动画信息还原，导入后更接近原稿并更容易继续编辑（适用于所有pptx文件）。
+- 优化 PPTX 导入进度：导入阶段会展示解析、写入会话、抽取风格和完成状态，长文件导入时等待感更清晰。
+- 优化运行时播放与预览：刷新图表渲染和导入页面运行时资源，提升浏览、演示和导入页面回放的一致性。
+
+### English
+
+- Added shape and icon insertion in the editor: insert common shapes such as rectangles, rounded rectangles, ellipses, lines, arrows, triangles, diamonds, stars, plus icon and number elements for diagrams, annotations, and highlights.
+- Added formula insertion: add a LaTeX formula from the toolbar, then continue editing its content, display mode, and preview from the inspector.
+- Added editable charts: insert bar, line, pie, doughnut, and radar charts, then adjust titles, data, colors, legends, stacking, horizontal layout, smooth lines, and area fills.
+- Added chart data import: the chart inspector can import CSV, TSV, JSON, and Excel data, mapping category and numeric columns into editable chart data.
+- Added apply element to all pages: sync a selected element across the full deck, useful for headers, footers, logos, badges, copyright notes, and fixed decoration.
+- Added pages from templates: choose pages from a template and copy them to the end of the current presentation while preserving the template's original page style.
+- Added page duplication: duplicate the current page directly after the source page while preserving content, asset references, and editable structure.
+- Added PNG long image export: stitch the full deck vertically into one long image for social posts, chat sharing, and long-document previews.
+- Major upgrade to the editable PPTX import foundation: the underlying editable PPTX import package (`@arcsin1/pptx2json`) has been open-sourced and rewritten, with a new parser that improves restoration of shapes, tables, charts, images, text layering, and animation metadata so imported decks stay closer to the original and remain easier to edit.
+- Improved PPTX import progress: import now reports parsing, session writing, style extraction, and completion states, making long imports easier to follow.
+- Improved runtime playback and previews: refreshed chart rendering and imported-page runtime assets make browsing, presenting, and imported slide playback more consistent.
+
 ## 2026-07-06 · v2.0.19
 
 ### 中文

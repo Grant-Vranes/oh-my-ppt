@@ -40,7 +40,7 @@ function setupAndScan(html: string) {
   if (existingPPT) existingPPT.__runtimeVersion = null
   ;(globalThis as Record<string, unknown>).anime = anime
   document.body.innerHTML = html
-  window.history.replaceState(null, '', '/page.html')
+  window.history.replaceState(null, '', '/page.html?pptPlayback=1')
   new Function(runtimeSrc)()
   const PPT = (globalThis as Record<string, unknown>).PPT as Record<string, unknown>
   const root = document.querySelector('.ppt-page-root')

@@ -27,7 +27,7 @@ const localAssetUrl = (filePath: string): string =>
 
 const templateThumbnailUrl = (filePath: string): string => {
   const separator = filePath.includes('?') ? '&' : '?'
-  return `${localAssetUrl(filePath)}${separator}print=1&thumbnail=1&fit=off`
+  return `${localAssetUrl(filePath)}${separator}print=1&thumbnail=1&fit=off&pptPlayback=0`
 }
 
 const wait = (ms: number): Promise<void> => new Promise((resolve) => window.setTimeout(resolve, ms))

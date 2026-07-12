@@ -1,10 +1,10 @@
 (function initPptRuntime(global) {
   if (!global || typeof global !== "object") return;
-  // @ohmyppt-ppt-runtime:arcsin1:v2.0.17
+  // @ohmyppt-ppt-runtime:arcsin1:v2.0.18
 
   var ppt = global.PPT && typeof global.PPT === "object" ? global.PPT : (global.PPT = {});
-  if (ppt.__runtimeVersion === "2.0.17") return;
-  ppt.__runtimeVersion = "2.0.17";
+  if (ppt.__runtimeVersion === "2.0.18") return;
+  ppt.__runtimeVersion = "2.0.18";
 
   function resolveSearchParams() {
     try {
@@ -16,6 +16,12 @@
 
   var search = resolveSearchParams();
   var isPrintMode = search.get("print") === "1";
+  var clickAnimationsEnabled = search.get("pptPlayback") === "1";
+  if (!clickAnimationsEnabled) {
+    global.__ohmypptPlaybackBridgeInstallToken =
+      (global.__ohmypptPlaybackBridgeInstallToken || 0) + 1;
+    global.__ohmypptPlaybackBridgeInstalled = false;
+  }
   var printTimeoutMs = Math.max(1000, Number(search.get("printTimeoutMs")) || 40000);
   var printReadyEmitted = false;
   var pendingPrintTasks = [];
@@ -548,6 +554,7 @@
   };
 
   ppt.clicks = {
+    enabled: clickAnimationsEnabled,
     current: 0,
     total: 0,
     _listeners: [],
@@ -560,16 +567,18 @@
       this._advanceListeners = [];
     },
     setTotal: function (n) {
-      this.total = Math.max(0, Number(n) || 0);
+      this.total = this.enabled ? Math.max(0, Number(n) || 0) : 0;
       if (this.current > this.total) this.current = this.total;
     },
     advance: function () {
+      if (!this.enabled) return false;
       if (this.total > 0 && this.current >= this.total) return false;
       this.current += 1;
       this._dispatch(this.current);
       return true;
     },
     on: function (clickNum, fn) {
+      if (!this.enabled) return;
       this._listeners.push({ clickNum: clickNum, fn: fn });
       if (this.current >= clickNum) {
         try { fn(); } catch (_err) {}
@@ -1045,6 +1054,7 @@
       if (type === "none") return;
 
       var trigger = normalizeAnimTrigger(el.getAttribute("data-anim-trigger") || "load");
+      if (trigger === "click" && !clickAnimationsEnabled) return;
       var effectiveTrigger = trigger === "click" ? "click" : "load";
       var sequence = normalizeAnimSequence(el.getAttribute("data-anim-sequence") || "");
       var clickGroup = normalizeAnimClickGroup(el.getAttribute("data-anim-click-group") || "");

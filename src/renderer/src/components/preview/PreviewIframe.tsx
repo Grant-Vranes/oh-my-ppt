@@ -22,60 +22,6 @@ import type { InteractionMode } from '@renderer/store'
 import { requireSlideSize, type SlideSizePreset } from '@shared/slide-size'
 import type { InsertChartSeries } from '../session-detail/workspace/insert-charts'
 
-const buildPreviewClickAnimationInjectScript = (): string => `
-(() => {
-  const KEY = "__pptPreviewClickAnimationBridge";
-  if (window[KEY] && typeof window[KEY].cleanup === "function") return;
-
-  const isEditableTarget = (target) => {
-    if (!(target instanceof Element)) return false;
-    return Boolean(target.closest("input, textarea, select, button, [contenteditable='true'], [contenteditable='']"));
-  };
-
-  const advanceClickAnimation = () => {
-    try {
-      const clicks = window.PPT && window.PPT.clicks;
-      if (clicks && clicks.total > 0 && typeof clicks.advance === "function") {
-        return clicks.advance();
-      }
-    } catch (_err) {}
-    return false;
-  };
-
-  const onClick = (event) => {
-    if (isEditableTarget(event.target)) return;
-    advanceClickAnimation();
-  };
-
-  const onKeyDown = (event) => {
-    if (isEditableTarget(event.target)) return;
-    if (!["ArrowRight", "ArrowDown", "PageDown", " "].includes(event.key)) return;
-    if (advanceClickAnimation()) {
-      event.preventDefault();
-    }
-  };
-
-  document.addEventListener("click", onClick);
-  document.addEventListener("keydown", onKeyDown);
-  window[KEY] = {
-    cleanup() {
-      document.removeEventListener("click", onClick);
-      document.removeEventListener("keydown", onKeyDown);
-      delete window[KEY];
-    }
-  };
-})();
-`
-
-const buildPreviewClickAnimationCleanupScript = (): string => `
-(() => {
-  const state = window.__pptPreviewClickAnimationBridge;
-  if (state && typeof state.cleanup === "function") {
-    state.cleanup();
-  }
-})();
-`
-
 export interface PreviewIframeHandle {
   patchPageContent: (pageId: string, newHtml: string) => void
   liveUpdateElement: (
@@ -235,7 +181,6 @@ export const PreviewIframe = forwardRef<
   const webviewReadyRef = useRef(false)
   const inspectorInjectedRef = useRef(false)
   const editModeInjectedRef = useRef(false)
-  const previewClickInjectedRef = useRef(false)
   const previewScaleRef = useRef(1)
   const [webviewElement, setWebviewElement] = useState<Electron.WebviewTag | null>(null)
   const [webviewReady, setWebviewReady] = useState(false)
@@ -265,11 +210,10 @@ export const PreviewIframe = forwardRef<
     // PreviewIframe already scales the logical slide canvas into its viewport.
     // Disable page-level auto-fit to avoid double-scaling on specific pages.
     url.searchParams.set('fit', 'off')
+    // Preview surfaces are static. Only the full-screen presentation URL enables motion.
+    url.searchParams.set('print', '1')
+    url.searchParams.set('pptPlayback', '0')
     if (thumbnail) {
-      // Historical page files contain an injected default-motion script that starts
-      // many normal text/card nodes at opacity 0. Print mode makes PPT.animate
-      // apply final states immediately and makes default motion scripts skip.
-      url.searchParams.set('print', '1')
       url.searchParams.set('thumbnail', '1')
       if (pageId) url.searchParams.set('pageId', pageId)
     }
@@ -366,7 +310,6 @@ export const PreviewIframe = forwardRef<
     webviewReadyRef.current = false
     inspectorInjectedRef.current = false
     editModeInjectedRef.current = false
-    previewClickInjectedRef.current = false
     setWebviewReady(false)
     webviewRef.current = node
     setWebviewElement((prev) => (prev === node ? prev : node))
@@ -975,42 +918,6 @@ export const PreviewIframe = forwardRef<
       editModeInjectedRef.current = false
     }
   }, [inspectable, editMode, webviewReady, webviewSrc, webviewElement])
-
-  useEffect(() => {
-    const webview = webviewElement
-    if (!webview || !inspectable || !webviewReady) return
-
-    const runPreviewClickAnimationLifecycle = (): void => {
-      if (currentInteractionMode === 'preview') {
-        safeExecuteHostScript(
-          webview,
-          'preview-click-animation-inject',
-          buildPreviewClickAnimationInjectScript()
-        )
-        previewClickInjectedRef.current = true
-      } else {
-        if (!previewClickInjectedRef.current) return
-        safeExecuteHostScript(
-          webview,
-          'preview-click-animation-cleanup',
-          buildPreviewClickAnimationCleanupScript()
-        )
-        previewClickInjectedRef.current = false
-      }
-    }
-
-    runPreviewClickAnimationLifecycle()
-
-    return () => {
-      if (!previewClickInjectedRef.current) return
-      safeExecuteHostScript(
-        webview,
-        'preview-click-animation-cleanup',
-        buildPreviewClickAnimationCleanupScript()
-      )
-      previewClickInjectedRef.current = false
-    }
-  }, [inspectable, currentInteractionMode, webviewReady, webviewSrc, webviewElement])
 
   useEffect(() => {
     const webview = webviewElement

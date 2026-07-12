@@ -256,6 +256,8 @@ export const parsePptxXmlDeckMetadata = (buffer: Buffer): PptxXmlDeckMetadata =>
       const extAttrs = parseXmlAttributes(spPr.match(/<a:ext\b[^>]*>/)?.[0] || '')
       const fillXml = spPr.match(/<a:solidFill\b[\s\S]*?<\/a:solidFill>/)?.[0] || ''
       const lineXml = spPr.match(/<a:ln\b[\s\S]*?<\/a:ln>/)?.[0] || ''
+      const styleXml = shapeXml.match(/<p:style\b[\s\S]*?<\/p:style>/)?.[0] || ''
+      const lineRefXml = styleXml.match(/<a:lnRef\b[\s\S]*?<\/a:lnRef>/)?.[0] || ''
       const lineAttrs = parseXmlAttributes(lineXml.match(/<a:ln\b[^>]*>/)?.[0] || '')
       const headEndAttrs = parseXmlAttributes(lineXml.match(/<a:headEnd\b[^>]*>/)?.[0] || '')
       const tailEndAttrs = parseXmlAttributes(lineXml.match(/<a:tailEnd\b[^>]*>/)?.[0] || '')
@@ -267,7 +269,10 @@ export const parsePptxXmlDeckMetadata = (buffer: Buffer): PptxXmlDeckMetadata =>
         isCustomGeometry,
         customGeometry,
         fillColor: fillXml ? parseOoxmlColor(fillXml, slideThemeColors) : undefined,
-        lineColor: lineXml ? parseOoxmlColor(lineXml, slideThemeColors) : undefined,
+        lineColor: lineXml
+          ? parseOoxmlColor(lineXml, slideThemeColors) ||
+            (/<a:noFill\b/.test(lineXml) ? undefined : parseOoxmlColor(lineRefXml, slideThemeColors))
+          : undefined,
         lineWidth: lineAttrs.w ? clampNumber(lineAttrs.w) / 12700 : undefined,
         headEnd: headEndAttrs.type,
         tailEnd: tailEndAttrs.type,

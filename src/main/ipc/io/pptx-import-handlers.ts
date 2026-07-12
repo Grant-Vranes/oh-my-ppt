@@ -10,6 +10,7 @@ import { createPptxChartRewriteHandler } from '../../utils/pptx-chart-rewrite-ag
 import { createStyleSkill, resolveUsableStyleId } from '../../utils/style-skills'
 import { resolveGlobalModelTimeouts, resolveModelConfigForTask } from '../config/model-config-utils'
 import { buildDesignContractWithLLM } from '../engine/generate'
+import { createPptxImportPostPersistProgress } from './pptx-import-progress'
 import { customAlphabet } from 'nanoid'
 import { recordHistoryOperationStrict } from '../../history/git-history-service'
 import { createDefaultDesignContract } from '../../utils/design-contract'
@@ -110,12 +111,7 @@ export function registerPptxImportHandlers(ctx: IpcContext): void {
         chartRewrite
       })
 
-      sendProgress({
-        stage: 'database',
-        progress: 94,
-        label: '正在写入会话记录',
-        totalPages: imported.pageCount
-      })
+      sendProgress(createPptxImportPostPersistProgress('session-records', imported.pageCount))
       const initialStyleId = resolveUsableStyleId(parsedPayload.styleId)
 
       await db.createSession({
@@ -195,20 +191,6 @@ export function registerPptxImportHandlers(ctx: IpcContext): void {
         }
       })
 
-      sendProgress({
-        stage: 'completed',
-        progress: 100,
-        label: 'PPTX 导入完成',
-        totalPages: imported.pageCount
-      })
-
-      log.info('[pptx:import] completed', {
-        sessionId,
-        pageCount: imported.pageCount,
-        warningCount: imported.warnings.length,
-        projectDir
-      })
-
       // --- Auto style extraction (non-blocking) ---
       try {
         const activeModel = await resolveModelConfigForTask(ctx, {
@@ -216,6 +198,7 @@ export function registerPptxImportHandlers(ctx: IpcContext): void {
           purpose: 'pptx:import'
         })
         const modelTimeouts = await resolveGlobalModelTimeouts(ctx)
+        sendProgress(createPptxImportPostPersistProgress('style-extraction', imported.pageCount))
         const styleResult = await extractStyleFromExistingHtml({
           projectDir,
           pageHtmlPaths: imported.pages.map((p) => path.basename(p.htmlPath)),
@@ -242,6 +225,7 @@ export function registerPptxImportHandlers(ctx: IpcContext): void {
         log.info('[pptx:import] auto style extracted', { sessionId, styleId })
 
         // Generate design contract from the extracted styleSkill
+        sendProgress(createPptxImportPostPersistProgress('design-contract', imported.pageCount))
         const designContract = await buildDesignContractWithLLM({
           provider: activeModel.provider,
           apiKey: activeModel.apiKey,
@@ -255,6 +239,9 @@ export function registerPptxImportHandlers(ctx: IpcContext): void {
           slideSize: requireSlideSizePreset('wide-16-9'),
           topic: title
         })
+        sendProgress(
+          createPptxImportPostPersistProgress('design-contract-persist', imported.pageCount)
+        )
         await db.updateSessionDesignContract(sessionId, designContract)
         log.info('[pptx:import] design contract generated', { sessionId })
       } catch (styleError) {
@@ -262,7 +249,17 @@ export function registerPptxImportHandlers(ctx: IpcContext): void {
           sessionId,
           message: styleError instanceof Error ? styleError.message : String(styleError)
         })
+        sendProgress(createPptxImportPostPersistProgress('style-skipped', imported.pageCount))
       }
+
+      sendProgress(createPptxImportPostPersistProgress('completed', imported.pageCount))
+
+      log.info('[pptx:import] completed', {
+        sessionId,
+        pageCount: imported.pageCount,
+        warningCount: imported.warnings.length,
+        projectDir
+      })
 
       return {
         sessionId,

@@ -3,6 +3,8 @@
  */
 import React, { act } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import fs from 'node:fs'
+import path from 'node:path'
 import { createRoot } from 'react-dom/client'
 import { MemoryRouter } from 'react-router-dom'
 import { TemplatesPage } from '../../../src/renderer/src/pages/templates'
@@ -90,5 +92,14 @@ describe('TemplatesPage rendering', () => {
     const card = container.querySelector('[data-testid="template-card"]')
     expect(card?.parentElement?.className).toContain('lg:grid-cols-3')
     await act(async () => root.unmount())
+  })
+
+  it('disables playback animations in template previews', () => {
+    const source = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/renderer/src/pages/templates.tsx'),
+      'utf8'
+    )
+
+    expect(source).toContain('print=1&thumbnail=1&fit=off&pptPlayback=0')
   })
 })

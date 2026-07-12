@@ -2,381 +2,141 @@ import fs from 'fs'
 import path from 'path'
 import crypto from 'crypto'
 import * as cheerio from 'cheerio'
-import { parse, type Chart, type Element, type Fill, type Slide } from 'pptxtojson/dist/index.js'
-import { unzipSync, zipSync } from 'fflate'
-import { buildPageScaffoldHtml, buildProjectIndexHtml, type DeckPageFile } from '../ipc/engine/template'
-import { escapeHtml } from '../ipc/utils'
-import { validatePersistedPageHtml } from '../tools/html-utils'
-import { PptxTextValidator } from './pptx-text-validator'
+import {
+  parse,
+  type Element,
+  type ElementLayer,
+  type Fill,
+  type OoxmlShape,
+  type ParseIssue,
+  type Shadow,
+  type Slide
+} from '@arcsin1/pptx2json'
+import { buildPageScaffoldHtml, buildProjectIndexHtml, type DeckPageFile } from '../../ipc/engine/template'
+import { escapeHtml } from '../../ipc/utils'
+import { validatePersistedPageHtml } from '../../tools/html-utils'
+import { PptxTextValidator } from '../pptx-text-validator'
 import {
   normalizePptxShapeName,
   readPptxAnimationPlans,
   type ImportedElementAnimation,
   type SlideAnimationPlan
-} from './pptx-animation-import'
-import {
-  parsePptxXmlDeckMetadata,
-  type PptxXmlShapeMetadata,
-  type PptxXmlSlideMetadata
-} from './pptx-xml-shape-metadata'
+} from '../pptx-animation-import'
+import { type PptxXmlShapeMetadata } from '../pptx-xml-shape-metadata'
 import {
   getSvgPathBounds,
   getSvgShapeViewBox,
   renderXmlPresetShapePath,
   type SvgPathBounds
-} from './pptx-svg-shape-geometry'
-import { renderPptxOoxmlCustomGeometryPath } from './pptx-ooxml-path-renderer'
-import type { SlideSizePreset } from '@shared/slide-size'
+} from '../pptx-svg-shape-geometry'
+import { renderPptxOoxmlCustomGeometryPath } from '../pptx-ooxml-path-renderer'
+import { DEFAULT_IMPORTED_TEXT_FONT, PAGE_HEIGHT, PAGE_WIDTH, PPTX_IMPORT_SLIDE_SIZE } from './constants'
+import {
+  buildChartBlock,
+  buildChartFrameStyle,
+  buildChartHtmlFromConfig,
+  chartCanvasId,
+  unsupportedChartWarning
+} from './chart-renderer'
+import { buildAnimationAttrs, buildBlockStyle, clampNumber } from './render-shared'
+import type {
+  FlattenedElement,
+  ImageRegistry,
+  ImportedPptxDeck,
+  ImportedPptxPage,
+  ImportedTableBorder,
+  ImportedTableCell,
+  ImportProgress,
+  ImportWarning,
+  PptxChartRewriteHandler,
+  SlideAnimationContext,
+  SvgShapeFill,
+  TableBorderSide,
+  TextImportAdjustment,
+  ZIndexCounter
+} from './types'
 
-const PAGE_WIDTH = 1600
-const PAGE_HEIGHT = 900
-const PPTX_IMPORT_SLIDE_SIZE: SlideSizePreset = {
-  id: 'wide-16-9',
-  label: '宽屏 16:9',
-  width: PAGE_WIDTH,
-  height: PAGE_HEIGHT
-}
-
-type ImportWarning = {
-  pageNumber?: number
-  message: string
-}
-
-export type PptxImportProgressPayload = {
-  sessionId?: string
-  stage: 'reading' | 'parsing' | 'media' | 'pages' | 'index' | 'database' | 'completed'
-  progress: number
-  label: string
-  pageNumber?: number
-  totalPages?: number
-}
-
-type ImportProgress = (payload: PptxImportProgressPayload) => void
-
-type ImageRegistry = {
-  index: number
-  byKey: Map<string, string>
-}
-
-type ChartSeries = {
-  key?: string
-  values?: Array<{ x?: string; y?: number }>
-}
-
-type MappedChartType = {
-  type: string
-  indexAxis?: 'x' | 'y'
-  fill?: boolean
-  showLine?: boolean
-}
-
-type ChartTypeMapping = {
-  pattern: RegExp
-  map: (chartType: string, barDir?: string) => MappedChartType
-}
-
-type ImportedTableBorder = {
-  borderColor?: string
-  borderWidth?: number
-  borderType?: string
-}
-
-type ImportedTableCell = {
-  text?: string
-  rowSpan?: number
-  colSpan?: number
-  vMerge?: number
-  hMerge?: number
-  fillColor?: string
-  fontColor?: string
-  fontBold?: boolean
-  vAlign?: string
-  borders?: Partial<Record<TableBorderSide, ImportedTableBorder>>
-}
-
-type TableBorderSide = 'top' | 'right' | 'bottom' | 'left'
-
-type FlattenedElement = {
-  element: Element
-  left: number
-  top: number
-  width: number
-  height: number
-  text: string
-}
-
-type TextImportAdjustment = {
-  content: string
-  extraCss: string[]
-}
-
-type SlideAnimationContext = {
-  plan?: SlideAnimationPlan
-  usedAnimationIds: Set<number>
-}
-
-export type ImportedPptxPage = {
-  pageNumber: number
-  pageId: string
-  title: string
-  htmlPath: string
-  html: string
-  contentOutline: string
-}
-
-export type ImportedPptxDeck = {
-  title: string
-  pageCount: number
-  indexPath: string
-  pages: ImportedPptxPage[]
-  warnings: string[]
-}
-
-export type PptxChartRewriteRequest = {
-  element: Chart
-  blockId: string
-  pageId: string
-  chartIndex: number
-  canvasId: string
-  frameStyle: string
-  animationAttrs: string
-  pageNumber?: number
-}
-
-export type PptxChartRewriteResult = {
-  config: Record<string, unknown>
-  warnings?: string[]
-}
-
-export type PptxChartRewriteHandler = (
-  request: PptxChartRewriteRequest
-) => Promise<PptxChartRewriteResult | null>
-
-const clampNumber = (value: unknown, fallback = 0): number => {
-  const n = Number(value)
-  return Number.isFinite(n) ? n : fallback
-}
-
-const decodeUtf8 = (data: Uint8Array): string => new TextDecoder().decode(data)
-
-const encodeUtf8 = (value: string): Uint8Array => new TextEncoder().encode(value)
-
-const arrayBufferFromUint8Array = (data: Uint8Array): ArrayBuffer => {
-  const copy = new Uint8Array(data.byteLength)
-  copy.set(data)
-  return copy.buffer
-}
-
-const collectPptxTableStyleIds = (tableStylesXml: string): Set<string> => {
-  const ids = new Set<string>()
-  const styleIdRe = /\bstyleId=(["'])(.*?)\1/g
-  let match: RegExpExecArray | null
-  while ((match = styleIdRe.exec(tableStylesXml)) !== null) {
-    const id = match[2]?.trim()
-    if (id) ids.add(id)
-  }
-  return ids
-}
-
-const tableStyleIdFromTblPr = (tblPrXml: string): string => {
-  const match = tblPrXml.match(/<a:tableStyleId\b[^>]*>([\s\S]*?)<\/a:tableStyleId>/)
-  return match?.[1]?.trim() || ''
-}
-
-const removeUnsupportedTableStyleFlags = (tblPrXml: string, knownStyleIds: Set<string>): {
-  xml: string
-  changed: boolean
-} => {
-  const styleId = tableStyleIdFromTblPr(tblPrXml)
-  if (styleId && knownStyleIds.has(styleId)) return { xml: tblPrXml, changed: false }
-  const nextXml = tblPrXml.replace(
-    /\s(?:firstRow|firstCol|lastRow|lastCol|bandRow|bandCol)=("1"|'1')/g,
-    ''
-  )
-  return { xml: nextXml, changed: nextXml !== tblPrXml }
-}
-
-const normalizePptxTableStyleFlags = (buffer: Buffer): {
-  arrayBuffer: ArrayBuffer
-  normalizedTableCount: number
-} => {
-  let files: Record<string, Uint8Array>
-  try {
-    files = unzipSync(new Uint8Array(buffer))
-  } catch {
-    return {
-      arrayBuffer: arrayBufferFromUint8Array(
-        new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength)
-      ),
-      normalizedTableCount: 0
-    }
-  }
-
-  const tableStylesXml = files['ppt/tableStyles.xml'] ? decodeUtf8(files['ppt/tableStyles.xml']) : ''
-  const knownStyleIds = collectPptxTableStyleIds(tableStylesXml)
-  let normalizedTableCount = 0
-
-  for (const name of Object.keys(files)) {
-    if (!/^ppt\/slides\/slide\d+\.xml$/i.test(name)) continue
-    const xml = decodeUtf8(files[name])
-    if (!xml.includes('<a:tblPr')) continue
-    const nextXml = xml.replace(
-      /<a:tblPr\b[\s\S]*?<\/a:tblPr>|<a:tblPr\b[^>]*\/>/g,
-      (tblPrXml) => {
-        const result = removeUnsupportedTableStyleFlags(tblPrXml, knownStyleIds)
-        if (result.changed) normalizedTableCount += 1
-        return result.xml
-      }
-    )
-    if (nextXml !== xml) files[name] = encodeUtf8(nextXml)
-  }
-
-  if (normalizedTableCount === 0) {
-    return {
-      arrayBuffer: arrayBufferFromUint8Array(
-        new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength)
-      ),
-      normalizedTableCount
-    }
-  }
-
-  return {
-    arrayBuffer: arrayBufferFromUint8Array(zipSync(files)),
-    normalizedTableCount
-  }
-}
-
-type ChartCachePoint = {
-  idx: string
-  value: string
-}
-
-const extractChartCachePoints = (
-  xml: string,
-  cacheTag: 'numCache' | 'strCache' | 'numLit' | 'strLit'
-): ChartCachePoint[] => {
-  const cacheMatch = xml.match(new RegExp(`<c:${cacheTag}\\b[\\s\\S]*?<\\/c:${cacheTag}>`))
-  const cacheXml = cacheMatch?.[0] || ''
-  const points: ChartCachePoint[] = []
-  const pointRe =
-    /<c:pt\b[^>]*\bidx=(["'])(.*?)\1[^>]*>\s*<c:v>([\s\S]*?)<\/c:v>\s*<\/c:pt>/g
-  let match: RegExpExecArray | null
-  while ((match = pointRe.exec(cacheXml)) !== null) {
-    points.push({ idx: match[2] || String(points.length), value: match[3] || '' })
-  }
-  return points
-}
-
-const chartFormulaFromXml = (xml: string): string => {
-  const match = xml.match(/<c:f>([\s\S]*?)<\/c:f>/)
-  return match?.[1] || ''
-}
-
-const numericChartValue = (point: ChartCachePoint, usePointIndex: boolean): string => {
-  if (usePointIndex) return String(clampNumber(point.idx, 0))
-  const value = Number.parseFloat(point.value)
-  return Number.isFinite(value) ? String(value) : String(clampNumber(point.idx, 0))
-}
-
-const buildChartNumCache = (points: ChartCachePoint[], usePointIndex: boolean): string => {
-  const pointXml = points
-    .map((point) => {
-      const value = numericChartValue(point, usePointIndex)
-      return `<c:pt idx="${point.idx}"><c:v>${value}</c:v></c:pt>`
-    })
-    .join('')
-  return `<c:numCache><c:formatCode>General</c:formatCode><c:ptCount val="${points.length}"/>${pointXml}</c:numCache>`
-}
-
-const normalizeChartValueCacheXml = (xml: string): { xml: string; changed: boolean } => {
-  if (/<c:numRef\b[\s\S]*?<c:numCache\b/.test(xml)) return { xml, changed: false }
-
-  const numRefMatch = xml.match(/<c:numRef\b[\s\S]*?<\/c:numRef>/)
-  if (numRefMatch) {
-    const nextXml = xml.replace(/<\/c:numRef>/, `${buildChartNumCache([], false)}</c:numRef>`)
-    return { xml: nextXml, changed: nextXml !== xml }
-  }
-
-  const numPoints = extractChartCachePoints(xml, 'numLit')
-  if (numPoints.length > 0 || /<c:numLit\b/.test(xml)) {
-    return {
-      xml: `<c:numRef>${buildChartNumCache(numPoints, false)}</c:numRef>`,
-      changed: true
-    }
-  }
-
-  const strPoints = extractChartCachePoints(xml, 'strCache')
-  if (strPoints.length > 0 || /<c:strRef\b/.test(xml)) {
-    const formula = chartFormulaFromXml(xml)
-    const formulaXml = formula ? `<c:f>${formula}</c:f>` : ''
-    return {
-      xml: `<c:numRef>${formulaXml}${buildChartNumCache(strPoints, true)}</c:numRef>`,
-      changed: true
-    }
-  }
-
-  const strLitPoints = extractChartCachePoints(xml, 'strLit')
-  if (strLitPoints.length > 0 || /<c:strLit\b/.test(xml)) {
-    return {
-      xml: `<c:numRef>${buildChartNumCache(strLitPoints, true)}</c:numRef>`,
-      changed: true
-    }
-  }
-
-  return { xml, changed: false }
-}
-
-const normalizePptxChartValueCaches = (buffer: Buffer): {
-  arrayBuffer: ArrayBuffer
-  normalizedChartValueCount: number
-} => {
-  let files: Record<string, Uint8Array>
-  try {
-    files = unzipSync(new Uint8Array(buffer))
-  } catch {
-    return {
-      arrayBuffer: arrayBufferFromUint8Array(
-        new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength)
-      ),
-      normalizedChartValueCount: 0
-    }
-  }
-
-  let normalizedChartValueCount = 0
-  for (const name of Object.keys(files)) {
-    if (!/^ppt\/charts\/chart\d+\.xml$/i.test(name)) continue
-    const xml = decodeUtf8(files[name])
-    if (!/<c:(?:xVal|yVal|bubbleSize)\b/.test(xml)) continue
-    const nextXml = xml.replace(
-      /<c:(xVal|yVal|bubbleSize)\b[^>]*>([\s\S]*?)<\/c:\1>/g,
-      (valueXml, tagName: string, innerXml: string) => {
-        const result = normalizeChartValueCacheXml(innerXml)
-        if (result.changed) normalizedChartValueCount += 1
-        return result.changed ? `<c:${tagName}>${result.xml}</c:${tagName}>` : valueXml
-      }
-    )
-    if (nextXml !== xml) files[name] = encodeUtf8(nextXml)
-  }
-
-  if (normalizedChartValueCount === 0) {
-    return {
-      arrayBuffer: arrayBufferFromUint8Array(
-        new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength)
-      ),
-      normalizedChartValueCount
-    }
-  }
-
-  return {
-    arrayBuffer: arrayBufferFromUint8Array(zipSync(files)),
-    normalizedChartValueCount
-  }
-}
+export type {
+  ImportedPptxDeck,
+  ImportedPptxPage,
+  PptxChartRewriteHandler,
+  PptxChartRewriteRequest,
+  PptxChartRewriteResult,
+  PptxImportProgressPayload
+} from './types'
 
 const stripHtml = (html: string): string => {
   if (!html) return ''
   const $ = cheerio.load(html, { scriptingEnabled: false })
   return $.root().text().replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
+type ElementFrame = {
+  left: number
+  top: number
+  width: number
+  height: number
+}
+
+const elementFrame = (element: Element): ElementFrame => {
+  const record = element as unknown as Record<string, unknown>
+  return {
+    left: clampNumber(record.left),
+    top: clampNumber(record.top),
+    width: clampNumber(record.width),
+    height: clampNumber(record.height)
+  }
+}
+
+const elementBounds = (elements: Element[]): ElementFrame | null => {
+  let minX = Number.POSITIVE_INFINITY
+  let minY = Number.POSITIVE_INFINITY
+  let maxX = Number.NEGATIVE_INFINITY
+  let maxY = Number.NEGATIVE_INFINITY
+  for (const element of elements) {
+    const frame = elementFrame(element)
+    minX = Math.min(minX, frame.left)
+    minY = Math.min(minY, frame.top)
+    maxX = Math.max(maxX, frame.left + frame.width)
+    maxY = Math.max(maxY, frame.top + frame.height)
+  }
+  if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) {
+    return null
+  }
+  return {
+    left: minX,
+    top: minY,
+    width: Math.max(0, maxX - minX),
+    height: Math.max(0, maxY - minY)
+  }
+}
+
+const normalizeGroupChildren = (group: Element, children: Element[]): Element[] => {
+  if (!children.length) return children
+  const groupFrame = elementFrame(group)
+  const bounds = elementBounds(children)
+  if (!bounds || bounds.width <= 0 || bounds.height <= 0 || groupFrame.width <= 0 || groupFrame.height <= 0) {
+    return children
+  }
+  const scaleX = groupFrame.width / bounds.width
+  const scaleY = groupFrame.height / bounds.height
+  const needsNormalization =
+    Math.abs(scaleX - 1) > 0.001 ||
+    Math.abs(scaleY - 1) > 0.001 ||
+    Math.abs(bounds.left) > 0.001 ||
+    Math.abs(bounds.top) > 0.001
+  if (!needsNormalization) return children
+
+  return children.map((child) => {
+    const frame = elementFrame(child)
+    return {
+      ...child,
+      left: (frame.left - bounds.left) * scaleX,
+      top: (frame.top - bounds.top) * scaleY,
+      width: frame.width * scaleX,
+      height: frame.height * scaleY
+    } as Element
+  })
 }
 
 const flattenElements = (
@@ -390,9 +150,13 @@ const flattenElements = (
     const left = offsetX + clampNumber(record.left)
     const top = offsetY + clampNumber(record.top)
     if (element.type === 'group') {
+      const children = normalizeGroupChildren(
+        element,
+        Array.isArray(element.elements) ? element.elements : []
+      )
       flattened.push(
         ...flattenElements(
-          Array.isArray(element.elements) ? element.elements : [],
+          children,
           left,
           top
         )
@@ -425,6 +189,44 @@ const hasCjkText = (text: string): boolean => /[\u3400-\u9fff]/.test(text)
 
 const hasDeckTitleKeyword = (text: string): boolean =>
   /(总结|汇报|报告|计划|规划|方案|复盘|目录|概述|情况|不足|introduction|overview|summary|agenda|conclusion|plan|report|review)/i.test(text)
+
+const warningFromParseIssue = (issue: ParseIssue): ImportWarning => {
+  const location = [
+    issue.scope,
+    issue.file ? `文件 ${issue.file}` : '',
+    issue.elementOrder !== undefined ? `元素 ${issue.elementOrder}` : ''
+  ].filter(Boolean).join(' / ')
+  return {
+    pageNumber: issue.slideIndex !== undefined ? issue.slideIndex + 1 : undefined,
+    message: `${location ? `${location}: ` : ''}${issue.message}`
+  }
+}
+
+const xmlShapeFromParserOoxml = (
+  element: Record<string, unknown>
+): PptxXmlShapeMetadata | undefined => {
+  const ooxml = element.ooxml as OoxmlShape | undefined
+  if (!ooxml || typeof ooxml !== 'object') return undefined
+  const preset = typeof ooxml.preset === 'string' ? ooxml.preset : ''
+  const metadata: PptxXmlShapeMetadata = {
+    id: '',
+    name: typeof element.name === 'string' ? element.name : '',
+    preset,
+    adjustments: ooxml.adjustments,
+    textInsets: ooxml.textInsets,
+    textAnchor: ooxml.textAnchor,
+    headEnd: ooxml.lineHeadEnd,
+    tailEnd: ooxml.lineTailEnd
+  }
+  return preset ||
+    metadata.adjustments ||
+    metadata.textInsets ||
+    metadata.textAnchor ||
+    metadata.headEnd ||
+    metadata.tailEnd
+    ? metadata
+    : undefined
+}
 
 const ALLOWED_TEXT_TAGS = new Set([
   'p',
@@ -483,7 +285,6 @@ const ALLOWED_TEXT_STYLE_PROPS = new Set([
   'font-size',
   'font-weight',
   'font-style',
-  'font-family',
   'text-decoration',
   'text-decoration-line',
   'text-align',
@@ -498,24 +299,6 @@ const ALLOWED_TEXT_STYLE_PROPS = new Set([
   'margin-left',
   'text-indent'
 ])
-
-const IMPORTED_FONT_REPLACEMENTS = new Map<string, string>([
-  ['方正大标宋简体', '"Songti SC","STSong","SimSun",serif'],
-  ['微软雅黑 light', '"PingFang SC","Microsoft YaHei",sans-serif'],
-  ['微软雅黑', '"PingFang SC","Microsoft YaHei",sans-serif'],
-  ['等线', '"PingFang SC","DengXian","Microsoft YaHei",sans-serif'],
-  ['宋体', '"Songti SC","SimSun",serif'],
-  ['黑体', '"PingFang SC","SimHei",sans-serif']
-])
-
-const normalizeImportedFontFamily = (value: string): string => {
-  const firstFamily = value
-    .split(',')[0]
-    ?.trim()
-    .replace(/^["']|["']$/g, '')
-  if (!firstFamily) return value
-  return IMPORTED_FONT_REPLACEMENTS.get(firstFamily.toLowerCase()) || value
-}
 
 const normalizeImportedSymbols = (value: string): string =>
   value
@@ -564,10 +347,6 @@ const sanitizeCssValue = (property: string, rawValue: string, scale: number): st
   ) {
     return sanitizeCssBoxLength(value, scale)
   }
-  if (normalizedProperty === 'font-family') {
-    if (!/^[\p{L}\p{N}\s,.'"_-]+$/u.test(value)) return null
-    return normalizeImportedFontFamily(value)
-  }
   if (/^[#a-z0-9\s.,()%'"-]+$/i.test(value)) return value
   return null
 }
@@ -603,14 +382,80 @@ const sanitizeImportedCssColor = (rawValue: unknown): string | null => {
   return sanitizeCssValue('color', rawValue, 1)
 }
 
-const sanitizeGradientStop = (rawColor: unknown, rawPosition: unknown): string | null => {
+const isTransparentCssColor = (color: string | null | undefined): boolean => {
+  if (!color) return true
+  const normalized = color.trim().toLowerCase()
+  if (!normalized || normalized === 'none' || normalized === 'transparent') return true
+  const hex = normalized.match(/^#([0-9a-f]{8})$/i)
+  return Boolean(hex && hex[1].slice(6) === '00')
+}
+
+const hasVisibleFill = (fill: Fill | undefined): boolean =>
+  Boolean(
+    fill &&
+      (
+        fill.type === 'image' ||
+        fill.type === 'gradient' ||
+        fill.type === 'pattern' ||
+        (fill.type === 'color' && !isTransparentCssColor(sanitizeImportedCssColor(fill.value)))
+      )
+  )
+
+const hasVisibleSurface = (element: Record<string, unknown>): boolean => {
+  const borderColor = sanitizeImportedCssColor(element.borderColor)
+  return (
+    hasVisibleFill(element.fill as Fill | undefined) ||
+    (clampNumber(element.borderWidth) > 0 && !isTransparentCssColor(borderColor))
+  )
+}
+
+const boxShadowCss = (
+  element: Record<string, unknown>,
+  scaleX: number,
+  scaleY: number
+): string[] => {
+  const shadow = element.shadow as Shadow | undefined
+  if (!shadow || !hasVisibleSurface(element)) return []
+  const offsetX = clampNumber(shadow.h) * scaleX
+  const offsetY = clampNumber(shadow.v) * scaleY
+  const blur = Math.max(0, clampNumber(shadow.blur) * ((scaleX + scaleY) / 2))
+  if (Math.abs(offsetX) < 0.01 && Math.abs(offsetY) < 0.01 && blur < 0.01) return []
+  const color = sanitizeImportedCssColor(shadow.color) || '#00000066'
+  return [`box-shadow:${offsetX.toFixed(1)}px ${offsetY.toFixed(1)}px ${blur.toFixed(1)}px ${color}`]
+}
+
+const normalizeGradientPosition = (
+  rawPosition: unknown,
+  fallbackIndex = 0,
+  fallbackCount = 1
+): string => {
+  const fallback = `${Math.round((fallbackIndex / Math.max(1, fallbackCount - 1)) * 100)}%`
+  if (typeof rawPosition !== 'string' && typeof rawPosition !== 'number') return fallback
+  const value = String(rawPosition).trim()
+  if (!value) return fallback
+  const percentMatch = value.match(/^([0-9.]+)%$/)
+  if (percentMatch) {
+    const percent = clampNumber(percentMatch[1])
+    return `${Math.max(0, Math.min(100, percent)).toFixed(percent % 1 ? 2 : 0)}%`
+  }
+  if (!/^[0-9.]+$/.test(value)) return fallback
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return fallback
+  if (numeric > 100) {
+    return `${Math.max(0, Math.min(100, numeric / 1000)).toFixed(numeric % 1000 ? 2 : 0)}%`
+  }
+  return `${Math.max(0, Math.min(100, numeric)).toFixed(numeric % 1 ? 2 : 0)}%`
+}
+
+const sanitizeGradientStop = (
+  rawColor: unknown,
+  rawPosition: unknown,
+  fallbackIndex = 0,
+  fallbackCount = 1
+): string | null => {
   const color = sanitizeImportedCssColor(rawColor)
   if (!color) return null
-  const position = typeof rawPosition === 'string' || typeof rawPosition === 'number'
-    ? String(rawPosition).trim()
-    : ''
-  if (!position) return color
-  return /^[0-9.]+%?$/.test(position) ? `${color} ${position}` : color
+  return `${color} ${normalizeGradientPosition(rawPosition, fallbackIndex, fallbackCount)}`
 }
 
 const sanitizeStyleAttribute = (style: string, scale: number): string => {
@@ -719,9 +564,7 @@ const extractTextTypography = (
   return {
     fontSize,
     lineHeight,
-    fontFamily:
-      parseCssValue(style, 'font-family') ||
-      String(element.fontFace || element.fontFamily || element.font || 'Arial'),
+    fontFamily: DEFAULT_IMPORTED_TEXT_FONT,
     fontWeight:
       parseCssValue(style, 'font-weight') ||
       (element.fontBold || element.bold ? '700' : '400'),
@@ -832,45 +675,18 @@ const fillToCss = async (
   }
   if (fill.type === 'gradient' && Array.isArray(fill.value?.colors) && fill.value.colors.length) {
     const colors = fill.value.colors
-      .map((item) => sanitizeGradientStop(item.color, item.pos))
+      .map((item, index) => sanitizeGradientStop(item.color, item.pos, index, fill.value.colors.length))
       .filter((item): item is string => Boolean(item))
     return colors.length ? [`background:linear-gradient(135deg, ${colors.join(', ')})`] : []
   }
   return []
 }
 
-const buildBlockStyle = (args: {
-  element: Record<string, unknown>
-  scaleX: number
-  scaleY: number
-  zIndex: number
-  offsetX?: number
-  offsetY?: number
-  overflow?: 'hidden' | 'visible'
-  extra?: string[]
-}): string => {
-  const x = (clampNumber(args.element.left) + clampNumber(args.offsetX)) * args.scaleX
-  const y = (clampNumber(args.element.top) + clampNumber(args.offsetY)) * args.scaleY
-  const width = Math.max(1, clampNumber(args.element.width) * args.scaleX)
-  const height = Math.max(1, clampNumber(args.element.height) * args.scaleY)
-  const rotate = clampNumber(args.element.rotate)
-  const styles = [
-    'position:absolute',
-    `left:${x.toFixed(1)}px`,
-    `top:${y.toFixed(1)}px`,
-    `width:${width.toFixed(1)}px`,
-    `height:${height.toFixed(1)}px`,
-    `z-index:${args.zIndex}`,
-    `overflow:${args.overflow || 'visible'}`,
-    rotate ? `transform:rotate(${rotate.toFixed(2)}deg)` : ''
-  ]
-  return [...styles, ...(args.extra || [])].filter(Boolean).join(';')
-}
-
 const borderCss = (element: Record<string, unknown>, scale: number): string[] => {
   const width = clampNumber(element.borderWidth)
   if (width <= 0) return []
-  const color = sanitizeImportedCssColor(element.borderColor) || '#d1d5db'
+  const color = sanitizeImportedCssColor(element.borderColor)
+  if (isTransparentCssColor(color)) return []
   const rawType = typeof element.borderType === 'string' ? element.borderType.trim().toLowerCase() : ''
   const type = ['solid', 'dashed', 'dotted', 'double'].includes(rawType) ? rawType : 'solid'
   return [`border:${Math.max(1, width * scale).toFixed(1)}px ${type} ${color}`]
@@ -890,7 +706,8 @@ const tableBorderDeclaration = (
   if (!border) return null
   const width = clampNumber(border.borderWidth)
   if (width <= 0) return null
-  const color = sanitizeImportedCssColor(border.borderColor) || '#d1d5db'
+  const color = sanitizeImportedCssColor(border.borderColor)
+  if (isTransparentCssColor(color)) return null
   const type = normalizeBorderType(border.borderType)
   return `border-${side}:${Math.max(0.5, width * scale).toFixed(1)}px ${type} ${color}`
 }
@@ -1011,22 +828,6 @@ const resolveElementAnimation = (
   return match
 }
 
-const buildAnimationAttrs = (animation: ImportedElementAnimation | undefined): string => {
-  if (!animation) return ''
-  return [
-    `data-anim="${animation.type}"`,
-    animation.from ? `data-anim-from="${animation.from}"` : '',
-    animation.path ? `data-anim-path="${escapeHtml(animation.path)}"` : '',
-    `data-anim-duration="${animation.duration}"`,
-    `data-anim-delay="${animation.delay}"`,
-    animation.trigger === 'click' ? 'data-anim-trigger="click"' : '',
-    animation.clickGroup ? `data-anim-click-group="${escapeHtml(animation.clickGroup)}"` : '',
-    `data-pptx-source-spid="${escapeHtml(animation.sourceId)}"`
-  ]
-    .filter(Boolean)
-    .join(' ')
-}
-
 const adjustTextBlockWithPretext = async (args: {
   validator?: PptxTextValidator
   element: Record<string, unknown>
@@ -1111,6 +912,38 @@ const titleFromSlide = (slide: Slide, pageNumber: number): string => {
   return title?.slice(0, 80) || `第 ${pageNumber} 页`
 }
 
+const countExplicitTextLines = (content: string): number | null => {
+  const $ = cheerio.load(`<body>${content}</body>`, { scriptingEnabled: false })
+  const paragraphs = $('p')
+  if (paragraphs.length === 0) return null
+  let lineCount = 0
+  paragraphs.each((_, node) => {
+    const paragraph = $(node)
+    const text = paragraph.text().replace(/\u00a0/g, ' ').trim()
+    if (!text) return
+    lineCount += Math.max(1, paragraph.find('br').length + 1)
+  })
+  return lineCount > 0 ? lineCount : null
+}
+
+const isCompactAutoFitText = (
+  element: Record<string, unknown>,
+  content: string,
+  scaleY: number,
+  textScale: number
+): boolean => {
+  const autoFit = element.autoFit as { type?: string } | undefined
+  if (autoFit?.type !== 'shape') return false
+  const text = stripHtml(content)
+  if (!text) return false
+  const lineCount = countExplicitTextLines(content)
+  if (!lineCount || lineCount > 3) return false
+  const typography = extractTextTypography(content, element, textScale)
+  const renderedHeight = Math.max(1, clampNumber(element.height) * scaleY)
+  const lineHeight = Math.max(1, typography.lineHeight)
+  return renderedHeight <= lineHeight * (lineCount + 0.95)
+}
+
 const textAnchorCss = (xmlShape?: PptxXmlShapeMetadata): string[] => {
   const anchor = xmlShape?.textAnchor?.toLowerCase()
   if (anchor !== 'ctr' && anchor !== 'b') return []
@@ -1121,15 +954,34 @@ const textAnchorCss = (xmlShape?: PptxXmlShapeMetadata): string[] => {
   ]
 }
 
+const textVerticalCss = (
+  element: Record<string, unknown>,
+  xmlShape: PptxXmlShapeMetadata | undefined,
+  content: string,
+  scaleY: number,
+  textScale: number
+): string[] => {
+  const anchorCss = textAnchorCss(xmlShape)
+  if (anchorCss.length) return anchorCss
+  if (!isCompactAutoFitText(element, content, scaleY, textScale)) return []
+  return [
+    'display:flex',
+    'flex-direction:column',
+    'justify-content:center'
+  ]
+}
+
 const textInsetCss = (xmlShape?: PptxXmlShapeMetadata, scale = 1): string[] => {
+  const base = ['box-sizing:border-box']
   const insets = xmlShape?.textInsets
-  if (!insets) return ['padding:0.1px']
+  if (!insets) return [...base, 'padding:0.1px']
   const top = insets.top ?? 0
   const right = insets.right ?? 0
   const bottom = insets.bottom ?? 0
   const left = insets.left ?? 0
-  if (top === 0 && right === 0 && bottom === 0 && left === 0) return ['padding:0.1px']
+  if (top === 0 && right === 0 && bottom === 0 && left === 0) return [...base, 'padding:0.1px']
   return [
+    ...base,
     `padding:${(top * scale).toFixed(1)}px ${(right * scale).toFixed(1)}px ${(bottom * scale).toFixed(1)}px ${(left * scale).toFixed(1)}px`
   ]
 }
@@ -1149,6 +1001,51 @@ const applyXmlShapeFrame = (
     isFlipH: Boolean(element.isFlipH) || Boolean(xmlShape.flipH),
     isFlipV: Boolean(element.isFlipV) || Boolean(xmlShape.flipV)
   }
+}
+
+const layerSourceRank = (source: unknown): number => {
+  if (source === 'master') return 0
+  if (source === 'layout') return 1
+  if (source === 'slide') return 2
+  if (source === 'group') return 3
+  return 4
+}
+
+const numberAtPath = (path: unknown, index: number): number => {
+  if (!Array.isArray(path)) return 0
+  return clampNumber(path[index])
+}
+
+const compareElementLayerPath = (leftPath: unknown, rightPath: unknown): number => {
+  const left = Array.isArray(leftPath) ? leftPath : []
+  const right = Array.isArray(rightPath) ? rightPath : []
+  const length = Math.max(left.length, right.length)
+  for (let i = 0; i < length; i += 1) {
+    const delta = numberAtPath(left, i) - numberAtPath(right, i)
+    if (delta !== 0) return delta
+  }
+  return 0
+}
+
+const elementLayer = (element: Element): ElementLayer | undefined =>
+  (element as unknown as Record<string, unknown>).layer as ElementLayer | undefined
+
+const elementZIndex = (element: Element): number => {
+  const record = element as unknown as Record<string, unknown>
+  const layer = elementLayer(element)
+  return clampNumber(record.zIndex ?? layer?.zIndex ?? record.order)
+}
+
+const compareElementsForRender = (left: Element, right: Element): number => {
+  const leftLayer = elementLayer(left)
+  const rightLayer = elementLayer(right)
+  return (
+    layerSourceRank(leftLayer?.source) - layerSourceRank(rightLayer?.source) ||
+    elementZIndex(left) - elementZIndex(right) ||
+    compareElementLayerPath(leftLayer?.path, rightLayer?.path) ||
+    clampNumber((left as unknown as Record<string, unknown>).order) -
+      clampNumber((right as unknown as Record<string, unknown>).order)
+  )
 }
 
 const buildTextBlock = async (args: {
@@ -1197,8 +1094,9 @@ const buildTextBlock = async (args: {
     extra: [
       ...fillCss,
       ...borderCss(args.element, args.textScale),
+      ...boxShadowCss(args.element, args.scaleX, args.scaleY),
       ...textInsetCss(args.xmlShape, args.textScale),
-      ...textAnchorCss(args.xmlShape),
+      ...textVerticalCss(args.element, args.xmlShape, sanitizedContent, args.scaleY, args.textScale),
       ...adjustment.extraCss
     ]
   })
@@ -1244,16 +1142,6 @@ const buildImageBlock = async (args: {
   return `<figure data-block-id="${escapeHtml(args.blockId)}"${animationAttrText} style="${css}"><img src="${source}" alt="" style="width:100%;height:100%;object-fit:contain;display:block;" /></figure>`
 }
 
-type SvgShapeFill = {
-  defs: string[]
-  paint: string
-  content?: string
-}
-
-type ZIndexCounter = {
-  value: number
-}
-
 const svgResourceId = (blockId: string, suffix: string): string =>
   `pptx-${blockId}-${suffix}`.replace(/[^a-zA-Z0-9_-]/g, '-')
 
@@ -1277,14 +1165,14 @@ const resolveSvgShapeFill = async (args: {
   if (args.fill.type === 'gradient' && args.fill.value.colors.length > 0) {
     const gradient = args.fill.value
     const gradientId = svgResourceId(args.blockId, 'gradient')
+    const fallbackPaint = gradient.colors
+      .map((stop) => sanitizeImportedCssColor(stop.color))
+      .find((color): color is string => Boolean(color)) || '#000000'
     const stops = gradient.colors
       .map((stop, index) => {
         const color = sanitizeImportedCssColor(stop.color)
         if (!color) return ''
-        const rawPosition = String(stop.pos || '').trim()
-        const offset = /^[0-9.]+%$/.test(rawPosition)
-          ? rawPosition
-          : `${Math.round((index / Math.max(1, gradient.colors.length - 1)) * 100)}%`
+        const offset = normalizeGradientPosition(stop.pos, index, gradient.colors.length)
         return `<stop offset="${offset}" stop-color="${color}" />`
       })
       .filter(Boolean)
@@ -1296,14 +1184,14 @@ const resolveSvgShapeFill = async (args: {
         defs: [
           `<linearGradient id="${gradientId}" x1="0" y1="0.5" x2="1" y2="0.5" gradientTransform="rotate(${rotation.toFixed(2)} 0.5 0.5)">${stops}</linearGradient>`
         ],
-        paint: `url(#${gradientId})`
+        paint: `url(#${gradientId}) ${fallbackPaint}`
       }
     }
     return {
       defs: [
         `<radialGradient id="${gradientId}" cx="50%" cy="50%" r="70%">${stops}</radialGradient>`
       ],
-      paint: `url(#${gradientId})`
+      paint: `url(#${gradientId}) ${fallbackPaint}`
     }
   }
   if (args.fill.type === 'pattern') {
@@ -1322,7 +1210,7 @@ const resolveSvgShapeFill = async (args: {
       defs: [
         `<pattern id="${patternId}" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="${background}" /><g fill="none" stroke="${foreground}" stroke-width="1">${patternLines}</g></pattern>`
       ],
-      paint: `url(#${patternId})`
+      paint: `url(#${patternId}) ${background}`
     }
   }
   if (args.fill.type === 'image' && args.fill.value.base64) {
@@ -1379,14 +1267,23 @@ const buildShapeBlock = async (args: {
           clampNumber(element.width),
           clampNumber(element.height),
           args.xmlShape.adjustments
-        )
+      )
       : ''
+  const importedGeometryPath = !customGeometryPath && !presetGeometryPath &&
+    String(element.shapType || '').toLowerCase() === 'customgeometry' &&
+    typeof element.path === 'string'
+    ? scaleImportedUnitPath(element.path, clampNumber(element.width), clampNumber(element.height))
+    : ''
   const rawPath =
-    customGeometryPath || presetGeometryPath || (typeof element.path === 'string' ? element.path.trim() : '')
+    customGeometryPath || presetGeometryPath || importedGeometryPath || (typeof element.path === 'string' ? element.path.trim() : '')
   const safePath = /^[MmLlHhVvCcSsQqTtAaZz0-9eE+.,\s-]+$/.test(rawPath) ? rawPath : ''
   const fill = element.fill as Fill | undefined
   const pathBounds = safePath ? getSvgPathBounds(safePath) : null
-  if (hasTextContent && !(safePath && pathBounds)) {
+  const isDegeneratePath = Boolean(pathBounds && (pathBounds.width < 0.5 || pathBounds.height < 0.5))
+  const borderColor = sanitizeImportedCssColor(element.borderColor)
+  const hasVisibleBorder = clampNumber(element.borderWidth) > 0 && !isTransparentCssColor(borderColor)
+  const shapeHasVisibleFill = hasVisibleFill(fill)
+  if (hasTextContent && (!(safePath && pathBounds) || (isDegeneratePath && !shapeHasVisibleFill && !hasVisibleBorder))) {
     return buildTextBlock({ ...args, element })
   }
   if (safePath && pathBounds) {
@@ -1422,8 +1319,9 @@ const buildShapeBlock = async (args: {
         ? args.xmlShape.lineWidth
         : clampNumber(element.borderWidth)
     ) * (4 / 3)
-    const strokeColor = strokeWidth > 0
-      ? args.xmlShape?.lineColor || sanitizeImportedCssColor(element.borderColor) || '#000000'
+    const rawStrokeColor = args.xmlShape?.lineColor || sanitizeImportedCssColor(element.borderColor)
+    const strokeColor = strokeWidth > 0 && !isTransparentCssColor(rawStrokeColor)
+      ? rawStrokeColor || '#000000'
       : 'none'
     let dashArray = typeof element.borderStrokeDasharray === 'string' &&
       /^[0-9.,\s-]+$/.test(element.borderStrokeDasharray)
@@ -1435,6 +1333,7 @@ const buildShapeBlock = async (args: {
     } else if (!dashArray && strokeWidth > 0 && borderType === 'dotted') {
       dashArray = `0 ${(strokeWidth * 2).toFixed(2)}`
     }
+    if (strokeColor === 'none') dashArray = ''
     const defs = [...svgFill.defs]
     let filterAttribute = ''
     if (shadow) {
@@ -1470,19 +1369,27 @@ const buildShapeBlock = async (args: {
     const defsMarkup = defs.length > 0 ? `<defs>${defs.join('')}</defs>` : ''
     const markerAttrText = markerAttributes.length ? ` ${markerAttributes.join(' ')}` : ''
     const shapeMarkup = `${svgFill.content || ''}<path d="${escapeHtml(safePath)}" fill="${svgFill.paint}" stroke="${strokeColor}" stroke-width="${strokeWidth.toFixed(3)}"${dashArray ? ` stroke-dasharray="${dashArray}"` : ''} stroke-linecap="round" stroke-linejoin="round"${markerAttrText} />`
+    const sanitizedOverlayContent = hasTextContent ? sanitizeContentHtml(rawContent, args.textScale) : ''
     const overlayCss = [
       'position:absolute',
       'inset:0',
       'overflow:visible',
       ...textInsetCss(args.xmlShape, args.textScale),
-      ...textAnchorCss(args.xmlShape)
+      ...textVerticalCss(
+        element,
+        args.xmlShape,
+        sanitizedOverlayContent,
+        args.scaleY,
+        args.textScale
+      )
     ].join(';')
     const textOverlay = hasTextContent
-      ? `<div style="${overlayCss}">${sanitizeContentHtml(rawContent, args.textScale)}</div>`
+      ? `<div style="${overlayCss}">${sanitizedOverlayContent}</div>`
       : ''
     return `<figure data-block-id="${escapeHtml(args.blockId)}" data-pptx-kind="vector-shape"${animationAttrText} style="${css};margin:0"><svg viewBox="${viewBox.minX.toFixed(4)} ${viewBox.minY.toFixed(4)} ${viewBox.width.toFixed(4)} ${viewBox.height.toFixed(4)}" preserveAspectRatio="none" style="width:100%;height:100%;display:block;overflow:visible;${svgTransform}" aria-hidden="true">${defsMarkup}<g${filterAttribute}>${shapeMarkup}</g></svg>${textOverlay}</figure>`
   }
   const fillCss = await fillToCss(element.fill as Fill | undefined, args.imagesDir, args.registry)
+  const shadowCss = boxShadowCss(element, args.scaleX, args.scaleY)
   const css = buildBlockStyle({
     element,
     scaleX: args.scaleX,
@@ -1490,12 +1397,41 @@ const buildShapeBlock = async (args: {
     zIndex: args.zIndex,
     offsetX: args.offsetX,
     offsetY: args.offsetY,
-    overflow: 'hidden',
-    extra: [...fillCss, ...borderCss(element, args.textScale)]
+    overflow: shadowCss.length ? 'visible' : 'hidden',
+    extra: [...fillCss, ...borderCss(element, args.textScale), ...shadowCss]
   })
   const animationAttrs = buildAnimationAttrs(args.animation)
   const animationAttrText = animationAttrs ? ` ${animationAttrs}` : ''
   return `<div data-block-id="${escapeHtml(args.blockId)}"${animationAttrText} style="${css}"></div>`
+}
+
+const scaleImportedUnitPath = (path: string, width: number, height: number): string => {
+  const tokens = path.match(/[A-Za-z]|-?\d*\.?\d+(?:e[-+]?\d+)?/gi) || []
+  const output: string[] = []
+  let command = ''
+  let coordinateIndex = 0
+  for (const token of tokens) {
+    if (/^[A-Za-z]$/.test(token)) {
+      command = token
+      coordinateIndex = 0
+      output.push(token)
+      continue
+    }
+    const value = Number(token)
+    if (!Number.isFinite(value)) continue
+    const upperCommand = command.toUpperCase()
+    let scaled = value
+    if (['M', 'L', 'C', 'Q', 'S', 'T'].includes(upperCommand)) {
+      scaled = value * (coordinateIndex % 2 === 0 ? width : height)
+    } else if (upperCommand === 'A') {
+      const arcIndex = coordinateIndex % 7
+      if (arcIndex === 0 || arcIndex === 5) scaled = value * width
+      else if (arcIndex === 1 || arcIndex === 6) scaled = value * height
+    }
+    output.push(Number(scaled.toFixed(4)).toString())
+    coordinateIndex += 1
+  }
+  return output.join(' ')
 }
 
 const buildTableBlock = (args: {
@@ -1570,211 +1506,23 @@ const buildTableBlock = (args: {
     zIndex: args.zIndex,
     offsetX: args.offsetX,
     offsetY: args.offsetY,
-    extra: ['background:#fff']
+    extra: ['background:transparent']
   })
-  const animationAttrs = buildAnimationAttrs(args.animation)
-  const animationAttrText = animationAttrs ? ` ${animationAttrs}` : ''
-  if (!rows.length) {
-    return `<section data-block-id="${escapeHtml(args.blockId)}" data-pptx-kind="table" data-pptx-import-mode="placeholder"${animationAttrText} style="${css};display:flex;align-items:center;justify-content:center;color:#6b7280;">表格已作为占位导入</section>`
-  }
-  return `<section data-block-id="${escapeHtml(args.blockId)}" data-pptx-kind="table" data-pptx-import-mode="editable"${animationAttrText} style="${css}"><table style="width:100%;height:100%;border-collapse:collapse;border-spacing:0;table-layout:fixed;font-size:${Math.max(12, 12 * tableTextScale).toFixed(1)}px;">${colgroup}${tableRows}</table></section>`
-}
-
-const PPTX_CHART_TYPE_MAPPINGS: ChartTypeMapping[] = [
-  { pattern: /bubble/i, map: () => ({ type: 'bubble' }) },
-  { pattern: /scatter/i, map: () => ({ type: 'scatter', showLine: true }) },
-  { pattern: /doughnut/i, map: () => ({ type: 'doughnut' }) },
-  { pattern: /pie/i, map: () => ({ type: 'pie' }) },
-  { pattern: /area/i, map: () => ({ type: 'line', fill: true }) },
-  { pattern: /line/i, map: () => ({ type: 'line' }) },
-  { pattern: /radar/i, map: () => ({ type: 'radar' }) },
-  {
-    pattern: /bar/i,
-    map: (_chartType, barDir) => ({
-      type: 'bar',
-      // pptxtojson uses barDir="bar" for horizontal bars and "col" for vertical columns.
-      indexAxis: barDir === 'bar' ? 'y' : 'x'
-    })
-  }
-]
-
-const mapChartType = (chartType: string, barDir?: string): MappedChartType | null => {
-  const mapping = PPTX_CHART_TYPE_MAPPINGS.find((item) => item.pattern.test(chartType))
-  return mapping ? mapping.map(chartType, barDir) : null
-}
-
-const isNumericArray = (value: unknown): value is number[] =>
-  Array.isArray(value) && value.every((item) => Number.isFinite(Number(item)))
-
-const chartCanvasId = (pageId: string, chartIndex: number): string => `chart-${pageId}-${chartIndex}`
-
-const unsupportedChartWarning = (blockId: string, chartType: string): string =>
-  `图表 ${blockId}（${chartType || 'unknown'}）暂不支持结构化导入，已作为占位导入`
-
-const buildChartFrameStyle = (args: {
-  element: Chart
-  scaleX: number
-  scaleY: number
-  zIndex: number
-  offsetX: number
-  offsetY: number
-}): string =>
-  buildBlockStyle({
-    element: args.element as unknown as Record<string, unknown>,
+  const placeholderCss = buildBlockStyle({
+    element: args.element,
     scaleX: args.scaleX,
     scaleY: args.scaleY,
     zIndex: args.zIndex,
     offsetX: args.offsetX,
     offsetY: args.offsetY,
-    overflow: 'hidden',
     extra: ['background:#fff']
   })
-
-const buildChartHtmlFromConfig = (args: {
-  element: Chart
-  blockId: string
-  canvasId: string
-  frameStyle: string
-  animationAttrText: string
-  config: Record<string, unknown>
-}): string => `<section data-block-id="${escapeHtml(args.blockId)}" data-pptx-kind="chart" data-pptx-import-mode="editable" data-pptx-chart-type="${escapeHtml(args.element.chartType)}" class="ppt-chart-frame"${args.animationAttrText} style="${args.frameStyle}">
-  <canvas id="${args.canvasId}" class="h-full w-full"></canvas>
-</section>
-<script>
-window.addEventListener("DOMContentLoaded", function () {
-  var el = document.getElementById("${args.canvasId}");
-  if (!el || !window.PPT || !window.PPT.createChart) return;
-  window.PPT.createChart(el, ${JSON.stringify(args.config).replace(/</g, '\\u003c')});
-});
-</script>`
-
-const buildChartPlaceholderHtml = (args: {
-  element: Chart
-  blockId: string
-  frameStyle: string
-  animationAttrText: string
-}): string =>
-  `<section data-block-id="${escapeHtml(args.blockId)}" data-pptx-kind="chart" data-pptx-import-mode="placeholder" data-pptx-chart-type="${escapeHtml(args.element.chartType || 'unknown')}"${args.animationAttrText} style="${args.frameStyle};display:flex;align-items:center;justify-content:center;color:#6b7280;">图表已作为占位导入</section>`
-
-const buildChartBlock = (args: {
-  element: Chart
-  blockId: string
-  animation?: ImportedElementAnimation
-  pageId: string
-  chartIndex: number
-  scaleX: number
-  scaleY: number
-  zIndex: number
-  offsetX: number
-  offsetY: number
-  pageNumber?: number
-  warnings?: ImportWarning[]
-  suppressUnsupportedWarning?: boolean
-}): string => {
-  const chartType = mapChartType(args.element.chartType, 'barDir' in args.element ? args.element.barDir : undefined)
-  const canvasId = chartCanvasId(args.pageId, args.chartIndex)
   const animationAttrs = buildAnimationAttrs(args.animation)
   const animationAttrText = animationAttrs ? ` ${animationAttrs}` : ''
-  const frameStyle = buildChartFrameStyle({
-    element: args.element,
-    scaleX: args.scaleX,
-    scaleY: args.scaleY,
-    zIndex: args.zIndex,
-    offsetX: args.offsetX,
-    offsetY: args.offsetY
-  })
-  const data = 'data' in args.element ? args.element.data : null
-  const isCommonSeries = Array.isArray(data) && data.length > 0 && data.every((item) => {
-    const record = item as Partial<ChartSeries> | undefined
-    return Boolean(record && !Array.isArray(record) && Array.isArray(record.values))
-  })
-  const isPairedNumericSeries =
-    Array.isArray(data) && data.length >= 2 && isNumericArray(data[0]) && isNumericArray(data[1])
-  if (!chartType || (!isCommonSeries && !isPairedNumericSeries)) {
-    if (!args.suppressUnsupportedWarning) {
-      args.warnings?.push({
-        pageNumber: args.pageNumber,
-        message: unsupportedChartWarning(args.blockId, args.element.chartType)
-      })
-    }
-    return buildChartPlaceholderHtml({
-      element: args.element,
-      blockId: args.blockId,
-      frameStyle,
-      animationAttrText
-    })
+  if (!rows.length) {
+    return `<section data-block-id="${escapeHtml(args.blockId)}" data-pptx-kind="table" data-pptx-import-mode="placeholder"${animationAttrText} style="${placeholderCss};display:flex;align-items:center;justify-content:center;color:#6b7280;">表格已作为占位导入</section>`
   }
-  if (/3DChart/i.test(args.element.chartType)) {
-    args.warnings?.push({
-      pageNumber: args.pageNumber,
-      message: `图表 ${args.blockId} 的 3D 效果已简化为二维图表`
-    })
-  }
-  let labels: string[] = []
-  let datasets: Array<Record<string, unknown>> = []
-  let legendDisplay = false
-  if (isPairedNumericSeries) {
-    const xValues = (data[0] as number[]).map((value) => clampNumber(value))
-    const yValues = (data[1] as number[]).map((value) => clampNumber(value))
-    const radiusValues = isNumericArray(data[2]) ? data[2].map((value) => clampNumber(value, 6)) : []
-    labels = xValues.map((value) => String(value))
-    datasets = [
-      {
-        label: 'Series 1',
-        data: xValues.map((x, index) => {
-          const y = yValues[index] ?? 0
-          if (chartType.type !== 'bubble') return { x, y }
-          return { x, y, r: Math.max(3, Math.min(40, Math.abs(radiusValues[index] ?? 6))) }
-        }),
-        borderColor: args.element.colors?.[0] || undefined,
-        backgroundColor: args.element.colors?.[0] || undefined,
-        showLine: chartType.showLine || undefined,
-        tension: chartType.showLine ? 0.25 : undefined
-      }
-    ]
-  } else {
-    const series = data as ChartSeries[]
-    labels = series[0]?.values?.map((item) => item.x ?? '') || []
-    const isSingleDatasetChart = chartType.type === 'pie' || chartType.type === 'doughnut'
-    legendDisplay = series.length > 1 || isSingleDatasetChart
-    datasets = isSingleDatasetChart
-      ? [
-          {
-            label: series[0]?.key || 'Series 1',
-            data: (series[0]?.values || []).map((value) => value.y ?? 0),
-            backgroundColor: args.element.colors?.length ? args.element.colors : undefined,
-            borderColor: '#ffffff',
-            borderWidth: 1
-          }
-        ]
-      : series.map((item, index) => ({
-          label: item.key || `Series ${index + 1}`,
-          data: (item.values || []).map((value) => value.y ?? 0),
-          borderColor: args.element.colors?.[index] || undefined,
-          backgroundColor: args.element.colors?.[index] || undefined,
-          fill: chartType.fill || false,
-          tension: chartType.type === 'line' ? 0.25 : undefined
-        }))
-  }
-  const config = {
-    type: chartType.type,
-    data: { labels, datasets },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      indexAxis: chartType.indexAxis || 'x',
-      scales: isPairedNumericSeries ? { x: { type: 'linear' } } : undefined,
-      plugins: { legend: { display: legendDisplay } }
-    }
-  }
-  return buildChartHtmlFromConfig({
-    element: args.element,
-    blockId: args.blockId,
-    canvasId,
-    frameStyle,
-    animationAttrText,
-    config
-  })
+  return `<section data-block-id="${escapeHtml(args.blockId)}" data-pptx-kind="table" data-pptx-import-mode="editable"${animationAttrText} style="${css}"><table style="width:100%;height:100%;border-collapse:collapse;border-spacing:0;table-layout:fixed;font-size:${Math.max(12, 12 * tableTextScale).toFixed(1)}px;">${colgroup}${tableRows}</table></section>`
 }
 
 export const __pptxImporterTestUtils = {
@@ -1782,13 +1530,12 @@ export const __pptxImporterTestUtils = {
   buildTextBlock,
   buildTableBlock,
   buildChartBlock,
-  collectPptxTableStyleIds,
-  normalizeChartValueCacheXml,
-  normalizePptxChartValueCaches,
-  removeUnsupportedTableStyleFlags,
+  flattenElements,
+  compareElementsForRender,
   resolveSlideFit,
   sanitizeContentHtml,
-  getSvgPathBounds
+  getSvgPathBounds,
+  xmlShapeFromParserOoxml
 }
 
 const renderElement = async (args: {
@@ -1803,7 +1550,6 @@ const renderElement = async (args: {
   scaleY: number
   textScale: number
   zIndexCounter: ZIndexCounter
-  xmlShapes?: PptxXmlSlideMetadata
   offsetX: number
   offsetY: number
   titleAssigned: boolean
@@ -1817,18 +1563,13 @@ const renderElement = async (args: {
     return `${prefix}-${args.blockCounters[prefix]}`
   }
   const record = args.element as unknown as Record<string, unknown>
-  const xmlShapeName = typeof record.name === 'string' ? record.name : ''
-  const xmlShape = xmlShapeName ? args.xmlShapes?.byName.get(xmlShapeName) : undefined
+  const xmlShape = xmlShapeFromParserOoxml(record)
   const elementAnimation =
     resolveElementAnimation(args.animationContext, record, args.offsetX, args.offsetY) ||
     args.inheritedAnimation
   if (args.element.type === 'group') {
     const children = Array.isArray(args.element.elements)
-      ? [...args.element.elements].sort(
-          (a, b) =>
-            clampNumber((a as unknown as Record<string, unknown>).order) -
-            clampNumber((b as unknown as Record<string, unknown>).order)
-        )
+      ? normalizeGroupChildren(args.element, args.element.elements).sort(compareElementsForRender)
       : []
     const rendered: string[] = []
     let titleAssigned = args.titleAssigned
@@ -2018,6 +1759,35 @@ const renderElement = async (args: {
       titleAssigned: args.titleAssigned
     }
   }
+  if (args.element.type === 'math') {
+    const text = String(record.latex || record.text || 'Formula')
+    const css = buildBlockStyle({
+      element: record,
+      scaleX: args.scaleX,
+      scaleY: args.scaleY,
+      zIndex: args.zIndexCounter.value++,
+      offsetX: args.offsetX,
+      offsetY: args.offsetY,
+      extra: [
+        'background:#ffffff',
+        'border:1px dashed #cbd5e1',
+        'padding:10px',
+        'color:#334155',
+        'font-family:Georgia,serif',
+        'font-size:18px',
+        'display:flex',
+        'align-items:center',
+        'justify-content:center',
+        'text-align:center'
+      ]
+    })
+    const animationAttrs = buildAnimationAttrs(elementAnimation)
+    const animationAttrText = animationAttrs ? ` ${animationAttrs}` : ''
+    return {
+      html: `<section data-block-id="${nextBlockId('math')}" data-pptx-kind="math"${animationAttrText} style="${css}">${escapeHtml(text)}</section>`,
+      titleAssigned: args.titleAssigned
+    }
+  }
   return { html: '', titleAssigned: args.titleAssigned }
 }
 
@@ -2067,7 +1837,6 @@ const buildSlideHtml = async (args: {
   animationPlan?: SlideAnimationPlan
   projectDir: string
   registry: ImageRegistry
-  xmlShapes?: PptxXmlSlideMetadata
   textValidator?: PptxTextValidator
   chartRewrite?: PptxChartRewriteHandler
 }): Promise<{ html: string; contentOutline: string; warnings: ImportWarning[] }> => {
@@ -2084,7 +1853,7 @@ const buildSlideHtml = async (args: {
     usedAnimationIds: new Set<number>()
   }
   const elements = [...(args.slide.layoutElements || []), ...(args.slide.elements || [])].sort(
-    (a, b) => clampNumber((a as unknown as Record<string, unknown>).order) - clampNumber((b as unknown as Record<string, unknown>).order)
+    compareElementsForRender
   )
   const rendered: string[] = []
   const zIndexCounter: ZIndexCounter = { value: 2 }
@@ -2102,7 +1871,6 @@ const buildSlideHtml = async (args: {
         scaleY,
         textScale,
         zIndexCounter,
-        xmlShapes: args.xmlShapes,
         offsetX: slideFit.offsetX,
         offsetY: slideFit.offsetY,
         titleAssigned,
@@ -2202,11 +1970,8 @@ export async function importPptxToEditableHtml(args: {
   await fs.promises.mkdir(imagesDir, { recursive: true })
   args.onProgress?.({ stage: 'reading', progress: 5, label: '正在读取 PPTX 文件' })
   const buffer = await fs.promises.readFile(args.filePath)
-  const normalizedTables = normalizePptxTableStyleFlags(buffer)
-  const normalizedCharts = normalizePptxChartValueCaches(Buffer.from(normalizedTables.arrayBuffer))
-  const xmlMetadata = parsePptxXmlDeckMetadata(Buffer.from(normalizedCharts.arrayBuffer))
   args.onProgress?.({ stage: 'parsing', progress: 14, label: '正在解析 PPTX 结构' })
-  const parsed = await parse(normalizedCharts.arrayBuffer, {
+  const parsed = await parse(buffer, {
     imageMode: 'base64',
     videoMode: 'none',
     audioMode: 'none'
@@ -2233,17 +1998,7 @@ export async function importPptxToEditableHtml(args: {
   })
   const registry: ImageRegistry = { index: 0, byKey: new Map() }
   const pages: ImportedPptxPage[] = []
-  const allWarnings: ImportWarning[] = []
-  if (normalizedTables.normalizedTableCount > 0) {
-    allWarnings.push({
-      message: `已修正 ${normalizedTables.normalizedTableCount} 个缺失样式定义的 PPTX 表格`
-    })
-  }
-  if (normalizedCharts.normalizedChartValueCount > 0) {
-    allWarnings.push({
-      message: `已修正 ${normalizedCharts.normalizedChartValueCount} 个不兼容的 PPTX 图表缓存`
-    })
-  }
+  const allWarnings: ImportWarning[] = (parsed.diagnostics || []).map(warningFromParseIssue)
   const textValidator = new PptxTextValidator()
   try {
     for (let i = 0; i < effectiveSlides.length; i += 1) {
@@ -2268,7 +2023,6 @@ export async function importPptxToEditableHtml(args: {
         animationPlan: animationPlans[i],
         projectDir: args.projectDir,
         registry,
-        xmlShapes: xmlMetadata.slides.get(selectedSlide.originalIndex + 1),
         textValidator,
         chartRewrite: args.chartRewrite
       })

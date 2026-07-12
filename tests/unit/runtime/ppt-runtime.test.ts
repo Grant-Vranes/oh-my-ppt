@@ -1,7 +1,7 @@
 /**
  * @vitest-environment happy-dom
  *
- * Unit tests for ppt-runtime.js v2.0.17:
+ * Unit tests for ppt-runtime.js v2.0.18:
  *   - PPT.stopAnimations() / PPT.resumeAnimations()
  *   - PPT.clicks state machine (advance returns boolean, _dispatch exact match)
  *   - PPT.scanDataAnim() / PPT.executeDataAnim() (routed through PPT.animate)
@@ -68,7 +68,7 @@ function setupRuntime(options?: { search?: string; parent?: { postMessage: Retur
   if (existingPPT) existingPPT.__runtimeVersion = null
   ;(globalThis as Record<string, unknown>).__ohmypptPlaybackBridgeInstalled = false
   ;(globalThis as Record<string, unknown>).anime = anime
-  window.history.replaceState(null, '', `/page.html${options?.search || ''}`)
+  window.history.replaceState(null, '', `/page.html${options?.search || '?pptPlayback=1'}`)
   try {
     Object.defineProperty(window, 'parent', {
       value: options?.parent || window,
@@ -284,7 +284,7 @@ describe('PPT.clicks state machine', () => {
 describe('PPT playback bridge', () => {
   it('does not install for normal page preview URLs', () => {
     const parent = { postMessage: vi.fn() }
-    const { PPT } = setupRuntime({ parent })
+    const { PPT } = setupRuntime({ search: '?pptPlayback=0', parent })
     const c = getClicks(PPT)
     c.setTotal(1)
 
@@ -705,6 +705,17 @@ describe('PPT.scanDataAnim', () => {
     expect(document.getElementById('scale-exit')!.getAttribute('data-ppt-anim-initialized')).toBeNull()
     expect(getClicks(PPT).total).toBe(3)
   })
+
+  it('disables click-triggered animations when playback is not enabled', () => {
+    const { PPT } = setupRuntime({ search: '?pptPlayback=0' })
+    const root = document.querySelector('.ppt-page-root')
+    const result = (PPT.scanDataAnim as Function)(root) as { click: unknown[] }
+
+    expect(result.click).toHaveLength(0)
+    expect(getClicks(PPT).total).toBe(0)
+    expect(document.getElementById('el4')!.style.opacity).toBe('')
+    expect(document.getElementById('el5')!.style.opacity).toBe('')
+  })
 })
 
 describe('PPT.executeDataAnim (routed through PPT.animate)', () => {
@@ -1042,8 +1053,8 @@ describe('PPT.createChart tick formatters', () => {
 })
 
 describe('Version guard', () => {
-  it('runtime version is 2.0.17', () => {
+  it('runtime version is 2.0.18', () => {
     const PPT = setupRuntime().PPT
-    expect(PPT.__runtimeVersion).toBe('2.0.17')
+    expect(PPT.__runtimeVersion).toBe('2.0.18')
   })
 })

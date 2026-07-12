@@ -8,6 +8,8 @@
  * These test the actual logic extracted from the runtime, not abstract mocks.
  */
 import { describe, it, expect } from 'vitest'
+import fs from 'node:fs'
+import path from 'node:path'
 
 function advanceClickState(
   clicks: { total: number; advance: () => boolean } | null | undefined
@@ -112,8 +114,23 @@ function adjacentPageKeys(keys: string[], activeKey: string): string[] {
 
 function shouldEnableDeckPlayback(args: {
   embedMode: boolean
+  presentMode: boolean
 }): boolean {
-  return !args.embedMode
+  return args.presentMode && !args.embedMode
+}
+
+function shouldAnimateDeckTransition(args: {
+  presentMode: boolean
+  transitionType: string
+  hasPreviousPage: boolean
+  samePage: boolean
+}): boolean {
+  return (
+    args.presentMode &&
+    args.transitionType !== 'none' &&
+    args.hasPreviousPage &&
+    !args.samePage
+  )
 }
 
 function resolveFrameClickAction(args: {
@@ -333,11 +350,44 @@ describe('iframe click behavior', () => {
 
 describe('index.html deck playback mode', () => {
   it('enables click playback for full-deck index without forcing present CSS', () => {
-    expect(shouldEnableDeckPlayback({ embedMode: false })).toBe(true)
+    expect(shouldEnableDeckPlayback({ embedMode: false, presentMode: true })).toBe(true)
   })
 
   it('does not enable deck playback in embed mode', () => {
-    expect(shouldEnableDeckPlayback({ embedMode: true })).toBe(false)
+    expect(shouldEnableDeckPlayback({ embedMode: true, presentMode: true })).toBe(false)
+  })
+
+  it('does not enable click playback in ordinary preview mode', () => {
+    expect(shouldEnableDeckPlayback({ embedMode: false, presentMode: false })).toBe(false)
+  })
+
+  it('does not animate page transitions in ordinary preview mode', () => {
+    expect(
+      shouldAnimateDeckTransition({
+        presentMode: false,
+        transitionType: 'fade',
+        hasPreviousPage: true,
+        samePage: false
+      })
+    ).toBe(false)
+    expect(
+      shouldAnimateDeckTransition({
+        presentMode: true,
+        transitionType: 'fade',
+        hasPreviousPage: true,
+        samePage: false
+      })
+    ).toBe(true)
+  })
+
+  it('derives playback mode from present mode in the index runtime', () => {
+    const source = fs.readFileSync(
+      path.resolve(process.cwd(), 'resources/index-runtime.js'),
+      'utf8'
+    )
+    expect(source).toContain('var playbackMode = presentMode && !embedMode;')
+    expect(source).toContain("url.searchParams.set('pptPlayback', playbackMode ? '1' : '0');")
+    expect(source).toContain('presentMode &&\n        indexTransitionType !== \'none\'')
   })
 })
 

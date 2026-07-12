@@ -697,13 +697,14 @@ describe('preview text hit selection', () => {
     expect(script).toContain('shouldFreezeMotion')
   })
 
-  it('animation-select mode does not install preview click animation bridge', async () => {
+  it('preview iframe does not install a click animation bridge', async () => {
     const source = fs.readFileSync(
       path.resolve(__dirname, '../../../src/renderer/src/components/preview/PreviewIframe.tsx'),
       'utf-8'
     )
-    expect(source).toContain("currentInteractionMode === 'preview'")
-    expect(source).not.toContain("currentInteractionMode === 'preview' || currentInteractionMode === 'animation-select'")
+    expect(source).not.toContain('preview-click-animation')
+    expect(source).toContain("url.searchParams.set('pptPlayback', '0')")
+    expect(source).toContain("url.searchParams.set('print', '1')")
   })
 
   it('inspector selects the inline span under the text caret point', () => {

@@ -28,15 +28,50 @@ const PRESET_SHAPES_WITH_LOCAL_VIEWBOX = new Set([
 
 const TWO_PI = Math.PI * 2
 
+const FULL_CIRCLE_DEGREES = 360
+
 const clampNumber = (value: unknown, fallback = 0): number => {
   const n = Number(value)
   return Number.isFinite(n) ? n : fallback
 }
 
+const clamp = (value: number, min: number, max: number): number =>
+  Math.max(min, Math.min(max, value))
+
 const formatNumber = (value: number): string => {
   if (!Number.isFinite(value)) return '0'
   return Number(value.toFixed(4)).toString()
 }
+
+const angleFromAdjustment = (
+  adjustments: Record<string, number> | undefined,
+  key: string,
+  fallbackDegrees: number
+): number => clampNumber(adjustments?.[key], fallbackDegrees * 60000) / 60000
+
+const positiveSweepDegrees = (start: number, end: number): number => {
+  let sweep = end - start
+  while (sweep <= 0) sweep += FULL_CIRCLE_DEGREES
+  while (sweep > FULL_CIRCLE_DEGREES) sweep -= FULL_CIRCLE_DEGREES
+  return sweep
+}
+
+const pointOnEllipse = (
+  centerX: number,
+  centerY: number,
+  radiusX: number,
+  radiusY: number,
+  degrees: number
+): { x: number; y: number } => {
+  const radians = (degrees * Math.PI) / 180
+  return {
+    x: centerX + radiusX * Math.cos(radians),
+    y: centerY + radiusY * Math.sin(radians)
+  }
+}
+
+const pointText = (point: { x: number; y: number }): string =>
+  `${formatNumber(point.x)} ${formatNumber(point.y)}`
 
 export const renderXmlPresetShapePath = (
   preset: string | undefined,
@@ -46,39 +81,240 @@ export const renderXmlPresetShapePath = (
 ): string => {
   const normalized = preset?.toLowerCase()
   if (!normalized || width <= 0 || height <= 0) return ''
+  if (normalized === 'rect') {
+    return rectPath(width, height)
+  }
   if (normalized === 'ellipse') {
-    const rx = width / 2
-    const ry = height / 2
+    return ellipsePath(width, height)
+  }
+  if (
+    normalized === 'roundrect' ||
+    normalized === 'round1rect' ||
+    normalized === 'round2samerect' ||
+    normalized === 'round2diagrect'
+  ) {
+    return roundRectPath(width, height, adjustments)
+  }
+  if (normalized === 'trapezoid') {
+    const shortSide = Math.min(width, height)
+    const adjustment = clamp(clampNumber(adjustments?.adj, 25000), 0, 50000)
+    const inset = clamp((shortSide * adjustment) / 100000, 0, width / 2)
     return [
-      `M 0 ${formatNumber(ry)}`,
-      `A ${formatNumber(rx)} ${formatNumber(ry)} 0 1 0 ${formatNumber(width)} ${formatNumber(ry)}`,
-      `A ${formatNumber(rx)} ${formatNumber(ry)} 0 1 0 0 ${formatNumber(ry)}`,
+      `M ${formatNumber(inset)} 0`,
+      `L ${formatNumber(width - inset)} 0`,
+      `L ${formatNumber(width)} ${formatNumber(height)}`,
+      `L 0 ${formatNumber(height)}`,
       'Z'
     ].join(' ')
   }
-  if (normalized === 'roundrect' || normalized === 'round1rect') {
-    const adjustment = Math.min(50000, Math.max(0, adjustments?.adj ?? 16667)) / 100000
-    const radius = Math.min(width, height) * adjustment
-    if (radius <= 0) {
-      return `M 0 0 L ${formatNumber(width)} 0 L ${formatNumber(width)} ${formatNumber(height)} L 0 ${formatNumber(height)} Z`
+  if (normalized === 'straightconnector1' || normalized === 'line') {
+    if (height < 1 && width >= 1) {
+      const y = height / 2
+      return `M 0 ${formatNumber(y)} L ${formatNumber(width)} ${formatNumber(y)}`
     }
-    const right = width - radius
-    const bottom = height - radius
+    if (width < 1 && height >= 1) {
+      const x = width / 2
+      return `M ${formatNumber(x)} 0 L ${formatNumber(x)} ${formatNumber(height)}`
+    }
+    return `M 0 0 L ${formatNumber(width)} ${formatNumber(height)}`
+  }
+  if (normalized === 'arc') {
+    const radiusX = width / 2
+    const radiusY = height / 2
+    const startAngle = angleFromAdjustment(adjustments, 'adj1', 0)
+    const endAngle = angleFromAdjustment(adjustments, 'adj2', 90)
+    const sweep = positiveSweepDegrees(startAngle, endAngle)
+    const start = pointOnEllipse(radiusX, radiusY, radiusX, radiusY, startAngle)
+    const end = pointOnEllipse(radiusX, radiusY, radiusX, radiusY, startAngle + sweep)
     return [
-      `M ${formatNumber(radius)} 0`,
-      `L ${formatNumber(right)} 0`,
-      `A ${formatNumber(radius)} ${formatNumber(radius)} 0 0 1 ${formatNumber(width)} ${formatNumber(radius)}`,
-      `L ${formatNumber(width)} ${formatNumber(bottom)}`,
-      `A ${formatNumber(radius)} ${formatNumber(radius)} 0 0 1 ${formatNumber(right)} ${formatNumber(height)}`,
-      `L ${formatNumber(radius)} ${formatNumber(height)}`,
-      `A ${formatNumber(radius)} ${formatNumber(radius)} 0 0 1 0 ${formatNumber(bottom)}`,
-      `L 0 ${formatNumber(radius)}`,
-      `A ${formatNumber(radius)} ${formatNumber(radius)} 0 0 1 ${formatNumber(radius)} 0`,
+      `M ${pointText(start)}`,
+      `A ${formatNumber(radiusX)} ${formatNumber(radiusY)} 0 ${sweep > 180 ? 1 : 0} 1 ${pointText(end)}`
+    ].join(' ')
+  }
+  if (normalized === 'blockarc') {
+    const outerRadiusX = width / 2
+    const outerRadiusY = height / 2
+    const centerX = outerRadiusX
+    const centerY = outerRadiusY
+    const startAngle = angleFromAdjustment(adjustments, 'adj1', 0)
+    const endAngle = angleFromAdjustment(adjustments, 'adj2', 90)
+    const sweep = positiveSweepDegrees(startAngle, endAngle)
+    const thickness = clamp(
+      (Math.min(width, height) * clampNumber(adjustments?.adj3, 25000)) / 100000,
+      0,
+      Math.min(outerRadiusX, outerRadiusY)
+    )
+    const innerRadiusX = Math.max(0.0001, outerRadiusX - thickness)
+    const innerRadiusY = Math.max(0.0001, outerRadiusY - thickness)
+    const outerStart = pointOnEllipse(centerX, centerY, outerRadiusX, outerRadiusY, startAngle)
+    const outerEnd = pointOnEllipse(centerX, centerY, outerRadiusX, outerRadiusY, startAngle + sweep)
+    const innerEnd = pointOnEllipse(centerX, centerY, innerRadiusX, innerRadiusY, startAngle + sweep)
+    const innerStart = pointOnEllipse(centerX, centerY, innerRadiusX, innerRadiusY, startAngle)
+    const largeArc = sweep > 180 ? 1 : 0
+    return [
+      `M ${pointText(outerStart)}`,
+      `A ${formatNumber(outerRadiusX)} ${formatNumber(outerRadiusY)} 0 ${largeArc} 1 ${pointText(outerEnd)}`,
+      `L ${pointText(innerEnd)}`,
+      `A ${formatNumber(innerRadiusX)} ${formatNumber(innerRadiusY)} 0 ${largeArc} 0 ${pointText(innerStart)}`,
       'Z'
     ].join(' ')
   }
+  if (normalized === 'triangle') return trianglePath(width, height)
+  if (normalized === 'rttriangle') return rightTrianglePath(width, height)
+  if (normalized === 'parallelogram') return parallelogramPath(width, height, adjustments)
+  if (normalized === 'diamond' || normalized === 'flowchartdecision') return diamondPath(width, height)
+  if (normalized === 'chevron') return chevronPath(width, height, adjustments)
+  if (normalized === 'homeplate') return homePlatePath(width, height, adjustments)
+  if (normalized === 'rightarrow' || normalized === 'stripedrightarrow') return rightArrowPath(width, height)
+  if (normalized === 'leftarrow') return leftArrowPath(width, height)
+  if (normalized === 'snip2samerect') return snip2SameRectPath(width, height)
+  if (normalized === 'teardrop') return teardropPath(width, height)
   return ''
 }
+
+const rectPath = (width: number, height: number): string =>
+  `M 0 0 L ${formatNumber(width)} 0 L ${formatNumber(width)} ${formatNumber(height)} L 0 ${formatNumber(height)} Z`
+
+const ellipsePath = (width: number, height: number): string => {
+  const rx = width / 2
+  const ry = height / 2
+  return [
+    `M 0 ${formatNumber(ry)}`,
+    `A ${formatNumber(rx)} ${formatNumber(ry)} 0 1 0 ${formatNumber(width)} ${formatNumber(ry)}`,
+    `A ${formatNumber(rx)} ${formatNumber(ry)} 0 1 0 0 ${formatNumber(ry)}`,
+    'Z'
+  ].join(' ')
+}
+
+const roundRectPath = (
+  width: number,
+  height: number,
+  adjustments?: Record<string, number>
+): string => {
+  const adjustment = clamp(clampNumber(adjustments?.adj, 16667), 0, 50000) / 100000
+  const radius = Math.min(width, height) * adjustment
+  if (radius <= 0) return rectPath(width, height)
+  const right = width - radius
+  const bottom = height - radius
+  return [
+    `M ${formatNumber(radius)} 0`,
+    `L ${formatNumber(right)} 0`,
+    `A ${formatNumber(radius)} ${formatNumber(radius)} 0 0 1 ${formatNumber(width)} ${formatNumber(radius)}`,
+    `L ${formatNumber(width)} ${formatNumber(bottom)}`,
+    `A ${formatNumber(radius)} ${formatNumber(radius)} 0 0 1 ${formatNumber(right)} ${formatNumber(height)}`,
+    `L ${formatNumber(radius)} ${formatNumber(height)}`,
+    `A ${formatNumber(radius)} ${formatNumber(radius)} 0 0 1 0 ${formatNumber(bottom)}`,
+    `L 0 ${formatNumber(radius)}`,
+    `A ${formatNumber(radius)} ${formatNumber(radius)} 0 0 1 ${formatNumber(radius)} 0`,
+    'Z'
+  ].join(' ')
+}
+
+const trianglePath = (width: number, height: number): string =>
+  `M ${formatNumber(width / 2)} 0 L ${formatNumber(width)} ${formatNumber(height)} L 0 ${formatNumber(height)} Z`
+
+const rightTrianglePath = (width: number, height: number): string =>
+  `M 0 0 L ${formatNumber(width)} ${formatNumber(height)} L 0 ${formatNumber(height)} Z`
+
+const parallelogramPath = (
+  width: number,
+  height: number,
+  adjustments?: Record<string, number>
+): string => {
+  const inset = (width * clamp(clampNumber(adjustments?.adj, 25000), 0, 50000)) / 100000
+  return [
+    `M ${formatNumber(inset)} 0`,
+    `L ${formatNumber(width)} 0`,
+    `L ${formatNumber(width - inset)} ${formatNumber(height)}`,
+    `L 0 ${formatNumber(height)}`,
+    'Z'
+  ].join(' ')
+}
+
+const diamondPath = (width: number, height: number): string => [
+  `M ${formatNumber(width / 2)} 0`,
+  `L ${formatNumber(width)} ${formatNumber(height / 2)}`,
+  `L ${formatNumber(width / 2)} ${formatNumber(height)}`,
+  `L 0 ${formatNumber(height / 2)}`,
+  'Z'
+].join(' ')
+
+const chevronPath = (
+  width: number,
+  height: number,
+  adjustments?: Record<string, number>
+): string => {
+  const inset = (width * clamp(clampNumber(adjustments?.adj, 50000), 0, 100000)) / 100000 / 2
+  return [
+    'M 0 0',
+    `L ${formatNumber(width - inset)} 0`,
+    `L ${formatNumber(width)} ${formatNumber(height / 2)}`,
+    `L ${formatNumber(width - inset)} ${formatNumber(height)}`,
+    `L 0 ${formatNumber(height)}`,
+    `L ${formatNumber(inset)} ${formatNumber(height / 2)}`,
+    'Z'
+  ].join(' ')
+}
+
+const homePlatePath = (
+  width: number,
+  height: number,
+  adjustments?: Record<string, number>
+): string => {
+  const inset = (width * clamp(clampNumber(adjustments?.adj, 50000), 0, 100000)) / 100000 / 2
+  return [
+    'M 0 0',
+    `L ${formatNumber(width - inset)} 0`,
+    `L ${formatNumber(width)} ${formatNumber(height / 2)}`,
+    `L ${formatNumber(width - inset)} ${formatNumber(height)}`,
+    `L 0 ${formatNumber(height)}`,
+    'Z'
+  ].join(' ')
+}
+
+const rightArrowPath = (width: number, height: number): string => [
+  `M 0 ${formatNumber(height * 0.25)}`,
+  `L ${formatNumber(width * 0.65)} ${formatNumber(height * 0.25)}`,
+  `L ${formatNumber(width * 0.65)} 0`,
+  `L ${formatNumber(width)} ${formatNumber(height / 2)}`,
+  `L ${formatNumber(width * 0.65)} ${formatNumber(height)}`,
+  `L ${formatNumber(width * 0.65)} ${formatNumber(height * 0.75)}`,
+  `L 0 ${formatNumber(height * 0.75)}`,
+  'Z'
+].join(' ')
+
+const leftArrowPath = (width: number, height: number): string => [
+  `M ${formatNumber(width)} ${formatNumber(height * 0.25)}`,
+  `L ${formatNumber(width * 0.35)} ${formatNumber(height * 0.25)}`,
+  `L ${formatNumber(width * 0.35)} 0`,
+  `L 0 ${formatNumber(height / 2)}`,
+  `L ${formatNumber(width * 0.35)} ${formatNumber(height)}`,
+  `L ${formatNumber(width * 0.35)} ${formatNumber(height * 0.75)}`,
+  `L ${formatNumber(width)} ${formatNumber(height * 0.75)}`,
+  'Z'
+].join(' ')
+
+const snip2SameRectPath = (width: number, height: number): string => {
+  const snip = Math.min(width, height) * 0.2
+  return [
+    `M ${formatNumber(snip)} 0`,
+    `L ${formatNumber(width - snip)} 0`,
+    `L ${formatNumber(width)} ${formatNumber(snip)}`,
+    `L ${formatNumber(width)} ${formatNumber(height)}`,
+    `L 0 ${formatNumber(height)}`,
+    `L 0 ${formatNumber(snip)}`,
+    'Z'
+  ].join(' ')
+}
+
+const teardropPath = (width: number, height: number): string => [
+  `M ${formatNumber(width)} ${formatNumber(height / 2)}`,
+  `C ${formatNumber(width)} ${formatNumber(height * 0.78)} ${formatNumber(width * 0.78)} ${formatNumber(height)} ${formatNumber(width / 2)} ${formatNumber(height)}`,
+  `C ${formatNumber(width * 0.22)} ${formatNumber(height)} 0 ${formatNumber(height * 0.78)} 0 ${formatNumber(height / 2)}`,
+  `C 0 ${formatNumber(height * 0.18)} ${formatNumber(width * 0.36)} 0 ${formatNumber(width * 0.78)} 0`,
+  `C ${formatNumber(width * 0.92)} 0 ${formatNumber(width)} ${formatNumber(height * 0.08)} ${formatNumber(width)} ${formatNumber(height / 2)}`,
+  'Z'
+].join(' ')
 
 const vectorAngle = (ux: number, uy: number, vx: number, vy: number): number => {
   const dot = ux * vx + uy * vy

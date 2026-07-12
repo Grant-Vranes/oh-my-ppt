@@ -30,7 +30,24 @@ export const EMPTY_ELEMENT_DRAFT: ElementEditDraft = {
   artTextTemplateId: '',
   formulaLatex: '',
   formulaHtml: '',
-  formulaDisplayMode: false
+  formulaDisplayMode: false,
+  chartType: 'bar',
+  chartTitle: '',
+  chartLabels: '',
+  chartValues: '',
+  chartDataJson: '',
+  chartPrimaryColor: '#5d6b4d',
+  chartAccentColor: '#8fbc8f',
+  chartTextColor: '#2f3b28',
+  chartSmooth: true,
+  chartHorizontal: false,
+  chartStacked: false,
+  chartAreaFill: true,
+  chartShowPoints: true,
+  chartShowLegend: false,
+  chartDoughnutCutout: '58',
+  chartRadarFill: true,
+  chartConfigJson: ''
 }
 
 export function rgbToHex(value: string | undefined): string {
@@ -97,7 +114,7 @@ export function buildSelectedElementFromSnapshot(args: {
       fontWeight: snapshot.computed.fontWeight || '',
       textAlign: normalizeTextAlign(snapshot.computed.textAlign),
       lineHeight: snapshot.computed.lineHeight || '',
-      backgroundColor: snapshot.computed.backgroundColor || ''
+      backgroundColor: snapshot.computed.svgPaintColor || snapshot.computed.backgroundColor || ''
     },
     bounds: snapshot.metrics.viewport,
     viewportBounds: snapshot.metrics.viewport,

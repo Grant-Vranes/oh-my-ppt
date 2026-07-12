@@ -4,6 +4,8 @@ import type { IpcContext } from '../context'
 import {
   listMergeSourcePages,
   listMergeSourceSessions,
+  listMergeSourceTemplatePages,
+  listMergeSourceTemplates,
   mergeSessionPages
 } from './page-merge-service'
 import { PageMergeError, type PageMergeErrorCode } from '../../../shared/page-merge'
@@ -53,12 +55,33 @@ export function registerPageMergeHandlers(ctx: IpcContext): void {
     )
   })
 
+  ipcMain.handle('session:listMergeSourceTemplates', async (_event, payload: unknown) => {
+    const record =
+      payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {}
+    const targetSessionId = readString(record, 'targetSessionId')
+    if (!targetSessionId) throw new Error('PAGE_MERGE_INVALID_REQUEST')
+    return runPageMergeRequest('session:listMergeSourceTemplates', { targetSessionId }, () =>
+      listMergeSourceTemplates(ctx, targetSessionId)
+    )
+  })
+
   ipcMain.handle('session:listMergeSourcePages', async (_event, payload: unknown) => {
     const record =
       payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {}
     const targetSessionId = readString(record, 'targetSessionId')
+    const sourceType = readString(record, 'sourceType') || 'session'
+    if (!targetSessionId) throw new Error('PAGE_MERGE_INVALID_REQUEST')
+    if (sourceType === 'template') {
+      const templateId = readString(record, 'templateId')
+      if (!templateId) throw new Error('PAGE_MERGE_INVALID_REQUEST')
+      return runPageMergeRequest(
+        'session:listMergeSourcePages',
+        { targetSessionId, sourceType, templateId },
+        () => listMergeSourceTemplatePages(ctx, targetSessionId, templateId)
+      )
+    }
     const sourceSessionId = readString(record, 'sourceSessionId')
-    if (!targetSessionId || !sourceSessionId) throw new Error('PAGE_MERGE_INVALID_REQUEST')
+    if (!sourceSessionId) throw new Error('PAGE_MERGE_INVALID_REQUEST')
     if (targetSessionId === sourceSessionId) throw new Error('PAGE_MERGE_SAME_SESSION')
     return runPageMergeRequest(
       'session:listMergeSourcePages',
@@ -71,22 +94,42 @@ export function registerPageMergeHandlers(ctx: IpcContext): void {
     const record =
       payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {}
     const targetSessionId = readString(record, 'targetSessionId')
-    const sourceSessionId = readString(record, 'sourceSessionId')
+    const sourceType = readString(record, 'sourceType') || 'session'
     const sourcePageIds = record.sourcePageIds
     if (
       !targetSessionId ||
-      !sourceSessionId ||
       !Array.isArray(sourcePageIds) ||
       sourcePageIds.some((item) => typeof item !== 'string')
     ) {
       throw new Error('PAGE_MERGE_INVALID_REQUEST')
     }
+    const selectedPageCount = sourcePageIds.length
+    if (sourceType === 'template') {
+      const sourceTemplateId = readString(record, 'templateId')
+      if (!sourceTemplateId) throw new Error('PAGE_MERGE_INVALID_REQUEST')
+      return runPageMergeRequest(
+        'session:mergePages',
+        { targetSessionId, sourceType, sourceTemplateId, selectedPageCount },
+        async () => {
+          const result = await mergeSessionPages(ctx, {
+            targetSessionId,
+            sourceType: 'template',
+            sourceTemplateId,
+            sourcePageIds: sourcePageIds as string[]
+          })
+          return { ok: true, ...result }
+        }
+      )
+    }
+    const sourceSessionId = readString(record, 'sourceSessionId')
+    if (!sourceSessionId) throw new Error('PAGE_MERGE_INVALID_REQUEST')
     return runPageMergeRequest(
       'session:mergePages',
-      { targetSessionId, sourceSessionId, selectedPageCount: sourcePageIds.length },
+      { targetSessionId, sourceType, sourceSessionId, selectedPageCount },
       async () => {
         const result = await mergeSessionPages(ctx, {
           targetSessionId,
+          sourceType: 'session',
           sourceSessionId,
           sourcePageIds: sourcePageIds as string[]
         })

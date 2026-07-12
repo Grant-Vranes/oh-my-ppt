@@ -20,6 +20,7 @@ export type EditableCapability =
   | 'media'
   | 'border'
   | 'formula'
+  | 'chart'
 
 export interface EditableElementSnapshot {
   selector: string
@@ -41,6 +42,7 @@ export interface EditableElementSnapshot {
     zIndex?: string
     opacity?: string
     backgroundColor?: string
+    svgPaintColor?: string
     color?: string
     fontSize?: string
     fontWeight?: string
@@ -75,6 +77,26 @@ export interface EditableElementSnapshot {
     latex: string
     html: string
     displayMode: boolean
+  }
+  chart?: {
+    editable: boolean
+    type: string
+    title: string
+    labels: string[]
+    values: number[]
+    series: Array<{ name: string; values: number[] }>
+    primaryColor: string
+    accentColor: string
+    textColor: string
+    smooth: boolean
+    horizontal: boolean
+    stacked: boolean
+    areaFill: boolean
+    showPoints: boolean
+    showLegend: boolean
+    doughnutCutout: number
+    radarFill: boolean
+    configJson: string
   }
 }
 
@@ -571,6 +593,8 @@ export function buildEditModeInjectScript(previewScale = 1): string {
       candidate = parent && parent.nodeType === Node.ELEMENT_NODE ? parent : null;
     }
     if (!formula || !isInsidePageRoot(formula)) return null;
+    const insertedHost = formula.closest('[data-ppt-edit-kind="formula"][data-block-id]');
+    if (insertedHost && isInsidePageRoot(insertedHost)) return insertedHost;
     return formula;
   };
 
@@ -662,7 +686,9 @@ export function buildEditModeInjectScript(previewScale = 1): string {
       if (!a.classList.contains("katex") && b.classList.contains("katex")) return 1;
       return 0;
     });
-    return formulas[0] || null;
+    const formula = formulas[0] || null;
+    const insertedHost = formula ? formula.closest('[data-ppt-edit-kind="formula"][data-block-id]') : null;
+    return insertedHost && isInsidePageRoot(insertedHost) ? insertedHost : formula;
   };
 
   const pickArtTextTarget = (origin) => {
@@ -1545,6 +1571,12 @@ export function buildEditModeInjectScript(previewScale = 1): string {
     if (!(element instanceof Element)) return "unknown";
     const tag = element.tagName ? element.tagName.toLowerCase() : "";
     if (isText) return "text";
+    // Elements inserted via the shape/icon registries carry an explicit
+    // edit-kind so we don't have to infer from painted styles (the outer
+    // div has no background of its own; the paint lives on the inner SVG).
+    const editKind = element.getAttribute("data-ppt-edit-kind");
+    if (editKind === "shape" || editKind === "icon") return "shape";
+    if (editKind === "chart") return "chart";
     if (tag === "img" || tag === "video") return "media";
     if (element.matches(".katex, .katex-display") || element.querySelector(".katex, .katex-display, math, annotation, semantics")) return "formula";
     if (tag === "table" || tag === "td" || tag === "th" || element.querySelector("table")) return "table";
@@ -1562,15 +1594,29 @@ export function buildEditModeInjectScript(previewScale = 1): string {
     return hasPaint ? "shape" : "unknown";
   };
 
+  const isSupportedSimpleChart = (element) => {
+    if (!(element instanceof Element)) return false;
+    if (element.getAttribute("data-ppt-chart-editable") !== "simple") return false;
+    const holder = element.querySelector('script[data-ppt-chart-config="1"]');
+    if (!holder) return false;
+    try {
+      const config = JSON.parse(holder.textContent || "{}");
+      return ["bar", "line", "pie", "doughnut", "radar"].includes(config && config.type);
+    } catch (_error) {
+      return false;
+    }
+  };
+
   const collectCapabilities = (element, kind, isText) => {
     const capabilities = ["layout", "layer"];
     if (kind === "unknown") return capabilities;
-    if (element instanceof HTMLElement) {
+    if (element instanceof HTMLElement && kind !== "chart") {
       capabilities.push("appearance", "border");
     }
     if (isText) capabilities.push("text");
     if (kind === "media") capabilities.push("media");
     if (kind === "formula") capabilities.push("formula");
+    if (kind === "chart" && isSupportedSimpleChart(element)) capabilities.push("chart");
     return Array.from(new Set(capabilities));
   };
 
@@ -1645,6 +1691,51 @@ export function buildEditModeInjectScript(previewScale = 1): string {
     return attrs;
   };
 
+  const isInsertedSvgVisual = (element) => {
+    if (!(element instanceof Element)) return false;
+    const editKind = element.getAttribute("data-ppt-edit-kind");
+    return editKind === "shape" || editKind === "icon";
+  };
+
+  const getSvgPaintTarget = (element) => {
+    if (!isInsertedSvgVisual(element)) return null;
+    return element.querySelector("svg [fill], svg [stroke], svg path, svg rect, svg circle, svg ellipse, svg line, svg polygon, svg polyline");
+  };
+
+  const readSvgPaintColor = (element) => {
+    const editKind = element.getAttribute("data-ppt-edit-kind");
+    if (editKind === "icon") return window.getComputedStyle(element).color || "";
+    const paintTarget = getSvgPaintTarget(element);
+    if (!paintTarget) return "";
+    const fill = paintTarget.getAttribute("fill") || "";
+    if (fill && fill !== "none" && fill !== "currentColor") return fill;
+    const stroke = paintTarget.getAttribute("stroke") || "";
+    if (stroke && stroke !== "none" && stroke !== "currentColor") return stroke;
+    const computed = window.getComputedStyle(paintTarget);
+    return (computed.fill && computed.fill !== "none" ? computed.fill : computed.stroke) || "";
+  };
+
+  const applySvgPaintColor = (element, color) => {
+    if (!isInsertedSvgVisual(element) || !color) return false;
+    const editKind = element.getAttribute("data-ppt-edit-kind");
+    if (editKind === "icon") {
+      element.style.setProperty("color", color, "important");
+      return true;
+    }
+    const paintTargets = Array.from(element.querySelectorAll("svg [fill], svg [stroke], svg path, svg rect, svg circle, svg ellipse, svg line, svg polygon, svg polyline"));
+    if (paintTargets.length === 0) return false;
+    paintTargets.forEach((target) => {
+      const fill = target.getAttribute("fill");
+      const stroke = target.getAttribute("stroke");
+      if (fill && fill !== "none") target.setAttribute("fill", color);
+      if (stroke && stroke !== "none") target.setAttribute("stroke", color);
+      if ((!fill || fill === "none") && (!stroke || stroke === "none")) {
+        target.setAttribute("fill", color);
+      }
+    });
+    return true;
+  };
+
   const readDelimitedFormula = (text) => {
     const trimmed = String(text || "").trim();
     if (trimmed.startsWith("$$") && trimmed.endsWith("$$") && trimmed.length > 4) {
@@ -1715,6 +1806,8 @@ export function buildEditModeInjectScript(previewScale = 1): string {
     if (!(element instanceof Element) || !formula || typeof formula.html !== "string") return false;
     const latex = typeof formula.latex === "string" ? formula.latex.trim() : "";
     if (!latex) return false;
+    const isInsertedFormulaHost =
+      element.matches('[data-ppt-edit-kind="formula"][data-block-id]');
     const renderedTarget = element.matches(".katex, .katex-display")
       ? element
       : element.querySelector(".katex, .katex-display");
@@ -1738,14 +1831,88 @@ export function buildEditModeInjectScript(previewScale = 1): string {
     const metadataTarget = rendered || target;
     metadataTarget.setAttribute("data-ppt-formula-latex", latex);
     metadataTarget.setAttribute("data-ppt-formula-display", formula.displayMode ? "true" : "false");
-    if (oldBlockId && !metadataTarget.getAttribute("data-block-id")) {
+    if (!isInsertedFormulaHost && oldBlockId && !metadataTarget.getAttribute("data-block-id")) {
       metadataTarget.setAttribute("data-block-id", oldBlockId);
     }
-    if (wasSelected && metadataTarget instanceof Element) {
-      setSelected(metadataTarget);
+    if (wasSelected) {
+      setSelected(isInsertedFormulaHost ? element : metadataTarget);
     }
     updateOverlay();
     return true;
+  };
+
+  const readSimpleChartMetadata = (element) => {
+    if (!(element instanceof Element)) return undefined;
+    if (!isSupportedSimpleChart(element)) return undefined;
+    const holder = element.querySelector('script[data-ppt-chart-config="1"]');
+    if (!holder) return undefined;
+    const configJson = holder.textContent || "";
+    try {
+      const config = JSON.parse(configJson || "{}");
+      const datasets = config && config.data && Array.isArray(config.data.datasets)
+        ? config.data.datasets
+        : [];
+      const dataset = datasets[0] || {};
+      const series = datasets.map((item, index) => ({
+        name: typeof item.label === "string" && item.label ? item.label : "Series " + (index + 1),
+        values: Array.isArray(item.data)
+          ? item.data.map((value) => Number(value)).map((value) => Number.isFinite(value) ? value : 0)
+          : [],
+      }));
+      const titlePlugin = config && config.options && config.options.plugins
+        ? config.options.plugins.title || {}
+        : {};
+      const editorColors = config && config.options && config.options.plugins
+        ? config.options.plugins.pptEditorColors || {}
+        : {};
+      const backgroundColor = dataset && dataset.backgroundColor;
+      const firstBackgroundColor = Array.isArray(backgroundColor) ? backgroundColor[0] : backgroundColor;
+      const scales = config && config.options && config.options.scales ? config.options.scales : {};
+      const xTicks = scales && scales.x && scales.x.ticks ? scales.x.ticks : {};
+      const cutoutValue = Number.isFinite(Number(editorColors.doughnutCutout))
+        ? Number(editorColors.doughnutCutout)
+        : Number(String(config.options && config.options.cutout || "58").replace("%", ""));
+      return {
+        editable: true,
+        type: typeof config.type === "string" ? config.type : "",
+        title: typeof titlePlugin.text === "string" ? titlePlugin.text : (typeof dataset.label === "string" ? dataset.label : ""),
+        labels: config && config.data && Array.isArray(config.data.labels) ? config.data.labels.map((item) => String(item)) : [],
+        values: series[0] ? series[0].values : [],
+        series,
+        primaryColor: typeof editorColors.primaryColor === "string" ? editorColors.primaryColor : (typeof dataset.borderColor === "string" ? dataset.borderColor : "#5d6b4d"),
+        accentColor: typeof editorColors.accentColor === "string" ? editorColors.accentColor : (typeof firstBackgroundColor === "string" && firstBackgroundColor.charAt(0) === "#" ? firstBackgroundColor : "#8fbc8f"),
+        textColor: typeof editorColors.textColor === "string" ? editorColors.textColor : (typeof titlePlugin.color === "string" ? titlePlugin.color : (typeof xTicks.color === "string" ? xTicks.color : "#2f3b28")),
+        smooth: typeof editorColors.smooth === "boolean" ? editorColors.smooth : Number(dataset.tension || 0) > 0,
+        horizontal: typeof editorColors.horizontal === "boolean" ? editorColors.horizontal : config.options && config.options.indexAxis === "y",
+        stacked: typeof editorColors.stacked === "boolean" ? editorColors.stacked : Boolean(scales.x && scales.x.stacked && scales.y && scales.y.stacked),
+        areaFill: typeof editorColors.areaFill === "boolean" ? editorColors.areaFill : dataset.fill !== false,
+        showPoints: typeof editorColors.showPoints === "boolean" ? editorColors.showPoints : Number(dataset.pointRadius || 0) > 0,
+        showLegend: typeof editorColors.showLegend === "boolean" ? editorColors.showLegend : Boolean(config.options && config.options.plugins && config.options.plugins.legend && config.options.plugins.legend.display),
+        doughnutCutout: Number.isFinite(cutoutValue) ? cutoutValue : 58,
+        radarFill: typeof editorColors.radarFill === "boolean" ? editorColors.radarFill : dataset.fill !== false,
+        configJson,
+      };
+    } catch (_error) {
+      return undefined;
+    }
+  };
+
+  const updateSimpleChart = (element, chart) => {
+    if (!(element instanceof Element) || !chart || typeof chart.configJson !== "string") return false;
+    const holder = element.querySelector('script[data-ppt-chart-config="1"]');
+    const canvas = element.querySelector("canvas");
+    if (!holder || !canvas) return false;
+    try {
+      const config = JSON.parse(chart.configJson || "{}");
+      holder.textContent = chart.configJson;
+      if (window.PPT && typeof window.PPT.createChart === "function") {
+        window.PPT.createChart(canvas, config);
+      }
+      updateOverlay();
+      return true;
+    } catch (_error) {
+      return false;
+    }
   };
 
   const collectElementSnapshot = (target, selector) => {
@@ -1762,6 +1929,9 @@ export function buildEditModeInjectScript(previewScale = 1): string {
     const currentDragY = parsePx(target.style.getPropertyValue("--ppt-drag-y"));
     const tagKind =
       isText ? "text" :
+      target.getAttribute("data-ppt-edit-kind") === "shape" ||
+      target.getAttribute("data-ppt-edit-kind") === "icon" ? "shape" :
+      target.getAttribute("data-ppt-edit-kind") === "chart" ? "chart" :
       elementTag === "img" || elementTag === "video" ? "media" :
       target.matches(".katex, .katex-display") || target.querySelector(".katex, .katex-display, math, annotation, semantics") ? "formula" :
       elementTag === "table" || elementTag === "td" || elementTag === "th" || target.querySelector("table") ? "table" :
@@ -1797,6 +1967,7 @@ export function buildEditModeInjectScript(previewScale = 1): string {
         zIndex: computed.zIndex || "",
         opacity: computed.opacity || "",
         backgroundColor: computed.backgroundColor || "",
+        svgPaintColor: isInsertedSvgVisual(target) ? readSvgPaintColor(target) : "",
         color: computed.color || "",
         fontSize: computed.fontSize || "",
         fontWeight: computed.fontWeight || "",
@@ -1817,6 +1988,7 @@ export function buildEditModeInjectScript(previewScale = 1): string {
         reason: isText ? undefined : "not-text-only",
       },
       formula: kind === "formula" ? readFormulaMetadata(target) : undefined,
+      chart: kind === "chart" ? readSimpleChartMetadata(target) : undefined,
     };
   };
 
@@ -2468,6 +2640,9 @@ export function buildEditModeInjectScript(previewScale = 1): string {
     try {
       const el = document.querySelector(selector);
       if (!el) return;
+      if (patch.chart && updateSimpleChart(el, patch.chart)) {
+        return;
+      }
       if (patch.formula && renderFormulaInto(el, patch.formula)) {
         return;
       }
@@ -2531,7 +2706,11 @@ export function buildEditModeInjectScript(previewScale = 1): string {
           el.style.setProperty("z-index", String(patch.style.zIndex), "important");
         }
         if (patch.style.opacity !== undefined) el.style.setProperty("opacity", String(patch.style.opacity), "important");
-        if (patch.style.backgroundColor) el.style.setProperty("background-color", patch.style.backgroundColor, "important");
+        if (patch.style.backgroundColor) {
+          if (!applySvgPaintColor(el, patch.style.backgroundColor)) {
+            el.style.setProperty("background-color", patch.style.backgroundColor, "important");
+          }
+        }
         if (patch.style.color) el.style.setProperty("color", patch.style.color, "important");
         if (patch.style.fontSize !== undefined) {
           const fontSize = String(patch.style.fontSize);
@@ -2689,6 +2868,16 @@ export function buildEditModeInjectScript(previewScale = 1): string {
           if (!selectable && node instanceof Element && node.getAttribute("data-block-id")) {
             selectable = node;
           }
+        });
+        nodes.forEach((node) => {
+          if (!(node instanceof Element)) return;
+          const scripts = [
+            ...(node.matches('script[data-ppt-generated-chart-script="1"]') ? [node] : []),
+            ...Array.from(node.querySelectorAll('script[data-ppt-generated-chart-script="1"]')),
+          ];
+          scripts.forEach((script) => {
+            try { new Function(script.textContent || "")(); } catch (_error) {}
+          });
         });
         const el = selectable || nodes.find((node) => node instanceof Element) || null;
         if (el && selectAfterInsert) {

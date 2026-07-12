@@ -15,7 +15,14 @@ import {
   rgbToHex
 } from '../components/session-detail/element-inspector/elementEditUtils'
 import type { ElementEditDraft } from '../components/session-detail/element-inspector'
+import {
+  buildChartJsConfig,
+  normalizeChartData,
+  type InsertChartSeries,
+  type InsertChartType
+} from '../components/session-detail/workspace/insert-charts'
 import { editTargetMatchesDeletedSelector, useEditHistoryStore } from './editHistoryStore'
+import { useGenerateStore } from './generateStore'
 import { useSessionDetailUiStore } from './sessionDetailStore'
 import { useToastStore } from './toastStore'
 
@@ -50,6 +57,25 @@ type ElementPropertyPatch = {
     html: string
     displayMode: boolean
     originalLatex?: string
+  }
+  chart?: {
+    type: string
+    title: string
+    labels: string[]
+    values: number[]
+    series: InsertChartSeries[]
+    primaryColor: string
+    accentColor: string
+    textColor: string
+    smooth: boolean
+    horizontal: boolean
+    stacked: boolean
+    areaFill: boolean
+    showPoints: boolean
+    showLegend: boolean
+    doughnutCutout: number
+    radarFill: boolean
+    configJson: string
   }
   style?: ElementPropertyStylePatch
   attrs?: ElementPropertyAttrsPatch
@@ -94,7 +120,166 @@ function getCommitFieldsForSelection(selection: EditSelectionPayload): Set<keyof
     fields.add('formulaHtml')
     fields.add('formulaDisplayMode')
   }
+  if (capabilities.includes('chart')) {
+    fields.add('chartTitle')
+    fields.add('chartDataJson')
+    fields.add('chartPrimaryColor')
+    fields.add('chartAccentColor')
+    fields.add('chartTextColor')
+    fields.add('chartSmooth')
+    fields.add('chartHorizontal')
+    fields.add('chartStacked')
+    fields.add('chartAreaFill')
+    fields.add('chartShowPoints')
+    fields.add('chartShowLegend')
+    fields.add('chartDoughnutCutout')
+    fields.add('chartRadarFill')
+    fields.add('chartConfigJson')
+  }
   return fields
+}
+
+function parseCsvList(value: string): string[] {
+  return String(value || '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
+
+function parseNumberCsv(value: string): number[] {
+  return parseCsvList(value)
+    .map((item) => Number(item))
+    .filter((item) => Number.isFinite(item))
+}
+
+const CHART_DATA_X_KEYS = ['x', 'label', 'category', 'name']
+const MAX_CHART_IMPORT_ROWS = 200
+const MAX_CHART_IMPORT_SERIES = 8
+
+function toFiniteNumber(value: unknown): number | null {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null
+  const text = String(value ?? '').trim().replace(/,/g, '')
+  if (!text) return null
+  const parsed = Number(text)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function formatChartDataJson(
+  labels: string[],
+  series: InsertChartSeries[] | undefined,
+  values: number[]
+): string {
+  const safeSeries =
+    series && series.length > 0
+      ? series
+      : [
+          {
+            name: 'Value',
+            values
+          }
+        ]
+  return JSON.stringify(
+    labels.map((label, index) => ({
+      x: label,
+      ...safeSeries.reduce<Record<string, number>>((record, item, seriesIndex) => {
+        const name = item.name || (seriesIndex === 0 ? 'Value' : `Series ${seriesIndex + 1}`)
+        const value = Number(item.values[index])
+        record[name] = Number.isFinite(value) ? value : 0
+        return record
+      }, {})
+    })),
+    null,
+    2
+  )
+}
+
+function parseChartDataJson(
+  value: string
+): { labels: string[]; values: number[]; series: InsertChartSeries[] } | null {
+  const text = String(value || '').trim()
+  if (!text) return null
+  try {
+    const parsed = JSON.parse(text)
+    if (!Array.isArray(parsed)) return null
+    const labels: string[] = []
+    const normalizedRows: Array<Record<string, unknown>> = []
+    parsed.slice(0, MAX_CHART_IMPORT_ROWS).forEach((item) => {
+      if (Array.isArray(item)) {
+        const label = String(item[0] ?? '').trim()
+        if (!label) return
+        labels.push(label)
+        normalizedRows.push(
+          item.slice(1, MAX_CHART_IMPORT_SERIES + 1).reduce<Record<string, unknown>>(
+            (record, cell, index) => {
+              record[index === 0 ? 'Value' : `Series ${index + 1}`] = cell
+              return record
+            },
+            {}
+          )
+        )
+      } else if (item && typeof item === 'object') {
+        const record = item as Record<string, unknown>
+        const keys = Object.keys(record)
+        const xKey =
+          CHART_DATA_X_KEYS.find((key) => key in record) ??
+          keys.find((key) => toFiniteNumber(record[key]) === null) ??
+          keys[0]
+        const label = String(record[xKey] ?? '').trim()
+        if (!label) return
+        labels.push(label)
+        normalizedRows.push(
+          keys.reduce<Record<string, unknown>>((row, key) => {
+            if (key !== xKey) row[key] = record[key]
+            return row
+          }, {})
+        )
+      }
+    })
+    if (labels.length === 0 || normalizedRows.length === 0) return null
+    const seriesKeys = Array.from(
+      new Set(
+        normalizedRows.flatMap((row) =>
+          Object.keys(row).filter((key) => normalizedRows.some((item) => key in item))
+        )
+      )
+    )
+      .filter((key) => key.trim() && normalizedRows.some((row) => toFiniteNumber(row[key]) !== null))
+      .slice(0, MAX_CHART_IMPORT_SERIES)
+    const safeSeriesKeys = seriesKeys.length > 0 ? seriesKeys : ['Value']
+    const series = safeSeriesKeys.map((key, index) => ({
+      name: key || (index === 0 ? 'Value' : `Series ${index + 1}`),
+      values: normalizedRows.map((row) => toFiniteNumber(row[key]) ?? 0)
+    }))
+    return labels.length > 0 ? { labels, values: series[0]?.values ?? [], series } : null
+  } catch {
+    return null
+  }
+}
+
+function buildChartPatchFromDraft(draft: ElementEditDraft): ElementPropertyPatch['chart'] {
+  const chartData = parseChartDataJson(draft.chartDataJson)
+  const chart = normalizeChartData({
+    type: draft.chartType as InsertChartType,
+    title: draft.chartTitle,
+    labels: chartData?.labels ?? parseCsvList(draft.chartLabels),
+    values: chartData?.values ?? parseNumberCsv(draft.chartValues),
+    series: chartData?.series,
+    primaryColor: draft.chartPrimaryColor,
+    accentColor: draft.chartAccentColor,
+    textColor: draft.chartTextColor,
+    smooth: draft.chartSmooth,
+    horizontal: draft.chartHorizontal,
+    stacked: draft.chartStacked,
+    areaFill: draft.chartAreaFill,
+    showPoints: draft.chartShowPoints,
+    showLegend: draft.chartShowLegend,
+    doughnutCutout: Number(draft.chartDoughnutCutout),
+    radarFill: draft.chartRadarFill
+  })
+  return {
+    ...chart,
+    configJson: JSON.stringify(buildChartJsConfig(chart))
+  }
 }
 
 function buildElementPropertyPatch(
@@ -112,6 +297,7 @@ function buildElementPropertyPatch(
   let text: string | undefined
   let html: string | undefined
   let formula: ElementPropertyPatch['formula'] | undefined
+  let chart: ElementPropertyPatch['chart'] | undefined
 
   if (commitFields.has('layoutZIndex')) {
     const value = parseInt(draft.layoutZIndex, 10)
@@ -125,7 +311,7 @@ function buildElementPropertyPatch(
   }
   if (
     commitFields.has('backgroundColor') &&
-    draft.backgroundColor !== rgbToHex(initial.computed.backgroundColor)
+    draft.backgroundColor !== rgbToHex(initial.computed.svgPaintColor || initial.computed.backgroundColor)
   ) {
     style.backgroundColor = draft.backgroundColor
   }
@@ -165,6 +351,53 @@ function buildElementPropertyPatch(
         displayMode: nextDisplayMode,
         originalLatex: initialFormula?.latex || ''
       }
+    }
+  }
+  if (
+    commitFields.has('chartTitle') ||
+    commitFields.has('chartDataJson') ||
+    commitFields.has('chartPrimaryColor') ||
+    commitFields.has('chartAccentColor') ||
+    commitFields.has('chartTextColor') ||
+    commitFields.has('chartSmooth') ||
+    commitFields.has('chartHorizontal') ||
+    commitFields.has('chartStacked') ||
+    commitFields.has('chartAreaFill') ||
+    commitFields.has('chartShowPoints') ||
+    commitFields.has('chartShowLegend') ||
+    commitFields.has('chartDoughnutCutout') ||
+    commitFields.has('chartRadarFill') ||
+    commitFields.has('chartConfigJson')
+  ) {
+    const nextChart = buildChartPatchFromDraft(draft)
+    const initialChart = initial.chart
+      ? {
+          type: initial.chart.type,
+          title: initial.chart.title,
+          labels: initial.chart.labels,
+          values: initial.chart.values,
+          series: initial.chart.series || [
+            {
+              name: initial.chart.title || 'Value',
+              values: initial.chart.values
+            }
+          ],
+          primaryColor: initial.chart.primaryColor,
+          accentColor: initial.chart.accentColor,
+          textColor: initial.chart.textColor,
+          smooth: initial.chart.smooth,
+          horizontal: initial.chart.horizontal,
+          stacked: initial.chart.stacked,
+          areaFill: initial.chart.areaFill,
+          showPoints: initial.chart.showPoints,
+          showLegend: initial.chart.showLegend,
+          doughnutCutout: initial.chart.doughnutCutout,
+          radarFill: initial.chart.radarFill,
+          configJson: initial.chart.configJson
+        }
+      : null
+    if (JSON.stringify(nextChart) !== JSON.stringify(initialChart)) {
+      chart = nextChart
     }
   }
   if (commitFields.has('color') && draft.color !== rgbToHex(initial.computed.color)) {
@@ -218,6 +451,7 @@ function buildElementPropertyPatch(
     html === undefined &&
     text === undefined &&
     formula === undefined &&
+    chart === undefined &&
     Object.keys(style).length === 0 &&
     Object.keys(attrs).length === 0
   ) {
@@ -228,6 +462,7 @@ function buildElementPropertyPatch(
     html,
     text,
     formula,
+    chart,
     textTarget: text !== undefined ? selection.textTarget : undefined,
     style: Object.keys(style).length > 0 ? style : undefined,
     attrs: Object.keys(attrs).length > 0 ? attrs : undefined
@@ -239,6 +474,7 @@ interface EditSessionState {
   selection: EditSelectionPayload | null
   draft: ElementEditDraft
   isSavingEdits: boolean
+  isApplyingSyncElement: boolean
   ctx: EditSessionContext | null
 
   attach: (ctx: EditSessionContext) => void
@@ -262,6 +498,7 @@ interface EditSessionState {
   commitCurrentDraft: () => boolean
   flushPendingDrags: () => Promise<void>
   save: () => Promise<{ saved: boolean; error?: string }>
+  applySelectedToAllPages: () => Promise<{ applied: boolean; error?: string }>
 }
 
 export const useEditSessionStore = create<EditSessionState>((set, get) => ({
@@ -269,6 +506,7 @@ export const useEditSessionStore = create<EditSessionState>((set, get) => ({
   selection: null,
   draft: EMPTY_ELEMENT_DRAFT,
   isSavingEdits: false,
+  isApplyingSyncElement: false,
   ctx: null,
 
   attach: (ctx) => set({ ctx }),
@@ -314,6 +552,7 @@ export const useEditSessionStore = create<EditSessionState>((set, get) => ({
     const computed = payload.snapshot.computed
     const attrs = payload.snapshot.attrs
     const formula = payload.snapshot.formula
+    const chart = payload.snapshot.chart
     if (payload.isText) {
       set({
         draft: {
@@ -329,7 +568,7 @@ export const useEditSessionStore = create<EditSessionState>((set, get) => ({
           layoutHeight: String(Math.round(bounds.height)),
           layoutZIndex: zValue,
           opacity: opacityToInput(computed.opacity),
-          backgroundColor: rgbToHex(computed.backgroundColor),
+          backgroundColor: rgbToHex(computed.svgPaintColor || computed.backgroundColor),
           objectFit: computed.objectFit || 'contain',
           alt: attrs.alt || '',
           poster: attrs.poster || '',
@@ -342,7 +581,24 @@ export const useEditSessionStore = create<EditSessionState>((set, get) => ({
           artTextTemplateId: attrs.artTextTemplate || '',
           formulaLatex: formula?.latex || '',
           formulaHtml: formula?.html || '',
-          formulaDisplayMode: Boolean(formula?.displayMode)
+          formulaDisplayMode: Boolean(formula?.displayMode),
+          chartType: chart?.type || 'bar',
+          chartTitle: chart?.title || '',
+          chartLabels: chart?.labels.join(', ') || '',
+          chartValues: chart?.values.join(', ') || '',
+          chartDataJson: chart ? formatChartDataJson(chart.labels, chart.series, chart.values) : '',
+          chartPrimaryColor: chart?.primaryColor || '#5d6b4d',
+          chartAccentColor: chart?.accentColor || '#8fbc8f',
+          chartTextColor: chart?.textColor || '#2f3b28',
+          chartSmooth: chart?.smooth !== false,
+          chartHorizontal: Boolean(chart?.horizontal),
+          chartStacked: Boolean(chart?.stacked),
+          chartAreaFill: chart?.areaFill !== false,
+          chartShowPoints: chart?.showPoints !== false,
+          chartShowLegend: Boolean(chart?.showLegend),
+          chartDoughnutCutout: String(chart?.doughnutCutout ?? 58),
+          chartRadarFill: chart?.radarFill !== false,
+          chartConfigJson: chart?.configJson || ''
         }
       })
     } else {
@@ -355,7 +611,7 @@ export const useEditSessionStore = create<EditSessionState>((set, get) => ({
           layoutHeight: String(Math.round(bounds.height)),
           layoutZIndex: zValue,
           opacity: opacityToInput(computed.opacity),
-          backgroundColor: rgbToHex(computed.backgroundColor),
+          backgroundColor: rgbToHex(computed.svgPaintColor || computed.backgroundColor),
           objectFit: computed.objectFit || 'contain',
           alt: attrs.alt || '',
           poster: attrs.poster || '',
@@ -368,7 +624,24 @@ export const useEditSessionStore = create<EditSessionState>((set, get) => ({
           artTextTemplateId: attrs.artTextTemplate || '',
           formulaLatex: formula?.latex || '',
           formulaHtml: formula?.html || '',
-          formulaDisplayMode: Boolean(formula?.displayMode)
+          formulaDisplayMode: Boolean(formula?.displayMode),
+          chartType: chart?.type || 'bar',
+          chartTitle: chart?.title || '',
+          chartLabels: chart?.labels.join(', ') || '',
+          chartValues: chart?.values.join(', ') || '',
+          chartDataJson: chart ? formatChartDataJson(chart.labels, chart.series, chart.values) : '',
+          chartPrimaryColor: chart?.primaryColor || '#5d6b4d',
+          chartAccentColor: chart?.accentColor || '#8fbc8f',
+          chartTextColor: chart?.textColor || '#2f3b28',
+          chartSmooth: chart?.smooth !== false,
+          chartHorizontal: Boolean(chart?.horizontal),
+          chartStacked: Boolean(chart?.stacked),
+          chartAreaFill: chart?.areaFill !== false,
+          chartShowPoints: chart?.showPoints !== false,
+          chartShowLegend: Boolean(chart?.showLegend),
+          chartDoughnutCutout: String(chart?.doughnutCutout ?? 58),
+          chartRadarFill: chart?.radarFill !== false,
+          chartConfigJson: chart?.configJson || ''
         }
       })
     }
@@ -449,6 +722,20 @@ export const useEditSessionStore = create<EditSessionState>((set, get) => ({
       draft.formulaLatex !== prevDraft.formulaLatex ||
       draft.formulaHtml !== prevDraft.formulaHtml ||
       draft.formulaDisplayMode !== prevDraft.formulaDisplayMode
+    const chartChanged =
+      draft.chartTitle !== prevDraft.chartTitle ||
+      draft.chartDataJson !== prevDraft.chartDataJson ||
+      draft.chartPrimaryColor !== prevDraft.chartPrimaryColor ||
+      draft.chartAccentColor !== prevDraft.chartAccentColor ||
+      draft.chartTextColor !== prevDraft.chartTextColor ||
+      draft.chartSmooth !== prevDraft.chartSmooth ||
+      draft.chartHorizontal !== prevDraft.chartHorizontal ||
+      draft.chartStacked !== prevDraft.chartStacked ||
+      draft.chartAreaFill !== prevDraft.chartAreaFill ||
+      draft.chartShowPoints !== prevDraft.chartShowPoints ||
+      draft.chartShowLegend !== prevDraft.chartShowLegend ||
+      draft.chartDoughnutCutout !== prevDraft.chartDoughnutCutout ||
+      draft.chartRadarFill !== prevDraft.chartRadarFill
 
     set({ draft })
 
@@ -483,6 +770,11 @@ export const useEditSessionStore = create<EditSessionState>((set, get) => ({
             html: draft.formulaHtml,
             displayMode: draft.formulaDisplayMode
           }
+        })
+      }
+      if (selection.capabilities?.includes('chart') && chartChanged) {
+        iframe?.liveUpdateElement(selection.selector, {
+          chart: buildChartPatchFromDraft(draft)
         })
       }
       if (options?.commit) get().commitDraft(draft, options.fields)
@@ -604,6 +896,7 @@ export const useEditSessionStore = create<EditSessionState>((set, get) => ({
       })
       if (
         p.patch.formula ||
+        p.patch.chart ||
         p.patch.html ||
         p.patch.text ||
         p.patch.style?.color ||
@@ -614,6 +907,7 @@ export const useEditSessionStore = create<EditSessionState>((set, get) => ({
           text: p.patch.text,
           html: p.patch.html,
           formula: p.patch.formula,
+          chart: p.patch.chart,
           textTarget: p.patch.textTarget,
           style: {
             color: p.patch.style?.color,
@@ -798,6 +1092,65 @@ export const useEditSessionStore = create<EditSessionState>((set, get) => ({
       return { saved: false, error: message }
     } finally {
       set({ isSavingEdits: false })
+    }
+  },
+
+  applySelectedToAllPages: async () => {
+    if (get().isApplyingSyncElement || get().isSavingEdits) return { applied: false }
+    const ctx = get().ctx
+    const iframe = get().iframeHandle
+    const pc = ctx?.getPageContext()
+    const selection = get().selection
+    if (!ctx || !pc || !iframe || !selection?.selector) return { applied: false }
+
+    set({ isApplyingSyncElement: true })
+    try {
+      get().commitCurrentDraft()
+      await get().flushPendingDrags()
+      const sourceHtmlFragment = await iframe.readElementHtml(selection.selector)
+      if (!sourceHtmlFragment) throw new Error(ctx.t('sessionDetail.syncElementReadFailed'))
+
+      const snapshot = useEditHistoryStore.getState().getSnapshotForPage(pc.pageId)
+      const hasPendingEdits =
+        snapshot.dragEdits.length > 0 ||
+        snapshot.textEdits.length > 0 ||
+        snapshot.propertyEdits.length > 0 ||
+        snapshot.deletes.length > 0 ||
+        snapshot.addElements.length > 0
+      if (hasPendingEdits) {
+        const saved = await get().save()
+        if (!saved.saved && saved.error) throw new Error(saved.error)
+      }
+
+      const result = await ipc.applySyncElementToAllPages({
+        sessionId: pc.sessionId,
+        htmlPath: pc.htmlPath,
+        pageId: pc.pageId,
+        sourceHtmlFragment,
+        sourceBlockId: selection.blockId
+      })
+      if (!result.success) throw new Error(ctx.t('sessionDetail.syncElementFailed'))
+
+      const pages = useGenerateStore.getState().currentPages
+      for (const page of pages) {
+        const pageId = page.pageId || page.id
+        if (pageId) ctx.bumpThumbnail(pageId)
+      }
+      iframe.clearEditModeSelection()
+      set({ selection: null, draft: EMPTY_ELEMENT_DRAFT })
+      useSessionDetailUiStore.getState().clearEditSelectedElement()
+      ctx.requestRefresh()
+      useToastStore
+        .getState()
+        .success(ctx.t('sessionDetail.syncElementApplied', { count: result.changedCount }))
+      return { applied: true }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : ctx.t('sessionDetail.syncElementFailed')
+      useToastStore.getState().error(message)
+      return { applied: false, error: message }
+    } finally {
+      set({ isApplyingSyncElement: false })
     }
   }
 }))

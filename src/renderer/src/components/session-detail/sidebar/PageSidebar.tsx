@@ -6,6 +6,7 @@ import {
   FilePlus2,
   Files,
   Image as ImageIcon,
+  LayoutTemplate,
   Loader2,
   Move,
   PanelLeft,
@@ -157,10 +158,12 @@ export const PageSidebar = memo(function PageSidebar({
     onAddBlankPage,
     onAddPage,
     onMergeSessionPages,
+    onMergeTemplatePages,
     onRetryFailedPage,
     onReorderPages,
     onDeletePage,
     onRenamePage,
+    onDuplicatePage,
     onUpdatePageOutline,
     onExportPagePptx,
     canExportPptx,
@@ -397,6 +400,15 @@ export const PageSidebar = memo(function PageSidebar({
                     <Files className="h-3.5 w-3.5 shrink-0 text-[#62758a]" />
                     <span className="whitespace-nowrap">
                       {t('sessionDetail.addPagesFromSession')}
+                    </span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    disabled={pageManagementDisabled}
+                    onSelect={onMergeTemplatePages}
+                  >
+                    <LayoutTemplate className="h-3.5 w-3.5 shrink-0 text-[#7c6a4c]" />
+                    <span className="whitespace-nowrap">
+                      {t('sessionDetail.addPagesFromTemplate')}
                     </span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -733,6 +745,21 @@ export const PageSidebar = memo(function PageSidebar({
                                           <PencilLine className="h-3.5 w-3.5" />
                                         </button>
                                       ) : null}
+                                      {onDuplicatePage ? (
+                                        <button
+                                          type="button"
+                                          disabled={pageManagementDisabled || disabled}
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            onDuplicatePage(page)
+                                          }}
+                                          className="rounded bg-white/90 p-1 text-[#5d6b4d] shadow-sm transition-colors hover:bg-[#f5f1e8] hover:text-[#3e4a32] disabled:cursor-not-allowed disabled:opacity-50"
+                                          aria-label={t('pageManagement.duplicatePage')}
+                                          title={t('pageManagement.duplicatePage')}
+                                        >
+                                          <Copy className="h-3.5 w-3.5" />
+                                        </button>
+                                      ) : null}
                                       {onDeletePage ? (
                                         <button
                                           type="button"
@@ -812,6 +839,15 @@ export const PageSidebar = memo(function PageSidebar({
                     <Files className="h-3.5 w-3.5 shrink-0 text-[#62758a]" />
                     <span className="whitespace-nowrap">
                       {t('sessionDetail.addPagesFromSession')}
+                    </span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    disabled={pageManagementDisabled}
+                    onSelect={onMergeTemplatePages}
+                  >
+                    <LayoutTemplate className="h-3.5 w-3.5 shrink-0 text-[#7c6a4c]" />
+                    <span className="whitespace-nowrap">
+                      {t('sessionDetail.addPagesFromTemplate')}
                     </span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>

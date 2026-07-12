@@ -69,6 +69,7 @@ export const EDITABLE_TEXT_TAGS = new Set([
 export const EDITABLE_TEXT_CHILD_TAGS = new Set([...EDITABLE_TEXT_TAGS, 'br'])
 
 export const SCAFFOLD_BLOCK_IDS = new Set(['content', 'page', 'root'])
+const SUPPORTED_SIMPLE_CHART_TYPES = new Set(['bar', 'line', 'pie', 'doughnut', 'radar'])
 export const BLOCKED_TAGS = new Set([
   'html',
   'head',
@@ -169,6 +170,37 @@ export function normalizeColor(value: unknown): string | null {
   if (/^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(text)) return text
   if (/^rgba?\([\d\s.,%]+\)$/i.test(text)) return text
   return null
+}
+
+function applyInsertedSvgPaintColor(
+  $: cheerio.CheerioAPI,
+  target: cheerio.Cheerio<AnyNode>,
+  color: string | null,
+  styleMap: Map<string, string>
+): boolean {
+  if (!color) return false
+  const editKind = target.attr('data-ppt-edit-kind')
+  if (editKind !== 'shape' && editKind !== 'icon') return false
+  if (editKind === 'icon') {
+    styleMap.set('color', color)
+    return true
+  }
+
+  const paintTargets = target.find(
+    'svg [fill], svg [stroke], svg path, svg rect, svg circle, svg ellipse, svg line, svg polygon, svg polyline'
+  )
+  if (paintTargets.length === 0) return false
+  paintTargets.each((_, node) => {
+    const item = $(node)
+    const fill = item.attr('fill')
+    const stroke = item.attr('stroke')
+    if (fill && fill !== 'none') item.attr('fill', color)
+    if (stroke && stroke !== 'none') item.attr('stroke', color)
+    if ((!fill || fill === 'none') && (!stroke || stroke === 'none')) {
+      item.attr('fill', color)
+    }
+  })
+  return true
 }
 
 export function normalizeFontSize(value: unknown): string | null {
@@ -658,6 +690,21 @@ export function patchGenericElementProperties(
       displayMode?: unknown
       originalLatex?: unknown
     }
+    chart?: {
+      type?: unknown
+      title?: unknown
+      labels?: unknown
+      values?: unknown
+      smooth?: unknown
+      horizontal?: unknown
+      stacked?: unknown
+      areaFill?: unknown
+      showPoints?: unknown
+      showLegend?: unknown
+      doughnutCutout?: unknown
+      radarFill?: unknown
+      configJson?: unknown
+    }
     style?: {
       zIndex?: unknown
       opacity?: unknown
@@ -734,6 +781,22 @@ export function patchGenericElementProperties(
     }
   }
 
+  if (patch.chart && typeof patch.chart.configJson === 'string') {
+    if (target.attr('data-ppt-chart-editable') === 'simple') {
+      try {
+        const parsed = JSON.parse(patch.chart.configJson)
+        if (!SUPPORTED_SIMPLE_CHART_TYPES.has(String(parsed?.type || ''))) {
+          throw new Error('unsupported-chart-type')
+        }
+        const configJson = JSON.stringify(parsed).replace(/<\//g, '<\\/').replace(/<!--/g, '<\\!--')
+        const holder = target.find('script[data-ppt-chart-config="1"]').first()
+        if (holder.length > 0) holder.text(configJson)
+      } catch {
+        throw new Error('暂不支持编辑这个图表类型')
+      }
+    }
+  }
+
   const stylePatch = patch.style || {}
   const styleMap = parseStyle(target.attr('style') || '')
   const zIndex = typeof stylePatch.zIndex === 'number' ? Math.round(stylePatch.zIndex) : null
@@ -750,16 +813,20 @@ export function patchGenericElementProperties(
     styleMap.set('z-index', String(zIndex))
   }
   if (opacity) styleMap.set('opacity', opacity)
-  if (backgroundColor) styleMap.set('background-color', backgroundColor)
+  const backgroundAppliedToSvg = applyInsertedSvgPaintColor($, target, backgroundColor, styleMap)
+  if (backgroundColor && !backgroundAppliedToSvg) styleMap.set('background-color', backgroundColor)
   if (color) styleMap.set('color', color)
   if (fontSize) styleMap.set('font-size', fontSize)
   if (fontWeight) styleMap.set('font-weight', fontWeight)
   if (textAlign) styleMap.set('text-align', textAlign)
   if (objectFit) styleMap.set('object-fit', objectFit)
+  const backgroundUpdatesOuterStyle =
+    backgroundAppliedToSvg && target.attr('data-ppt-edit-kind') === 'icon'
   if (
     zIndex !== null ||
     opacity ||
-    backgroundColor ||
+    (backgroundColor && !backgroundAppliedToSvg) ||
+    backgroundUpdatesOuterStyle ||
     color ||
     fontSize ||
     fontWeight ||

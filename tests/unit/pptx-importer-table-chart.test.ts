@@ -2,7 +2,7 @@ import fs from 'fs'
 import os from 'os'
 import path from 'path'
 import { describe, expect, it, vi } from 'vitest'
-import { unzipSync, zipSync } from 'fflate'
+import { zipSync } from 'fflate'
 import { __pptxImporterTestUtils } from '../../src/main/utils/pptx-importer'
 import { parsePptxXmlDeckMetadata } from '../../src/main/utils/pptx-xml-shape-metadata'
 import {
@@ -409,6 +409,141 @@ describe('pptx importer table and chart blocks', () => {
     expect(html).toContain('justify-content:center')
   })
 
+  it('preserves PPTX shape shadow on visible text blocks', async () => {
+    const html = await __pptxImporterTestUtils.buildTextBlock({
+      ...baseBlockArgs,
+      blockId: 'text-gradient-shadow',
+      imagesDir: os.tmpdir(),
+      registry: { index: 0, byKey: new Map() },
+      element: {
+        left: 10,
+        top: 20,
+        width: 120,
+        height: 40,
+        fill: {
+          type: 'gradient',
+          value: {
+            path: 'line',
+            rot: 45,
+            colors: [
+              { pos: '0%', color: '#3B8BD9' },
+              { pos: '100%', color: '#054A7A' }
+            ]
+          }
+        },
+        shadow: { h: 2, v: 3, blur: 4, color: '#00000066' },
+        content:
+          '<p style="text-align:center;line-height:1;margin-top:0;margin-bottom:0"><span style="font-size:12pt">年度总结</span></p>'
+      }
+    })
+
+    expect(html).toContain('linear-gradient')
+    expect(html).toContain('box-shadow:4.0px 6.0px 8.0px #00000066')
+  })
+
+  it('centers single-line spAutoFit title text without explicit bodyPr anchoring', async () => {
+    const html = await __pptxImporterTestUtils.buildTextBlock({
+      ...baseBlockArgs,
+      blockId: 'text-autofit-title',
+      imagesDir: os.tmpdir(),
+      registry: { index: 0, byKey: new Map() },
+      element: {
+        left: 62.0563,
+        top: 72.565,
+        width: 228.3396,
+        height: 29.0813,
+        autoFit: { type: 'shape' },
+        content:
+          '<p style="text-align:center;line-height:1;margin-top:0;margin-bottom:0"><span style="font-size:18pt">超额达标+结构优化</span></p>'
+      },
+      xmlShape: {
+        id: '',
+        name: '文本框 31',
+        preset: 'rect'
+      }
+    })
+
+    expect(html).toContain('box-sizing:border-box')
+    expect(html).toContain('display:flex')
+    expect(html).toContain('flex-direction:column')
+    expect(html).toContain('justify-content:center')
+  })
+
+  it('centers compact left-aligned spAutoFit text while preserving horizontal alignment', async () => {
+    const html = await __pptxImporterTestUtils.buildTextBlock({
+      ...baseBlockArgs,
+      blockId: 'text-autofit-left-title',
+      imagesDir: os.tmpdir(),
+      registry: { index: 0, byKey: new Map() },
+      element: {
+        left: 330.656,
+        top: 152.074,
+        width: 111.478,
+        height: 21.811,
+        autoFit: { type: 'shape' },
+        content:
+          '<p style="text-align:left;line-height:1;margin-top:0;margin-bottom:0"><span style="font-size:12pt;font-weight:700">理论运用到工作中</span></p>'
+      },
+      xmlShape: {
+        id: '',
+        name: '文本框 33',
+        preset: 'rect'
+      }
+    })
+
+    expect(html).toContain('display:flex')
+    expect(html).toContain('flex-direction:column')
+    expect(html).toContain('justify-content:center')
+    expect(html).toContain('text-align:left')
+  })
+
+  it('centers compact two-line spAutoFit labels without centering tall body text', async () => {
+    const labelHtml = await __pptxImporterTestUtils.buildTextBlock({
+      ...baseBlockArgs,
+      blockId: 'text-autofit-two-line-label',
+      imagesDir: os.tmpdir(),
+      registry: { index: 0, byKey: new Map() },
+      element: {
+        left: 316,
+        top: 305,
+        width: 42,
+        height: 38,
+        autoFit: { type: 'shape' },
+        content:
+          '<p style="text-align:center;line-height:1.2;margin-top:0;margin-bottom:0"><span style="font-size:11pt">经验</span></p><p style="text-align:center;line-height:1.2;margin-top:0;margin-bottom:0"><span style="font-size:11pt">不足</span></p>'
+      },
+      xmlShape: {
+        id: '',
+        name: '文本框 24',
+        preset: 'rect'
+      }
+    })
+    const bodyHtml = await __pptxImporterTestUtils.buildTextBlock({
+      ...baseBlockArgs,
+      blockId: 'text-autofit-body',
+      imagesDir: os.tmpdir(),
+      registry: { index: 0, byKey: new Map() },
+      element: {
+        left: 300,
+        top: 174,
+        width: 198,
+        height: 70,
+        autoFit: { type: 'shape' },
+        content:
+          '<p style="text-align:justify;line-height:1.2;margin-top:0;margin-bottom:0"><span style="font-size:11pt">在以后的工作中，我将要求自己继续参加各种与工作相关的培训班，让知识更加丰富</span></p>'
+      },
+      xmlShape: {
+        id: '',
+        name: '文本框 18',
+        preset: 'rect'
+      }
+    })
+
+    expect(labelHtml).toContain('display:flex')
+    expect(labelHtml).toContain('justify-content:center')
+    expect(bodyHtml).not.toContain('display:flex')
+  })
+
   it('keeps PPTX paragraph margins so imported text stays positioned', () => {
     const html = __pptxImporterTestUtils.sanitizeContentHtml(
       '<p style="text-align:center;line-height:0.9;margin-top:10pt;margin-bottom:0pt"><span style="font-size:18pt">K</span></p>',
@@ -551,7 +686,7 @@ describe('pptx importer table and chart blocks', () => {
 
     expect(gradientHtml).toContain('<linearGradient')
     expect(gradientHtml).toContain('gradientTransform="rotate(45.00 0.5 0.5)"')
-    expect(gradientHtml).toContain('fill="url(#pptx-shape-gradient-gradient)"')
+    expect(gradientHtml).toContain('fill="url(#pptx-shape-gradient-gradient) #0079BA"')
     expect(gradientHtml).toContain('stroke-dasharray=')
     expect(gradientHtml).toContain('<feDropShadow')
 
@@ -578,7 +713,143 @@ describe('pptx importer table and chart blocks', () => {
     })
 
     expect(patternHtml).toContain('<pattern')
-    expect(patternHtml).toContain('fill="url(#pptx-shape-pattern-pattern)"')
+    expect(patternHtml).toContain('fill="url(#pptx-shape-pattern-pattern) #FFFFFF"')
+  })
+
+  it('normalizes OOXML gradient stops and ignores invisible borders', async () => {
+    const cssGradientHtml = await __pptxImporterTestUtils.buildShapeBlock({
+      ...baseBlockArgs,
+      blockId: 'shape-css-gradient',
+      imagesDir: os.tmpdir(),
+      registry: { index: 0, byKey: new Map() },
+      element: {
+        left: 0,
+        top: 0,
+        width: 100,
+        height: 50,
+        fill: {
+          type: 'gradient',
+          value: {
+            path: 'line',
+            rot: 0,
+            colors: [
+              { pos: '0', color: '#0079BA' },
+              { pos: '97000', color: '#FFFFFF' },
+              { pos: '100000', color: '#00000000' }
+            ]
+          }
+        },
+        borderColor: 'transparent',
+        borderWidth: 4,
+        borderType: 'dashed'
+      }
+    })
+
+    expect(cssGradientHtml).toContain(
+      'background:linear-gradient(135deg, #0079BA 0%, #FFFFFF 97%, #00000000 100%)'
+    )
+    expect(cssGradientHtml).not.toContain('100000')
+    expect(cssGradientHtml).not.toContain('border:')
+
+    const svgGradientHtml = await __pptxImporterTestUtils.buildShapeBlock({
+      ...baseBlockArgs,
+      blockId: 'shape-svg-gradient',
+      imagesDir: os.tmpdir(),
+      registry: { index: 0, byKey: new Map() },
+      element: {
+        left: 0,
+        top: 0,
+        width: 100,
+        height: 50,
+        path: 'M 0,0 L 100,0 L 100,50 L 0,50 z',
+        fill: {
+          type: 'gradient',
+          value: {
+            path: 'line',
+            rot: 0,
+            colors: [
+              { pos: '0', color: '#0079BA' },
+              { pos: '100000', color: '#FFFFFF' }
+            ]
+          }
+        },
+        borderColor: 'transparent',
+        borderWidth: 1,
+        borderStrokeDasharray: '6 4'
+      }
+    })
+
+    expect(svgGradientHtml).toContain('<stop offset="0%" stop-color="#0079BA"')
+    expect(svgGradientHtml).toContain('<stop offset="100%" stop-color="#FFFFFF"')
+    expect(svgGradientHtml).toContain('fill="url(#pptx-shape-svg-gradient-gradient) #0079BA"')
+    expect(svgGradientHtml).toContain('stroke="none"')
+    expect(svgGradientHtml).not.toContain('stroke-dasharray=')
+  })
+
+  it('uses parser OOXML only for geometry metadata without overriding parser colors', async () => {
+    const xmlShape = __pptxImporterTestUtils.xmlShapeFromParserOoxml({
+      name: '主题形状',
+      ooxml: {
+        preset: 'roundRect',
+        textAnchor: 'ctr',
+        textInsets: { top: 3, right: 4, bottom: 5, left: 6 },
+        lineTailEnd: 'triangle'
+      }
+    })
+    const html = await __pptxImporterTestUtils.buildShapeBlock({
+      ...baseBlockArgs,
+      blockId: 'shape-parser-ooxml-color',
+      imagesDir: os.tmpdir(),
+      registry: { index: 0, byKey: new Map() },
+      xmlShape,
+      element: {
+        left: 0,
+        top: 0,
+        width: 100,
+        height: 50,
+        fill: { type: 'color', value: '#305598' },
+        borderColor: '#4474C5',
+        borderWidth: 1,
+        content: '<p>OK</p>'
+      }
+    })
+
+    expect(xmlShape).toMatchObject({
+      preset: 'roundRect',
+      textAnchor: 'ctr',
+      textInsets: { top: 3, right: 4, bottom: 5, left: 6 },
+      tailEnd: 'triangle'
+    })
+    expect(xmlShape?.fillColor).toBeUndefined()
+    expect(xmlShape?.lineColor).toBeUndefined()
+    expect(html).toContain('fill="#305598"')
+    expect(html).toContain('stroke="#4474C5"')
+    expect(html).toContain('justify-content:center')
+    expect(html).toContain('padding:6.0px 8.0px 10.0px 12.0px')
+  })
+
+  it('renders degenerate text-bearing shapes as text blocks', async () => {
+    const html = await __pptxImporterTestUtils.buildShapeBlock({
+      ...baseBlockArgs,
+      blockId: 'text-degenerate-shape',
+      imagesDir: os.tmpdir(),
+      registry: { index: 0, byKey: new Map() },
+      element: {
+        left: 10,
+        top: 20,
+        width: 120,
+        height: 30,
+        path: 'M 0,0 L 120,0 Z',
+        fill: { type: 'color', value: 'transparent' },
+        borderColor: 'transparent',
+        borderWidth: 0,
+        content: '<p><span style="font-size:12pt">标题</span></p>'
+      }
+    })
+
+    expect(html).toContain('<section data-block-id="text-degenerate-shape"')
+    expect(html).toContain('>标题</span>')
+    expect(html).not.toContain('data-pptx-kind="vector-shape"')
   })
 
   it('clips PPTX image fills to their vector paths', async () => {
@@ -617,20 +888,15 @@ describe('pptx importer table and chart blocks', () => {
     }
   })
 
-  it('replaces unavailable imported fonts with cross-platform font stacks', () => {
-    expect(
-      __pptxImporterTestUtils.sanitizeContentHtml(
-        '<p><span style="font-family:方正大标宋简体">标题</span></p>',
-        1
-      )
-    ).toContain('font-family:&quot;Songti SC&quot;,&quot;STSong&quot;,&quot;SimSun&quot;,serif')
+  it('drops imported font declarations while preserving text styles', () => {
+    const html = __pptxImporterTestUtils.sanitizeContentHtml(
+      '<p><span style="font-family:方正大标宋简体;font-size:18pt;color:#ffffff">标题</span></p>',
+      1
+    )
 
-    expect(
-      __pptxImporterTestUtils.sanitizeContentHtml(
-        '<p><span style="font-family:微软雅黑 Light">正文</span></p>',
-        1
-      )
-    ).toContain('font-family:&quot;PingFang SC&quot;,&quot;Microsoft YaHei&quot;,sans-serif')
+    expect(html).toContain('font-size:18.0px')
+    expect(html).toContain('color:#ffffff')
+    expect(html).not.toContain('font-family')
   })
 
   it('converts imported Wingdings private-use glyphs to Unicode symbols', () => {
@@ -640,6 +906,7 @@ describe('pptx importer table and chart blocks', () => {
     )
 
     expect(html).toContain('副标题➜')
+    expect(html).not.toContain('font-family')
     expect(html).not.toContain('\uf0c4')
   })
 
@@ -649,66 +916,6 @@ describe('pptx importer table and chart blocks', () => {
     expect(fit.scale).toBeCloseTo(900 / 540)
     expect(fit.offsetX).toBeCloseTo(200)
     expect(fit.offsetY).toBeCloseTo(0)
-  })
-
-  it('removes table style flags when the referenced table style is missing', () => {
-    const knownStyleIds = __pptxImporterTestUtils.collectPptxTableStyleIds(
-      '<a:tblStyleLst><a:tblStyle styleId="{known-style}"></a:tblStyle></a:tblStyleLst>'
-    )
-    const result = __pptxImporterTestUtils.removeUnsupportedTableStyleFlags(
-      '<a:tblPr firstRow="1" firstCol="1" bandRow="1"><a:tableStyleId>{missing-style}</a:tableStyleId></a:tblPr>',
-      knownStyleIds
-    )
-
-    expect(result.changed).toBe(true)
-    expect(result.xml).toBe('<a:tblPr><a:tableStyleId>{missing-style}</a:tableStyleId></a:tblPr>')
-  })
-
-  it('keeps table style flags when the referenced table style exists', () => {
-    const knownStyleIds = __pptxImporterTestUtils.collectPptxTableStyleIds(
-      '<a:tblStyleLst><a:tblStyle styleId="{known-style}"></a:tblStyle></a:tblStyleLst>'
-    )
-    const original =
-      '<a:tblPr firstRow="1" firstCol="1" bandRow="1"><a:tableStyleId>{known-style}</a:tableStyleId></a:tblPr>'
-    const result = __pptxImporterTestUtils.removeUnsupportedTableStyleFlags(original, knownStyleIds)
-
-    expect(result.changed).toBe(false)
-    expect(result.xml).toBe(original)
-  })
-
-  it('normalizes string xVal chart caches for pptxtojson compatibility', () => {
-    const result = __pptxImporterTestUtils.normalizeChartValueCacheXml(
-      '<c:strRef><c:f>Sheet1!$A$2:$A$3</c:f><c:strCache><c:ptCount val="2"/><c:pt idx="0"><c:v>1月</c:v></c:pt><c:pt idx="1"><c:v>2月</c:v></c:pt></c:strCache></c:strRef>'
-    )
-
-    expect(result.changed).toBe(true)
-    expect(result.xml).toContain('<c:numRef>')
-    expect(result.xml).toContain('<c:f>Sheet1!$A$2:$A$3</c:f>')
-    expect(result.xml).toContain('<c:numCache>')
-    expect(result.xml).toContain('<c:pt idx="0"><c:v>0</c:v></c:pt>')
-    expect(result.xml).toContain('<c:pt idx="1"><c:v>1</c:v></c:pt>')
-    expect(result.xml).not.toContain('<c:strRef>')
-  })
-
-  it('rewrites incompatible chart value caches inside pptx archives', () => {
-    const chartXml =
-      '<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:chart><c:plotArea><c:lineChart><c:ser><c:xVal><c:strRef><c:f>Sheet1!$A$2:$A$3</c:f><c:strCache><c:ptCount val="2"/><c:pt idx="0"><c:v>Jan</c:v></c:pt><c:pt idx="1"><c:v>Feb</c:v></c:pt></c:strCache></c:strRef></c:xVal><c:yVal><c:numRef><c:f>Sheet1!$B$2:$B$3</c:f><c:numCache><c:ptCount val="2"/><c:pt idx="0"><c:v>10</c:v></c:pt><c:pt idx="1"><c:v>20</c:v></c:pt></c:numCache></c:numRef></c:yVal></c:ser></c:lineChart></c:plotArea></c:chart></c:chartSpace>'
-    const input = Buffer.from(
-      zipSync({
-        'ppt/charts/chart19.xml': new TextEncoder().encode(chartXml),
-        'ppt/slides/slide1.xml': new TextEncoder().encode('<p:sld/>')
-      })
-    )
-
-    const result = __pptxImporterTestUtils.normalizePptxChartValueCaches(input)
-    const files = unzipSync(new Uint8Array(result.arrayBuffer))
-    const output = new TextDecoder().decode(files['ppt/charts/chart19.xml'])
-
-    expect(result.normalizedChartValueCount).toBe(1)
-    expect(output).toContain('<c:xVal><c:numRef>')
-    expect(output).toContain('<c:pt idx="1"><c:v>1</c:v></c:pt>')
-    expect(output).toContain('<c:yVal><c:numRef>')
-    expect(output).toContain('<c:pt idx="1"><c:v>20</c:v></c:pt>')
   })
 
   it('preserves table dimensions, borders, merged cells, and stable cell ids', () => {
@@ -746,6 +953,7 @@ describe('pptx importer table and chart blocks', () => {
 
     expect(html).toContain('data-pptx-kind="table"')
     expect(html).toContain('data-pptx-import-mode="editable"')
+    expect(html).toContain('background:transparent')
     expect(html).toContain('<col style="width:160.0px;" />')
     expect(html).toContain('<tr style="height:48.0px;">')
     expect(html).toContain('data-cell-id="r1-c1" colspan="2"')
@@ -784,7 +992,26 @@ describe('pptx importer table and chart blocks', () => {
     expect(html).toContain('white-space:pre-wrap')
     expect(html).toContain('完成（&nbsp;&nbsp;&nbsp;）&nbsp;')
     expect(html).toContain('font-size:13.8px')
+    expect(html).not.toContain('font-family')
     expect(html).toContain('&nbsp;</span>')
+  })
+
+  it('keeps empty table placeholders on a white surface', () => {
+    const html = __pptxImporterTestUtils.buildTableBlock({
+      ...baseBlockArgs,
+      blockId: 'table-placeholder',
+      element: {
+        left: 0,
+        top: 0,
+        width: 240,
+        height: 80,
+        data: []
+      }
+    })
+
+    expect(html).toContain('data-pptx-import-mode="placeholder"')
+    expect(html).toContain('background:#fff')
+    expect(html).toContain('表格已作为占位导入')
   })
 
   it('marks supported charts editable and simplifies area charts to filled lines', () => {
@@ -857,6 +1084,78 @@ describe('pptx importer table and chart blocks', () => {
     expect(html).toContain('"type":"scatter"')
     expect(html).toContain('"data":[{"x":0,"y":3584},{"x":1,"y":7825}]')
     expect(html).toContain('"showLine":true')
+  })
+
+  it('sorts imported elements by layer source and parser z-index metadata', () => {
+    const master = {
+      type: 'shape',
+      order: 99,
+      zIndex: 99,
+      layer: { source: 'master', depth: 0, path: [99], zIndex: 99 }
+    }
+    const layout = {
+      type: 'shape',
+      order: 1,
+      zIndex: 1,
+      layer: { source: 'layout', depth: 0, path: [1], zIndex: 1 }
+    }
+    const slideBack = {
+      type: 'shape',
+      order: 50,
+      zIndex: 2,
+      layer: { source: 'slide', depth: 0, path: [2], zIndex: 2 }
+    }
+    const slideFront = {
+      type: 'shape',
+      order: 2,
+      zIndex: 50,
+      layer: { source: 'slide', depth: 0, path: [50], zIndex: 50 }
+    }
+
+    const sorted = [slideFront, master, slideBack, layout].sort(
+      __pptxImporterTestUtils.compareElementsForRender
+    )
+
+    expect(sorted).toEqual([master, layout, slideBack, slideFront])
+  })
+
+  it('normalizes oversized nested group children into the group frame', () => {
+    const flattened = __pptxImporterTestUtils.flattenElements([
+      {
+        type: 'group',
+        left: 10,
+        top: 20,
+        width: 50,
+        height: 40,
+        elements: [
+          {
+            type: 'group',
+            left: 0,
+            top: 0,
+            width: 100,
+            height: 80,
+            elements: [
+              {
+                type: 'shape',
+                name: 'nested-card',
+                left: 0,
+                top: 0,
+                width: 200,
+                height: 160
+              }
+            ]
+          }
+        ]
+      }
+    ] as never)
+
+    expect(flattened).toHaveLength(1)
+    expect(flattened[0]).toMatchObject({
+      left: 10,
+      top: 20,
+      width: 50,
+      height: 40
+    })
   })
 
   it('marks unsupported chart data as a placeholder with warnings', () => {

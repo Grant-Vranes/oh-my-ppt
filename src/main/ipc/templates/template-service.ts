@@ -169,6 +169,13 @@ async function readManifest(templatesRoot: string, templateId: string): Promise<
   return value
 }
 
+export async function loadTemplateManifest(
+  templateId: string
+): Promise<{ manifest: TemplateManifest; templateDir: string }> {
+  const templatesRoot = await ensureTemplatesRoot()
+  return readManifest(templatesRoot, templateId)
+}
+
 async function writeManifest(templateDir: string, manifest: TemplateManifest): Promise<void> {
   await fs.promises.writeFile(
     path.join(templateDir, 'manifest.json'),

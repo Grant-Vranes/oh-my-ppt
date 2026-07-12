@@ -51,6 +51,7 @@ import type { ExportProgressPayload } from '@shared/export-progress.js'
 import type { PageMergeDisabledReason } from '@shared/page-merge'
 import type { ModelUsagePeriod, ModelUsageStats } from '@shared/model-usage'
 import type { SlideSizePresetId } from '@shared/slide-size'
+import type { ParsedChartDataResult } from '@shared/chart-data'
 
 type IpcRendererLike = Window['electron']['ipcRenderer']
 
@@ -172,6 +173,20 @@ export interface MergeSourceSessionSummary {
   status: string
   selectable: boolean
   disabledReason?: PageMergeDisabledReason
+}
+
+export interface MergeTemplateSourceSummary {
+  id: string
+  title: string
+  pageCount: number
+  slideSizeId: SlideSizePresetId
+  slideWidth: number
+  slideHeight: number
+  updatedAt: number
+  thumbnailPath: string | null
+  selectable: boolean
+  disabledReason?: PageMergeDisabledReason
+  isSource: boolean
 }
 
 export interface MergeSourcePageSummary {
@@ -404,6 +419,42 @@ export const ipc = {
       insertedPageIds: string[]
       selectedPageId: string
     }>,
+  listMergeSourceTemplates: (payload: { targetSessionId: string }) =>
+    getIpc().invoke('session:listMergeSourceTemplates', payload) as Promise<
+      MergeTemplateSourceSummary[]
+    >,
+  listMergeSourceTemplatePages: (payload: { targetSessionId: string; templateId: string }) =>
+    getIpc().invoke(
+      'session:listMergeSourcePages',
+      { targetSessionId: payload.targetSessionId, sourceType: 'template', templateId: payload.templateId }
+    ) as Promise<MergeSourcePageSummary[]>,
+  mergeTemplatePages: (payload: {
+    targetSessionId: string
+    templateId: string
+    sourcePageIds: string[]
+  }) =>
+    getIpc().invoke('session:mergePages', {
+      targetSessionId: payload.targetSessionId,
+      sourceType: 'template',
+      templateId: payload.templateId,
+      sourcePageIds: payload.sourcePageIds
+    }) as Promise<{
+      ok: true
+      generatedPages: Array<{
+        id: string
+        pageNumber: number
+        pageId: string
+        title: string
+        contentOutline?: string | null
+        html: string
+        htmlPath: string
+        sourceUrl?: string
+        status?: string
+        error?: string | null
+      }>
+      insertedPageIds: string[]
+      selectedPageId: string
+    }>,
   saveSessionAsNew: (payload: SaveSessionAsNewPayload): Promise<SaveSessionAsNewResult> =>
     getIpc().invoke('session:saveAsNew', payload) as Promise<SaveSessionAsNewResult>,
   getSession: (sessionId: string) =>
@@ -482,6 +533,22 @@ export const ipc = {
     }>,
   createBlankSessionPage: (payload: { sessionId: string; sourcePageId: string }) =>
     getIpc().invoke('session:createBlankPage', payload) as Promise<{
+      ok: boolean
+      generatedPages: Array<{
+        id: string
+        pageNumber: number
+        pageId: string
+        title: string
+        contentOutline?: string | null
+        html: string
+        htmlPath?: string
+        status?: string
+        error?: string | null
+      }>
+      selectedPageId: string | null
+    }>,
+  duplicateSessionPage: (payload: { sessionId: string; sourcePageId: string }) =>
+    getIpc().invoke('session:duplicatePage', payload) as Promise<{
       ok: boolean
       generatedPages: Array<{
         id: string
@@ -699,6 +766,8 @@ export const ipc = {
     getIpc().invoke('export:pdf', { sessionId }) as Promise<ExportDeckResult>,
   exportPng: (sessionId: string) =>
     getIpc().invoke('export:png', { sessionId }) as Promise<ExportDeckResult>,
+  exportLongImage: (sessionId: string) =>
+    getIpc().invoke('export:longImage', { sessionId }) as Promise<ExportDeckResult>,
   exportVideo: (sessionId: string, options?: { pageId?: string }) =>
     getIpc().invoke('export:video', { sessionId, ...options }) as Promise<ExportDeckResult>,
   exportPptx: (
@@ -989,6 +1058,23 @@ export const ipc = {
       addCount: number
       warnings?: string[]
     }>,
+  applySyncElementToAllPages: (payload: {
+    sessionId: string
+    htmlPath: string
+    pageId: string
+    sourceHtmlFragment: string
+    syncElementId?: string
+    sourceBlockId?: string
+  }) =>
+    getIpc().invoke('element-editor:apply-sync-to-all-pages', payload) as Promise<{
+      success: boolean
+      syncElementId: string
+      changedCount: number
+      insertedCount: number
+      updatedCount: number
+    }>,
+  chooseAndParseChartData: () =>
+    getIpc().invoke('chart-data:choose-and-parse') as Promise<ParsedChartDataResult>,
   openFile: (filePath: string, sessionId?: string) =>
     getIpc().invoke('file:open', { path: filePath, sessionId }) as Promise<string>,
   revealFile: (filePath: string, sessionId?: string) =>

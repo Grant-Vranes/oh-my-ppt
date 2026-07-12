@@ -40,6 +40,7 @@ interface SessionDetailUiStore {
   previewKey: number
   isExportingPdf: boolean
   isExportingPng: boolean
+  isExportingLongImage: boolean
   isExportingPptx: boolean
   isExportingVideo: boolean
   isExportingSlidePack: boolean
@@ -62,6 +63,7 @@ interface SessionDetailUiStore {
   addPageDialogOpen: boolean
   blankPageDialogOpen: boolean
   mergeSessionPagesDialogOpen: boolean
+  mergeTemplatePagesDialogOpen: boolean
   blankPageSourceId: string
   historyDialogOpen: boolean
   pageTitleEditPageId: string | null
@@ -97,6 +99,7 @@ interface SessionDetailUiStore {
   bumpPreviewKey: () => void
   setIsExportingPdf: (isExporting: boolean) => void
   setIsExportingPng: (isExporting: boolean) => void
+  setIsExportingLongImage: (isExporting: boolean) => void
   setIsExportingPptx: (isExporting: boolean) => void
   setIsExportingVideo: (isExporting: boolean) => void
   setIsExportingSlidePack: (isExporting: boolean) => void
@@ -132,6 +135,7 @@ interface SessionDetailUiStore {
   setAddPageDialogOpen: (open: boolean) => void
   setBlankPageDialogOpen: (open: boolean) => void
   setMergeSessionPagesDialogOpen: (open: boolean) => void
+  setMergeTemplatePagesDialogOpen: (open: boolean) => void
   setBlankPageSourceId: (pageId: string) => void
   openBlankPageDialog: (sourcePageId: string) => void
   setHistoryDialogOpen: (open: boolean) => void
@@ -172,6 +176,7 @@ export const useSessionDetailUiStore = create<SessionDetailUiStore>((set) => ({
   previewKey: 0,
   isExportingPdf: false,
   isExportingPng: false,
+  isExportingLongImage: false,
   isExportingPptx: false,
   isExportingVideo: false,
   isExportingSlidePack: false,
@@ -194,6 +199,7 @@ export const useSessionDetailUiStore = create<SessionDetailUiStore>((set) => ({
   addPageDialogOpen: false,
   blankPageDialogOpen: false,
   mergeSessionPagesDialogOpen: false,
+  mergeTemplatePagesDialogOpen: false,
   blankPageSourceId: '',
   historyDialogOpen: false,
   pageTitleEditPageId: null,
@@ -265,6 +271,7 @@ export const useSessionDetailUiStore = create<SessionDetailUiStore>((set) => ({
   bumpPreviewKey: () => set((state) => ({ previewKey: state.previewKey + 1 })),
   setIsExportingPdf: (isExportingPdf) => set({ isExportingPdf }),
   setIsExportingPng: (isExportingPng) => set({ isExportingPng }),
+  setIsExportingLongImage: (isExportingLongImage) => set({ isExportingLongImage }),
   setIsExportingPptx: (isExportingPptx) => set({ isExportingPptx }),
   setIsExportingVideo: (isExportingVideo) => set({ isExportingVideo }),
   setIsExportingSlidePack: (isExportingSlidePack) => set({ isExportingSlidePack }),
@@ -357,6 +364,8 @@ export const useSessionDetailUiStore = create<SessionDetailUiStore>((set) => ({
   setBlankPageDialogOpen: (blankPageDialogOpen) => set({ blankPageDialogOpen }),
   setMergeSessionPagesDialogOpen: (mergeSessionPagesDialogOpen) =>
     set({ mergeSessionPagesDialogOpen }),
+  setMergeTemplatePagesDialogOpen: (mergeTemplatePagesDialogOpen) =>
+    set({ mergeTemplatePagesDialogOpen }),
   setBlankPageSourceId: (blankPageSourceId) => set({ blankPageSourceId }),
   openBlankPageDialog: (blankPageSourceId) =>
     set({
@@ -452,6 +461,7 @@ export const useSessionDetailUiStore = create<SessionDetailUiStore>((set) => ({
       addPageDialogOpen: false,
       blankPageDialogOpen: false,
       mergeSessionPagesDialogOpen: false,
+      mergeTemplatePagesDialogOpen: false,
       blankPageSourceId: '',
       historyDialogOpen: false,
       pageTitleEditPageId: null,

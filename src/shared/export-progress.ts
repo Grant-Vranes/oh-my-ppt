@@ -1,4 +1,11 @@
-export type ExportKind = 'pdf' | 'png' | 'video' | 'pptx' | 'slidePack' | 'sessionZip'
+export type ExportKind =
+  | 'pdf'
+  | 'png'
+  | 'video'
+  | 'pptx'
+  | 'slidePack'
+  | 'sessionZip'
+  | 'longImage'
 
 export type ExportProgressStage = 'preparing' | 'rendering' | 'packaging' | 'writing'
 

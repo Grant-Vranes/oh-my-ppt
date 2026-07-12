@@ -8,6 +8,7 @@ import { BrowseView } from '../../../src/renderer/src/components/session-detail/
 import { TooltipProvider } from '../../../src/renderer/src/components/ui/Tooltip'
 import { useGenerateStore } from '../../../src/renderer/src/store/generateStore'
 import { useSessionDetailUiStore } from '../../../src/renderer/src/store/sessionDetailStore'
+import { useSessionStore } from '../../../src/renderer/src/store/sessionStore'
 
 vi.mock('../../../src/renderer/src/i18n', () => ({
   useT: () => (key: string) => key
@@ -107,6 +108,13 @@ describe('BrowseView preview rendering', () => {
     vi.stubGlobal('IntersectionObserver', MockIntersectionObserver)
     useGenerateStore.getState().reset()
     useSessionDetailUiStore.getState().resetForSessionChange()
+    useSessionStore.setState({
+      currentSession: {
+        slideSizeId: 'wide-16-9',
+        slideWidth: 1600,
+        slideHeight: 900
+      } as never
+    })
   })
 
   afterEach(() => {
@@ -204,6 +212,30 @@ describe('BrowseView preview rendering', () => {
       expect(
         container.querySelectorAll('button[aria-label="sessionDetail.exportSinglePagePptx"]')
       ).toHaveLength(3)
+      expect(container.querySelectorAll('button[aria-label="pageManagement.editPageTitle"]'))
+        .toHaveLength(3)
+      expect(container.querySelectorAll('button[aria-label="pageManagement.deletePage"]'))
+        .toHaveLength(3)
+    } finally {
+      await cleanupRoot(root, container)
+    }
+  })
+
+  it('hides browse card export actions when the deck is not 16:9', async () => {
+    useSessionStore.setState({
+      currentSession: {
+        slideSizeId: 'standard-4-3',
+        slideWidth: 1600,
+        slideHeight: 1200
+      } as never
+    })
+    useGenerateStore.getState().setPages(makePages(3))
+    const { container, root } = await renderBrowseView()
+
+    try {
+      expect(
+        container.querySelectorAll('button[aria-label="sessionDetail.exportSinglePagePptx"]')
+      ).toHaveLength(0)
       expect(container.querySelectorAll('button[aria-label="pageManagement.editPageTitle"]'))
         .toHaveLength(3)
       expect(container.querySelectorAll('button[aria-label="pageManagement.deletePage"]'))

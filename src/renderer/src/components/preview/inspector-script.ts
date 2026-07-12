@@ -431,6 +431,8 @@ export function buildInspectorInjectScript(options?: {
       candidate = parent && parent.nodeType === Node.ELEMENT_NODE ? parent : null;
     }
     if (!formula || !isInsidePageRoot(formula)) return null;
+    const insertedHost = formula.closest('[data-ppt-edit-kind="formula"][data-block-id]');
+    if (insertedHost && isInsidePageRoot(insertedHost)) return insertedHost;
     return formula;
   };
 
@@ -522,7 +524,9 @@ export function buildInspectorInjectScript(options?: {
       if (!a.classList.contains("katex") && b.classList.contains("katex")) return 1;
       return 0;
     });
-    return formulas[0] || null;
+    const formula = formulas[0] || null;
+    const insertedHost = formula ? formula.closest('[data-ppt-edit-kind="formula"][data-block-id]') : null;
+    return insertedHost && isInsidePageRoot(insertedHost) ? insertedHost : formula;
   };
 
   const pickSvgTarget = (origin) => {

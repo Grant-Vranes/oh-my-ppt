@@ -24,7 +24,7 @@
   var search = new URLSearchParams(window.location.search);
   var embedMode = search.get('embed') === '1';
   var presentMode = search.get('present') === '1';
-  var playbackMode = !embedMode;
+  var playbackMode = presentMode && !embedMode;
   var currentPageId = '';
   var fitRaf = 0;
   var indexTransitionType = 'fade';   // default, overridden by container build
@@ -176,7 +176,9 @@
     var url = new URL(page.htmlPath, window.location.href);
     url.searchParams.set('fit', 'off');
     if (embedMode) url.searchParams.set('embed', '1');
-    if (playbackMode) url.searchParams.set('pptPlayback', '1');
+    url.searchParams.set('pptPlayback', playbackMode ? '1' : '0');
+    if (playbackMode) url.searchParams.delete('print');
+    else url.searchParams.set('print', '1');
     return url.toString();
   }
 
@@ -454,7 +456,10 @@
   if (embedMode) document.body.classList.add('embed');
 
   function applyPresentMode(nextPresentMode, syncQuery) {
-    presentMode = Boolean(nextPresentMode);
+    var nextPresentModeValue = Boolean(nextPresentMode);
+    var playbackModeChanged = playbackMode !== (nextPresentModeValue && !embedMode);
+    presentMode = nextPresentModeValue;
+    playbackMode = presentMode && !embedMode;
     document.body.classList.toggle('present', presentMode);
     if (presentBtn) {
       presentBtn.textContent = presentMode ? '退出演示' : '演示模式（ESC退出）';
@@ -476,6 +481,9 @@
       } catch (_) {}
     }
     scheduleFitFrame();
+    if (playbackModeChanged && currentPageId) {
+      applyPage(currentPageId, false, true);
+    }
   }
 
   function normalizePageId(hashValue) {
@@ -791,7 +799,7 @@
     };
   }
 
-  function applyPage(pageId, syncHash) {
+  function applyPage(pageId, syncHash, forceReload) {
     if (!Array.isArray(pages) || pages.length === 0) {
       document.body.classList.add('empty');
       if (indicator) indicator.textContent = '0 / 0';
@@ -849,6 +857,7 @@
       if (switchSeq !== pageSwitchSeq) return;
       var nextFrame = framePool.get(nextPageId);
       var canAnimate =
+        presentMode &&
         indexTransitionType !== 'none' &&
         !prefersReducedMotion() &&
         previousPageId &&
@@ -904,7 +913,11 @@
     }
 
     isPageSwitching = !samePage;
-    ensureFrameLoaded(nextPageId, loadedPages.has(nextPageId) && !samePage, commitWhenReady);
+    ensureFrameLoaded(
+      nextPageId,
+      Boolean(forceReload) || (loadedPages.has(nextPageId) && !samePage),
+      commitWhenReady
+    );
     if (samePage) finishSwitch();
   }
 

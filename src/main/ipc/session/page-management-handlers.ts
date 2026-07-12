@@ -2,6 +2,7 @@ import { ipcMain } from 'electron'
 import type { IpcContext } from '../context'
 import {
   createBlankSessionPage,
+  duplicateSessionPage,
   loadEditableSessionPages,
   persistManagedPages,
   renameSessionPageTitle
@@ -254,6 +255,57 @@ export function registerPageManagementHandlers(ctx: IpcContext): void {
       metadata: {
         addPage: true,
         blankPage: true,
+        sourcePageId,
+        selectedPageId: result.selectedPageId,
+        totalPages: result.pages.length
+      }
+    })
+
+    return {
+      ok: true,
+      generatedPages: result.pages.map((p) => ({
+        id: p.id,
+        pageNumber: p.pageNumber,
+        pageId: p.pageId,
+        title: p.title,
+        contentOutline: p.contentOutline?.trim() || null,
+        html: p.html || '',
+        htmlPath: p.htmlPath,
+        status: p.status,
+        error: p.error
+      })),
+      selectedPageId: result.selectedPageId
+    }
+  })
+
+  ipcMain.handle('session:duplicatePage', async (_event, payload) => {
+    const record =
+      payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {}
+    const sessionId = typeof record.sessionId === 'string' ? record.sessionId.trim() : ''
+    const sourcePageId = typeof record.sourcePageId === 'string' ? record.sourcePageId.trim() : ''
+    if (!sessionId) throw new Error('sessionId 不能为空')
+    if (!sourcePageId) throw new Error('sourcePageId 不能为空')
+    const { projectDir, pages } = await loadEditableSessionPages(ctx, sessionId)
+    await ensureHistoryBaselineSafe(ctx.db, sessionId, projectDir)
+    const sourcePage = pages.find(
+      (page) => page.id === sourcePageId || page.pageId === sourcePageId
+    )
+    const result = await duplicateSessionPage(ctx, {
+      sessionId,
+      sourcePageId
+    })
+    const prompt = sourcePage
+      ? `复制页面：P${sourcePage.pageNumber}《${sourcePage.title}》`
+      : '复制页面'
+    await recordHistoryOperationStrict(ctx.db, {
+      sessionId,
+      type: 'addPage',
+      scope: 'session',
+      projectDir,
+      prompt,
+      metadata: {
+        addPage: true,
+        duplicatePage: true,
         sourcePageId,
         selectedPageId: result.selectedPageId,
         totalPages: result.pages.length

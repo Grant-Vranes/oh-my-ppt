@@ -2,12 +2,15 @@ import type { IpcContext } from '../context'
 import * as fs from 'fs'
 import path from 'path'
 import * as cheerio from 'cheerio'
-import type { AnyNode } from 'domhandler'
 import { customAlphabet, nanoid } from 'nanoid'
 import { buildProjectIndexHtml } from '../engine/template'
 import { ensureSessionRuntimeCompatible } from './runtime-assets'
 import { carryIndexTransitionConfig } from '../../session/index-transition'
 import { validatePersistedPageHtml } from '../../tools/html-utils'
+import {
+  buildBlankPageHtmlFromSource,
+  buildDuplicatePageHtmlFromSource
+} from './page-html-builders'
 import type { SessionPageStatus } from '../../db/schema'
 import { resolveOutlinesForPages } from './page-outline-utils'
 import { requireSessionSlideSize } from '@shared/slide-size'
@@ -153,56 +156,6 @@ export async function persistManagedPages(
   return renumbered
 }
 
-const replacePageIdentity = (html: string, oldPageId: string, nextPageId: string): string => {
-  const oldId = oldPageId.trim()
-  if (!oldId || oldId === nextPageId) return html
-  const escapedOldId = oldId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  const boundaryPattern = new RegExp(`(^|[^A-Za-z0-9_-])${escapedOldId}(?=$|[^A-Za-z0-9_-])`, 'g')
-  return html.replace(boundaryPattern, `$1${nextPageId}`)
-}
-
-const clearVisibleText = ($: cheerio.CheerioAPI, root: cheerio.Cheerio<AnyNode>): void => {
-  root.find('input, textarea').each((_, node) => {
-    const el = $(node)
-    el.removeAttr('value')
-    el.removeAttr('placeholder')
-    el.text('')
-  })
-  root.find('*').contents().each((_, node) => {
-    const parentTag = node.parent?.type === 'tag' ? node.parent.name.toLowerCase() : ''
-    if (parentTag === 'script' || parentTag === 'style') return
-    if (node.type === 'text' && node.data?.trim()) {
-      node.data = ''
-    }
-  })
-}
-
-export function buildBlankPageHtmlFromSource(args: {
-  html: string
-  oldPageId: string
-  nextPageId: string
-  title: string
-}): string {
-  const rewritten = replacePageIdentity(args.html, args.oldPageId, args.nextPageId)
-  const $ = cheerio.load(rewritten, { scriptingEnabled: false })
-  $('title').text(args.title)
-  $('body').attr('data-page-id', args.nextPageId)
-  $('[data-page-id]').each((_, node) => {
-    const el = $(node)
-    if ((el.attr('data-page-id') || '').trim() === args.oldPageId) {
-      el.attr('data-page-id', args.nextPageId)
-    }
-  })
-
-  const content = $('.ppt-page-content').first()
-  if (content.length > 0) {
-    clearVisibleText($, content)
-    content.attr('data-blank-page', '1')
-  }
-
-  return $.html()
-}
-
 export async function createBlankSessionPage(
   ctx: IpcContext,
   args: {
@@ -269,6 +222,87 @@ export async function createBlankSessionPage(
     pages: mergedPages,
     operation: 'addPage',
     prompt: `新增空白页到末尾：复制 P${sourcePage.pageNumber}`
+  })
+  const project = await ctx.db.getProject(sessionId)
+  if (project?.id) await ctx.db.updateProjectStatus(project.id, 'draft')
+  await ctx.db.updateSessionStatus(sessionId, 'completed')
+  return { pages: result, selectedPageId: nextPageEntityId }
+}
+
+export async function duplicateSessionPage(
+  ctx: IpcContext,
+  args: {
+    sessionId: string
+    sourcePageId: string
+  }
+): Promise<{ pages: ManagedPage[]; selectedPageId: string }> {
+  const { sessionId, sourcePageId } = args
+  const { projectDir, indexPath, deckTitle, pages } = await loadEditableSessionPages(ctx, sessionId)
+  if (pages.length === 0) throw new Error('当前会话没有可复制的页面')
+  const sourceIndex = pages.findIndex(
+    (page) => page.id === sourcePageId || page.pageId === sourcePageId
+  )
+  if (sourceIndex < 0) throw new Error('未找到要复制的页面')
+  const sourcePage = pages[sourceIndex]
+  if (!fs.existsSync(sourcePage.htmlPath)) throw new Error('源页面文件不存在')
+
+  await ensureSessionRuntimeCompatible(ctx, projectDir)
+  const nextPageEntityId = nanoid()
+  const nextPageId = `page-${pageSlugId()}`
+  const nextHtmlPath = path.join(projectDir, `${nextPageId}.html`)
+  const nextTitle = `[副本]${sourcePage.title ?? ''}`
+  const sourceHtml = await fs.promises.readFile(sourcePage.htmlPath, 'utf-8')
+  const nextHtml = buildDuplicatePageHtmlFromSource({
+    html: sourceHtml,
+    oldPageId: sourcePage.pageId,
+    nextPageId,
+    title: nextTitle
+  })
+  const validation = validatePersistedPageHtml(nextHtml, nextPageId)
+  if (!validation.valid) {
+    throw new Error(`复制页面失败: ${validation.errors.join('; ')}`)
+  }
+  await fs.promises.writeFile(nextHtmlPath, nextHtml, 'utf-8')
+
+  const newPage: ManagedPage = {
+    id: nextPageEntityId,
+    // 占位页码，persistManagedPages 会按位置连续重排。
+    pageNumber: sourcePage.pageNumber + 1,
+    pageId: nextPageId,
+    title: nextTitle,
+    contentOutline: sourcePage.contentOutline || null,
+    htmlPath: nextHtmlPath,
+    html: nextHtml,
+    status: sourcePage.status || 'completed',
+    error: null
+  }
+  // 插到源页紧后方（区别于空白页追加到末尾）。
+  const mergedPages = [
+    ...pages.slice(0, sourceIndex + 1),
+    newPage,
+    ...pages.slice(sourceIndex + 1)
+  ]
+
+  await ctx.db.upsertSessionPage({
+    id: newPage.id,
+    sessionId,
+    legacyPageId: null,
+    fileSlug: newPage.pageId,
+    pageNumber: newPage.pageNumber,
+    title: newPage.title,
+    htmlPath: newPage.htmlPath,
+    status: newPage.status || 'completed',
+    error: null
+  })
+
+  const result = await persistManagedPages(ctx, {
+    sessionId,
+    projectDir,
+    indexPath,
+    deckTitle,
+    pages: mergedPages,
+    operation: 'addPage',
+    prompt: `复制页面：P${sourcePage.pageNumber}《${sourcePage.title}》`
   })
   const project = await ctx.db.getProject(sessionId)
   if (project?.id) await ctx.db.updateProjectStatus(project.id, 'draft')

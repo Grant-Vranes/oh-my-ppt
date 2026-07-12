@@ -2,8 +2,8 @@ import { X } from 'lucide-react'
 import type { EditSelectionPayload } from '../../preview/edit-mode-script'
 import { AppearanceInspector } from './AppearanceInspector'
 import { ArtTextInspector } from './ArtTextInspector'
+import { ChartInspector } from './ChartInspector'
 import { FormulaInspector } from './FormulaInspector'
-import { InspectorActions } from './InspectorActions'
 import { LayerInspector } from './LayerInspector'
 import { LayoutInspector } from './LayoutInspector'
 import { MediaInspector } from './MediaInspector'
@@ -19,9 +19,7 @@ export function ElementInspectorPanel({
   selection,
   draft,
   onDraftChange,
-  onClose,
-  onCopy,
-  onDelete
+  onClose
 }: {
   selection: EditSelectionPayload | null
   draft: ElementEditDraft
@@ -30,8 +28,6 @@ export function ElementInspectorPanel({
     options?: { commit?: boolean; fields?: Array<keyof ElementEditDraft> }
   ) => void
   onClose: () => void
-  onDelete?: () => void
-  onCopy?: () => void
 }): React.JSX.Element {
   const t = useT()
   const snapshot = selection?.snapshot
@@ -86,6 +82,9 @@ export function ElementInspectorPanel({
             {hasCapability(selection, 'formula') && (
               <FormulaInspector selection={selection} draft={draft} onDraftChange={onDraftChange} />
             )}
+            {hasCapability(selection, 'chart') && (
+              <ChartInspector selection={selection} draft={draft} onDraftChange={onDraftChange} />
+            )}
             {hasCapability(selection, 'appearance') && (
               <AppearanceInspector
                 selection={selection}
@@ -99,7 +98,6 @@ export function ElementInspectorPanel({
           </>
         )}
 
-        <InspectorActions onCopy={onCopy} onDelete={onDelete} />
       </div>
     </div>
   )

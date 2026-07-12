@@ -2,6 +2,8 @@ import type { GeneratedImageAsset } from '@shared/image-generation.js'
 import type { GeneratedPage } from '@renderer/store/sessionStore'
 import type { GenerateProgress } from '@renderer/store/generateStore'
 import type { ArtTextTemplateId } from '@renderer/lib/artTextTemplates'
+import type { InsertShapeType } from '@renderer/components/session-detail/workspace/insert-shapes'
+import type { InsertChartType } from '@renderer/components/session-detail/workspace/insert-charts'
 
 export type SessionDetailChatType = 'main' | 'page'
 export type SessionDetailAiPanelMode = 'chat' | 'image'
@@ -47,11 +49,18 @@ export interface WorkspaceRibbonRegisteredActions {
   onRedo: () => void
   onSaveCurrentPage: () => void
   onDiscardAllEdits: () => void
+  onApplySelectedToAllPages: () => void
+  onCopySelectedElement: () => void
+  onDeleteSelectedElement: () => void
   onBackToSessions: () => void
   onAddFromLibrary: (type: InsertAssetType) => void
   onAddFromLocal: (type: InsertAssetType) => void
   onAddText: () => void
   onAddArtText: (templateId: ArtTextTemplateId) => void
+  onAddShape: (type: InsertShapeType) => void
+  onAddIcon: (iconId: string) => void
+  onAddChart: (type: InsertChartType) => void
+  onAddFormula: () => void
 }
 
 export interface ChatPanelController {

@@ -12,6 +12,9 @@ export function AppearanceInspector({
 }: ElementEditorProps): React.JSX.Element {
   const t = useT()
   const isVideo = selection.elementTag === 'video'
+  const colorLabel = selection.snapshot?.computed.svgPaintColor
+    ? t('sessionDetail.visualColor')
+    : t('sessionDetail.backgroundColor')
   return (
     <InspectorSection
       title={t('sessionDetail.appearance')}
@@ -41,7 +44,7 @@ export function AppearanceInspector({
         {!isVideo && (
           <label className="block space-y-1.5">
             <span className="text-[11px] font-medium text-[#7a875f]">
-              {t('sessionDetail.backgroundColor')}
+              {colorLabel}
             </span>
             <div className="flex items-center gap-2">
               <ColorPicker

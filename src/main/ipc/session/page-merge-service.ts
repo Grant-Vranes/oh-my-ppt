@@ -28,7 +28,13 @@ import { mapPageMergeConcurrent } from './page-merge-concurrency'
 import { buildFontHeadTags } from '../../tools/font-registry'
 import { normalizeDesignContract } from '../../utils/design-contract'
 import { PageMergeError, type PageMergeDisabledReason } from '../../../shared/page-merge'
-import { requireSessionSlideSize, type SlideSizePresetId } from '@shared/slide-size'
+import {
+  requireSessionSlideSize,
+  requireSlideSize,
+  type SlideSizePresetId
+} from '@shared/slide-size'
+import { listTemplates, loadTemplateManifest } from '../templates/template-service'
+import { resolveTemplateRelativePath } from '../templates/template-paths'
 
 export const MAX_MERGE_PAGE_COUNT = 50
 const pageSlugId = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 10)
@@ -76,6 +82,7 @@ interface PageMergeLogContext {
   batchId: string
   targetSessionId: string
   sourceSessionId: string
+  sourceType?: string
 }
 
 const mergeLog = (
@@ -179,6 +186,7 @@ const copyPageResources = async (args: {
   batchId: string
   nextPageId: string
   targetBodyFont: string
+  preserveFonts?: boolean
 }): Promise<Map<string, string>> => {
   const unsafeReferences = collectUnsafeMergedPageResourceReferences(args.html)
   if (unsafeReferences.length > 0) {
@@ -195,8 +203,12 @@ const copyPageResources = async (args: {
     if (copiedResourceKeys.has(resourceKey)) continue
     copiedResourceKeys.add(resourceKey)
     if (shouldKeepTargetRuntimeAsset(resourceKey)) continue
-    if (resourceKey.startsWith('assets/fonts/')) continue
-    if (FONT_RESOURCE_EXTENSIONS.has(path.extname(resourceKey).toLowerCase())) continue
+    if (!args.preserveFonts && resourceKey.startsWith('assets/fonts/')) continue
+    if (
+      !args.preserveFonts &&
+      FONT_RESOURCE_EXTENSIONS.has(path.extname(resourceKey).toLowerCase())
+    )
+      continue
     const sourcePath = await resolveMergeFileInside(
       path.resolve(args.sourceProjectDir, resourceKey),
       args.sourceProjectDir
@@ -219,7 +231,7 @@ const copyPageResources = async (args: {
       const css = await fs.promises.readFile(sourcePath, 'utf-8')
       await fs.promises.writeFile(
         tempTargetPath,
-        sanitizeMergedStylesheet(css, args.targetBodyFont),
+        args.preserveFonts ? css : sanitizeMergedStylesheet(css, args.targetBodyFont),
         'utf-8'
       )
       pendingResourceKeys.push(...collectCssDependencyKeys(css, resourceKey))
@@ -423,11 +435,288 @@ export async function listMergeSourcePages(
   )
 }
 
+export interface MergeTemplateSourceSummary {
+  id: string
+  title: string
+  pageCount: number
+  slideSizeId: SlideSizePresetId
+  slideWidth: number
+  slideHeight: number
+  updatedAt: number
+  thumbnailPath: string | null
+  selectable: boolean
+  disabledReason?: PageMergeDisabledReason
+  isSource: boolean
+}
+
+export async function listMergeSourceTemplates(
+  ctx: IpcContext,
+  targetSessionId: string
+): Promise<MergeTemplateSourceSummary[]> {
+  const targetSession = await ctx.db.getSession(targetSessionId)
+  if (!targetSession) return []
+  const targetSlideSize = requireSessionSlideSize(targetSession)
+  let sourceTemplateId = ''
+  try {
+    const meta = JSON.parse(targetSession.metadata || '{}') as Record<string, unknown>
+    sourceTemplateId = typeof meta.templateId === 'string' ? meta.templateId.trim() : ''
+  } catch {
+    sourceTemplateId = ''
+  }
+  const { items } = await listTemplates()
+  const summaries: MergeTemplateSourceSummary[] = items.map((item) => {
+    const sizeMatches =
+      item.slideWidth === targetSlideSize.width && item.slideHeight === targetSlideSize.height
+    const hasPages = item.previewPages.length > 0
+    return {
+      id: item.id,
+      title: item.name,
+      pageCount: item.pageCount,
+      slideSizeId: item.slideSizeId,
+      slideWidth: item.slideWidth,
+      slideHeight: item.slideHeight,
+      updatedAt: item.updatedAt,
+      thumbnailPath: item.thumbnailPath,
+      selectable: sizeMatches && hasPages,
+      disabledReason: !sizeMatches
+        ? ('PAGE_MERGE_SLIDE_SIZE_MISMATCH' as PageMergeDisabledReason)
+        : !hasPages
+          ? ('PAGE_MERGE_SESSION_EMPTY' as PageMergeDisabledReason)
+          : undefined,
+      isSource: Boolean(sourceTemplateId) && item.id === sourceTemplateId
+    }
+  })
+  return summaries.sort((a, b) => {
+    if (a.isSource !== b.isSource) return a.isSource ? -1 : 1
+    return b.updatedAt - a.updatedAt
+  })
+}
+
+export async function listMergeSourceTemplatePages(
+  ctx: IpcContext,
+  targetSessionId: string,
+  templateId: string
+): Promise<MergeSourcePageSummary[]> {
+  const targetSession = await ctx.db.getSession(targetSessionId)
+  if (!targetSession) {
+    throw new PageMergeError('PAGE_MERGE_SESSION_NOT_FOUND', '当前会话不存在')
+  }
+  const targetSlideSize = requireSessionSlideSize(targetSession)
+  const loaded = await loadTemplateManifest(templateId).catch(() => {
+    throw new PageMergeError('PAGE_MERGE_SESSION_NOT_FOUND', '模板不存在')
+  })
+  const { manifest, templateDir } = loaded
+  const slideSize = requireSlideSize({
+    id: manifest.slideSizeId,
+    width: manifest.slideWidth,
+    height: manifest.slideHeight
+  })
+  if (slideSize.width !== targetSlideSize.width || slideSize.height !== targetSlideSize.height) {
+    throw new PageMergeError(
+      'PAGE_MERGE_SLIDE_SIZE_MISMATCH',
+      '模板与当前会话的画布尺寸不同，不能添加页面'
+    )
+  }
+  return Promise.all(
+    manifest.pages.map(async (page) => {
+      const htmlPath = resolveTemplateRelativePath(templateDir, page.htmlPath)
+      const safeHtmlPath =
+        htmlPath && fs.existsSync(htmlPath)
+          ? await resolveMergeFileInside(htmlPath, templateDir)
+          : null
+      const selectable = Boolean(safeHtmlPath)
+      return {
+        id: `${manifest.id}:${page.pageNumber}`,
+        pageId: page.pageId,
+        pageNumber: page.pageNumber,
+        title: page.title,
+        contentOutline: null,
+        slideSizeId: slideSize.id,
+        slideWidth: slideSize.width,
+        slideHeight: slideSize.height,
+        htmlPath: safeHtmlPath || undefined,
+        sourceUrl: safeHtmlPath ? ctx.getPageSourceUrl(safeHtmlPath) : undefined,
+        status: 'completed',
+        selectable,
+        disabledReason: !selectable
+          ? ('PAGE_MERGE_PAGE_FILE_MISSING' as PageMergeDisabledReason)
+          : undefined
+      }
+    })
+  )
+}
+
+interface MergeSourceData {
+  selectedSourcePages: ManagedPage[]
+  sourcePageHtmlPaths: Map<string, string>
+  sourceProjectDir: string
+  sourceTitle: string
+  skeletonByPageNumber: Map<number, SourcePageSkeletonRecord>
+  sourcePageCount: number
+  preserveFonts: boolean
+}
+
+async function loadMergeSource(
+  ctx: IpcContext,
+  args: {
+    sourceType: 'session' | 'template'
+    sourceId: string
+    targetSlideSize: { width: number; height: number }
+    sourcePageIds: string[]
+  }
+): Promise<MergeSourceData> {
+  if (args.sourceType === 'template') {
+    return loadTemplateMergeSource(args.sourceId, args.targetSlideSize, args.sourcePageIds)
+  }
+  return loadSessionMergeSource(ctx, args.sourceId, args.targetSlideSize, args.sourcePageIds)
+}
+
+async function loadSessionMergeSource(
+  ctx: IpcContext,
+  sourceSessionId: string,
+  targetSlideSize: { width: number; height: number },
+  sourcePageIds: string[]
+): Promise<MergeSourceData> {
+  const sourceSession = await ctx.db.getSession(sourceSessionId)
+  if (!sourceSession) {
+    throw new PageMergeError('PAGE_MERGE_SESSION_NOT_FOUND', '源会话不存在')
+  }
+  const runState = ctx.sessionRunStates.get(sourceSessionId)
+  if (
+    sourceSession.status === 'active' ||
+    runState?.status === 'queued' ||
+    runState?.status === 'running'
+  ) {
+    throw new PageMergeError('PAGE_MERGE_SESSION_BUSY', '源会话正在生成，暂时不能添加页面')
+  }
+  const sourceSlideSize = requireSessionSlideSize(sourceSession)
+  if (
+    sourceSlideSize.width !== targetSlideSize.width ||
+    sourceSlideSize.height !== targetSlideSize.height
+  ) {
+    throw new PageMergeError(
+      'PAGE_MERGE_SLIDE_SIZE_MISMATCH',
+      '源会话与当前会话的画布尺寸不同，不能混合添加页面'
+    )
+  }
+  const sourceData = await loadEditableSessionPages(ctx, sourceSessionId)
+  const sourcePageMap = new Map(sourceData.pages.map((page) => [page.id, page]))
+  const sourcePageHtmlPaths = new Map<string, string>()
+  const selectedSourcePages = sourcePageIds.map((id) => {
+    const page = sourcePageMap.get(id)
+    if (!page) {
+      throw new PageMergeError('PAGE_MERGE_SOURCE_PAGE_NOT_FOUND', `源页面不存在: ${id}`)
+    }
+    if (page.status !== 'completed') {
+      throw new PageMergeError(
+        'PAGE_MERGE_SOURCE_PAGE_UNAVAILABLE',
+        `页面尚未生成完成: ${page.title}`
+      )
+    }
+    const safeHtmlPath = fs.existsSync(page.htmlPath)
+      ? fs.realpathSync.native(page.htmlPath)
+      : null
+    if (
+      !safeHtmlPath ||
+      !isMergePathInside(safeHtmlPath, fs.realpathSync.native(sourceData.projectDir))
+    ) {
+      throw new PageMergeError(
+        'PAGE_MERGE_SOURCE_PAGE_UNAVAILABLE',
+        `页面文件不存在: ${page.title}`
+      )
+    }
+    sourcePageHtmlPaths.set(page.id, safeHtmlPath)
+    return page
+  })
+  selectedSourcePages.sort((left, right) => left.pageNumber - right.pageNumber)
+  const sourceSkeletons = await ctx.db.listSourcePageSkeletons(sourceSessionId)
+  return {
+    selectedSourcePages,
+    sourcePageHtmlPaths,
+    sourceProjectDir: sourceData.projectDir,
+    sourceTitle: String(sourceData.deckTitle || ''),
+    skeletonByPageNumber: new Map(sourceSkeletons.map((item) => [item.page_number, item])),
+    sourcePageCount: sourceData.pages.length,
+    preserveFonts: false
+  }
+}
+
+async function loadTemplateMergeSource(
+  templateId: string,
+  targetSlideSize: { width: number; height: number },
+  sourcePageIds: string[]
+): Promise<MergeSourceData> {
+  const loaded = await loadTemplateManifest(templateId).catch(() => {
+    throw new PageMergeError('PAGE_MERGE_SESSION_NOT_FOUND', '模板不存在')
+  })
+  const { manifest, templateDir } = loaded
+  const sourceSlideSize = requireSlideSize({
+    id: manifest.slideSizeId,
+    width: manifest.slideWidth,
+    height: manifest.slideHeight
+  })
+  if (
+    sourceSlideSize.width !== targetSlideSize.width ||
+    sourceSlideSize.height !== targetSlideSize.height
+  ) {
+    throw new PageMergeError(
+      'PAGE_MERGE_SLIDE_SIZE_MISMATCH',
+      '模板与当前会话的画布尺寸不同，不能添加页面'
+    )
+  }
+  const sortedPages = manifest.pages.slice().sort((a, b) => a.pageNumber - b.pageNumber)
+  const sourcePages: ManagedPage[] = sortedPages.map((page) => {
+    const resolved = resolveTemplateRelativePath(templateDir, page.htmlPath)
+    return {
+      id: `${manifest.id}:${page.pageNumber}`,
+      pageNumber: page.pageNumber,
+      pageId: page.pageId,
+      title: page.title,
+      contentOutline: null,
+      htmlPath: resolved || path.join(templateDir, page.htmlPath),
+      status: 'completed' as const,
+      error: null
+    }
+  })
+  const sourcePageMap = new Map(sourcePages.map((page) => [page.id, page]))
+  const sourcePageHtmlPaths = new Map<string, string>()
+  const realTemplateDir = fs.realpathSync.native(templateDir)
+  const selectedSourcePages = sourcePageIds.map((id) => {
+    const page = sourcePageMap.get(id)
+    if (!page) {
+      throw new PageMergeError('PAGE_MERGE_SOURCE_PAGE_NOT_FOUND', `模板页面不存在: ${id}`)
+    }
+    const safeHtmlPath = fs.existsSync(page.htmlPath)
+      ? fs.realpathSync.native(page.htmlPath)
+      : null
+    if (!safeHtmlPath || !isMergePathInside(safeHtmlPath, realTemplateDir)) {
+      throw new PageMergeError(
+        'PAGE_MERGE_SOURCE_PAGE_UNAVAILABLE',
+        `模板页面文件不存在: ${page.title}`
+      )
+    }
+    sourcePageHtmlPaths.set(page.id, safeHtmlPath)
+    return page
+  })
+  selectedSourcePages.sort((left, right) => left.pageNumber - right.pageNumber)
+  return {
+    selectedSourcePages,
+    sourcePageHtmlPaths,
+    sourceProjectDir: templateDir,
+    sourceTitle: manifest.name,
+    skeletonByPageNumber: new Map(),
+    sourcePageCount: sourcePages.length,
+    preserveFonts: true
+  }
+}
+
 export async function mergeSessionPages(
   ctx: IpcContext,
   args: {
     targetSessionId: string
-    sourceSessionId: string
+    sourceType?: 'session' | 'template'
+    sourceSessionId?: string
+    sourceTemplateId?: string
     sourcePageIds: string[]
   }
 ): Promise<{
@@ -437,14 +726,20 @@ export async function mergeSessionPages(
 }> {
   const startedAt = Date.now()
   const batchId = `mg_${nanoid(10)}`
+  const sourceType = args.sourceType ?? 'session'
+  const sourceId = sourceType === 'template' ? args.sourceTemplateId : args.sourceSessionId
   const logContext: PageMergeLogContext = {
     batchId,
     targetSessionId: args.targetSessionId,
-    sourceSessionId: args.sourceSessionId
+    sourceSessionId: sourceId || '',
+    sourceType
   }
   let stage = 'validate-request'
   mergeLog('info', 'request:start', logContext, { requestedPageCount: args.sourcePageIds.length })
-  if (args.targetSessionId === args.sourceSessionId) {
+  if (!sourceId) {
+    throw new PageMergeError('PAGE_MERGE_INVALID_REQUEST', '缺少来源标识')
+  }
+  if (sourceType === 'session' && args.targetSessionId === sourceId) {
     throw new PageMergeError('PAGE_MERGE_SAME_SESSION', '不能从当前会话添加页面')
   }
   const uniquePageIds = Array.from(
@@ -463,88 +758,52 @@ export async function mergeSessionPages(
     )
   }
 
-  stage = 'load-sessions'
-  const [sourceSession, targetSession] = await Promise.all([
-    ctx.db.getSession(args.sourceSessionId),
-    ctx.db.getSession(args.targetSessionId)
-  ])
-  if (!sourceSession || !targetSession) {
-    throw new PageMergeError('PAGE_MERGE_SESSION_NOT_FOUND', '源会话或当前会话不存在')
+  stage = 'load-target'
+  const targetSession = await ctx.db.getSession(args.targetSessionId)
+  if (!targetSession) {
+    throw new PageMergeError('PAGE_MERGE_SESSION_NOT_FOUND', '当前会话不存在')
   }
-  const sourceSlideSize = requireSessionSlideSize(sourceSession)
   const targetSlideSize = requireSessionSlideSize(targetSession)
+  const targetRunState = ctx.sessionRunStates.get(args.targetSessionId)
   if (
-    sourceSlideSize.width !== targetSlideSize.width ||
-    sourceSlideSize.height !== targetSlideSize.height
+    targetSession.status === 'active' ||
+    targetRunState?.status === 'queued' ||
+    targetRunState?.status === 'running'
   ) {
-    throw new PageMergeError(
-      'PAGE_MERGE_SLIDE_SIZE_MISMATCH',
-      '源会话与当前会话的画布尺寸不同，不能混合添加页面'
-    )
+    throw new PageMergeError('PAGE_MERGE_SESSION_BUSY', '当前会话正在生成，暂时不能添加页面')
   }
-  for (const session of [sourceSession, targetSession]) {
-    const runState = ctx.sessionRunStates.get(session.id)
-    if (
-      session.status === 'active' ||
-      runState?.status === 'queued' ||
-      runState?.status === 'running'
-    ) {
-      throw new PageMergeError(
-        'PAGE_MERGE_SESSION_BUSY',
-        '源会话或当前会话正在生成，暂时不能添加页面'
-      )
-    }
-  }
+  const targetData = await loadEditableSessionPages(ctx, args.targetSessionId)
+  const targetProject = await ctx.db.getProject(args.targetSessionId)
   mergeLog('info', 'sessions:validated', logContext, {
-    sourceStatus: sourceSession.status,
+    sourceType,
     targetStatus: targetSession.status
   })
 
-  stage = 'load-pages'
-  const sourceData = await loadEditableSessionPages(ctx, args.sourceSessionId)
-  const targetData = await loadEditableSessionPages(ctx, args.targetSessionId)
-  const sourcePageMap = new Map(sourceData.pages.map((page) => [page.id, page]))
-  const sourcePageHtmlPaths = new Map<string, string>()
-  const selectedSourcePages = uniquePageIds.map((id) => {
-    const page = sourcePageMap.get(id)
-    if (!page) {
-      throw new PageMergeError('PAGE_MERGE_SOURCE_PAGE_NOT_FOUND', `源页面不存在: ${id}`)
-    }
-    if (page.status !== 'completed') {
-      throw new PageMergeError(
-        'PAGE_MERGE_SOURCE_PAGE_UNAVAILABLE',
-        `页面尚未生成完成: ${page.title}`
-      )
-    }
-    const safeHtmlPath = fs.existsSync(page.htmlPath) ? fs.realpathSync.native(page.htmlPath) : null
-    if (
-      !safeHtmlPath ||
-      !isMergePathInside(safeHtmlPath, fs.realpathSync.native(sourceData.projectDir))
-    ) {
-      throw new PageMergeError(
-        'PAGE_MERGE_SOURCE_PAGE_UNAVAILABLE',
-        `页面文件不存在: ${page.title}`
-      )
-    }
-    sourcePageHtmlPaths.set(page.id, safeHtmlPath)
-    return page
+  stage = 'load-source'
+  const source = await loadMergeSource(ctx, {
+    sourceType,
+    sourceId,
+    targetSlideSize,
+    sourcePageIds: uniquePageIds
   })
-  selectedSourcePages.sort((left, right) => left.pageNumber - right.pageNumber)
+  const {
+    selectedSourcePages,
+    sourcePageHtmlPaths,
+    sourceProjectDir,
+    sourceTitle,
+    skeletonByPageNumber,
+    preserveFonts
+  } = source
   mergeLog('info', 'pages:selected', logContext, {
-    sourcePageCount: sourceData.pages.length,
+    sourcePageCount: source.sourcePageCount,
     targetPageCount: targetData.pages.length,
     selectedPageCount: selectedSourcePages.length,
     selectedPageNumbers: selectedSourcePages.map((page) => page.pageNumber)
   })
-
-  stage = 'load-source-context'
-  const sourceSkeletons = await ctx.db.listSourcePageSkeletons(args.sourceSessionId)
-  const targetProject = await ctx.db.getProject(args.targetSessionId)
-  const skeletonByPageNumber = new Map(sourceSkeletons.map((item) => [item.page_number, item]))
   const tempRoot = path.join(targetData.projectDir, '.merge-pages-tmp', batchId)
   await fs.promises.mkdir(tempRoot, { recursive: true })
   mergeLog('info', 'workspace:prepared', logContext, {
-    sourceSkeletonCount: sourceSkeletons.length,
+    sourceSkeletonCount: skeletonByPageNumber.size,
     tempRoot
   })
   let preparedPages: PreparedMergedPage[] = []
@@ -596,20 +855,24 @@ export async function mergeSessionPages(
           targetPageNumber: nextPageNumber
         })
         const sourceHtml = await fs.promises.readFile(sourceHtmlPath, 'utf-8')
+        const pageFontProfile = preserveFonts
+          ? (extractMergePageFontProfile(sourceHtml) ?? targetFontProfile)
+          : targetFontProfile
         const resourcePathMap = await copyPageResources({
           html: sourceHtml,
-          sourceProjectDir: sourceData.projectDir,
+          sourceProjectDir,
           tempProjectDir: tempRoot,
           batchId,
           nextPageId,
-          targetBodyFont: targetFontProfile.bodyFont
+          targetBodyFont: pageFontProfile.bodyFont,
+          preserveFonts
         })
         const rewrittenHtml = rewriteMergedPageHtml({
           html: sourceHtml,
           oldPageId: sourcePage.pageId,
           nextPageId,
           resourcePathMap,
-          targetFontProfile
+          targetFontProfile: pageFontProfile
         })
         const validation = validatePersistedPageHtml(rewrittenHtml, nextPageId)
         if (!validation.valid) {
@@ -624,7 +887,7 @@ export async function mergeSessionPages(
         const sourceSkeleton = skeletonByPageNumber.get(sourcePage.pageNumber)
         const targetSourceDocumentPath = await prepareSourceDocument({
           skeleton: sourceSkeleton,
-          sourceProjectDir: sourceData.projectDir,
+          sourceProjectDir,
           tempProjectDir: tempRoot,
           batchId,
           nextPageId
@@ -722,7 +985,7 @@ export async function mergeSessionPages(
       deckTitle: targetData.deckTitle,
       pages: mergedPages,
       operation: 'addPage',
-      prompt: `从会话《${sourceSession.title}》添加 ${preparedPages.length} 页`
+      prompt: `从${sourceType === 'template' ? '模板' : '会话'}《${sourceTitle}》添加 ${preparedPages.length} 页`
     })
     if (targetProject?.id) await ctx.db.updateProjectStatus(targetProject.id, 'draft')
     await ctx.db.updateSessionStatus(args.targetSessionId, 'completed')
@@ -734,10 +997,11 @@ export async function mergeSessionPages(
       type: 'addPage',
       scope: 'session',
       projectDir: targetData.projectDir,
-      prompt: `从会话《${sourceSession.title}》添加 ${preparedPages.length} 页`,
+      prompt: `从${sourceType === 'template' ? '模板' : '会话'}《${sourceTitle}》添加 ${preparedPages.length} 页`,
       metadata: {
-        sourceSessionId: args.sourceSessionId,
-        sourceSessionTitle: sourceSession.title,
+        sourceType,
+        sourceSessionId: sourceId,
+        sourceSessionTitle: sourceTitle,
         sourcePageIds: selectedSourcePages.map((page) => page.id),
         sourcePageNumbers: selectedSourcePages.map((page) => page.pageNumber),
         insertedPageIds,

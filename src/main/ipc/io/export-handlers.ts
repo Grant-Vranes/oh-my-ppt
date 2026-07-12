@@ -32,6 +32,7 @@ import type {
   ExportProgressStage
 } from '@shared/export-progress'
 import { assertPptxExportSupported, requireSessionSlideSize } from '@shared/slide-size'
+import { stitchPngBuffersVertical } from '../../utils/png-stitch'
 
 type PptxExportPayload = {
   sessionId?: unknown
@@ -413,6 +414,117 @@ export function registerExportHandlers(ctx: IpcContext): void {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       log.error('[export:pdf] failed', {
+        sessionId,
+        message
+      })
+      throw error
+    }
+  })
+
+  ipcMain.handle('export:longImage', async (event, payload: unknown) => {
+    const sessionId = parseSessionId(payload)
+    if (!sessionId) {
+      throw new Error('sessionId 不能为空')
+    }
+
+    const { session, pages, projectDir } = await resolveSessionPageFiles(sessionId)
+    const slideSize = requireSessionSlideSize(session)
+    const sessionTitle =
+      typeof session.title === 'string' && session.title.trim().length > 0
+        ? session.title.trim()
+        : `ohmyppt-${sessionId}`
+    const sanitizedBaseName = sanitizeExportBaseName(sessionTitle, `ohmyppt-${sessionId}`)
+
+    const ownerWindow =
+      BrowserWindow.fromWebContents(event.sender) ?? BrowserWindow.getFocusedWindow() ?? mainWindow
+    const saveResult = await dialog.showSaveDialog(ownerWindow, {
+      title: '导出长图',
+      defaultPath: path.join(path.dirname(projectDir), `${sanitizedBaseName}-long.png`),
+      filters: [{ name: 'PNG', extensions: ['png'] }],
+      properties: ['createDirectory', 'showOverwriteConfirmation']
+    })
+
+    if (saveResult.canceled || !saveResult.filePath) {
+      return { success: false, cancelled: true }
+    }
+
+    const sendProgress = createExportProgressSender(event, sessionId, 'longImage')
+    const warnings: string[] = []
+    try {
+      sendProgress({
+        stage: 'preparing',
+        progress: 3,
+        current: 0,
+        total: pages.length
+      })
+
+      const pagePngBuffers: Buffer[] = []
+      let renderedCount = 0
+      for (let start = 0; start < pages.length; start += EXPORT_PAGE_RENDER_CONCURRENCY) {
+        const pageBatch = pages.slice(start, start + EXPORT_PAGE_RENDER_CONCURRENCY)
+        const renderedPages = await mapPageBatch(pageBatch, async (page) => {
+          log.info('[export:longImage] render page', {
+            sessionId,
+            pageId: page.pageId,
+            htmlPath: page.htmlPath
+          })
+          return renderPageToPdfBuffer({
+            page,
+            timeoutMs: EXPORT_PAGE_READY_TIMEOUT_MS,
+            slideSize
+          })
+        })
+
+        for (const rendered of renderedPages) {
+          if (rendered.warning) warnings.push(rendered.warning)
+          pagePngBuffers.push(rendered.pngBuffer)
+          renderedCount += 1
+          sendProgress({
+            stage: 'rendering',
+            progress: scaleExportProgress(renderedCount, pages.length, 8, 80),
+            current: renderedCount,
+            total: pages.length
+          })
+        }
+      }
+
+      sendProgress({
+        stage: 'packaging',
+        progress: 88,
+        current: pages.length,
+        total: pages.length
+      })
+      const mergedPng = stitchPngBuffersVertical(pagePngBuffers)
+
+      sendProgress({
+        stage: 'writing',
+        progress: 94,
+        current: pages.length,
+        total: pages.length
+      })
+      await fs.promises.writeFile(saveResult.filePath, mergedPng)
+      const project = await db.getProject(sessionId)
+      if (project?.id) {
+        await db.updateProjectStatus(project.id, 'exported')
+      }
+
+      log.info('[export:longImage] completed', {
+        sessionId,
+        pageCount: pages.length,
+        filePath: saveResult.filePath,
+        warningCount: warnings.length
+      })
+      shell.showItemInFolder(saveResult.filePath)
+      return {
+        success: true,
+        cancelled: false,
+        path: saveResult.filePath,
+        pageCount: pages.length,
+        warnings
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      log.error('[export:longImage] failed', {
         sessionId,
         message
       })

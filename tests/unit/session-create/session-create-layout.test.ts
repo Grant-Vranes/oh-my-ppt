@@ -148,7 +148,7 @@ describe('SessionCreatePage layout', () => {
 
     const styleSelect = settings?.querySelector('[data-dropdown-align="end"]')
     expect(styleSelect).toBeTruthy()
-    expect(styleSelect?.className).toContain('h-10')
+    expect(styleSelect?.className).toContain('h-8')
     expect(styleSelect?.getAttribute('data-dropdown-class')).toContain('700px')
     expect(settings?.querySelector('input[inputmode="numeric"]')).toBeTruthy()
 

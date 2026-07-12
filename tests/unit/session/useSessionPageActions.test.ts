@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { useSessionPageActions } from '../../../src/renderer/src/components/session-detail/hooks/useSessionPageActions'
 import { useSessionDetailUiStore } from '../../../src/renderer/src/store/sessionDetailStore'
+import { useSessionStore } from '../../../src/renderer/src/store/sessionStore'
 import type { SessionPreviewPage } from '../../../src/renderer/src/components/session-detail/shared/types'
 
 vi.mock('sonner', () => {
@@ -87,6 +88,13 @@ describe('useSessionPageActions', () => {
     ipcMocks.onExportProgress.mockReset()
     ipcMocks.onExportProgress.mockReturnValue(() => undefined)
     useSessionDetailUiStore.getState().resetForSessionChange()
+    useSessionStore.setState({
+      currentSession: {
+        slideSizeId: 'wide-16-9',
+        slideWidth: 1600,
+        slideHeight: 900
+      } as never
+    })
   })
 
   it('exports the requested page as PPTX', async () => {

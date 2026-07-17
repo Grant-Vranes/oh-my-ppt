@@ -713,6 +713,7 @@ export const ipc = {
         htmlPath: string
         designWidth: number
         updatedAt: number
+        thumbnailPath: string | null
       }>
     }>,
   openHtmlDocument: (payload: { docId: string }) =>

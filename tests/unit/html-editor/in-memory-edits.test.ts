@@ -1,5 +1,11 @@
 import * as cheerio from 'cheerio'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock('../../../src/main/ipc/html-editor/html-editor-thumbnail', () => ({
+  refreshHtmlEditorCoverThumbnail: vi.fn(),
+  warmHtmlEditorCoverThumbnails: vi.fn(async () => new Map())
+}))
+
 import { applyEditsToHtml } from '../../../src/main/ipc/html-editor/html-editor-handlers'
 import { resolveHtmlEditorDocumentPath } from '../../../src/main/ipc/html-editor/html-editor-handlers'
 import { ensureElementAnchorInHtml } from '../../../src/main/ipc/editor/shared'

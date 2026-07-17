@@ -27,6 +27,10 @@ import {
   restoreHtmlFileAtCommit,
   restoreHtmlRepoHead
 } from './html-editor-git'
+import {
+  refreshHtmlEditorCoverThumbnail,
+  warmHtmlEditorCoverThumbnails
+} from './html-editor-thumbnail'
 
 const HTML_EDITOR_DIRNAME = 'html-editor'
 const HTML_EDITOR_HTML_CACHE_LIMIT = 24
@@ -320,6 +324,11 @@ export async function applyHtmlEditsForDocument(
       createdAt: Date.now()
     })
     rememberHtmlEditorDocumentHtml(args.docId, next)
+    refreshHtmlEditorCoverThumbnail({
+      id: document.doc.id,
+      htmlPath: document.htmlPath,
+      designWidth: document.doc.designWidth
+    })
   } catch (error) {
     await restoreHtmlFileAtCommit(document.dir, 'current.html', previousCommit).catch(
       (rollbackError) => {
@@ -411,6 +420,7 @@ export function registerHtmlEditorHandlers(ctx: IpcContext): void {
         }
       })
       rememberHtmlEditorDocumentHtml(docId, html)
+      refreshHtmlEditorCoverThumbnail({ id: docId, htmlPath, designWidth })
       const result: HtmlEditorImportResult = {
         docId,
         title,
@@ -516,6 +526,11 @@ export function registerHtmlEditorHandlers(ctx: IpcContext): void {
         createdAt: Date.now()
       })
       rememberHtmlEditorDocumentHtml(docId, html)
+      refreshHtmlEditorCoverThumbnail({
+        id: document.doc.id,
+        htmlPath: document.htmlPath,
+        designWidth: document.doc.designWidth
+      })
       return { html }
     } catch (error) {
       await restoreHtmlFileAtCommit(document.dir, 'current.html', previousCommit).catch(
@@ -585,6 +600,7 @@ export function registerHtmlEditorHandlers(ctx: IpcContext): void {
   // ─── html-editor:listDocuments ─────────────────────────
   ipcMain.handle('html-editor:listDocuments', async () => {
     const docs = await db.listHtmlEditDocuments()
+    const thumbnails = await warmHtmlEditorCoverThumbnails(docs)
     return {
       documents: docs.map((d) => ({
         id: d.id,
@@ -592,7 +608,8 @@ export function registerHtmlEditorHandlers(ctx: IpcContext): void {
         sourcePath: d.sourcePath,
         htmlPath: d.htmlPath,
         designWidth: d.designWidth,
-        updatedAt: d.updatedAt
+        updatedAt: d.updatedAt,
+        thumbnailPath: thumbnails.get(d.id) || null
       }))
     }
   })

@@ -16,6 +16,7 @@ export interface HtmlEditDocumentSummary {
   htmlPath: string
   designWidth: number
   updatedAt: number
+  thumbnailPath: string | null
 }
 
 export interface HtmlEditorDocSnapshot {
@@ -39,6 +40,7 @@ interface HtmlEditorStore extends HtmlEditorDocSnapshot {
   importFile: () => Promise<HtmlEditorImportOutcome>
   openDocument: (docId: string) => Promise<HtmlEditorImportOutcome>
   loadDocuments: () => Promise<void>
+  setDocumentThumbnail: (docId: string, thumbnailPath: string) => void
   setHtml: (html: string) => void
   exportAs: () => Promise<string | null>
   reset: () => void
@@ -111,6 +113,13 @@ export const useHtmlEditorStore = create<HtmlEditorStore>((set, get) => ({
       /* 忽略，列表保持空 */
     }
   },
+
+  setDocumentThumbnail: (docId, thumbnailPath) =>
+    set((state) => ({
+      documents: state.documents.map((document) =>
+        document.id === docId ? { ...document, thumbnailPath } : document
+      )
+    })),
 
   setHtml: (html) => set({ html }),
 

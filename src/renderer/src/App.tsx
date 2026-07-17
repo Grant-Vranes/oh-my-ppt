@@ -14,6 +14,8 @@ import { FontsPage } from './pages/fonts'
 import { StyleEditorPage } from './pages/style-editor'
 import { TemplatesPage } from './pages/templates'
 import { TokenUsagePage } from './pages/token-usage'
+import { EditHtmlPage } from './pages/edit-html'
+import { EditHtmlListPage } from './pages/edit-html-list'
 import { AppToaster } from './components/AppToaster'
 import { UpdateAvailableDialog } from './components/UpdateAvailableDialog'
 import { ScrollArea } from './components/ui/ScrollArea'
@@ -25,6 +27,7 @@ function App(): React.JSX.Element {
   const location = useLocation()
   useGenerationNotifications()
   const isSessionDetailRoute = Boolean(matchPath('/sessions/:id/*', location.pathname))
+  const isHtmlEditorRoute = Boolean(matchPath('/edit-html/:id/*', location.pathname))
   const isThinkingRoute = Boolean(matchPath('/thinking', location.pathname))
   const [availableUpdate, setAvailableUpdate] = useState<UpdateAvailablePayload | null>(null)
 
@@ -37,7 +40,7 @@ function App(): React.JSX.Element {
     }
   }, [])
 
-  if (isSessionDetailRoute) {
+  if (isSessionDetailRoute || isHtmlEditorRoute) {
     return (
       <>
         <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background text-foreground">
@@ -45,6 +48,7 @@ function App(): React.JSX.Element {
             <Route path="/sessions/:id/template-generating" element={<TemplateSessionsGeneratingPage />} />
             <Route path="/sessions/:id/generating" element={<SessionGeneratingPage />} />
             <Route path="/sessions/:id" element={<SessionDetailPage />} />
+            <Route path="/edit-html/:id" element={<EditHtmlPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
@@ -83,6 +87,7 @@ function App(): React.JSX.Element {
                   <Route path="/token-usage" element={<TokenUsagePage />} />
                   <Route path="/styles/new" element={<StyleEditorPage />} />
                   <Route path="/styles/:styleId" element={<StyleEditorPage />} />
+                  <Route path="/edit-html" element={<EditHtmlListPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>

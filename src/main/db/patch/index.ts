@@ -418,6 +418,7 @@ const getTableColumns = async (
     | 'session_pages'
     | 'model_configs'
     | 'image_model_configs'
+    | 'html_edit_messages'
 ): Promise<Set<string>> => {
   const result = await client.execute(`PRAGMA table_info(${tableName})`)
   const rows = Array.isArray((result as { rows?: unknown[] }).rows)
@@ -514,10 +515,14 @@ const enforceSessionsSchema = async (client: LibSqlClient): Promise<void> => {
     )
   }
   if (!columns.has('slide_width')) {
-    await client.execute('ALTER TABLE sessions ADD COLUMN slide_width INTEGER NOT NULL DEFAULT 1600')
+    await client.execute(
+      'ALTER TABLE sessions ADD COLUMN slide_width INTEGER NOT NULL DEFAULT 1600'
+    )
   }
   if (!columns.has('slide_height')) {
-    await client.execute('ALTER TABLE sessions ADD COLUMN slide_height INTEGER NOT NULL DEFAULT 900')
+    await client.execute(
+      'ALTER TABLE sessions ADD COLUMN slide_height INTEGER NOT NULL DEFAULT 900'
+    )
   }
   await client.execute({
     sql: `
@@ -1297,7 +1302,10 @@ const patchSessionPagesFromGenerationPages = async (args: {
           : ('failed' as const)
       const error =
         status === 'failed'
-          ? String(getRowValue(row, 'error') || (fsExistsSafe(htmlPath) ? '页面生成失败' : '页面文件不存在'))
+          ? String(
+              getRowValue(row, 'error') ||
+                (fsExistsSafe(htmlPath) ? '页面生成失败' : '页面文件不存在')
+            )
           : null
 
       await db
@@ -1330,6 +1338,70 @@ const fsExistsSafe = (filePath: string): boolean => {
   }
 }
 
+const HTML_EDITOR_DOCS_TABLE_SQL = `
+CREATE TABLE IF NOT EXISTS html_edit_documents (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL DEFAULT '',
+  source_path TEXT,
+  html_path TEXT NOT NULL,
+  design_width INTEGER NOT NULL DEFAULT 1280,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+`
+
+const HTML_EDITOR_MESSAGES_TABLE_SQL = `
+CREATE TABLE IF NOT EXISTS html_edit_messages (
+  id TEXT PRIMARY KEY,
+  doc_id TEXT NOT NULL REFERENCES html_edit_documents(id) ON DELETE CASCADE,
+  role TEXT NOT NULL,
+  content TEXT NOT NULL,
+  intent TEXT,
+  plan_json TEXT,
+  requires_confirmation INTEGER NOT NULL DEFAULT 0,
+  selected_selector TEXT,
+  selected_label TEXT,
+  selected_element_tag TEXT,
+  selected_element_text TEXT,
+  created_at INTEGER NOT NULL
+);
+`
+
+const HTML_EDITOR_VERSIONS_TABLE_SQL = `
+CREATE TABLE IF NOT EXISTS html_edit_versions (
+  id TEXT PRIMARY KEY,
+  doc_id TEXT NOT NULL REFERENCES html_edit_documents(id) ON DELETE CASCADE,
+  commit_sha TEXT NOT NULL,
+  message TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL
+);
+`
+
+const enforceHtmlEditorSchema = async (client: LibSqlClient): Promise<void> => {
+  await client.execute(HTML_EDITOR_DOCS_TABLE_SQL)
+  await client.execute(HTML_EDITOR_MESSAGES_TABLE_SQL)
+  await client.execute(HTML_EDITOR_VERSIONS_TABLE_SQL)
+  const messageColumns = await getTableColumns(client, 'html_edit_messages')
+  if (!messageColumns.has('selected_selector')) {
+    await client.execute('ALTER TABLE html_edit_messages ADD COLUMN selected_selector TEXT')
+  }
+  if (!messageColumns.has('selected_label')) {
+    await client.execute('ALTER TABLE html_edit_messages ADD COLUMN selected_label TEXT')
+  }
+  if (!messageColumns.has('selected_element_tag')) {
+    await client.execute('ALTER TABLE html_edit_messages ADD COLUMN selected_element_tag TEXT')
+  }
+  if (!messageColumns.has('selected_element_text')) {
+    await client.execute('ALTER TABLE html_edit_messages ADD COLUMN selected_element_text TEXT')
+  }
+  await client.execute(
+    'CREATE INDEX IF NOT EXISTS idx_html_edit_messages_doc ON html_edit_messages(doc_id, created_at);'
+  )
+  await client.execute(
+    'CREATE INDEX IF NOT EXISTS idx_html_edit_versions_doc ON html_edit_versions(doc_id, created_at);'
+  )
+}
+
 export const runDatabasePatches = async (args: {
   client: LibSqlClient
   db: DrizzleDb
@@ -1348,6 +1420,7 @@ export const runDatabasePatches = async (args: {
   await enforceSessionPagesSchema(client)
   await enforceSessionOperationsSchema(client)
   await enforceSessionOperationPagesSchema(client)
+  await enforceHtmlEditorSchema(client)
   await patchStylesColumns(client)
   await client.execute('PRAGMA foreign_keys = ON;')
   await ensureDefaultSettings(client)

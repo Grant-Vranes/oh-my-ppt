@@ -28,6 +28,8 @@ import { registerThinkingHandlers } from './thinking/thinking-handlers'
 import { registerTemplateHandlers } from './templates/template-handlers'
 import { registerImageGenerationHandlers } from './image-generation/image-generation-handlers'
 import { registerImageGenerationHistoryHandlers } from './image-generation/image-generation-history-handlers'
+import { registerHtmlEditorHandlers } from './html-editor/html-editor-handlers'
+import { registerHtmlEditorAiHandlers } from './html-editor/html-editor-ai-handlers'
 
 export { registerLocalAssetProtocol }
 
@@ -65,4 +67,6 @@ export function setupIPC(
   registerTemplateHandlers(context)
   registerImageGenerationHandlers(context)
   registerImageGenerationHistoryHandlers(context)
+  registerHtmlEditorHandlers(context)
+  registerHtmlEditorAiHandlers(context)
 }

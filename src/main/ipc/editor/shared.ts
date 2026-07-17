@@ -304,7 +304,9 @@ export function patchDraggedElementStyle(
 
   // zIndexOnly: only update z-index, leave everything else untouched
   if (zIndexOnly && zIndex !== undefined) {
-    const position = String(styleMap.get('position') || '').trim().toLowerCase()
+    const position = String(styleMap.get('position') || '')
+      .trim()
+      .toLowerCase()
     if (!position || position === 'static') styleMap.set('position', 'relative')
     styleMap.set('z-index', String(zIndex))
     target.attr('style', serializeStyle(styleMap))
@@ -334,7 +336,9 @@ export function patchDraggedElementStyle(
     if (INLINE_TAGS.has(tagName) && !styleMap.has('display')) {
       styleMap.set('display', 'inline-block')
     }
-    const position = String(styleMap.get('position') || '').trim().toLowerCase()
+    const position = String(styleMap.get('position') || '')
+      .trim()
+      .toLowerCase()
     if (!position || position === 'static') {
       styleMap.set('position', 'relative')
     }
@@ -565,10 +569,7 @@ function stripUnsafeFormulaHtml(
     const className = String(attrs.class || '')
       .split(/\s+/)
       .filter(
-        (item) =>
-          item &&
-          !item.startsWith('ppt-edit-mode-') &&
-          !item.startsWith('ppt-inspector-')
+        (item) => item && !item.startsWith('ppt-edit-mode-') && !item.startsWith('ppt-inspector-')
       )
       .join(' ')
     if (className) el.attr('class', className)
@@ -644,7 +645,9 @@ function htmlHasFormulaDelimiter(html: string): boolean {
 
 function isSafeFormulaHostFallback(html: string): boolean {
   if (htmlHasFormulaDelimiter(html)) return false
-  const text = normalizeText(cheerio.load(`<root>${html}</root>`, { scriptingEnabled: false }, false).text())
+  const text = normalizeText(
+    cheerio.load(`<root>${html}</root>`, { scriptingEnabled: false }, false).text()
+  )
   return !text
 }
 
@@ -716,6 +719,7 @@ export function patchGenericElementProperties(
       objectFit?: unknown
     }
     attrs?: {
+      className?: unknown
       alt?: unknown
       poster?: unknown
       controls?: unknown
@@ -741,11 +745,7 @@ export function patchGenericElementProperties(
     const originalLatex =
       typeof patch.formula.originalLatex === 'string' ? patch.formula.originalLatex : ''
     const displayMode = patch.formula.displayMode === true
-    const nextHtml = stripUnsafeFormulaHtml(
-      patch.formula.html,
-      latex,
-      displayMode
-    )
+    const nextHtml = stripUnsafeFormulaHtml(patch.formula.html, latex, displayMode)
     const currentHtml = target.html() || ''
     const sourceReplaced = replaceSourceFormulaHtml(currentHtml, {
       latex,
@@ -808,7 +808,9 @@ export function patchGenericElementProperties(
   const textAlign = normalizeTextAlign(stylePatch.textAlign)
   const objectFit = normalizeObjectFit(stylePatch.objectFit)
   if (zIndex !== null && zIndex >= -999 && zIndex <= 9999) {
-    const position = String(styleMap.get('position') || '').trim().toLowerCase()
+    const position = String(styleMap.get('position') || '')
+      .trim()
+      .toLowerCase()
     if (!position || position === 'static') styleMap.set('position', 'relative')
     styleMap.set('z-index', String(zIndex))
   }
@@ -837,6 +839,11 @@ export function patchGenericElementProperties(
   }
 
   const attrs = patch.attrs || {}
+  if (typeof attrs.className === 'string') {
+    const className = attrs.className.replace(/\s+/g, ' ').trim().slice(0, 2_000)
+    if (className) target.attr('class', className)
+    else target.removeAttr('class')
+  }
   if (typeof attrs.alt === 'string') target.attr('alt', attrs.alt.slice(0, 500))
   if (typeof attrs.poster === 'string') target.attr('poster', attrs.poster.slice(0, 1000))
   for (const name of ['controls', 'muted', 'loop', 'autoplay'] as const) {
@@ -929,14 +936,34 @@ export function patchAddElement(
   insertIndex: number
 ): string {
   const $ = cheerio.load(html, { scriptingEnabled: false })
+  const fragmentDocument = cheerio.load(
+    `<root>${htmlFragment}</root>`,
+    {
+      scriptingEnabled: false
+    },
+    false
+  )
+  const fragmentRoot = fragmentDocument('root').first()
+  fragmentRoot.children().each((_, node) => {
+    const element = fragmentDocument(node)
+    const styleMap = parseStyle(element.attr('style') || '')
+    if (styleMap.has('z-index')) return
+    const position = String(styleMap.get('position') || '')
+      .trim()
+      .toLowerCase()
+    if (!position || position === 'static') styleMap.set('position', 'relative')
+    styleMap.set('z-index', '20')
+    element.attr('style', serializeStyle(styleMap))
+  })
+  const normalizedFragment = fragmentRoot.html() || ''
   const parent = $(parentSelector).first()
   if (!parent || parent.length === 0) {
     throw new Error('插入目标父元素不存在')
   }
   if (insertIndex < 0 || insertIndex >= parent.children().length) {
-    parent.append(htmlFragment)
+    parent.append(normalizedFragment)
   } else {
-    parent.children().eq(insertIndex).before(htmlFragment)
+    parent.children().eq(insertIndex).before(normalizedFragment)
   }
   return $.html()
 }

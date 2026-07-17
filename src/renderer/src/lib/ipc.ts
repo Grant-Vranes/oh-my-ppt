@@ -24,10 +24,7 @@ import type { SpeechConfig } from '@shared/speech'
 import type { HistoryVersion, RollbackHistoryResult } from '@shared/history.js'
 import type { HtmlThumbnailResourceType } from '@shared/thumbnail'
 import type { IndexTransitionConfig, IndexTransitionType } from '@shared/index-transition.js'
-import type {
-  ElementAnimationConfig,
-  ElementAnimationPatch
-} from '@shared/element-animation.js'
+import type { ElementAnimationConfig, ElementAnimationPatch } from '@shared/element-animation.js'
 import type {
   ThinkingStage,
   ThinkingChatMessage,
@@ -213,6 +210,60 @@ export interface ImportSessionFileResult {
   pageCount?: number
   warnings?: string[]
 }
+
+export interface HtmlEditorImportResult {
+  docId: string
+  title: string
+  htmlPath: string
+  sourcePath: string
+  designWidth: number
+  html: string
+}
+
+export interface HtmlEditorAiMessage {
+  role: 'user' | 'assistant'
+  content: string
+  selectedElement?: HtmlEditorAiElementContext
+}
+
+export interface HtmlEditorAiElementContext {
+  selector: string
+  label?: string
+  elementTag?: string
+  elementText?: string
+  html?: string
+}
+
+export interface HtmlEditorAiEditBatch {
+  propertyEdits: Array<Record<string, unknown>>
+  textEdits: Array<Record<string, unknown>>
+  dragEdits: Array<Record<string, unknown>>
+  deletes: Array<Record<string, unknown>>
+  addElements: Array<Record<string, unknown>>
+}
+
+export type HtmlEditorAiIntent = 'inspect' | 'redesign' | 'style' | 'layout' | 'content' | 'other'
+
+export interface HtmlEditorAiPlan {
+  intent: HtmlEditorAiIntent
+  target: string
+  summary: string
+  changes: string[]
+  confirmationQuestion: string
+  edits: HtmlEditorAiEditBatch
+}
+
+export interface HtmlEditorAiHistoryMessage extends HtmlEditorAiMessage {
+  id: string
+  createdAt: number
+  intent?: HtmlEditorAiIntent
+  plan?: HtmlEditorAiPlan | null
+  requiresConfirmation?: boolean
+}
+
+export type HtmlEditorFileImportResult =
+  | { cancelled: true; reason?: 'user-cancelled' | 'storage-not-configured' }
+  | ({ cancelled: false } & HtmlEditorImportResult)
 
 export interface TemplateListItem {
   id: string
@@ -424,10 +475,11 @@ export const ipc = {
       MergeTemplateSourceSummary[]
     >,
   listMergeSourceTemplatePages: (payload: { targetSessionId: string; templateId: string }) =>
-    getIpc().invoke(
-      'session:listMergeSourcePages',
-      { targetSessionId: payload.targetSessionId, sourceType: 'template', templateId: payload.templateId }
-    ) as Promise<MergeSourcePageSummary[]>,
+    getIpc().invoke('session:listMergeSourcePages', {
+      targetSessionId: payload.targetSessionId,
+      sourceType: 'template',
+      templateId: payload.templateId
+    }) as Promise<MergeSourcePageSummary[]>,
   mergeTemplatePages: (payload: {
     targetSessionId: string
     templateId: string
@@ -610,6 +662,87 @@ export const ipc = {
     getIpc().invoke('session:updateTitle', payload) as Promise<{ ok: boolean }>,
   importSessionFile: () =>
     getIpc().invoke('session:importFile') as Promise<ImportSessionFileResult>,
+  importHtmlFile: () =>
+    getIpc().invoke('html-editor:import') as Promise<HtmlEditorFileImportResult>,
+  ensureHtmlAnchor: (payload: {
+    html: string
+    pageId: string
+    selector: string
+    elementTag?: string
+    formula?: { latex?: unknown; html?: unknown; displayMode?: unknown }
+  }) =>
+    getIpc().invoke('html-editor:ensureAnchor', payload) as Promise<{
+      html: string
+      selector: string
+      blockId: string
+      changed: boolean
+    }>,
+  applyHtmlEdits: (payload: {
+    html: string
+    pageId: string
+    dragEdits?: unknown[]
+    textEdits?: unknown[]
+    propertyEdits?: unknown[]
+    deletes?: unknown[]
+    addElements?: unknown[]
+  }) =>
+    getIpc().invoke('html-editor:applyEdits', payload) as Promise<{
+      html: string
+      warnings: string[]
+    }>,
+  exportHtml: (payload: { html: string; suggestedName?: string }) =>
+    getIpc().invoke('html-editor:export', payload) as Promise<
+      { cancelled: true } | { cancelled: false; path: string }
+    >,
+  cleanupHtmlEditor: (payload: { docId: string }) =>
+    getIpc().invoke('html-editor:cleanup', payload) as Promise<{ ok: boolean }>,
+  openHtmlInBrowser: (payload: { docId: string }) =>
+    getIpc().invoke('html-editor:openInBrowser', payload) as Promise<{ ok: boolean }>,
+  listHtmlVersions: (payload: { docId: string }) =>
+    getIpc().invoke('html-editor:listVersions', payload) as Promise<{
+      versions: Array<{ id: string; commitSha: string; message: string; createdAt: number }>
+    }>,
+  restoreHtmlVersion: (payload: { docId: string; versionId: string }) =>
+    getIpc().invoke('html-editor:restoreVersion', payload) as Promise<{ html: string }>,
+  listHtmlDocuments: () =>
+    getIpc().invoke('html-editor:listDocuments') as Promise<{
+      documents: Array<{
+        id: string
+        title: string
+        sourcePath: string | null
+        htmlPath: string
+        designWidth: number
+        updatedAt: number
+      }>
+    }>,
+  openHtmlDocument: (payload: { docId: string }) =>
+    getIpc().invoke('html-editor:openDocument', payload) as Promise<HtmlEditorFileImportResult>,
+  htmlEditorAiChat: (payload: {
+    documentId: string
+    documentTitle?: string
+    pageHtml?: string
+    selectedElement?: HtmlEditorAiElementContext
+    recentMessages?: HtmlEditorAiMessage[]
+    pendingPlan?: HtmlEditorAiPlan
+    userMessage: string
+    modelConfigId?: string
+  }) =>
+    getIpc().invoke('html-editor:aiChat', payload) as Promise<{
+      reply: string
+      model: string
+      intent: HtmlEditorAiIntent
+      plan: HtmlEditorAiPlan | null
+      requiresConfirmation: boolean
+      applied: boolean
+      appliedHtml?: string
+      warnings: string[]
+    }>,
+  listHtmlEditorMessages: (payload: { docId: string }) =>
+    getIpc().invoke('html-editor:listMessages', payload) as Promise<{
+      messages: HtmlEditorAiHistoryMessage[]
+    }>,
+  clearHtmlEditorMessages: (payload: { docId: string }) =>
+    getIpc().invoke('html-editor:clearMessages', payload) as Promise<{ ok: boolean }>,
   listTemplates: () => getIpc().invoke('templates:list') as Promise<{ items: TemplateListItem[] }>,
   createTemplateFromSession: (payload: {
     sessionId: string

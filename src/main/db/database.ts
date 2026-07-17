@@ -25,6 +25,7 @@ import type {
 import type { AnimationPreferencesPayload } from '@shared/generation'
 import { normalizeThinkingParameterMode } from '@shared/model-config'
 import { requirePersistedSlideSize, type SlideSizePresetId } from '@shared/slide-size'
+import type { HtmlEditDocument, HtmlEditMessage, HtmlEditVersion } from './schema'
 
 type SessionStatus = 'active' | 'completed' | 'failed' | 'archived'
 type MessageRole = 'user' | 'assistant' | 'system' | 'tool'
@@ -412,6 +413,204 @@ export class PPTDatabase {
     this._initialized = false
   }
 
+  // ========== HTML Editor ==========
+
+  async createHtmlEditDocument(data: {
+    id: string
+    title: string
+    sourcePath?: string | null
+    htmlPath: string
+    designWidth: number
+    createdAt: number
+    updatedAt: number
+  }): Promise<void> {
+    await this.db.insert(schema.htmlEditDocuments).values({
+      id: data.id,
+      title: data.title,
+      sourcePath: data.sourcePath ?? null,
+      htmlPath: data.htmlPath,
+      designWidth: data.designWidth,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt
+    })
+  }
+
+  async touchHtmlEditDocument(docId: string, updatedAt: number): Promise<void> {
+    await this.db
+      .update(schema.htmlEditDocuments)
+      .set({ updatedAt })
+      .where(eq(schema.htmlEditDocuments.id, docId))
+  }
+
+  async createHtmlEditMessage(data: {
+    id: string
+    docId: string
+    role: 'user' | 'assistant'
+    content: string
+    intent?: string | null
+    planJson?: string | null
+    requiresConfirmation?: boolean
+    selectedElement?: {
+      selector: string
+      label?: string
+      elementTag?: string
+      elementText?: string
+    } | null
+    createdAt: number
+  }): Promise<void> {
+    const selectedElement = data.selectedElement?.selector ? data.selectedElement : null
+    await this.db
+      .insert(schema.htmlEditMessages)
+      .values({
+        id: data.id,
+        docId: data.docId,
+        role: data.role,
+        content: data.content,
+        intent: data.intent ?? null,
+        planJson: data.planJson ?? null,
+        requiresConfirmation: data.requiresConfirmation ? 1 : 0,
+        selectedSelector: selectedElement?.selector.slice(0, 2_000) ?? null,
+        selectedLabel: selectedElement?.label?.slice(0, 500) ?? null,
+        selectedElementTag: selectedElement?.elementTag?.slice(0, 80) ?? null,
+        selectedElementText: selectedElement?.elementText?.slice(0, 2_000) ?? null,
+        createdAt: data.createdAt
+      })
+      .run()
+  }
+
+  async listHtmlEditMessages(docId: string, limit = 100): Promise<HtmlEditMessage[]> {
+    const safeLimit = Math.max(1, Math.min(Math.floor(limit), 500))
+    const rows = await this.db
+      .select()
+      .from(schema.htmlEditMessages)
+      .where(eq(schema.htmlEditMessages.docId, docId))
+      .orderBy(desc(schema.htmlEditMessages.createdAt))
+      .limit(safeLimit)
+      .all()
+    return rows.reverse()
+  }
+
+  async clearHtmlEditMessages(docId: string): Promise<void> {
+    await this.db
+      .delete(schema.htmlEditMessages)
+      .where(eq(schema.htmlEditMessages.docId, docId))
+      .run()
+  }
+
+  async createHtmlEditVersion(data: {
+    id: string
+    docId: string
+    commitSha: string
+    message: string
+    createdAt: number
+  }): Promise<void> {
+    await this.db.insert(schema.htmlEditVersions).values({
+      id: data.id,
+      docId: data.docId,
+      commitSha: data.commitSha,
+      message: data.message,
+      createdAt: data.createdAt
+    })
+  }
+
+  async createHtmlEditDocumentWithVersion(data: {
+    document: {
+      id: string
+      title: string
+      sourcePath?: string | null
+      htmlPath: string
+      designWidth: number
+      createdAt: number
+      updatedAt: number
+    }
+    version: {
+      id: string
+      commitSha: string
+      message: string
+      createdAt: number
+    }
+  }): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      await tx.insert(schema.htmlEditDocuments).values({
+        id: data.document.id,
+        title: data.document.title,
+        sourcePath: data.document.sourcePath ?? null,
+        htmlPath: data.document.htmlPath,
+        designWidth: data.document.designWidth,
+        createdAt: data.document.createdAt,
+        updatedAt: data.document.updatedAt
+      })
+      await tx.insert(schema.htmlEditVersions).values({
+        id: data.version.id,
+        docId: data.document.id,
+        commitSha: data.version.commitSha,
+        message: data.version.message,
+        createdAt: data.version.createdAt
+      })
+    })
+  }
+
+  async createHtmlEditVersionAndTouch(data: {
+    id: string
+    docId: string
+    commitSha: string
+    message: string
+    createdAt: number
+  }): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      await tx.insert(schema.htmlEditVersions).values({
+        id: data.id,
+        docId: data.docId,
+        commitSha: data.commitSha,
+        message: data.message,
+        createdAt: data.createdAt
+      })
+      await tx
+        .update(schema.htmlEditDocuments)
+        .set({ updatedAt: data.createdAt })
+        .where(eq(schema.htmlEditDocuments.id, data.docId))
+    })
+  }
+
+  async listHtmlEditVersions(docId: string): Promise<HtmlEditVersion[]> {
+    return this.db
+      .select()
+      .from(schema.htmlEditVersions)
+      .where(eq(schema.htmlEditVersions.docId, docId))
+      .orderBy(desc(schema.htmlEditVersions.createdAt))
+  }
+
+  async getHtmlEditVersion(versionId: string): Promise<HtmlEditVersion | undefined> {
+    const rows = await this.db
+      .select()
+      .from(schema.htmlEditVersions)
+      .where(eq(schema.htmlEditVersions.id, versionId))
+      .limit(1)
+    return rows[0]
+  }
+
+  async listHtmlEditDocuments(): Promise<HtmlEditDocument[]> {
+    return this.db
+      .select()
+      .from(schema.htmlEditDocuments)
+      .orderBy(desc(schema.htmlEditDocuments.updatedAt))
+  }
+
+  async getHtmlEditDocument(docId: string): Promise<HtmlEditDocument | undefined> {
+    const rows = await this.db
+      .select()
+      .from(schema.htmlEditDocuments)
+      .where(eq(schema.htmlEditDocuments.id, docId))
+      .limit(1)
+    return rows[0]
+  }
+
+  /** 删除文档的数据库记录（含版本行）。不删磁盘文件——文件留存供审计/恢复。 */
+  async deleteHtmlEditDocument(docId: string): Promise<void> {
+    await this.db.delete(schema.htmlEditVersions).where(eq(schema.htmlEditVersions.docId, docId))
+    await this.db.delete(schema.htmlEditDocuments).where(eq(schema.htmlEditDocuments.id, docId))
+  }
+
   // ========== Session ==========
 
   async createSession(data: {
@@ -692,9 +891,9 @@ export class PPTDatabase {
       id: String(row.id || ''),
       session_id: String(row.sessionId ?? row.session_id ?? ''),
       kind: (kind === 'template' || kind === 'retry' ? kind : 'standard') as GenerationJobKind,
-      status: (
-        status === 'active' || status === 'finished' || status === 'aborted' ? status : 'pending'
-      ) as GenerationJobStatus,
+      status: (status === 'active' || status === 'finished' || status === 'aborted'
+        ? status
+        : 'pending') as GenerationJobStatus,
       abort_reason:
         typeof (row.abortReason ?? row.abort_reason) === 'string'
           ? String(row.abortReason ?? row.abort_reason)
@@ -1280,7 +1479,9 @@ export class PPTDatabase {
         deletedAt: now,
         updatedAt: now
       })
-      .where(and(eq(schema.sessionPages.sessionId, sessionId), inArray(schema.sessionPages.id, ids)))
+      .where(
+        and(eq(schema.sessionPages.sessionId, sessionId), inArray(schema.sessionPages.id, ids))
+      )
       .run()
   }
 
@@ -2551,9 +2752,7 @@ export class PPTDatabase {
           }
 
           if (scope === 'system') {
-            if (
-              existing.source === 'builtin'
-            ) {
+            if (existing.source === 'builtin') {
               await this.updateStyleRow(existing.id, {
                 styleName: item.name.zh,
                 styleNameZh: item.name.zh,
@@ -2792,7 +2991,9 @@ export class PPTDatabase {
     resourceIds: string[],
     variant = 'default'
   ): Promise<ThumbnailRecord[]> {
-    const ids = Array.from(new Set(resourceIds.map((id) => String(id || '').trim()).filter(Boolean)))
+    const ids = Array.from(
+      new Set(resourceIds.map((id) => String(id || '').trim()).filter(Boolean))
+    )
     if (ids.length === 0) return []
     const rows = await this.db
       .select()

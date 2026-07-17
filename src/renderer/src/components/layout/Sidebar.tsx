@@ -9,7 +9,8 @@ import {
   SwatchBook,
   Type,
   LayoutTemplate,
-  ChartNoAxesCombined
+  ChartNoAxesCombined,
+  FileCode2
 } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import logoUrl from '@renderer/assets/images/logo.png'
@@ -19,7 +20,8 @@ import { ipc } from '@renderer/lib/ipc'
 export function Sidebar(): React.JSX.Element {
   const location = useLocation()
   const t = useT()
-  const isDetailPage = location.pathname.startsWith('/sessions/') && location.pathname !== '/sessions'
+  const isDetailPage =
+    location.pathname.startsWith('/sessions/') && location.pathname !== '/sessions'
   const [appVersion, setAppVersion] = useState('')
 
   useEffect(() => {
@@ -47,6 +49,7 @@ export function Sidebar(): React.JSX.Element {
     { path: '/fonts', icon: Type, label: t('nav.fonts') },
     { path: '/token-usage', icon: ChartNoAxesCombined, label: t('nav.tokenUsage') },
     { path: '/settings', icon: Settings, label: t('nav.settings') },
+    { path: '/edit-html', icon: FileCode2, label: t('nav.editHtml') }
   ]
 
   return (
@@ -54,7 +57,9 @@ export function Sidebar(): React.JSX.Element {
       <div className="px-2 pt-1">
         <div className="mt-1 flex items-center gap-1">
           <img src={logoUrl} alt="Oh My PPT" className="h-14 w-14 select-none" draggable={false} />
-          <h1 className="organic-serif text-[22px] font-semibold leading-none text-[#3e4a32]">Oh My PPT</h1>
+          <h1 className="organic-serif text-[22px] font-semibold leading-none text-[#3e4a32]">
+            Oh My PPT
+          </h1>
         </div>
         <p className="mt-1 text-[14px] text-[#7f876e] px-4">{t('nav.tagline')}</p>
       </div>
@@ -70,7 +75,8 @@ export function Sidebar(): React.JSX.Element {
           </Link>
         )}
         {navItems.map((item) => {
-          const isActive = item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path)
+          const isActive =
+            item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path)
           return (
             <Link
               key={item.path}
@@ -98,7 +104,9 @@ export function Sidebar(): React.JSX.Element {
             <Plus className="h-3.5 w-3.5 shrink-0" />
             {t('nav.newPresentation')}
           </span>
-          {appVersion ? <span className="shrink-0 text-[10px] font-normal text-white/70">v{appVersion}</span> : null}
+          {appVersion ? (
+            <span className="shrink-0 text-[10px] font-normal text-white/70">v{appVersion}</span>
+          ) : null}
         </Link>
       </div>
     </aside>

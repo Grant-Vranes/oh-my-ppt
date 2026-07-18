@@ -3,7 +3,7 @@ import path from 'path'
 import log from 'electron-log/main.js'
 import { decompress } from 'woff2-encoder'
 import fonteditorCore, { createFont } from 'fonteditor-core'
-import type { HtmlToPptxEmbeddedFont, HtmlToPptxSlide } from './types'
+import type { HtmlToPptxEmbeddedFont, HtmlToPptxSlide } from '@arcsin1/html2pptx'
 
 // ─── Collect used font faces from slides ─────────────────────────────
 

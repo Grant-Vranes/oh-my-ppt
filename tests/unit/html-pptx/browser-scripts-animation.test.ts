@@ -43,6 +43,20 @@ describe('PPTX animation browser scripts', () => {
     expect(HIDE_FOR_PPTX_BACKGROUND_SCRIPT).toContain('box-shadow: none !important')
   })
 
+  it('removes extracted text even when its source container is animated', () => {
+    expect(HIDE_FOR_PPTX_BACKGROUND_SCRIPT).toContain(
+      'body *:not(canvas):not(svg):not(svg *):not([data-pptx-extracted-image])'
+    )
+    expect(HIDE_FOR_PPTX_BACKGROUND_SCRIPT).not.toContain(
+      'body :not(canvas):not([data-pptx-animated]):not([data-pptx-extracted-image])'
+    )
+    expect(HIDE_FOR_PPTX_BACKGROUND_SCRIPT).toContain('[data-pptx-has-before]::before')
+    expect(HIDE_FOR_PPTX_BACKGROUND_SCRIPT).toContain('[data-pptx-has-after]::after')
+    expect(HIDE_FOR_PPTX_BACKGROUND_SCRIPT).toContain(
+      "'[data-pptx-extracted-image] { opacity: 0 !important; visibility: hidden !important; }'"
+    )
+  })
+
   it('collects command-style anime targets as fade-up traces', () => {
     expect(COLLECT_PPTX_ANIMATION_TRACES_SCRIPT).toContain('[data-anime]')
     expect(COLLECT_PPTX_ANIMATION_TRACES_SCRIPT).toContain('[data-animate]')

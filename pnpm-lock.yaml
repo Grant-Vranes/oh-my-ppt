@@ -12,6 +12,9 @@ importers:
 
   .:
     dependencies:
+      '@arcsin1/html2pptx':
+        specifier: ^0.0.2
+        version: 0.0.2
       '@arcsin1/pptx2json':
         specifier: ^0.1.5
         version: 0.1.5
@@ -325,6 +328,9 @@ packages:
     peerDependenciesMeta:
       zod:
         optional: true
+
+  '@arcsin1/html2pptx@0.0.2':
+    resolution: {integrity: sha512-/nPQJ2kfdMmmqshQ511d4cEsSZJP1q6WnDTrF6/Ggc0nsYY5HjinRBZh9yTH3MvOayRkXai9eRxBF9JKmltz8A==}
 
   '@arcsin1/pptx2json@0.1.5':
     resolution: {integrity: sha512-QNhhDR7Lnk9Yq+Owz4v+dGW0PZfdxzk8/R/BXHf/8SL59iB9tKVnVBbK7LVknoWLbhav4am8kHBGo79GrMa/5A==}
@@ -5628,6 +5634,11 @@ snapshots:
       json-schema-to-ts: 3.1.1
     optionalDependencies:
       zod: 3.25.76
+
+  '@arcsin1/html2pptx@0.0.2':
+    dependencies:
+      '@chenglou/pretext': 0.0.6
+      fflate: 0.8.3
 
   '@arcsin1/pptx2json@0.1.5':
     dependencies:

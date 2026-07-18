@@ -6,7 +6,7 @@ import {
   normalizeExtractedHtmlToPptxSlide,
   type HtmlToPptxSlide,
   type HtmlToPptxTextBox
-} from './index'
+} from '@arcsin1/html2pptx'
 import {
   FREEZE_PAGE_FOR_PPTX_SCRIPT,
   HIDE_FOR_PPTX_BACKGROUND_SCRIPT,
@@ -360,8 +360,9 @@ export const extractHtmlPageToPptxSlide = async ({
       buildHtmlToPptxExtractScript({
         pageWidthPx: PPTX_CAPTURE_WIDTH,
         pageHeightPx: PPTX_CAPTURE_HEIGHT,
-        maxShapes: 240,
-        maxImages: 40
+        maxTextBoxes: 360,
+        maxShapes: 400,
+        maxImages: 80
       }),
       true
     )

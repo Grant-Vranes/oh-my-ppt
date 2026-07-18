@@ -4,7 +4,7 @@ import path from 'path'
 import {
   buildHtmlToPptxExtractScript,
   normalizeExtractedHtmlToPptxSlide
-} from '../../../src/main/utils/html-pptx'
+} from '@arcsin1/html2pptx'
 
 describe('buildHtmlToPptxExtractScript', () => {
   const buildScript = () =>
@@ -186,13 +186,15 @@ describe('buildHtmlToPptxExtractScript', () => {
     expect(script).toContain('const shouldExportOnlyBorderLines =')
   })
 
-  it('uses enough shape budget for dense Tailwind grid panels during PPTX export', () => {
+  it('uses enough text, shape and image budget for dense PPTX export', () => {
     const rendererSource = fs.readFileSync(
       path.join(process.cwd(), 'src/main/utils/html-pptx/renderer.ts'),
       'utf-8'
     )
 
-    expect(rendererSource).toContain('maxShapes: 240')
+    expect(rendererSource).toContain('maxTextBoxes: 360')
+    expect(rendererSource).toContain('maxShapes: 400')
+    expect(rendererSource).toContain('maxImages: 80')
     expect(rendererSource).not.toContain('maxShapes: 80')
   })
 })

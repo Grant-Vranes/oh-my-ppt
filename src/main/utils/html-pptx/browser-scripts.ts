@@ -321,9 +321,9 @@ export const HIDE_TEXT_FOR_PPTX_BACKGROUND_SCRIPT = `
 })()
 `
 
-// Background capture for PPTX: keep animated elements ([data-pptx-animated] set by freeze),
-// decorative elements (blur blobs), and SVGs visible.
-// Hide text and non-animated shapes/images (which are extracted separately).
+// Background capture for PPTX keeps every visual that cannot be represented as
+// a native PPTX object. Only successfully extracted objects are removed. This
+// avoids both text ghosts on animated nodes and missing complex CSS/DOM visuals.
 export const HIDE_FOR_PPTX_BACKGROUND_SCRIPT = `
 (async () => {
   // Helper: same rgbToHex as main extraction script
@@ -378,6 +378,22 @@ export const HIDE_FOR_PPTX_BACKGROUND_SCRIPT = `
   const existing = document.getElementById('ohmyppt-pptx-hide-elements');
   if (existing) existing.remove();
 
+  // Pseudo-elements are not part of the DOM text extraction. Keep their own
+  // text paint while regular DOM text is made transparent below.
+  root.querySelectorAll('*').forEach((el) => {
+    ['before', 'after'].forEach((kind) => {
+      const pseudo = getComputedStyle(el, '::' + kind);
+      const content = String(pseudo.content || '').trim();
+      if (!content || content === 'none' || content === 'normal') return;
+      el.setAttribute('data-pptx-has-' + kind, '1');
+      el.style.setProperty('--pptx-' + kind + '-color', pseudo.color || 'transparent');
+      el.style.setProperty('--pptx-' + kind + '-text-fill', pseudo.webkitTextFillColor || pseudo.color || 'transparent');
+      el.style.setProperty('--pptx-' + kind + '-text-stroke', pseudo.webkitTextStrokeColor || 'transparent');
+      el.style.setProperty('--pptx-' + kind + '-text-shadow', pseudo.textShadow || 'none');
+      el.style.setProperty('--pptx-' + kind + '-text-decoration', pseudo.textDecorationColor || 'transparent');
+    });
+  });
+
   // 3. CSS: keep [data-pptx-animated] and SVGs visible, hide text + non-animated shapes/images
   const style = document.createElement('style');
   style.id = 'ohmyppt-pptx-hide-elements';
@@ -390,19 +406,19 @@ export const HIDE_FOR_PPTX_BACKGROUND_SCRIPT = `
     '[data-pptx-native-anim] { background-color: transparent !important; border-color: transparent !important; box-shadow: none !important; }',
     '[data-pptx-native-anim], [data-pptx-native-anim] * { color: transparent !important; -webkit-text-fill-color: transparent !important; -webkit-text-stroke-color: transparent !important; text-shadow: none !important; text-decoration-color: transparent !important; caret-color: transparent !important; }',
     '[data-pptx-native-anim] img, [data-pptx-native-anim] canvas, img[data-pptx-native-anim], canvas[data-pptx-native-anim] { opacity: 0 !important; visibility: hidden !important; }',
-    // Hide non-animated images (fallback for non-extracted decorative images)
-    'img:not([data-pptx-animated]):not([data-pptx-extracted-image]), canvas:not([data-pptx-animated]):not([data-pptx-extracted-image]) { opacity: 0 !important; visibility: hidden !important; }',
-    // Make container backgrounds transparent (catch-all for non-extracted containers)
-    'section:not([data-pptx-animated]), main:not([data-pptx-animated]), article:not([data-pptx-animated]), header:not([data-pptx-animated]), footer:not([data-pptx-animated]), aside:not([data-pptx-animated]), div:not([data-pptx-animated]), figure:not([data-pptx-animated]), figcaption:not([data-pptx-animated]), table:not([data-pptx-animated]), td:not([data-pptx-animated]), th:not([data-pptx-animated]) { background-color: transparent !important; border-color: transparent !important; }',
-    // Hide all text (extracted text + fallback for missed text, including .katex which is captured separately)
-    'body :not(canvas):not([data-pptx-animated]):not([data-pptx-extracted-image]) { color: transparent !important; -webkit-text-fill-color: transparent !important; -webkit-text-stroke-color: transparent !important; text-shadow: none !important; text-decoration-color: transparent !important; caret-color: transparent !important; }',
-    'body::before, body::after { color: transparent !important; -webkit-text-fill-color: transparent !important; -webkit-text-stroke-color: transparent !important; text-shadow: none !important; text-decoration-color: transparent !important; }',
+    // Keep unmapped images, shadows and complex containers in the raster background.
+    // Their extraction can fail because of data limits, filters or cross-origin assets.
+    // Hide regular DOM text even when its source container is animated. The
+    // source text is extracted separately, while pseudo content is retained.
+    'body *:not(canvas):not(svg):not(svg *):not([data-pptx-extracted-image]) { color: transparent !important; -webkit-text-fill-color: transparent !important; -webkit-text-stroke-color: transparent !important; text-shadow: none !important; text-decoration-color: transparent !important; caret-color: transparent !important; }',
+    '[data-pptx-has-before]::before { color: var(--pptx-before-color) !important; -webkit-text-fill-color: var(--pptx-before-text-fill) !important; -webkit-text-stroke-color: var(--pptx-before-text-stroke) !important; text-shadow: var(--pptx-before-text-shadow) !important; text-decoration-color: var(--pptx-before-text-decoration) !important; }',
+    '[data-pptx-has-after]::after { color: var(--pptx-after-color) !important; -webkit-text-fill-color: var(--pptx-after-text-fill) !important; -webkit-text-stroke-color: var(--pptx-after-text-stroke) !important; text-shadow: var(--pptx-after-text-shadow) !important; text-decoration-color: var(--pptx-after-text-decoration) !important; }',
     // Hide katex elements (captured as separate images before background capture)
     '.katex { opacity: 0 !important; visibility: hidden !important; }',
     // Hide formula blocks (captured as block-level overlay images)
     '[data-pptx-formula-block] { opacity: 0 !important; visibility: hidden !important; }',
-    // Hide SVG text (can't extract it anyway)
-    'svg text, svg tspan { fill: transparent !important; stroke: transparent !important; }',
+    // An SVG that could not be rasterized stays visible in the background.
+    'svg[data-pptx-extracted-image] text, svg[data-pptx-extracted-image] tspan { fill: transparent !important; stroke: transparent !important; }',
     // Hide input/textarea text
     'input, textarea { color: transparent !important; -webkit-text-fill-color: transparent !important; }'
   ].join('\\n');

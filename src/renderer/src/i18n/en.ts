@@ -1473,6 +1473,8 @@ Business presentations, product introductions, project summaries — formal but 
     discard: 'Discard changes',
     save: 'Save',
     export: 'Export',
+    revealFile: 'Show file',
+    revealFileFailed: 'Unable to show the current HTML file',
     preview: 'Preview in browser',
     history: 'Version history',
     historyEmpty: 'No versions yet',

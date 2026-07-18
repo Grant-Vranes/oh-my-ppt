@@ -1,6 +1,16 @@
 import { useCallback, type ReactElement } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Download, ExternalLink, History, Home, Redo2, RotateCcw, Save, Undo2 } from 'lucide-react'
+import {
+  Download,
+  ExternalLink,
+  FileSearch,
+  History,
+  Home,
+  Redo2,
+  RotateCcw,
+  Save,
+  Undo2
+} from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/Tooltip'
 import { useT } from '../../i18n'
 import { ipc } from '../../lib/ipc'
@@ -50,6 +60,12 @@ export function HtmlEditorToolbar({ onOpenHistory }: { onOpenHistory: () => void
     await ipc.openHtmlInBrowser({ docId })
   }, [docId])
 
+  const handleRevealFile = useCallback(async (): Promise<void> => {
+    if (!docId) return
+    const result = await ipc.revealHtmlFile({ docId })
+    if (!result.ok) useToastStore.getState().error(t('htmlEditor.revealFileFailed'))
+  }, [docId, t])
+
   const handleUndo = useCallback((): void => {
     useHtmlEditStore.getState().undo()
   }, [])
@@ -88,6 +104,7 @@ export function HtmlEditorToolbar({ onOpenHistory }: { onOpenHistory: () => void
           type="button"
           onClick={onClick}
           disabled={disabled}
+          aria-label={label}
           className={`${iconBtnClass} ${danger ? 'text-[#8e5a53] hover:bg-[#f3e6e2]' : ''}`}
         >
           <Icon className="h-4 w-4" />
@@ -142,12 +159,18 @@ export function HtmlEditorToolbar({ onOpenHistory }: { onOpenHistory: () => void
 
         <span className="mx-0.5 h-4 w-px bg-[#e2dccf]" />
 
-        {/* 导出 / 预览 / 版本历史（一组） */}
+        {/* 导出 / 查看文件 / 预览 / 版本历史（一组） */}
         {tipBtn(
           Download,
           t('htmlEditor.export'),
           () => void handleExport(),
           exporting || isSavingEdits
+        )}
+        {tipBtn(
+          FileSearch,
+          t('htmlEditor.revealFile'),
+          () => void handleRevealFile(),
+          !docId || isSavingEdits
         )}
         {tipBtn(
           ExternalLink,

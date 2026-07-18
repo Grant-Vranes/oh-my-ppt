@@ -698,6 +698,8 @@ export const ipc = {
     getIpc().invoke('html-editor:cleanup', payload) as Promise<{ ok: boolean }>,
   openHtmlInBrowser: (payload: { docId: string }) =>
     getIpc().invoke('html-editor:openInBrowser', payload) as Promise<{ ok: boolean }>,
+  revealHtmlFile: (payload: { docId: string }) =>
+    getIpc().invoke('html-editor:revealFile', payload) as Promise<{ ok: boolean }>,
   listHtmlVersions: (payload: { docId: string }) =>
     getIpc().invoke('html-editor:listVersions', payload) as Promise<{
       versions: Array<{ id: string; commitSha: string; message: string; createdAt: number }>

@@ -597,6 +597,25 @@ export function registerHtmlEditorHandlers(ctx: IpcContext): void {
     }
   })
 
+  // ─── html-editor:revealFile ─────────────────────────────
+  ipcMain.handle('html-editor:revealFile', async (_event, payload: unknown) => {
+    const r = asRecord(payload)
+    const docId = typeof r.docId === 'string' ? r.docId.trim() : ''
+    if (!docId) return { ok: false }
+    try {
+      const document = await resolveDocument(docId)
+      await fs.promises.access(document.htmlPath, fs.constants.R_OK)
+      shell.showItemInFolder(document.htmlPath)
+      return { ok: true }
+    } catch (error) {
+      log.warn('[html-editor:revealFile] failed', {
+        docId,
+        message: error instanceof Error ? error.message : String(error)
+      })
+      return { ok: false }
+    }
+  })
+
   // ─── html-editor:listDocuments ─────────────────────────
   ipcMain.handle('html-editor:listDocuments', async () => {
     const docs = await db.listHtmlEditDocuments()

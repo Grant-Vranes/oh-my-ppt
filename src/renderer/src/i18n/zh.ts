@@ -1405,6 +1405,8 @@ export const zh = {
     discard: '丢弃改动',
     save: '保存',
     export: '导出',
+    revealFile: '查看文件',
+    revealFileFailed: '无法查看当前 HTML 文件',
     preview: '浏览器预览',
     history: '版本历史',
     historyEmpty: '暂无版本',

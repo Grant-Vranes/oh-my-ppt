@@ -10,7 +10,7 @@ import { HtmlEditorInsertRibbon } from '../components/html-editor/HtmlEditorInse
 import { HtmlEditorHistoryDialog } from '../components/html-editor/HtmlEditorHistoryDialog'
 import { HtmlEditorToolbar } from '../components/html-editor/HtmlEditorToolbar'
 import { HtmlEditorAiPanel } from '../components/html-editor/HtmlEditorAiPanel'
-import { ElementInspectorPanel } from '../components/session-detail/element-inspector/ElementInspectorPanel'
+import { HtmlEditorInspectorPanel } from '../components/html-editor/HtmlEditorInspectorPanel'
 import { TooltipProvider } from '../components/ui/Tooltip'
 import { useHtmlElementInsertion } from '../components/html-editor/useHtmlElementInsertion'
 import { useHtmlEditorStore } from '../store/htmlEditorStore'
@@ -22,7 +22,7 @@ import { useHtmlEditorAiStore } from '../store/htmlEditorAiStore'
 /**
  * 独立 HTML 编辑器页面（/edit-html）。与 session-edit 完全解耦：
  * 内存编辑（零 DB / 零 git），工作文件落 <storage>/html-editor/。
- * 组合自有 HtmlEditorCanvas（document 模式）+ HtmlEditorGuidesOverlay + 复用的 ElementInspectorPanel。
+ * 组合自有 HtmlEditorCanvas（document 模式）+ HtmlEditorGuidesOverlay + HTML 专用检视面板。
  */
 export function EditHtmlPage(): ReactElement {
   const t = useT()
@@ -242,7 +242,7 @@ export function EditHtmlPage(): ReactElement {
                 </button>
               </div>
               <div className="min-h-0 flex-1 overflow-y-auto">
-                <ElementInspectorPanel
+                <HtmlEditorInspectorPanel
                   selection={selection}
                   draft={draft}
                   onDraftChange={(d, options) =>

@@ -86,4 +86,5 @@ describe('chat send utils', () => {
       })
     ).toEqual({ ready: false })
   })
+
 })

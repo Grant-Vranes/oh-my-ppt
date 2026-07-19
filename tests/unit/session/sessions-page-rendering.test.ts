@@ -14,6 +14,8 @@ const state = vi.hoisted(() => ({
   importSessionFile: vi.fn(async () => ({ cancelled: true })),
   createTemplateFromSession: vi.fn(async () => 'template-1'),
   listActiveGenerateRuns: vi.fn(async () => []),
+  listActivePageEditRuns: vi.fn(async () => []),
+  listActiveDeckEditRuns: vi.fn(async () => []),
   onGenerateChunk: vi.fn(() => () => undefined),
   onHtmlThumbnailChanged: vi.fn(() => () => undefined)
 }))
@@ -74,6 +76,8 @@ vi.mock('../../../src/renderer/src/store', () => ({
 vi.mock('@renderer/lib/ipc', () => ({
   ipc: {
     listActiveGenerateRuns: state.listActiveGenerateRuns,
+    listActivePageEditRuns: state.listActivePageEditRuns,
+    listActiveDeckEditRuns: state.listActiveDeckEditRuns,
     onGenerateChunk: state.onGenerateChunk,
     onHtmlThumbnailChanged: state.onHtmlThumbnailChanged
   }

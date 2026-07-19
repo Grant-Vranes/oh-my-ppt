@@ -30,6 +30,9 @@ import { registerImageGenerationHandlers } from './image-generation/image-genera
 import { registerImageGenerationHistoryHandlers } from './image-generation/image-generation-history-handlers'
 import { registerHtmlEditorHandlers } from './html-editor/html-editor-handlers'
 import { registerHtmlEditorAiHandlers } from './html-editor/html-editor-ai-handlers'
+import { SessionJobCoordinator } from './edit-jobs/session-job-coordinator'
+import { registerDeckEditJobHandlers } from './edit-jobs/deck-edit-job-service'
+import { registerPageEditJobHandlers } from './edit-jobs/page-edit-job-service'
 
 export { registerLocalAssetProtocol }
 
@@ -39,6 +42,7 @@ export function setupIPC(
   agentManager: AgentManager
 ): void {
   const context = createIpcContext(mainWindow, db, agentManager)
+  const sessionJobCoordinator = new SessionJobCoordinator(context)
 
   registerSessionHandlers(context)
   registerSessionSaveAsNewHandler(context)
@@ -47,7 +51,9 @@ export function setupIPC(
   registerPageMergeHandlers(context)
   registerAssetHandlers(context)
   registerThumbnailHandlers(context)
-  registerGenerationHandlers(context)
+  const pageEditJobs = registerPageEditJobHandlers(context, sessionJobCoordinator)
+  const deckEditJobs = registerDeckEditJobHandlers(context, sessionJobCoordinator)
+  registerGenerationHandlers(context, sessionJobCoordinator, pageEditJobs, deckEditJobs)
   registerExportHandlers(context)
   registerStyleHandlers(context)
   registerStylePreviewHandlers(context)

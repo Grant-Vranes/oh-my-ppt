@@ -29,8 +29,10 @@ export type SessionRunState = {
   sessionId: string
   runId: string
   mode: 'generate' | 'edit' | 'retry' | 'addPage' | 'retrySinglePage'
-  kind?: 'standard' | 'template' | 'retry'
-  activityKind?: 'edit' | 'style-switch' | 'single-page-retry' | 'addPage'
+  kind?: 'standard' | 'template' | 'retry' | 'edit' | 'page-edit' | 'deck-edit'
+  activityKind?: 'page-edit' | 'deck-edit' | 'edit' | 'style-switch' | 'single-page-retry' | 'addPage'
+  targetPageId?: string
+  targetPageNumber?: number
   previousSessionStatus?: string
   status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'
   progress: number
@@ -84,8 +86,10 @@ export interface IpcContext {
     sessionId: string
     runId: string
     mode: 'generate' | 'edit' | 'retry' | 'addPage' | 'retrySinglePage'
-    kind?: 'standard' | 'template' | 'retry'
-    activityKind?: 'edit' | 'style-switch' | 'single-page-retry' | 'addPage'
+    kind?: 'standard' | 'template' | 'retry' | 'edit' | 'page-edit' | 'deck-edit'
+    activityKind?: 'page-edit' | 'deck-edit' | 'edit' | 'style-switch' | 'single-page-retry' | 'addPage'
+    targetPageId?: string
+    targetPageNumber?: number
     totalPages: number
     previousSessionStatus?: string
     status?: 'queued' | 'running'
@@ -404,8 +408,10 @@ export function createIpcContext(
     sessionId: string
     runId: string
     mode: 'generate' | 'edit' | 'retry' | 'addPage' | 'retrySinglePage'
-    kind?: 'standard' | 'template' | 'retry'
-    activityKind?: 'edit' | 'style-switch' | 'single-page-retry' | 'addPage'
+    kind?: 'standard' | 'template' | 'retry' | 'edit' | 'page-edit' | 'deck-edit'
+    activityKind?: 'page-edit' | 'deck-edit' | 'edit' | 'style-switch' | 'single-page-retry' | 'addPage'
+    targetPageId?: string
+    targetPageNumber?: number
     totalPages: number
     previousSessionStatus?: string
     status?: 'queued' | 'running'
@@ -420,6 +426,8 @@ export function createIpcContext(
       mode: args.mode,
       kind: args.kind,
       activityKind: args.activityKind,
+      targetPageId: args.targetPageId,
+      targetPageNumber: args.targetPageNumber,
       previousSessionStatus: args.previousSessionStatus,
       status: args.status || 'running',
       progress: 0,

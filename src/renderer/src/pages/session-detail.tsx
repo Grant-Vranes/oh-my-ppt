@@ -26,6 +26,8 @@ import {
 import {
   buildImageMessageCacheKey,
   imageHistoryToMessages,
+  isDeckEditGenerationEvent,
+  isPageEditGenerationEvent,
   mergeImageMessages,
   normalizePagesForSelection,
   type ChatType
@@ -116,6 +118,8 @@ export function SessionDetailPage(): React.JSX.Element {
   const setAssetPickerOpen = useSessionDetailUiStore((state) => state.setAssetPickerOpen)
   const workspaceTab = useSessionDetailUiStore((state) => state.workspaceTab)
   const activeChatRef = useRef<{ chatType: ChatType; pageId?: string }>({ chatType: 'page' })
+  const pageEditStateEpochRef = useRef(0)
+  const deckEditStateEpochRef = useRef(0)
   const editHistory = useEditHistoryStore()
   const isSavingEdits = useEditSessionStore((state) => state.isSavingEdits)
   const elementSelection = useEditSessionStore((state) => state.selection)
@@ -260,6 +264,84 @@ export function SessionDetailPage(): React.JSX.Element {
   }, [id])
 
   useEffect(() => {
+    if (!id) return
+    let disposed = false
+    const requestEpoch = deckEditStateEpochRef.current
+    void ipc
+      .getDeckEditState(id)
+      .then((state) => {
+        if (
+          disposed ||
+          requestEpoch !== deckEditStateEpochRef.current ||
+          state.kind !== 'deck-edit'
+        )
+          return
+        const generateState = useGenerateStore.getState()
+        if (state.hasActiveRun) {
+          if (generateState.deckEditJobs[id]) return
+          generateState.startDeckEdit(id, {
+            totalPages: state.totalPages,
+            payload: state.retryPayload
+          })
+          generateState.updateDeckEdit(id, {
+            runId: state.runId || undefined,
+            status: state.status === 'queued' ? 'queued' : 'running',
+            progress: state.progress
+          })
+          return
+        }
+        if (
+          state.runId &&
+          state.retryPayload &&
+          Math.max(0, Number(state.failedPageCount) || 0) > 0
+        ) {
+          generateState.finishDeckEdit(id, {
+            runId: state.runId,
+            failedPageCount: Math.max(1, Number(state.failedPageCount) || 1),
+            payload: state.retryPayload
+          })
+        }
+      })
+      .catch(() => {})
+    return () => {
+      disposed = true
+    }
+  }, [id])
+
+  useEffect(() => {
+    if (!id) return
+    let disposed = false
+    const requestEpoch = pageEditStateEpochRef.current
+    void ipc
+      .getPageEditState(id)
+      .then((state) => {
+        if (
+          disposed ||
+          requestEpoch !== pageEditStateEpochRef.current ||
+          !state.hasActiveRun ||
+          state.kind !== 'page-edit' ||
+          !state.targetPageId
+        )
+          return
+        const generateState = useGenerateStore.getState()
+        if (generateState.pageEditJobs[id]) return
+        generateState.startPageEdit(id, {
+          pageId: state.targetPageId,
+          pageNumber: state.targetPageNumber
+        })
+        generateState.updatePageEdit(id, {
+          runId: state.runId || undefined,
+          status: state.status === 'queued' ? 'queued' : 'running',
+          progress: state.progress
+        })
+      })
+      .catch(() => {})
+    return () => {
+      disposed = true
+    }
+  }, [id])
+
+  useEffect(() => {
     // Skip auto-select during addPage / retrySinglePage — selection managed explicitly
     if (
       useSessionDetailUiStore.getState().isAddingPage ||
@@ -355,21 +437,53 @@ export function SessionDetailPage(): React.JSX.Element {
     const handler = (event: GenerateChunkEvent): void => {
       const { type, payload } = event
       if (payload.sessionId && payload.sessionId !== id) return
+      const activePageEditJob = useGenerateStore.getState().pageEditJobs[id] || null
+      const activeDeckEditJob = useGenerateStore.getState().deckEditJobs[id] || null
+      const isPageEdit = isPageEditGenerationEvent(payload, activePageEditJob)
+      const isDeckEdit = isDeckEditGenerationEvent(payload, activeDeckEditJob)
       if (
         type === 'stage_started' ||
         type === 'stage_progress' ||
         type === 'page_generated' ||
         type === 'llm_status'
       ) {
-        // 不清空 currentPages，保持预览可见
-        useGenerateStore.setState({ isGenerating: true, error: null, status: 'running' })
-        updateProgress({
-          stage: payload.stage,
-          label: payload.label,
-          progress: payload.progress ?? 0,
-          currentPage: payload.currentPage,
-          totalPages: payload.totalPages
-        })
+        if (isPageEdit) {
+          useGenerateStore.getState().updatePageEdit(id, {
+            runId: payload.runId,
+            status:
+              activePageEditJob?.status === 'cancelling'
+                ? 'cancelling'
+                : payload.stage === 'queued'
+                  ? 'queued'
+                  : 'running',
+            label: payload.label,
+            progress: payload.progress ?? 0
+          })
+        } else if (isDeckEdit) {
+          useGenerateStore.getState().updateDeckEdit(id, {
+            runId: payload.runId,
+            status:
+              activeDeckEditJob?.status === 'cancelling'
+                ? 'cancelling'
+                : payload.stage === 'queued'
+                  ? 'queued'
+                  : 'running',
+            label: payload.label,
+            progress: payload.progress ?? 0,
+            totalPages: payload.totalPages
+          })
+        } else {
+          // 不清空 currentPages，保持预览可见
+          useGenerateStore.getState().clearSessionError(id)
+          useGenerateStore.setState({ isGenerating: true, error: null, status: 'running' })
+          updateProgress({
+            stage: payload.stage,
+            label: payload.label,
+            progress: payload.progress ?? 0,
+            currentPage: payload.currentPage,
+            totalPages: payload.totalPages
+          })
+        }
         if (type === 'page_generated') {
           // Skip page_generated during addPage — pages will be reloaded on run_completed
           if (useSessionDetailUiStore.getState().isAddingPage) {
@@ -414,7 +528,25 @@ export function SessionDetailPage(): React.JSX.Element {
           useSessionDetailUiStore.getState().bumpPreviewKey()
         }
       } else if (type === 'page_updated') {
-        useGenerateStore.setState({ isGenerating: true, error: null, status: 'running' })
+        if (isPageEdit) {
+          useGenerateStore.getState().updatePageEdit(id, {
+            runId: payload.runId,
+            status: activePageEditJob?.status === 'cancelling' ? 'cancelling' : 'running',
+            label: payload.label,
+            progress: payload.progress ?? 0
+          })
+        } else if (isDeckEdit) {
+          useGenerateStore.getState().updateDeckEdit(id, {
+            runId: payload.runId,
+            status: activeDeckEditJob?.status === 'cancelling' ? 'cancelling' : 'running',
+            label: payload.label,
+            progress: payload.progress ?? 0,
+            totalPages: payload.totalPages
+          })
+        } else {
+          useGenerateStore.getState().clearSessionError(id)
+          useGenerateStore.setState({ isGenerating: true, error: null, status: 'running' })
+        }
         const store = useGenerateStore.getState()
         const existingPage = store.currentPages.find((page) =>
           payload.id
@@ -437,7 +569,7 @@ export function SessionDetailPage(): React.JSX.Element {
           status: 'completed',
           error: null
         })
-        if (payload.focusPage !== false) {
+        if (!isPageEdit && !isDeckEdit && payload.focusPage !== false) {
           useSessionDetailUiStore.getState().setSelectedPageId(entityId)
         }
         useSessionDetailUiStore.getState().bumpPreviewKey()
@@ -466,15 +598,56 @@ export function SessionDetailPage(): React.JSX.Element {
           created_at: Number.isFinite(createdAt) ? createdAt : Math.floor(Date.now() / 1000)
         })
       } else if (type === 'run_completed') {
-        if (!useSessionDetailUiStore.getState().isAddingPage) {
+        if (isPageEdit) {
+          pageEditStateEpochRef.current += 1
+          useGenerateStore.getState().finishPageEdit(id)
+        } else if (isDeckEdit) {
+          deckEditStateEpochRef.current += 1
+          const retryPayload = activeDeckEditJob?.payload
+          const failedPageCount = Math.max(0, Number(payload.failedPageCount) || 0)
+          useGenerateStore
+            .getState()
+            .finishDeckEdit(
+              id,
+              retryPayload && failedPageCount > 0
+                ? { runId: payload.runId, failedPageCount, payload: retryPayload }
+                : undefined
+            )
+          void loadSession(id)
+        } else if (!useSessionDetailUiStore.getState().isAddingPage) {
           useGenerateStore.getState().finishGeneration()
         }
       } else if (type === 'run_error') {
-        if (!useSessionDetailUiStore.getState().isAddingPage) {
+        if (isPageEdit) {
+          pageEditStateEpochRef.current += 1
+          useGenerateStore.getState().finishPageEdit(id)
+          if (!payload.cancelled) {
+            useGenerateStore.getState().setSessionError(id, payload.message)
+          }
+          void loadSession(id)
+        } else if (isDeckEdit) {
+          deckEditStateEpochRef.current += 1
+          const retryPayload = activeDeckEditJob?.payload
+          const failedPageCount = Math.max(0, Number(payload.failedPageCount) || 0)
+          const retryPageCount = failedPageCount || activeDeckEditJob?.totalPages || 1
+          useGenerateStore
+            .getState()
+            .finishDeckEdit(
+              id,
+              !payload.cancelled && retryPayload
+                ? { runId: payload.runId, failedPageCount: retryPageCount, payload: retryPayload }
+                : undefined
+            )
+          if (!payload.cancelled) {
+            useGenerateStore.getState().setSessionError(id, payload.message)
+          }
+          void loadSession(id)
+        } else if (!useSessionDetailUiStore.getState().isAddingPage) {
           if (payload.cancelled) {
             useGenerateStore.getState().cancelGeneration(payload.message)
           } else {
-            useGenerateStore.getState().setError(payload.message)
+            useGenerateStore.getState().setSessionError(id, payload.message)
+            useGenerateStore.setState({ status: 'failed', isGenerating: false, progress: null })
           }
           void loadSession(id)
         }

@@ -288,12 +288,14 @@ export function BrowseView(props: { sessionId: string }): React.JSX.Element {
   const slideSize = trySessionSlideSize(currentSession)
   const canExportPptx = slideSize ? isDefaultSlideSize(slideSize) : false
   const isGenerating = useGenerateStore((state) => state.isGenerating)
+  const isDeckEditing = useGenerateStore((state) => Boolean(state.deckEditJobs[sessionId]))
   const previewKey = useSessionDetailUiStore((state) => state.previewKey)
   const thumbnailVersions = useSessionDetailUiStore((state) => state.thumbnailVersions)
   const isAddingPage = useSessionDetailUiStore((state) => state.isAddingPage)
   const isRetryingSinglePage = useSessionDetailUiStore((state) => state.isRetryingSinglePage)
   const isManagingPages = useSessionDetailUiStore((state) => state.isManagingPages)
-  const disabled = isGenerating || isAddingPage || isRetryingSinglePage || isManagingPages
+  const disabled =
+    isGenerating || isDeckEditing || isAddingPage || isRetryingSinglePage || isManagingPages
   const { reorder: reorderSessionPages } = useSessionReorderPages(sessionId)
   const pageActions = useSessionPageActions(sessionId)
 

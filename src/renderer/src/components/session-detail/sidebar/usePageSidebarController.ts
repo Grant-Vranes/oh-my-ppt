@@ -20,6 +20,8 @@ export function usePageSidebarController(sessionId: string) {
   const { reorder: reorderSessionPages } = useSessionReorderPages(sessionId)
   const currentPages = useGenerateStore((state) => state.currentPages)
   const isGenerating = useGenerateStore((state) => state.isGenerating)
+  const pageEditJob = useGenerateStore((state) => state.pageEditJobs[sessionId] || null)
+  const deckEditJob = useGenerateStore((state) => state.deckEditJobs[sessionId] || null)
   const selectedPageId = useSessionDetailUiStore((state) => state.selectedPageId)
   const interactionMode = useSessionDetailUiStore((state) => state.interactionMode)
   const isAddingPage = useSessionDetailUiStore((state) => state.isAddingPage)
@@ -101,8 +103,14 @@ export function usePageSidebarController(sessionId: string) {
 
   return {
     pages,
-    disabled: interactionMode === 'ai-inspect' && isGenerating,
-    pageManagementDisabled: isGenerating || isAddingPage || isRetryingSinglePage || isManagingPages,
+    disabled: (interactionMode === 'ai-inspect' && isGenerating) || Boolean(deckEditJob),
+    pageManagementDisabled:
+      isGenerating ||
+      Boolean(pageEditJob) ||
+      Boolean(deckEditJob) ||
+      isAddingPage ||
+      isRetryingSinglePage ||
+      isManagingPages,
     collapsed: sidebarCollapsed,
     onAddBlankPage: () => openBlankPageDialog(selectedPage?.id || pages[0]?.id || ''),
     onAddPage: () => setAddPageDialogOpen(true),

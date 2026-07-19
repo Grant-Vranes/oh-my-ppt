@@ -286,6 +286,18 @@ export const PageSidebar = memo(function PageSidebar({
     }
   }
 
+  const handleDiscardAndSwitch = (): void => {
+    const targetPageId = pendingSwitchPageId
+    if (!targetPageId || savingBeforeSwitch) return
+    useEditSessionStore.getState().discardAll()
+    if (selectedPage?.pageId && useEditHistoryStore.getState().hasPendingEdits(selectedPage.pageId)) {
+      useEditHistoryStore.getState().clearPage(selectedPage.pageId)
+    }
+    setSelectedPageId(targetPageId)
+    setWorkspaceTab('preview')
+    setPendingSwitchPageId(null)
+  }
+
   const handleCopyOutline = async (
     page: SessionPreviewPage,
     outlineText: string
@@ -883,7 +895,16 @@ export const PageSidebar = memo(function PageSidebar({
             })}
           </AlertDialogDescription>
           <div className="flex justify-end gap-2">
-            <AlertDialogCancel disabled={savingBeforeSwitch}>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={savingBeforeSwitch}
+              className="border border-[#d7cbb7]/80 bg-[#fffdf8]/92 text-[#657058] hover:bg-[#f5efe4] disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={(event) => {
+                event.preventDefault()
+                handleDiscardAndSwitch()
+              }}
+            >
+              {t('common.dontSave')}
+            </AlertDialogAction>
             <AlertDialogAction
               disabled={savingBeforeSwitch}
               className="bg-[#5d6b4d] text-white hover:bg-[#4d5a40] disabled:cursor-not-allowed disabled:opacity-60"
@@ -897,6 +918,7 @@ export const PageSidebar = memo(function PageSidebar({
               ) : null}
               {t('sessionDetail.pageSwitchSaveConfirmAction')}
             </AlertDialogAction>
+            <AlertDialogCancel disabled={savingBeforeSwitch}>{t('common.cancel')}</AlertDialogCancel>
           </div>
         </AlertDialogContent>
       </AlertDialog>

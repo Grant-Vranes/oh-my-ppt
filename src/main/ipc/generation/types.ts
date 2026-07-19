@@ -81,6 +81,7 @@ export type EditContext = GenerationContext & {
   resetVisualStyle?: boolean
   designContract?: DesignContract
   onDeckEditStarted?: () => void
+  skipGenerationRunCreation?: boolean
 }
 export type RetryContext = GenerationContext & { effectiveMode: 'retry' }
 

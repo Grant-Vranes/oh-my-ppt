@@ -14,8 +14,15 @@ import {
   WAIT_FOR_PPTX_CAPTURE_FRAME_SCRIPT,
   MARK_KATEX_BLOCKS_SCRIPT,
   COLLECT_KATEX_BLOCK_RECTS_SCRIPT,
-  COLLECT_PPTX_ANIMATION_TRACES_SCRIPT
+  HAS_DECLARED_PPTX_ANIMATION_SCRIPT,
+  buildMarkPptxExtractedTextForBackgroundScript
 } from './browser-scripts'
+import {
+  isPptxStaticBackgroundShape,
+  PPTX_SLIDE_HEIGHT_IN,
+  PPTX_SLIDE_WIDTH_IN
+} from './static-background'
+import { buildExtractionReportWarning } from './extraction-report'
 
 export interface HtmlPageForPptx {
   htmlPath: string
@@ -27,6 +34,7 @@ export interface HtmlPageToPptxSlideOptions {
   page: HtmlPageForPptx
   timeoutMs: number
   settleMs: number
+  animationMode?: 'static' | 'slide-transition'
   waitForPrintReadySignal: (args: {
     win: BrowserWindow
     pageId: string
@@ -41,8 +49,6 @@ export interface HtmlPageToPptxSlideResult {
 
 const PPTX_CAPTURE_WIDTH = 1600
 const PPTX_CAPTURE_HEIGHT = 900
-const PPTX_SLIDE_WIDTH_IN = 13.333
-const PPTX_SLIDE_HEIGHT_IN = 7.5
 const PPTX_BACKGROUND_CAPTURE_ATTEMPTS = 3
 const TEXT_RESIDUE_MAX_BOXES = 24
 const TEXT_RESIDUE_GRID_COLUMNS = 18
@@ -159,13 +165,17 @@ const capturePptxBackgroundWithRetry = async (
   win: BrowserWindow,
   pageId: string,
   texts: HtmlToPptxTextBox[],
-  hideScript?: string
+  hideScript?: string,
+  textMaskScript?: string
 ): Promise<{ image: NativeImage; warning?: string }> => {
   let lastImage: NativeImage | null = null
   let lastCheck: ReturnType<typeof hasTextResidueInCapture> | null = null
   const script = hideScript || HIDE_FOR_PPTX_BACKGROUND_SCRIPT
 
   for (let attempt = 1; attempt <= PPTX_BACKGROUND_CAPTURE_ATTEMPTS; attempt += 1) {
+    if (textMaskScript) {
+      await win.webContents.executeJavaScript(textMaskScript, true)
+    }
     await win.webContents.executeJavaScript(script, true)
     await win.webContents.executeJavaScript(WAIT_FOR_PPTX_CAPTURE_FRAME_SCRIPT, true)
     await sleep(process.platform === 'win32' ? 180 : 80)
@@ -340,6 +350,7 @@ export const extractHtmlPageToPptxSlide = async ({
   page,
   timeoutMs,
   settleMs,
+  animationMode = 'slide-transition',
   waitForPrintReadySignal
 }: HtmlPageToPptxSlideOptions): Promise<HtmlPageToPptxSlideResult> => {
   const win = createPptxBrowserWindow()
@@ -362,26 +373,30 @@ export const extractHtmlPageToPptxSlide = async ({
         pageHeightPx: PPTX_CAPTURE_HEIGHT,
         maxTextBoxes: 360,
         maxShapes: 400,
-        maxImages: 80
+        maxImages: 80,
+        unsupportedTransformStrategy: 'raster-fallback'
       }),
       true
     )
 
     const slide = normalizeExtractedHtmlToPptxSlide(extracted, page.title)
 
-    try {
-      const traces = await win.webContents.executeJavaScript(
-        COLLECT_PPTX_ANIMATION_TRACES_SCRIPT,
+    // Keep large edge-anchored fills in the screenshot base. They are visual
+    // structure, not useful editable objects, and their size causes overlap-
+    // based animation matching to capture unrelated animated text.
+    if (slide.shapes?.length) {
+      slide.shapes = slide.shapes.filter((shape) => !isPptxStaticBackgroundShape(shape))
+    }
+
+    if (animationMode === 'slide-transition') {
+      const hasDeclaredAnimation = await win.webContents.executeJavaScript(
+        HAS_DECLARED_PPTX_ANIMATION_SCRIPT,
         true
       )
-      if (Array.isArray(traces) && traces.length > 0) {
-        slide.animationTraces = traces
+      if (hasDeclaredAnimation) {
+        slide.transitionType = 'fade'
+        slide.transitionDurationMs = 350
       }
-    } catch (error) {
-      log.warn('[export:pptx] animation trace collection failed', {
-        pageId: page.pageId,
-        error: error instanceof Error ? error.message : String(error)
-      })
     }
 
     // Reset page fit scale BEFORE background capture for full resolution,
@@ -416,7 +431,13 @@ export const extractHtmlPageToPptxSlide = async ({
 
     // Background capture: keep decorative elements (blur blobs, glass-morphism) visible,
     // hide text and non-decorative shapes/images (which are extracted separately).
-    const backgroundCapture = await capturePptxBackgroundWithRetry(win, page.pageId, slide.texts, HIDE_FOR_PPTX_BACKGROUND_SCRIPT)
+    const backgroundCapture = await capturePptxBackgroundWithRetry(
+      win,
+      page.pageId,
+      slide.texts,
+      HIDE_FOR_PPTX_BACKGROUND_SCRIPT,
+      buildMarkPptxExtractedTextForBackgroundScript(slide.texts)
+    )
     const backgroundPng = backgroundCapture.image.toPNG()
     slide.backgroundImage = {
       dataUri: `data:image/png;base64,${backgroundPng.toString('base64')}`,
@@ -434,7 +455,8 @@ export const extractHtmlPageToPptxSlide = async ({
         readyResult.timedOut
           ? `页面 ${page.pageId} 未收到打印就绪信号，已按当前状态导出`
           : '',
-        backgroundCapture.warning || ''
+        backgroundCapture.warning || '',
+        buildExtractionReportWarning(page.pageId, slide.extractionReport) || ''
       ]
         .filter(Boolean)
         .join('；')

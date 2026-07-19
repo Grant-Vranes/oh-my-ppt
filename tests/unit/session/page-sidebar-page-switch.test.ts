@@ -154,4 +154,40 @@ describe('PageSidebar page switching', () => {
       await cleanupRoot(root, container)
     }
   })
+
+  it('clears unsaved history before switching when the user chooses not to save', async () => {
+    const discardAll = vi.fn(() => useEditHistoryStore.getState().clearPage('page-1'))
+    const originalDiscardAll = useEditSessionStore.getState().discardAll
+    useEditSessionStore.setState({ discardAll })
+    const { container, root } = await renderSidebar()
+
+    try {
+      await act(async () => {
+        useEditHistoryStore.getState().upsertTextEdit({
+          pageId: 'page-1',
+          htmlPath: '/tmp/page-1.html',
+          selector: '[data-block-id="title"]',
+          patch: { text: 'Updated title', style: {} }
+        })
+      })
+      await act(async () => {
+        container.querySelector<HTMLButtonElement>('[data-testid="page-thumbnail-page-2"]')?.click()
+      })
+      await act(async () => {
+        Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(
+          (button) => button.textContent === 'common.dontSave'
+        )?.click()
+      })
+
+      expect(discardAll).toHaveBeenCalledOnce()
+      expect(useEditHistoryStore.getState().hasPendingEdits('page-1')).toBe(false)
+      expect(useSessionDetailUiStore.getState()).toMatchObject({
+        selectedPageId: 'page-2',
+        workspaceTab: 'preview'
+      })
+    } finally {
+      useEditSessionStore.setState({ discardAll: originalDiscardAll })
+      await cleanupRoot(root, container)
+    }
+  })
 })

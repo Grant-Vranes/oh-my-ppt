@@ -7,7 +7,7 @@ import {
   executeTemplateDeckGeneration,
   resolveTemplateDeckContext
 } from '../generation/template-deck-flow'
-import { executeEditGeneration, resolveEditContext } from '../generation/edit-flow'
+import { resolveEditContext } from '../generation/edit-flow'
 import { executeDeckAllPageEditGeneration } from '../generation/edit-deck-allpage-flow'
 import { DeckEditIndexMutationError } from '../generation/edit-deck-batch-flow'
 import { executeRetryFailedPages, resolveRetryContext } from '../generation/retry-flow'
@@ -22,8 +22,16 @@ import {
 } from '../generation/style-switch'
 import { buildDesignContractWithLLM } from './generate'
 import { GitHistoryService } from '../../history/git-history-service'
+import { SessionJobCoordinator } from '../edit-jobs/session-job-coordinator'
+import type { DeckEditJobService } from '../edit-jobs/deck-edit-job-service'
+import type { PageEditJobService } from '../edit-jobs/page-edit-job-service'
 
-export function registerGenerationHandlers(ctx: IpcContext): void {
+export function registerGenerationHandlers(
+  ctx: IpcContext,
+  coordinator?: SessionJobCoordinator,
+  pageEditJobs?: PageEditJobService,
+  deckEditJobs?: DeckEditJobService
+): void {
   const {
     db,
     agentManager,
@@ -33,7 +41,7 @@ export function registerGenerationHandlers(ctx: IpcContext): void {
     emitGenerateChunk
   } = ctx
   const emitAssistant = createEmitAssistantMessage(db, emitGenerateChunk)
-  const jobManager = new GenerateJobManager(ctx)
+  const jobManager = new GenerateJobManager(ctx, coordinator)
   const interruptedJobsReady = jobManager.abortInterruptedJobs('应用退出导致生成中断，可继续生成').catch((error) => {
     log.warn('[generate:job] failed to abort interrupted jobs', {
       message: error instanceof Error ? error.message : String(error)
@@ -96,11 +104,13 @@ export function registerGenerationHandlers(ctx: IpcContext): void {
         error: activeState.error,
         startedAt: activeState.startedAt,
         updatedAt: activeState.updatedAt,
-        kind: activeState.kind
+        kind: activeState.kind,
+        targetPageId: activeState.targetPageId,
+        targetPageNumber: activeState.targetPageNumber
       }
     }
 
-    const latestJob = await db.getLatestGenerationJob(sessionId)
+    const latestJob = await db.getLatestSessionJob(sessionId, ['standard', 'template', 'retry'])
     if (latestJob) {
       const generationRun = await db.getGenerationRun(latestJob.id)
       const session = await db.getSession(sessionId)
@@ -162,7 +172,7 @@ export function registerGenerationHandlers(ctx: IpcContext): void {
   ipcMain.handle('generate:listActive', async () => {
     await interruptedJobsReady
     pruneFinishedSessionRunStates()
-    const jobs = await db.listActiveGenerationJobs()
+    const jobs = await db.listActiveSessionJobs(['standard', 'template', 'retry'])
     return jobs.flatMap((job) => {
       const state = sessionRunStates.get(job.session_id)
       if (
@@ -186,7 +196,9 @@ export function registerGenerationHandlers(ctx: IpcContext): void {
         error: state?.error ?? null,
         startedAt: state?.startedAt ?? (job.activated_at || job.created_at) * 1000,
         updatedAt: state?.updatedAt ?? job.updated_at * 1000,
-        kind: job.kind
+        kind: job.kind,
+        targetPageId: state?.targetPageId,
+        targetPageNumber: state?.targetPageNumber
       }]
     })
   })
@@ -221,45 +233,28 @@ export function registerGenerationHandlers(ctx: IpcContext): void {
         (payload as { chatType?: unknown }).chatType === 'main'
           ? 'main'
           : 'page'
-      const isDeckAllPageEdit = requestedType === 'page' && requestedChatType === 'main'
-      context =
-        requestedType === 'page'
-          ? await resolveEditContext(ctx, event, payload)
-          : await resolveDeckContext(ctx, event, payload)
-      jobManager.assertNotCancelled(reserved)
-      if (isDeckAllPageEdit && context.effectiveMode === 'edit') {
-        beginSessionRunState({
-          sessionId: context.sessionId,
-          runId: context.runId,
-          mode: context.effectiveMode,
-          activityKind: 'edit',
-          totalPages: context.totalPages,
-          previousSessionStatus: context.previousSessionStatus
-        })
-        await executeDeckAllPageEditGeneration(ctx, emitAssistant, context)
-      } else if (context.effectiveMode === 'edit') {
-        beginSessionRunState({
-          sessionId: context.sessionId,
-          runId: context.runId,
-          mode: context.effectiveMode,
-          activityKind: 'edit',
-          totalPages: context.totalPages,
-          previousSessionStatus: context.previousSessionStatus
-        })
-        await executeEditGeneration(ctx, emitAssistant, context)
-      } else {
-        if (!reserved) throw new Error('生成任务 reservation 缺失')
-        const result = await jobManager.enqueue({
-          reservation: reserved,
-          kind: 'standard',
-          context,
-          totalPages: context.totalPages,
-          execute: (deckContext) => executeDeckGeneration(ctx, emitAssistant, deckContext)
-        })
-        handedToBackground = true
-        return { success: true, runId: result.runId, queued: result.queued }
+      if (requestedType === 'page' && requestedChatType === 'page') {
+        throw new Error('单页编辑请使用 page-edit:start')
       }
-      return { success: true, runId: context.runId }
+      if (requestedType === 'page' && requestedChatType === 'main') {
+        throw new Error('主会话编辑请使用 deck-edit:start')
+      }
+      context = await resolveDeckContext(ctx, event, payload)
+      jobManager.assertNotCancelled(reserved)
+      if (!reserved) throw new Error('生成任务 reservation 缺失')
+      if (context.effectiveMode !== 'generate') {
+        throw new Error('非主会话编辑不能进入通用生成队列')
+      }
+      const deckContext = context
+      const result = await jobManager.enqueue({
+        reservation: reserved,
+        kind: 'standard',
+        context: deckContext,
+        totalPages: deckContext.totalPages,
+        execute: (deckContext) => executeDeckGeneration(ctx, emitAssistant, deckContext)
+      })
+      handedToBackground = true
+      return { success: true, runId: result.runId, queued: result.queued }
     } catch (error) {
       if (context && !handedToBackground) {
         await finalizeGenerationFailure(ctx, context, error)
@@ -526,67 +521,8 @@ export function registerGenerationHandlers(ctx: IpcContext): void {
   ipcMain.handle('generate:retryDeckEdit', async (event, payload) => {
     await interruptedJobsReady
     pruneFinishedSessionRunStates()
-    const record =
-      payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {}
-    const sessionId = typeof record.sessionId === 'string' ? record.sessionId.trim() : ''
-    const modelConfigId =
-      typeof record.modelConfigId === 'string' ? record.modelConfigId.trim() : undefined
-    const failedRunId =
-      typeof record.failedRunId === 'string' ? record.failedRunId.trim() || undefined : undefined
-    const userMessage = typeof record.userMessage === 'string' ? record.userMessage.trim() : ''
-    if (!sessionId) throw new Error('sessionId 不能为空')
-    if (!userMessage) throw new Error('重试编辑失败：缺少原始编辑指令')
-
-    const reservation = jobManager.reserve('generate:retryDeckEdit', sessionId)
-    if (reservation.alreadyRunning) {
-      return { success: true, runId: reservation.runId, alreadyRunning: true, failedPageCount: 0 }
-    }
-
-    const reserved = reservation.reservation
-    let context: EditContext | null = null
-    try {
-      const failedPageIds = collectFailedStyleSwitchPageIds(
-        await listFailedGenerationPagesForRetry(sessionId, failedRunId)
-      )
-      if (failedPageIds.length === 0) {
-        return { success: true, failedPageCount: 0 }
-      }
-
-      jobManager.assertNotCancelled(reserved)
-      context = await resolveEditContext(ctx, event, {
-        ...record,
-        sessionId,
-        modelConfigId,
-        userMessage,
-        type: 'page',
-        chatType: 'main',
-        selectPageIds: failedPageIds,
-        persistUserMessage: false
-      })
-      beginSessionRunState({
-        sessionId: context.sessionId,
-        runId: context.runId,
-        mode: context.effectiveMode,
-        activityKind: 'edit',
-        totalPages: failedPageIds.length,
-        previousSessionStatus: context.previousSessionStatus
-      })
-      await executeDeckAllPageEditGeneration(ctx, emitAssistant, context)
-      const failedPageCount = collectFailedStyleSwitchPageIds(
-        await db.listLatestFailedGenerationPages(sessionId)
-      ).length
-      return { success: true, runId: context.runId, failedPageCount }
-    } catch (error) {
-      if (context) {
-        await finalizeGenerationFailure(ctx, context, error)
-      } else {
-        logPreContextFailure('generate:retryDeckEdit', sessionId, error)
-      }
-      throw error
-    } finally {
-      jobManager.release(reserved)
-      if (context) agentManager.removeSession(context.sessionId)
-    }
+    if (!deckEditJobs) throw new Error('deck-edit job service is unavailable')
+    return deckEditJobs.retry(event, payload)
   })
 
   ipcMain.handle('generate:startTemplate', async (event, payload) => {
@@ -844,6 +780,8 @@ export function registerGenerationHandlers(ctx: IpcContext): void {
     const normalizedSessionId = typeof sessionId === 'string' ? sessionId.trim() : ''
     const cancelSessionId = normalizedSessionId || String(sessionId || '')
     if (!cancelSessionId) return { success: true }
+    if (await pageEditJobs?.cancel(cancelSessionId)) return { success: true }
+    if (await deckEditJobs?.cancel(cancelSessionId)) return { success: true }
     const handledByJobManager = await jobManager.cancel(cancelSessionId)
     if (handledByJobManager) return { success: true }
     agentManager.cancelSession(cancelSessionId)

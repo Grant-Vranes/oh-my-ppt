@@ -5,6 +5,7 @@ import type {
   GenerateRetryFailedPayload,
   GenerateRetrySinglePagePayload,
   GenerateStartPayload,
+  SessionPageEditAssessment,
   ParseDocumentPlanPayload,
   ParseImageReferencePayload,
   ParsedDocumentPlanResult,
@@ -146,7 +147,10 @@ export interface GenerateRunStateSnapshot {
   error: string | null
   startedAt: number | null
   updatedAt: number | null
-  kind?: 'standard' | 'template' | 'retry'
+  kind?: 'standard' | 'template' | 'retry' | 'edit' | 'page-edit' | 'deck-edit'
+  targetPageId?: string
+  targetPageNumber?: number
+  retryPayload?: GenerateStartPayload
 }
 
 export interface ExportDeckResult {
@@ -807,6 +811,38 @@ export const ipc = {
       alreadyRunning?: boolean
       queued?: boolean
     }>,
+  assessPageEdit: (payload: GenerateStartPayload) =>
+    getIpc().invoke('page-edit:assess', payload) as Promise<
+      SessionPageEditAssessment & {
+        reply: string
+        targetPageId: string
+        targetPageNumber?: number
+      }
+    >,
+  startPageEdit: (payload: GenerateStartPayload) =>
+    getIpc().invoke('page-edit:start', payload) as Promise<{
+      success: boolean
+      runId?: string
+      alreadyRunning?: boolean
+    }>,
+  getPageEditState: (sessionId: string) =>
+    getIpc().invoke('page-edit:state', sessionId) as Promise<GenerateRunStateSnapshot>,
+  listActivePageEditRuns: () =>
+    getIpc().invoke('page-edit:listActive') as Promise<GenerateRunStateSnapshot[]>,
+  cancelPageEdit: (sessionId: string) =>
+    getIpc().invoke('page-edit:cancel', sessionId) as Promise<{ success: boolean }>,
+  startDeckEdit: (payload: GenerateStartPayload) =>
+    getIpc().invoke('deck-edit:start', payload) as Promise<{
+      success: boolean
+      runId?: string
+      alreadyRunning?: boolean
+    }>,
+  getDeckEditState: (sessionId: string) =>
+    getIpc().invoke('deck-edit:state', sessionId) as Promise<GenerateRunStateSnapshot>,
+  listActiveDeckEditRuns: () =>
+    getIpc().invoke('deck-edit:listActive') as Promise<GenerateRunStateSnapshot[]>,
+  cancelDeckEdit: (sessionId: string) =>
+    getIpc().invoke('deck-edit:cancel', sessionId) as Promise<{ success: boolean }>,
   switchSessionStyle: (payload: SwitchSessionStylePayload) =>
     getIpc().invoke('generate:switchStyle', payload) as Promise<{
       success: boolean

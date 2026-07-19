@@ -8,6 +8,7 @@ export const en = {
     edit: 'Edit',
     preview: 'Preview',
     save: 'Save',
+    dontSave: "Don't save",
     saving: 'Saving...',
     copy: 'Copy',
     optional: 'Optional',
@@ -815,6 +816,20 @@ Business presentations, product introductions, project summaries — formal but 
     activityTitle: 'Edit progress',
     activityDescription: 'Follow page edits, retries, and completion in real time.',
     activityProcessing: 'Processing edit task',
+    activityCancelling: 'Cancelling and restoring the previous content',
+    pageEditPlanning: 'Understanding this slide edit request',
+    pageEditPlanTitle: 'Edit plan',
+    pageEditPlanConfirm: 'Confirm and edit',
+    pageEditPlanCancel: 'Cancel plan',
+    pageEditPlanRequiresSavedEdits:
+      'Save or discard unsaved adjustments on this slide before confirming the AI edit plan.',
+    pageEditPlanReturnToTarget: 'Return to the slide for this plan before confirming it.',
+    pageEditPlanWaitForJob:
+      'Another slide edit is still running. Finish it before running this plan.',
+    pageEditOtherPageBusy:
+      'AI is editing another slide. You can keep browsing and editing manually, then send a new AI edit when it finishes.',
+    pageEditAssessmentBusy:
+      'Another slide request is being assessed or awaiting confirmation. Resolve it before sending a new one.',
     activityCompleted: 'Edit completed',
     activityPartialCompleted: 'Edit completed with {count} failed slide(s)',
     activityRunFailed: 'Edit task failed',

@@ -173,7 +173,7 @@ describe('style switch generation', () => {
     expect(handlerSource).toContain('id: snapshot.styleId')
   })
 
-  it('retries normal deck edits with their original request instead of generation retry', () => {
+  it('retries normal deck edits through the deck job with their original request', () => {
     const handlerSource = fs.readFileSync(
       path.resolve('src/main/ipc/engine/generation-handlers.ts'),
       'utf8'
@@ -183,12 +183,18 @@ describe('style switch generation', () => {
       handlerSource.indexOf("ipcMain.handle('generate:startTemplate'")
     )
 
-    expect(retryHandler).toContain('await listFailedGenerationPagesForRetry(sessionId, failedRunId)')
-    expect(retryHandler).toContain('userMessage,')
-    expect(retryHandler).toContain('selectPageIds: failedPageIds')
-    expect(retryHandler).toContain('persistUserMessage: false')
-    expect(retryHandler).toContain('await executeDeckAllPageEditGeneration')
-    expect(retryHandler).not.toContain('executeRetryFailedPages')
+    const deckJobSource = fs.readFileSync(
+      path.resolve('src/main/ipc/edit-jobs/deck-edit-job-service.ts'),
+      'utf8'
+    )
+
+    expect(retryHandler).toContain('return deckEditJobs.retry(event, payload)')
+    expect(deckJobSource).toContain('getFailedPagesForRun(sessionId, failedRunId)')
+    expect(deckJobSource).toContain('userMessage,')
+    expect(deckJobSource).toContain('selectPageIds: failedPageIds')
+    expect(deckJobSource).toContain('persistUserMessage: false')
+    expect(deckJobSource).toContain('const result = await this.start(event')
+    expect(deckJobSource).not.toContain('executeRetryFailedPages')
   })
 
   it('keeps internal style-switch prompts out of the visible chat history', () => {

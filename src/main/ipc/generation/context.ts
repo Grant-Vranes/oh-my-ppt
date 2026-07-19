@@ -1,12 +1,18 @@
 import crypto from 'crypto'
 import fs from 'fs'
 import path from 'path'
-import type { FontSelection, GenerateStartPayload, SourceDocumentPlan } from '@shared/generation'
+import type {
+  FontSelection,
+  GenerateStartPayload,
+  SessionPageEditPlan,
+  SourceDocumentPlan
+} from '@shared/generation'
 import {
   MAX_SELECTED_PAGES,
   MAX_STYLE_SWITCH_PAGES,
   normalizeAnimationPreferences,
   normalizeFontSelection,
+  normalizeSessionPageEditPlan,
   normalizeSelectPageIds
 } from '@shared/generation'
 import type { AnimationPreferencesPayload } from '@shared/generation'
@@ -82,6 +88,8 @@ export type NormalizedGenerateInput = {
   chatType: GenerateChatType
   chatPageId?: string
   animationPreferences: AnimationPreferencesPayload | null
+  autoApply: boolean
+  approvedPlan?: SessionPageEditPlan
   failedRunId?: string
 }
 
@@ -142,6 +150,8 @@ export function normalizeGeneratePayload(payload: unknown): NormalizedGenerateIn
       ? input.chatPageId.trim()
       : undefined
   const animationPreferences = normalizeAnimationPreferences(input?.animationPreferences)
+  const autoApply = input?.autoApply === true
+  const approvedPlan = normalizeSessionPageEditPlan(input?.approvedPlan)
   const failedRunIdRaw = (payload as { failedRunId?: unknown } | null)?.failedRunId
   const failedRunId =
     typeof failedRunIdRaw === 'string' && failedRunIdRaw.trim().length > 0
@@ -167,6 +177,8 @@ export function normalizeGeneratePayload(payload: unknown): NormalizedGenerateIn
     chatType,
     chatPageId,
     animationPreferences,
+    autoApply,
+    approvedPlan,
     failedRunId
   }
 }

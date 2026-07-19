@@ -129,13 +129,16 @@ export function SessionsPage(): React.JSX.Element {
 
   useEffect(() => {
     let mounted = true
-    void ipc
-      .listActiveGenerateRuns()
-      .then((runs) => {
+    void Promise.all([
+      ipc.listActiveGenerateRuns(),
+      ipc.listActivePageEditRuns(),
+      ipc.listActiveDeckEditRuns()
+    ])
+      .then(([generationRuns, pageEditRuns, deckEditRuns]) => {
         if (!mounted) return
         setActiveRuns(
           Object.fromEntries(
-            runs
+            [...generationRuns, ...pageEditRuns, ...deckEditRuns]
               .filter((run): run is ActiveGenerateRun => run.status === 'queued' || run.status === 'running')
               .map((run) => [run.sessionId, run])
           )
@@ -188,7 +191,12 @@ export function SessionsPage(): React.JSX.Element {
             error: null,
             startedAt: previous?.startedAt || Date.now(),
             updatedAt: Date.now(),
-            kind: previous?.kind,
+            kind:
+              chunk.payload.activityKind === 'page-edit'
+                ? 'page-edit'
+                : chunk.payload.activityKind === 'deck-edit'
+                  ? 'deck-edit'
+                : previous?.kind,
             completedPageCount,
             failedPageCount
           }
@@ -225,6 +233,14 @@ export function SessionsPage(): React.JSX.Element {
     const activeRun = activeRuns[session.id]
     const metadata = parseSessionMetadata(session.metadata)
     if (activeRun) {
+      if (
+        (activeRun.kind === 'edit' ||
+          activeRun.kind === 'page-edit' ||
+          activeRun.kind === 'deck-edit') &&
+        canEnterEditor(session)
+      ) {
+        return `/sessions/${session.id}`
+      }
       return activeRun.kind === 'template' || metadata.source === 'template'
         ? `/sessions/${session.id}/template-generating`
         : `/sessions/${session.id}/generating`

@@ -49,6 +49,8 @@ describe('generationActivityStore', () => {
 
   it('handles dialog activities or runs with an active retry context', () => {
     expect(shouldHandleGenerationActivity(undefined, null)).toBe(false)
+    expect(shouldHandleGenerationActivity('page-edit', null)).toBe(false)
+    expect(shouldHandleGenerationActivity('deck-edit', null)).toBe(false)
     expect(shouldHandleGenerationActivity('edit', null)).toBe(true)
     expect(shouldHandleGenerationActivity('style-switch', null)).toBe(true)
     expect(shouldHandleGenerationActivity('single-page-retry', null)).toBe(true)
@@ -80,5 +82,15 @@ describe('generationActivityStore', () => {
     expect(retryHandler).toContain("activityKind: 'single-page-retry'")
     expect(dialogSource).toContain("event.payload.activityKind === 'addPage'")
     expect(dialogSource).toContain("event.payload.activityKind === 'single-page-retry'")
+  })
+
+  it('keeps page-edit progress out of the generation activity dialog', () => {
+    const pageEditServiceSource = fs.readFileSync(
+      path.resolve('src/main/ipc/edit-jobs/page-edit-job-service.ts'),
+      'utf8'
+    )
+
+    expect(pageEditServiceSource).toContain("kind: 'page-edit'")
+    expect(pageEditServiceSource).toContain("activityKind: 'page-edit'")
   })
 })

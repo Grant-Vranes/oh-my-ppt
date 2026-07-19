@@ -34,8 +34,8 @@ type ChatScope = 'main' | 'page'
 type StyleSource = 'builtin' | 'custom' | 'override'
 type GenerationRunMode = 'generate' | 'retry' | 'edit' | 'import' | 'addPage' | 'retrySinglePage'
 type GenerationRunStatus = 'running' | 'completed' | 'failed' | 'partial'
-export type GenerationJobKind = 'standard' | 'template' | 'retry'
-export type GenerationJobStatus = 'pending' | 'active' | 'finished' | 'aborted'
+export type SessionJobKind = 'standard' | 'template' | 'retry' | 'page-edit' | 'deck-edit'
+export type SessionJobStatus = 'pending' | 'active' | 'finished' | 'aborted'
 type GenerationPageStatus = 'pending' | 'running' | 'completed' | 'failed'
 type SessionPageStatus = schema.SessionPageStatus
 type SourcePageSkeletonRole = 'chapter-divider' | 'content'
@@ -139,16 +139,43 @@ export interface GenerationRunRecord {
   updated_at: number
 }
 
-export interface GenerationJobRecord {
+export interface SessionJobRecord {
   id: string
   session_id: string
-  kind: GenerationJobKind
-  status: GenerationJobStatus
+  kind: SessionJobKind
+  previous_session_status: SessionStatus
+  target_page_id: string | null
+  target_page_number: number | null
+  selector: string | null
+  total_pages: number | null
+  status: SessionJobStatus
   abort_reason: string | null
   created_at: number
   activated_at: number | null
   updated_at: number
   finished_at: number | null
+}
+
+type GenerationRunCreateData = {
+  id?: string
+  sessionId: string
+  mode: GenerationRunMode
+  totalPages: number
+  metadata?: unknown
+  animationPreferences?: AnimationPreferencesPayload | null
+  modelConfigId?: string | null
+}
+
+type SessionJobCreateData = {
+  id: string
+  sessionId: string
+  kind: SessionJobKind
+  status: Extract<SessionJobStatus, 'pending' | 'active'>
+  previousSessionStatus: SessionStatus
+  targetPageId?: string
+  targetPageNumber?: number
+  selector?: string
+  totalPages?: number
 }
 
 export interface GenerationPageRecord {
@@ -884,16 +911,42 @@ export class PPTDatabase {
     }
   }
 
-  private normalizeGenerationJobRow(row: Record<string, unknown>): GenerationJobRecord {
+  private normalizeSessionJobRow(row: Record<string, unknown>): SessionJobRecord {
     const status = String(row.status || 'pending')
     const kind = String(row.kind || 'standard')
+    const previousSessionStatus = String(
+      row.previousSessionStatus ?? row.previous_session_status ?? 'active'
+    )
     return {
       id: String(row.id || ''),
       session_id: String(row.sessionId ?? row.session_id ?? ''),
-      kind: (kind === 'template' || kind === 'retry' ? kind : 'standard') as GenerationJobKind,
+      kind: (kind === 'template' || kind === 'retry' || kind === 'page-edit' || kind === 'deck-edit'
+        ? kind
+        : 'standard') as SessionJobKind,
+      previous_session_status:
+        previousSessionStatus === 'completed' ||
+        previousSessionStatus === 'failed' ||
+        previousSessionStatus === 'archived'
+          ? previousSessionStatus
+          : 'active',
+      target_page_id:
+        typeof (row.targetPageId ?? row.target_page_id) === 'string' &&
+        String(row.targetPageId ?? row.target_page_id).trim().length > 0
+          ? String(row.targetPageId ?? row.target_page_id)
+          : null,
+      target_page_number:
+        typeof (row.targetPageNumber ?? row.target_page_number) === 'number'
+          ? Number(row.targetPageNumber ?? row.target_page_number)
+          : null,
+      selector:
+        typeof row.selector === 'string' && row.selector.trim().length > 0 ? row.selector : null,
+      total_pages:
+        typeof (row.totalPages ?? row.total_pages) === 'number'
+          ? Math.max(1, Number(row.totalPages ?? row.total_pages) || 1)
+          : null,
       status: (status === 'active' || status === 'finished' || status === 'aborted'
         ? status
-        : 'pending') as GenerationJobStatus,
+        : 'pending') as SessionJobStatus,
       abort_reason:
         typeof (row.abortReason ?? row.abort_reason) === 'string'
           ? String(row.abortReason ?? row.abort_reason)
@@ -986,15 +1039,7 @@ export class PPTDatabase {
     }
   }
 
-  async createGenerationRun(data: {
-    id?: string
-    sessionId: string
-    mode: GenerationRunMode
-    totalPages: number
-    metadata?: unknown
-    animationPreferences?: AnimationPreferencesPayload | null
-    modelConfigId?: string | null
-  }): Promise<string> {
+  async createGenerationRun(data: GenerationRunCreateData): Promise<string> {
     const id = data.id || crypto.randomUUID()
     const now = Math.floor(Date.now() / 1000)
     const animationPreferences = data.animationPreferences
@@ -1039,44 +1084,71 @@ export class PPTDatabase {
     return id
   }
 
-  async createGenerationJob(data: {
-    id: string
-    sessionId: string
-    kind: GenerationJobKind
-    status: Extract<GenerationJobStatus, 'pending' | 'active'>
+  async createGenerationRunWithSessionJob(data: {
+    run: GenerationRunCreateData & { id: string }
+    job: SessionJobCreateData
   }): Promise<void> {
+    if (data.run.id !== data.job.id) {
+      throw new Error('generation run and session job must share the same id')
+    }
+    if (data.run.sessionId !== data.job.sessionId) {
+      throw new Error('generation run and session job must belong to the same session')
+    }
+
     const now = Math.floor(Date.now() / 1000)
-    await this.db
-      .insert(schema.generationJobs)
-      .values({
-        id: data.id,
-        sessionId: data.sessionId,
-        kind: data.kind,
-        status: data.status,
-        abortReason: null,
-        createdAt: now,
-        activatedAt: data.status === 'active' ? now : null,
-        updatedAt: now,
-        finishedAt: null
-      })
-      .onConflictDoUpdate({
-        target: schema.generationJobs.id,
-        set: {
-          sessionId: data.sessionId,
-          kind: data.kind,
-          status: data.status,
+    const animationPreferences = data.run.animationPreferences
+      ? JSON.stringify(data.run.animationPreferences)
+      : null
+    const runTotalPages = Math.max(0, Math.floor(data.run.totalPages || 0))
+    const modelConfigId =
+      typeof data.run.modelConfigId === 'string' && data.run.modelConfigId.trim().length > 0
+        ? data.run.modelConfigId.trim()
+        : null
+    const jobTotalPages =
+      typeof data.job.totalPages === 'number' && Number.isFinite(data.job.totalPages)
+        ? Math.max(1, Math.floor(data.job.totalPages))
+        : null
+
+    await this.db.transaction(async (tx) => {
+      await tx
+        .insert(schema.generationRuns)
+        .values({
+          id: data.run.id,
+          sessionId: data.run.sessionId,
+          mode: data.run.mode,
+          status: 'running',
+          totalPages: runTotalPages,
+          error: null,
+          metadata: data.run.metadata ? JSON.stringify(data.run.metadata) : null,
+          animationPreferences,
+          modelConfigId,
+          createdAt: now,
+          updatedAt: now
+        })
+      await tx
+        .insert(schema.sessionJobs)
+        .values({
+          id: data.job.id,
+          sessionId: data.job.sessionId,
+          kind: data.job.kind,
+          previousSessionStatus: data.job.previousSessionStatus,
+          targetPageId: data.job.targetPageId || null,
+          targetPageNumber: data.job.targetPageNumber ?? null,
+          selector: data.job.selector || null,
+          totalPages: jobTotalPages,
+          status: data.job.status,
           abortReason: null,
-          activatedAt: data.status === 'active' ? now : null,
+          createdAt: now,
+          activatedAt: data.job.status === 'active' ? now : null,
           updatedAt: now,
           finishedAt: null
-        }
-      })
-      .run()
+        })
+    })
   }
 
-  async updateGenerationJobStatus(
+  async updateSessionJobStatus(
     jobId: string,
-    status: GenerationJobStatus,
+    status: SessionJobStatus,
     options?: { abortReason?: string | null }
   ): Promise<void> {
     const now = Math.floor(Date.now() / 1000)
@@ -1098,40 +1170,54 @@ export class PPTDatabase {
       set.abortReason = options?.abortReason || null
     }
     await this.db
-      .update(schema.generationJobs)
+      .update(schema.sessionJobs)
       .set(set)
-      .where(eq(schema.generationJobs.id, jobId))
+      .where(eq(schema.sessionJobs.id, jobId))
       .run()
   }
 
-  async getGenerationJob(jobId: string): Promise<GenerationJobRecord | undefined> {
+  async getSessionJob(jobId: string): Promise<SessionJobRecord | undefined> {
     const row = await this.db
       .select()
-      .from(schema.generationJobs)
-      .where(eq(schema.generationJobs.id, jobId))
+      .from(schema.sessionJobs)
+      .where(eq(schema.sessionJobs.id, jobId))
       .get()
-    return row ? this.normalizeGenerationJobRow(row as Record<string, unknown>) : undefined
+    return row ? this.normalizeSessionJobRow(row as Record<string, unknown>) : undefined
   }
 
-  async getLatestGenerationJob(sessionId: string): Promise<GenerationJobRecord | undefined> {
+  async getLatestSessionJob(
+    sessionId: string,
+    kinds?: readonly SessionJobKind[]
+  ): Promise<SessionJobRecord | undefined> {
+    const where =
+      kinds && kinds.length > 0
+        ? and(eq(schema.sessionJobs.sessionId, sessionId), inArray(schema.sessionJobs.kind, [...kinds]))
+        : eq(schema.sessionJobs.sessionId, sessionId)
     const row = await this.db
       .select()
-      .from(schema.generationJobs)
-      .where(eq(schema.generationJobs.sessionId, sessionId))
-      .orderBy(desc(schema.generationJobs.updatedAt), desc(schema.generationJobs.createdAt))
+      .from(schema.sessionJobs)
+      .where(where)
+      .orderBy(desc(schema.sessionJobs.updatedAt), desc(schema.sessionJobs.createdAt))
       .limit(1)
       .get()
-    return row ? this.normalizeGenerationJobRow(row as Record<string, unknown>) : undefined
+    return row ? this.normalizeSessionJobRow(row as Record<string, unknown>) : undefined
   }
 
-  async listActiveGenerationJobs(): Promise<GenerationJobRecord[]> {
+  async listActiveSessionJobs(kinds?: readonly SessionJobKind[]): Promise<SessionJobRecord[]> {
+    const where =
+      kinds && kinds.length > 0
+        ? and(
+            inArray(schema.sessionJobs.status, ['pending', 'active']),
+            inArray(schema.sessionJobs.kind, [...kinds])
+          )
+        : inArray(schema.sessionJobs.status, ['pending', 'active'])
     const rows = await this.db
       .select()
-      .from(schema.generationJobs)
-      .where(inArray(schema.generationJobs.status, ['pending', 'active']))
-      .orderBy(asc(schema.generationJobs.createdAt))
+      .from(schema.sessionJobs)
+      .where(where)
+      .orderBy(asc(schema.sessionJobs.createdAt))
       .all()
-    return rows.map((row) => this.normalizeGenerationJobRow(row as Record<string, unknown>))
+    return rows.map((row) => this.normalizeSessionJobRow(row as Record<string, unknown>))
   }
 
   async updateGenerationRunStatus(

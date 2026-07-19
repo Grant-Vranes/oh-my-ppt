@@ -91,8 +91,8 @@ export const generationRuns = sqliteTable('generation_runs', {
   updatedAt: integer('updated_at').notNull()
 })
 
-export const generationJobs = sqliteTable(
-  'generation_jobs',
+export const sessionJobs = sqliteTable(
+  'session_jobs',
   {
     id: text('id')
       .primaryKey()
@@ -101,6 +101,11 @@ export const generationJobs = sqliteTable(
       .notNull()
       .references(() => sessions.id, { onDelete: 'cascade' }),
     kind: text('kind').notNull(),
+    previousSessionStatus: text('previous_session_status').notNull(),
+    targetPageId: text('target_page_id'),
+    targetPageNumber: integer('target_page_number'),
+    selector: text('selector'),
+    totalPages: integer('total_pages'),
     status: text('status').notNull(),
     abortReason: text('abort_reason'),
     createdAt: integer('created_at').notNull(),
@@ -109,12 +114,12 @@ export const generationJobs = sqliteTable(
     finishedAt: integer('finished_at')
   },
   (table) => ({
-    generationJobsSessionStatusIdx: index('idx_generation_jobs_session_status').on(
+    sessionJobsSessionStatusIdx: index('idx_session_jobs_session_status').on(
       table.sessionId,
       table.status,
       table.updatedAt
     ),
-    generationJobsStatusIdx: index('idx_generation_jobs_status').on(table.status, table.updatedAt)
+    sessionJobsStatusIdx: index('idx_session_jobs_status').on(table.status, table.updatedAt)
   })
 )
 

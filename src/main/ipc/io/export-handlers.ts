@@ -708,6 +708,7 @@ export function registerExportHandlers(ctx: IpcContext): void {
                 page,
                 timeoutMs: EXPORT_PAGE_READY_TIMEOUT_MS,
                 settleMs: EXPORT_CAPTURE_SETTLE_MS,
+                animationMode: 'slide-transition',
                 waitForPrintReadySignal
               })
         })

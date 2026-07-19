@@ -3,6 +3,7 @@ import {
   useEditHistoryStore,
   useEditSessionStore,
   useGenerateStore,
+  useSessionStore,
   useSessionDetailRuntimeStore,
   useSessionDetailUiStore,
   useToastStore,
@@ -57,12 +58,20 @@ export function useWorkspaceRibbonController(isSavingEdits: boolean): {
   pendingTabLabel: string
   savingBeforeTabSwitch: boolean
   cancelPendingTab: () => void
+  discardPendingTab: () => void
   confirmPendingTab: () => Promise<void>
 } {
   const t = useT()
   const [pendingTab, setPendingTab] = useState<SessionWorkspaceTab | null>(null)
   const [savingBeforeTabSwitch, setSavingBeforeTabSwitch] = useState(false)
   const isGenerating = useGenerateStore((state) => state.isGenerating)
+  const currentSession = useSessionStore((state) => state.currentSession)
+  const pageEditJob = useGenerateStore((state) =>
+    currentSession ? state.pageEditJobs[currentSession.id] || null : null
+  )
+  const isDeckEditing = useGenerateStore((state) =>
+    currentSession ? Boolean(state.deckEditJobs[currentSession.id]) : false
+  )
   const currentPages = useGenerateStore((state) => state.currentPages)
   const toastInfo = useToastStore((state) => state.info)
   const selectedPageId = useSessionDetailUiStore((state) => state.selectedPageId)
@@ -85,6 +94,7 @@ export function useWorkspaceRibbonController(isSavingEdits: boolean): {
     ? `${selectedPage.pageId}:${selectedPage.htmlPath}`
     : null
   const pageId = selectedPage?.pageId
+  const isPageEditing = pageEditJob?.pageId === pageId
   const canUndo = useEditHistoryStore((state) => state.canUndo(pageId))
   const canRedo = useEditHistoryStore((state) => state.canRedo(pageId))
   const hasPendingEdits = useEditHistoryStore((state) => state.hasPendingEdits(pageId))
@@ -181,6 +191,17 @@ export function useWorkspaceRibbonController(isSavingEdits: boolean): {
     setPendingTab(null)
   }, [savingBeforeTabSwitch])
 
+  const discardPendingTab = useCallback((): void => {
+    const tab = pendingTab
+    if (!tab || savingBeforeTabSwitch) return
+    useEditSessionStore.getState().discardAll()
+    if (pageId && useEditHistoryStore.getState().hasPendingEdits(pageId)) {
+      useEditHistoryStore.getState().clearPage(pageId)
+    }
+    setPendingTab(null)
+    applyTab(tab)
+  }, [applyTab, pageId, pendingTab, savingBeforeTabSwitch])
+
   const confirmPendingTab = useCallback(async (): Promise<void> => {
     const tab = pendingTab
     if (!tab || savingBeforeTabSwitch) return
@@ -200,13 +221,24 @@ export function useWorkspaceRibbonController(isSavingEdits: boolean): {
   const state: WorkspaceRibbonState = useMemo(
     () => ({
       isGenerating,
+      isPageEditing,
+      isDeckEditing,
       isSavingEdits,
       canUndo,
       canRedo,
       hasPendingEdits,
       activeTab
     }),
-    [activeTab, canRedo, canUndo, hasPendingEdits, isGenerating, isSavingEdits]
+    [
+      activeTab,
+      canRedo,
+      canUndo,
+      hasPendingEdits,
+      isDeckEditing,
+      isGenerating,
+      isPageEditing,
+      isSavingEdits
+    ]
   )
 
   return {
@@ -217,6 +249,7 @@ export function useWorkspaceRibbonController(isSavingEdits: boolean): {
     pendingTabLabel,
     savingBeforeTabSwitch,
     cancelPendingTab,
+    discardPendingTab,
     confirmPendingTab
   }
 }

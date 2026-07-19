@@ -106,7 +106,8 @@ export function GenerationActivityDialog({ sessionId }: { sessionId: string }): 
       const activeRetryContext = useGenerationActivityStore.getState().retryContext
       const activityKind =
         'activityKind' in event.payload &&
-        (event.payload.activityKind === 'edit' ||
+        (event.payload.activityKind === 'page-edit' ||
+          event.payload.activityKind === 'edit' ||
           event.payload.activityKind === 'style-switch' ||
           event.payload.activityKind === 'single-page-retry' ||
           event.payload.activityKind === 'addPage')

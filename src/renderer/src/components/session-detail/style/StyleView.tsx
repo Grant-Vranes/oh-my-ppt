@@ -32,6 +32,7 @@ export function StyleView({ sessionId }: { sessionId: string }): React.JSX.Eleme
   const t = useT()
   const currentStyleId = useSessionStore((state) => state.currentSession?.styleId || '')
   const isGenerating = useGenerateStore((state) => state.isGenerating)
+  const isDeckEditing = useGenerateStore((state) => Boolean(state.deckEditJobs[sessionId]))
   const activeStyleSwitchId = useGenerationActivityStore((state) =>
     state.retryContext?.kind === 'style-switch' ? state.retryContext.styleId : ''
   )
@@ -94,13 +95,14 @@ export function StyleView({ sessionId }: { sessionId: string }): React.JSX.Eleme
   )
 
   const handleSwitch = async (style: StyleListItem): Promise<void> => {
-    if (style.id === currentStyleId || isGenerating) return
+    if (style.id === currentStyleId || isGenerating || isDeckEditing) return
     const modelConfigId = await ensureModelActive(selectedModelConfigId)
     if (!modelConfigId) return
     useGenerationActivityStore.getState().startStyleSwitch(style.id)
     setSwitchTarget(null)
     useSessionDetailUiStore.getState().setWorkspaceTab('preview')
     useSessionDetailUiStore.getState().setInteractionMode('preview')
+    useGenerateStore.getState().clearSessionError(sessionId)
     useGenerateStore.setState({ isGenerating: true, error: null, status: 'running' })
     try {
       const result = await ipc.switchSessionStyle({ sessionId, styleId: style.id, modelConfigId })
@@ -114,7 +116,8 @@ export function StyleView({ sessionId }: { sessionId: string }): React.JSX.Eleme
       }
     } catch (switchError) {
       const message = switchError instanceof Error ? switchError.message : t('common.retryLater')
-      useGenerateStore.getState().setError(message)
+      useGenerateStore.getState().setSessionError(sessionId, message)
+      useGenerateStore.setState({ status: 'failed', isGenerating: false, progress: null })
       useGenerationActivityStore.getState().reset()
       await useSessionStore.getState().loadSession(sessionId)
       error(t('sessionDetail.styleSwitchFailed'), { description: message })
@@ -148,13 +151,18 @@ export function StyleView({ sessionId }: { sessionId: string }): React.JSX.Eleme
                 data-style-card-id={style.id}
                 role="button"
                 aria-current={isCurrent ? 'true' : undefined}
-                tabIndex={isCurrent || isGenerating ? -1 : 0}
-                aria-disabled={isCurrent || isGenerating}
+                tabIndex={isCurrent || isGenerating || isDeckEditing ? -1 : 0}
+                aria-disabled={isCurrent || isGenerating || isDeckEditing}
                 onClick={() => {
-                  if (!isCurrent && !isGenerating) setSwitchTarget(style)
+                  if (!isCurrent && !isGenerating && !isDeckEditing) setSwitchTarget(style)
                 }}
                 onKeyDown={(event) => {
-                  if ((event.key === 'Enter' || event.key === ' ') && !isCurrent && !isGenerating) {
+                  if (
+                    (event.key === 'Enter' || event.key === ' ') &&
+                    !isCurrent &&
+                    !isGenerating &&
+                    !isDeckEditing
+                  ) {
                     event.preventDefault()
                     setSwitchTarget(style)
                   }

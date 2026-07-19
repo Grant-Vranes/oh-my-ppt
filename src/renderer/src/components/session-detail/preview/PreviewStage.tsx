@@ -1,6 +1,6 @@
 import { useCallback, useEffect, forwardRef, useRef, useState } from 'react'
-import { Sparkles } from 'lucide-react'
-import { useSessionDetailUiStore, useSessionStore } from '@renderer/store'
+import { Loader2, Sparkles } from 'lucide-react'
+import { useGenerateStore, useSessionDetailUiStore, useSessionStore } from '@renderer/store'
 import { PreviewIframe, type PreviewIframeHandle } from '../../preview/PreviewIframe'
 import type { EditModeMovePayload, EditSelectionPayload } from '../../preview/edit-mode-script'
 import type { SessionPreviewPage } from '../shared/types'
@@ -51,6 +51,12 @@ export const PreviewStage = forwardRef<
   const currentSession = useSessionStore((state) => state.currentSession)
   const slideSize = trySessionSlideSize(currentSession)
   const interactionMode = useSessionDetailUiStore((state) => state.interactionMode)
+  const pageEditJob = useGenerateStore((state) =>
+    currentSession ? state.pageEditJobs[currentSession.id] || null : null
+  )
+  const isDeckEditing = useGenerateStore((state) =>
+    currentSession ? Boolean(state.deckEditJobs[currentSession.id]) : false
+  )
   const setInteractionMode = useSessionDetailUiStore((state) => state.setInteractionMode)
   const setWorkspaceTab = useSessionDetailUiStore((state) => state.setWorkspaceTab)
   const editSelectedSelector = useSessionDetailUiStore((state) => state.editSelectedSelector)
@@ -60,6 +66,7 @@ export const PreviewStage = forwardRef<
   const isEditing = interactionMode === 'edit'
   const isAnimationSelecting = interactionMode === 'animation-select'
   const isInspecting = interactionMode === 'ai-inspect' || isAnimationSelecting
+  const isPageEditing = pageEditJob?.pageId === selectedPage?.pageId
 
   const setPreviewIframeHandle = useCallback(
     (handle: PreviewIframeHandle | null): void => {
@@ -189,6 +196,7 @@ export const PreviewStage = forwardRef<
   ])
 
   useEffect(() => {
+    if (isPageEditing) return
     if (interactionMode === 'preview') return
     const onKeyDown = (event: KeyboardEvent): void => {
       const target = event.target
@@ -227,6 +235,7 @@ export const PreviewStage = forwardRef<
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [
     interactionMode,
+    isPageEditing,
     clearSelectedElement,
     isAnimationSelecting,
     isEditing,
@@ -270,10 +279,10 @@ export const PreviewStage = forwardRef<
                 pageId={selectedPage.pageId}
                 title={`preview-page-${selectedPage.pageNumber}`}
                 slideSize={slideSize}
-                inspectable
+                inspectable={!isPageEditing && !isDeckEditing}
                 interactionMode={interactionMode}
-                inspecting={isInspecting}
-                editMode={isEditing}
+                inspecting={isInspecting && !isPageEditing && !isDeckEditing}
+                editMode={isEditing && !isPageEditing && !isDeckEditing}
                 onSelectorSelected={setSelectedElement}
                 onElementMoved={onElementMoved}
                 onElementSelected={onElementSelected}
@@ -291,7 +300,7 @@ export const PreviewStage = forwardRef<
               />
             </div>
 
-            {isEditing && (
+            {isEditing && !isPageEditing && (
               <EditorGuidesOverlay
                 selectedPageId={selectedPage.pageId}
                 frameRef={frameRef}
@@ -300,6 +309,17 @@ export const PreviewStage = forwardRef<
                 reloadSignal={previewReloadSignal}
                 slideSize={slideSize}
               />
+            )}
+            {pageEditJob && isPageEditing && (
+              <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-[#f5f1e8]/72 text-center text-[#4f6340] backdrop-blur-[1px]" aria-live="polite">
+                <Loader2 className="h-7 w-7 animate-spin" />
+                <div className="max-w-sm px-6 text-sm font-medium">
+                  {pageEditJob.label || t('sessionDetail.activityProcessing')}
+                </div>
+                <div className="text-xs tabular-nums text-[#6d7b5d]">
+                  {Math.round(pageEditJob.progress)}%
+                </div>
+              </div>
             )}
             {selectedPage.status === 'failed' && (
               <div className="absolute bottom-5 left-5 z-20 max-w-[520px] rounded-[1rem] bg-[#fff4ef]/92 px-3 py-2 text-xs text-[#8e5a53] shadow-[0_10px_24px_rgba(142,90,83,0.12)] backdrop-blur-sm">

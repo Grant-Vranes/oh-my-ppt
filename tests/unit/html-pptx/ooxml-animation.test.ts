@@ -3,6 +3,22 @@ import { buildSlideXml } from '@arcsin1/html2pptx/ooxml'
 import type { HtmlToPptxSlide } from '@arcsin1/html2pptx'
 
 describe('buildSlideXml animation export', () => {
+  it('writes only a slide fade for the safe editable-export animation mode', () => {
+    const slide: HtmlToPptxSlide = {
+      texts: [{ text: 'Visible in every preview', x: 1, y: 1, w: 5, h: 1, fontSize: 24 }],
+      shapes: [],
+      images: [],
+      tables: [],
+      transitionType: 'fade',
+      transitionDurationMs: 350
+    }
+
+    const xml = buildSlideXml(slide, new Map(), 1)
+
+    expect(xml).toContain('<p:transition')
+    expect(xml).not.toContain('<p:timing>')
+  })
+
   it('exports automatic and click animations together', () => {
     const slide: HtmlToPptxSlide = {
       texts: [

@@ -27,6 +27,7 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
   const progress = useGenerateStore((state) => state.progress)
   const pageEditJob = useGenerateStore((state) => state.pageEditJobs[sessionId] || null)
   const deckEditJob = useGenerateStore((state) => state.deckEditJobs[sessionId] || null)
+  const styleSwitchJob = useGenerateStore((state) => state.styleSwitchJobs[sessionId] || null)
   const deckEditRetry = useGenerateStore((state) => state.deckEditRetries[sessionId] || null)
   const pageEditPlanning = useGenerateStore((state) => state.pageEditPlanning[sessionId] || null)
   const error = useGenerateStore((state) => state.sessionErrors[sessionId] || null)
@@ -52,13 +53,17 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
       : null
   const hasActivePageEditJob = Boolean(pageEditJob)
   const isDeckEditing = Boolean(deckEditJob)
-  const chatType = useSessionDetailUiStore((state) => state.chatType)
+  const isStyleSwitching =
+    styleSwitchJob?.status === 'starting' ||
+    styleSwitchJob?.status === 'running' ||
+    styleSwitchJob?.status === 'cancelling'
   const isSending =
     isGenerating ||
     isPlanningCurrentPage ||
     isPageEditing ||
     Boolean(pendingPageEditPlanForCurrentPage) ||
-    isDeckEditing
+    isDeckEditing ||
+    isStyleSwitching
 
   const uploadFiles = async (files: File[]): Promise<void> => {
     const generateState = useGenerateStore.getState()
@@ -67,7 +72,13 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
       Boolean(selectedPageId) &&
       planning?.isAssessing === true &&
       planning.pageId === selectedPageId
-    if (!sessionId || files.length === 0 || generateState.isGenerating || isAssessingSelectedPage)
+    if (
+      !sessionId ||
+      files.length === 0 ||
+      generateState.isGenerating ||
+      isStyleSwitching ||
+      isAssessingSelectedPage
+    )
       return
     const mediaFiles = files.filter(isSupportedMediaFile).slice(0, 10)
     if (mediaFiles.length === 0) {
@@ -112,6 +123,7 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
       !sessionId ||
       useSessionDetailUiStore.getState().isUploadingAssets ||
       generateState.isGenerating ||
+      isStyleSwitching ||
       isAssessingSelectedPage
     )
       return
@@ -139,7 +151,11 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
       isChatSendBlocked({
         sessionId,
         sending: sendingMessageRef.current,
-        generating: initialGenerateState.isGenerating,
+        generating:
+          initialGenerateState.isGenerating ||
+          initialGenerateState.styleSwitchJobs[sessionId]?.status === 'starting' ||
+          initialGenerateState.styleSwitchJobs[sessionId]?.status === 'running' ||
+          initialGenerateState.styleSwitchJobs[sessionId]?.status === 'cancelling',
         input: detailState.input,
         pendingAssetCount: detailState.pendingAssets.length
       })

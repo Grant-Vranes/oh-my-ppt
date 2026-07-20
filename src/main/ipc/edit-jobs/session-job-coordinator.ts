@@ -8,7 +8,7 @@ export type SessionJobLease = {
   runId?: string
 }
 
-export type SessionJobOwner = 'page-edit' | 'deck-edit' | 'generate'
+export type SessionJobOwner = 'page-edit' | 'deck-edit' | 'style-switch' | 'generate'
 
 export class SessionJobCoordinator {
   private leases = new Map<string, SessionJobLease>()
@@ -18,9 +18,7 @@ export class SessionJobCoordinator {
   reserve(
     operation: string,
     sessionId: string
-  ):
-    | { alreadyRunning: true; runId?: string }
-    | { alreadyRunning: false; lease: SessionJobLease } {
+  ): { alreadyRunning: true; runId?: string } | { alreadyRunning: false; lease: SessionJobLease } {
     const existingLease = this.leases.get(sessionId)
     if (existingLease) return { alreadyRunning: true, runId: existingLease.runId }
 

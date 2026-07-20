@@ -21,6 +21,10 @@ export function useSessionToolbarController(sessionId: string) {
   const currentPages = useGenerateStore((state) => state.currentPages)
   const isGenerating = useGenerateStore((state) => state.isGenerating)
   const isDeckEditing = useGenerateStore((state) => Boolean(state.deckEditJobs[sessionId]))
+  const isStyleSwitching = useGenerateStore((state) => {
+    const job = state.styleSwitchJobs[sessionId]
+    return job?.status === 'starting' || job?.status === 'running' || job?.status === 'cancelling'
+  })
   const selectedPageId = useSessionDetailUiStore((state) => state.selectedPageId)
   const isAddingPage = useSessionDetailUiStore((state) => state.isAddingPage)
   const isRetryingSinglePage = useSessionDetailUiStore((state) => state.isRetryingSinglePage)
@@ -49,6 +53,7 @@ export function useSessionToolbarController(sessionId: string) {
   const historyDisabled =
     isGenerating ||
     isDeckEditing ||
+    isStyleSwitching ||
     isAddingPage ||
     isRetryingSinglePage ||
     isManagingPages ||
@@ -108,7 +113,7 @@ export function useSessionToolbarController(sessionId: string) {
 
   return {
     hasPages: pages.length > 0,
-    isGenerating: isGenerating || isDeckEditing,
+    isGenerating: isGenerating || isDeckEditing || isStyleSwitching,
     historyDisabled,
     selectedPageHasPendingEdits,
     canPreview: Boolean(selectedPage?.htmlPath || pages[0]?.htmlPath),

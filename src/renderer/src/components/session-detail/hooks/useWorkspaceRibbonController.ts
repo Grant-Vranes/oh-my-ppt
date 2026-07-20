@@ -7,6 +7,7 @@ import {
   useSessionDetailRuntimeStore,
   useSessionDetailUiStore,
   useToastStore,
+  isStyleSwitchPageLocked,
   type WorkspaceRibbonRegisteredActions
 } from '@renderer/store'
 import { useT } from '@renderer/i18n'
@@ -72,6 +73,9 @@ export function useWorkspaceRibbonController(isSavingEdits: boolean): {
   const isDeckEditing = useGenerateStore((state) =>
     currentSession ? Boolean(state.deckEditJobs[currentSession.id]) : false
   )
+  const styleSwitchJob = useGenerateStore((state) =>
+    currentSession ? state.styleSwitchJobs[currentSession.id] || null : null
+  )
   const currentPages = useGenerateStore((state) => state.currentPages)
   const toastInfo = useToastStore((state) => state.info)
   const selectedPageId = useSessionDetailUiStore((state) => state.selectedPageId)
@@ -94,6 +98,7 @@ export function useWorkspaceRibbonController(isSavingEdits: boolean): {
     ? `${selectedPage.pageId}:${selectedPage.htmlPath}`
     : null
   const pageId = selectedPage?.pageId
+  const styleSwitchPageLocked = isStyleSwitchPageLocked(styleSwitchJob, pageId)
   const isPageEditing = pageEditJob?.pageId === pageId
   const canUndo = useEditHistoryStore((state) => state.canUndo(pageId))
   const canRedo = useEditHistoryStore((state) => state.canRedo(pageId))
@@ -223,6 +228,7 @@ export function useWorkspaceRibbonController(isSavingEdits: boolean): {
       isGenerating,
       isPageEditing,
       isDeckEditing,
+      isStyleSwitchPageLocked: styleSwitchPageLocked,
       isSavingEdits,
       canUndo,
       canRedo,
@@ -235,6 +241,7 @@ export function useWorkspaceRibbonController(isSavingEdits: boolean): {
       canUndo,
       hasPendingEdits,
       isDeckEditing,
+      styleSwitchPageLocked,
       isGenerating,
       isPageEditing,
       isSavingEdits

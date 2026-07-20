@@ -1,6 +1,11 @@
 import { useCallback, useEffect, forwardRef, useRef, useState } from 'react'
 import { Loader2, Sparkles } from 'lucide-react'
-import { useGenerateStore, useSessionDetailUiStore, useSessionStore } from '@renderer/store'
+import {
+  isStyleSwitchPageLocked,
+  useGenerateStore,
+  useSessionDetailUiStore,
+  useSessionStore
+} from '@renderer/store'
 import { PreviewIframe, type PreviewIframeHandle } from '../../preview/PreviewIframe'
 import type { EditModeMovePayload, EditSelectionPayload } from '../../preview/edit-mode-script'
 import type { SessionPreviewPage } from '../shared/types'
@@ -57,6 +62,9 @@ export const PreviewStage = forwardRef<
   const isDeckEditing = useGenerateStore((state) =>
     currentSession ? Boolean(state.deckEditJobs[currentSession.id]) : false
   )
+  const styleSwitchJob = useGenerateStore((state) =>
+    currentSession ? state.styleSwitchJobs[currentSession.id] || null : null
+  )
   const setInteractionMode = useSessionDetailUiStore((state) => state.setInteractionMode)
   const setWorkspaceTab = useSessionDetailUiStore((state) => state.setWorkspaceTab)
   const editSelectedSelector = useSessionDetailUiStore((state) => state.editSelectedSelector)
@@ -67,6 +75,10 @@ export const PreviewStage = forwardRef<
   const isAnimationSelecting = interactionMode === 'animation-select'
   const isInspecting = interactionMode === 'ai-inspect' || isAnimationSelecting
   const isPageEditing = pageEditJob?.pageId === selectedPage?.pageId
+  const isStyleSwitchLocked = isStyleSwitchPageLocked(styleSwitchJob, selectedPage?.pageId)
+  const isStyleSwitchPageRunning = styleSwitchJob?.pages.some(
+    (page) => page.pageId === selectedPage?.pageId && page.status === 'running'
+  )
 
   const setPreviewIframeHandle = useCallback(
     (handle: PreviewIframeHandle | null): void => {
@@ -196,7 +208,7 @@ export const PreviewStage = forwardRef<
   ])
 
   useEffect(() => {
-    if (isPageEditing) return
+    if (isPageEditing || isStyleSwitchLocked) return
     if (interactionMode === 'preview') return
     const onKeyDown = (event: KeyboardEvent): void => {
       const target = event.target
@@ -236,6 +248,7 @@ export const PreviewStage = forwardRef<
   }, [
     interactionMode,
     isPageEditing,
+    isStyleSwitchLocked,
     clearSelectedElement,
     isAnimationSelecting,
     isEditing,
@@ -279,10 +292,12 @@ export const PreviewStage = forwardRef<
                 pageId={selectedPage.pageId}
                 title={`preview-page-${selectedPage.pageNumber}`}
                 slideSize={slideSize}
-                inspectable={!isPageEditing && !isDeckEditing}
+                inspectable={!isPageEditing && !isDeckEditing && !isStyleSwitchLocked}
                 interactionMode={interactionMode}
-                inspecting={isInspecting && !isPageEditing && !isDeckEditing}
-                editMode={isEditing && !isPageEditing && !isDeckEditing}
+                inspecting={
+                  isInspecting && !isPageEditing && !isDeckEditing && !isStyleSwitchLocked
+                }
+                editMode={isEditing && !isPageEditing && !isDeckEditing && !isStyleSwitchLocked}
                 onSelectorSelected={setSelectedElement}
                 onElementMoved={onElementMoved}
                 onElementSelected={onElementSelected}
@@ -310,8 +325,22 @@ export const PreviewStage = forwardRef<
                 slideSize={slideSize}
               />
             )}
+            {isStyleSwitchPageRunning && (
+              <div
+                className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-[#f5f1e8]/72 text-center text-[#4f6340] backdrop-blur-[1px]"
+                aria-live="polite"
+              >
+                <Loader2 className="h-7 w-7 animate-spin" />
+                <div className="max-w-sm px-6 text-sm font-medium">
+                  {t('sessionDetail.styleSwitching')}
+                </div>
+              </div>
+            )}
             {pageEditJob && isPageEditing && (
-              <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-[#f5f1e8]/72 text-center text-[#4f6340] backdrop-blur-[1px]" aria-live="polite">
+              <div
+                className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-[#f5f1e8]/72 text-center text-[#4f6340] backdrop-blur-[1px]"
+                aria-live="polite"
+              >
                 <Loader2 className="h-7 w-7 animate-spin" />
                 <div className="max-w-sm px-6 text-sm font-medium">
                   {pageEditJob.label || t('sessionDetail.activityProcessing')}

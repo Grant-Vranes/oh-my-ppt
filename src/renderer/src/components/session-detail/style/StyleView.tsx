@@ -5,22 +5,15 @@ import { useT } from '@renderer/i18n'
 import { useModelAction } from '@renderer/hooks/useModelAction'
 import { useThumbnailUpdates } from '@renderer/hooks/useThumbnailUpdates'
 import { useVisibleItemIds } from '@renderer/hooks/useVisibleItemIds'
+import { cn } from '@renderer/lib/utils'
 import {
+  hydrateStyleSwitchJob,
   useGenerateStore,
-  useGenerationActivityStore,
   useSessionDetailUiStore,
   useSessionStore,
   useToastStore
 } from '@renderer/store'
 import { ScrollArea } from '../../ui/ScrollArea'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogTitle
-} from '../../ui/AlertDialog'
 
 const MAX_VISIBLE_IFRAMES = 8
 
@@ -33,14 +26,16 @@ export function StyleView({ sessionId }: { sessionId: string }): React.JSX.Eleme
   const currentStyleId = useSessionStore((state) => state.currentSession?.styleId || '')
   const isGenerating = useGenerateStore((state) => state.isGenerating)
   const isDeckEditing = useGenerateStore((state) => Boolean(state.deckEditJobs[sessionId]))
-  const activeStyleSwitchId = useGenerationActivityStore((state) =>
-    state.retryContext?.kind === 'style-switch' ? state.retryContext.styleId : ''
-  )
+  const currentPages = useGenerateStore((state) => state.currentPages)
+  const styleSwitchJob = useGenerateStore((state) => state.styleSwitchJobs[sessionId] || null)
+  const isStyleSwitching =
+    styleSwitchJob?.status === 'starting' ||
+    styleSwitchJob?.status === 'running' ||
+    styleSwitchJob?.status === 'cancelling'
   const { error } = useToastStore()
   const { selectedModelConfigId, ensureModelActive } = useModelAction()
   const [styles, setStyles] = useState<StyleListItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [switchTarget, setSwitchTarget] = useState<StyleListItem | null>(null)
 
   const loadStyles = useCallback(async (): Promise<void> => {
     setLoading(true)
@@ -95,30 +90,47 @@ export function StyleView({ sessionId }: { sessionId: string }): React.JSX.Eleme
   )
 
   const handleSwitch = async (style: StyleListItem): Promise<void> => {
-    if (style.id === currentStyleId || isGenerating || isDeckEditing) return
+    if (style.id === currentStyleId || isGenerating || isDeckEditing || isStyleSwitching) return
     const modelConfigId = await ensureModelActive(selectedModelConfigId)
     if (!modelConfigId) return
-    useGenerationActivityStore.getState().startStyleSwitch(style.id)
-    setSwitchTarget(null)
     useSessionDetailUiStore.getState().setWorkspaceTab('preview')
     useSessionDetailUiStore.getState().setInteractionMode('preview')
     useGenerateStore.getState().clearSessionError(sessionId)
-    useGenerateStore.setState({ isGenerating: true, error: null, status: 'running' })
+    useGenerateStore.getState().startStyleSwitch(sessionId, {
+      styleId: style.id,
+      styleName: style.label,
+      totalPages: Math.max(1, currentPages.length),
+      pages: currentPages.map((page) => ({
+        pageId: page.pageId || page.id,
+        pageNumber: page.pageNumber,
+        title: page.title,
+        status: 'pending',
+        error: null,
+        retryCount: 0
+      }))
+    })
     try {
-      const result = await ipc.switchSessionStyle({ sessionId, styleId: style.id, modelConfigId })
+      const result = await ipc.startStyleSwitch({ sessionId, styleId: style.id, modelConfigId })
       if (result.alreadyRunning) {
-        useGenerationActivityStore.getState().reset()
+        hydrateStyleSwitchJob(sessionId, await ipc.getStyleSwitchState(sessionId))
         return
       }
       if (result.unchanged) {
-        useGenerateStore.getState().finishGeneration()
-        useGenerationActivityStore.getState().reset()
+        useGenerateStore.getState().finishStyleSwitch(sessionId, {
+          status: 'completed',
+          error: null
+        })
+        useGenerateStore.getState().clearStyleSwitchJob(sessionId)
+      } else if (result.runId) {
+        useGenerateStore.getState().updateStyleSwitchJob(sessionId, {
+          runId: result.runId,
+          status: 'running'
+        })
       }
     } catch (switchError) {
       const message = switchError instanceof Error ? switchError.message : t('common.retryLater')
       useGenerateStore.getState().setSessionError(sessionId, message)
-      useGenerateStore.setState({ status: 'failed', isGenerating: false, progress: null })
-      useGenerationActivityStore.getState().reset()
+      useGenerateStore.getState().finishStyleSwitch(sessionId, { status: 'failed', error: message })
       await useSessionStore.getState().loadSession(sessionId)
       error(t('sessionDetail.styleSwitchFailed'), { description: message })
     }
@@ -143,7 +155,7 @@ export function StyleView({ sessionId }: { sessionId: string }): React.JSX.Eleme
         <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">
           {orderedStyles.map((style) => {
             const isCurrent = style.id === currentStyleId
-            const isSwitching = style.id === activeStyleSwitchId && isGenerating
+            const isSwitching = style.id === styleSwitchJob?.styleId && isStyleSwitching
             return (
               <div
                 key={style.id}
@@ -151,23 +163,29 @@ export function StyleView({ sessionId }: { sessionId: string }): React.JSX.Eleme
                 data-style-card-id={style.id}
                 role="button"
                 aria-current={isCurrent ? 'true' : undefined}
-                tabIndex={isCurrent || isGenerating || isDeckEditing ? -1 : 0}
-                aria-disabled={isCurrent || isGenerating || isDeckEditing}
+                tabIndex={isCurrent || isGenerating || isDeckEditing || isStyleSwitching ? -1 : 0}
+                aria-disabled={isCurrent || isGenerating || isDeckEditing || isStyleSwitching}
                 onClick={() => {
-                  if (!isCurrent && !isGenerating && !isDeckEditing) setSwitchTarget(style)
+                  if (!isCurrent && !isGenerating && !isDeckEditing && !isStyleSwitching) {
+                    void handleSwitch(style)
+                  }
                 }}
                 onKeyDown={(event) => {
                   if (
                     (event.key === 'Enter' || event.key === ' ') &&
                     !isCurrent &&
                     !isGenerating &&
-                    !isDeckEditing
+                    !isDeckEditing &&
+                    !isStyleSwitching
                   ) {
                     event.preventDefault()
-                    setSwitchTarget(style)
+                    void handleSwitch(style)
                   }
                 }}
-                className="group overflow-hidden rounded-2xl border border-[#d8cfbc]/75 bg-white/70 text-left shadow-[0_4px_16px_rgba(93,107,77,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(93,107,77,0.15)] aria-disabled:cursor-default aria-disabled:hover:translate-y-0"
+                className={cn(
+                  'group overflow-hidden rounded-2xl border border-[#d8cfbc]/75 bg-white/70 text-left shadow-[0_4px_16px_rgba(93,107,77,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(93,107,77,0.15)] aria-disabled:cursor-default aria-disabled:hover:translate-y-0',
+                  isStyleSwitching && 'pointer-events-none opacity-45 grayscale'
+                )}
               >
                 <div className="relative aspect-video overflow-hidden bg-[#f5f1e8]">
                   {style.thumbnailPath ? (
@@ -233,33 +251,6 @@ export function StyleView({ sessionId }: { sessionId: string }): React.JSX.Eleme
           })}
         </div>
       </div>
-      <AlertDialog
-        open={Boolean(switchTarget)}
-        onOpenChange={(open) => {
-          if (!open) setSwitchTarget(null)
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogTitle>{t('sessionDetail.styleSwitchConfirmTitle')}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {t('sessionDetail.styleSwitchConfirmDescription', {
-              style: switchTarget?.label || ''
-            })}
-          </AlertDialogDescription>
-          <div className="flex justify-end gap-2">
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (switchTarget) void handleSwitch(switchTarget)
-              }}
-              className="bg-[#5d6b4d] text-white hover:bg-[#49563d]"
-            >
-              <Palette className="mr-2 h-4 w-4" />
-              {t('sessionDetail.styleSwitchConfirmAction')}
-            </AlertDialogAction>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
     </ScrollArea>
   )
 }

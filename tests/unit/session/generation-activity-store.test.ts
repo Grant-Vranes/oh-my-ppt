@@ -31,8 +31,13 @@ describe('generationActivityStore', () => {
     })
   })
 
-  it('clears style-switch and failure state together', () => {
-    useGenerationActivityStore.getState().startStyleSwitch('style-2')
+  it('clears dialog retry state together', () => {
+    useGenerationActivityStore.getState().startEdit({
+      sessionId: 'session-2',
+      userMessage: '调整版式',
+      type: 'page',
+      chatType: 'main'
+    })
     useGenerationActivityStore.getState().setFailedRun('run-2', 3)
     useGenerationActivityStore.getState().reset()
 
@@ -52,12 +57,11 @@ describe('generationActivityStore', () => {
     expect(shouldHandleGenerationActivity('page-edit', null)).toBe(false)
     expect(shouldHandleGenerationActivity('deck-edit', null)).toBe(false)
     expect(shouldHandleGenerationActivity('edit', null)).toBe(true)
-    expect(shouldHandleGenerationActivity('style-switch', null)).toBe(true)
     expect(shouldHandleGenerationActivity('single-page-retry', null)).toBe(true)
     expect(shouldHandleGenerationActivity('addPage', null)).toBe(true)
-    expect(
-      shouldHandleGenerationActivity(undefined, { kind: 'style-switch', styleId: 'style-2' })
-    ).toBe(true)
+    expect(shouldHandleGenerationActivity(undefined, { kind: 'edit', payload: {} as never })).toBe(
+      true
+    )
   })
 
   it('routes activity runs into the generation activity dialog', () => {

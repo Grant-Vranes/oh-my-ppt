@@ -147,10 +147,35 @@ export interface GenerateRunStateSnapshot {
   error: string | null
   startedAt: number | null
   updatedAt: number | null
-  kind?: 'standard' | 'template' | 'retry' | 'edit' | 'page-edit' | 'deck-edit'
+  kind?: 'standard' | 'template' | 'retry' | 'edit' | 'page-edit' | 'deck-edit' | 'style-switch'
   targetPageId?: string
   targetPageNumber?: number
   retryPayload?: GenerateStartPayload
+}
+
+export interface StyleSwitchJobSnapshot {
+  sessionId: string
+  runId: string | null
+  status: 'idle' | 'running' | 'completed' | 'partial' | 'failed' | 'cancelled'
+  hasActiveRun: boolean
+  progress: number
+  totalPages: number
+  completedPageCount: number
+  failedPageCount: number
+  targetStyleId: string | null
+  targetStyleName: string | null
+  pages: Array<{
+    pageId: string
+    pageNumber: number
+    title: string
+    status: 'pending' | 'running' | 'completed' | 'failed'
+    error: string | null
+    retryCount: number
+  }>
+  error: string | null
+  startedAt: number | null
+  updatedAt: number | null
+  kind: 'style-switch'
 }
 
 export interface ExportDeckResult {
@@ -843,8 +868,42 @@ export const ipc = {
     getIpc().invoke('deck-edit:listActive') as Promise<GenerateRunStateSnapshot[]>,
   cancelDeckEdit: (sessionId: string) =>
     getIpc().invoke('deck-edit:cancel', sessionId) as Promise<{ success: boolean }>,
+  startStyleSwitch: (payload: SwitchSessionStylePayload) =>
+    getIpc().invoke('style-switch:start', payload) as Promise<{
+      success: boolean
+      runId?: string
+      styleId: string
+      unchanged?: boolean
+      alreadyRunning?: boolean
+    }>,
+  retryStyleSwitchPage: (payload: {
+    sessionId: string
+    failedRunId?: string
+    pageId: string
+    modelConfigId?: string
+  }) =>
+    getIpc().invoke('style-switch:retryPage', payload) as Promise<{
+      success: boolean
+      runId?: string
+      styleId: string
+      alreadyRunning?: boolean
+    }>,
+  retryFailedStyleSwitchPages: (payload: RetrySessionStylePayload) =>
+    getIpc().invoke('style-switch:retryFailed', payload) as Promise<{
+      success: boolean
+      runId?: string
+      styleId: string
+      alreadyRunning?: boolean
+      failedPageCount: number
+    }>,
+  getStyleSwitchState: (sessionId: string) =>
+    getIpc().invoke('style-switch:state', sessionId) as Promise<StyleSwitchJobSnapshot>,
+  listActiveStyleSwitchRuns: () =>
+    getIpc().invoke('style-switch:listActive') as Promise<StyleSwitchJobSnapshot[]>,
+  cancelStyleSwitch: (sessionId: string) =>
+    getIpc().invoke('style-switch:cancel', sessionId) as Promise<{ success: boolean }>,
   switchSessionStyle: (payload: SwitchSessionStylePayload) =>
-    getIpc().invoke('generate:switchStyle', payload) as Promise<{
+    getIpc().invoke('style-switch:start', payload) as Promise<{
       success: boolean
       runId?: string
       styleId: string
@@ -853,7 +912,7 @@ export const ipc = {
       failedPageCount?: number
     }>,
   retrySessionStyle: (payload: RetrySessionStylePayload) =>
-    getIpc().invoke('generate:retryStyleSwitch', payload) as Promise<{
+    getIpc().invoke('style-switch:retryFailed', payload) as Promise<{
       success: boolean
       runId?: string
       styleId: string

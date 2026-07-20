@@ -19,14 +19,7 @@ import {
   type RollbackHistoryResult
 } from '@shared/history'
 
-const GITIGNORE_ENTRIES = [
-  '.DS_Store',
-  'Thumbs.db',
-  '*.log',
-  'tmp/',
-  'cache/',
-  'speech/'
-]
+const GITIGNORE_ENTRIES = ['.DS_Store', 'Thumbs.db', '*.log', 'tmp/', 'cache/', 'speech/']
 const GITIGNORE_CONTENT = [...GITIGNORE_ENTRIES, ''].join('\n')
 
 type RecordOperationArgs = {
@@ -39,6 +32,7 @@ type RecordOperationArgs = {
   targetOperationId?: string | null
   targetCommit?: string | null
   allowEmptySnapshot?: boolean
+  allowedPaths?: string[]
 }
 
 type GitStatusMatrixRow = [string, number, number, number]
@@ -208,7 +202,7 @@ export class GitHistoryService {
     }
 
     const metadata = await this.buildOperationMetadata(args)
-    const { changedFiles } = await this.stageControlledChanges(projectDir)
+    const { changedFiles } = await this.stageControlledChanges(projectDir, args.allowedPaths)
     const changedPages = Array.from(
       new Set(changedFiles.map((file) => file.pageId).filter(Boolean) as string[])
     ).sort()
@@ -309,20 +303,20 @@ export class GitHistoryService {
       return this.db.getSessionOperation(operationId) as Promise<SessionOperationRecord | null>
     } catch (error) {
       if (committedAfter) {
-        await this.rollbackFailedCommit(projectDir, beforeCommit, beforeFiles).catch(
-          (rollbackError) => {
-            log.error('[history] rollback failed after operation commit', {
-              sessionId: args.sessionId,
-              operationId,
-              beforeCommit,
-              committedAfter,
-              message:
-                rollbackError instanceof Error
-                  ? rollbackError.message
-                  : String(rollbackError)
-            })
-          }
-        )
+        await this.rollbackFailedCommit(
+          projectDir,
+          beforeCommit,
+          beforeFiles,
+          args.allowedPaths
+        ).catch((rollbackError) => {
+          log.error('[history] rollback failed after operation commit', {
+            sessionId: args.sessionId,
+            operationId,
+            beforeCommit,
+            committedAfter,
+            message: rollbackError instanceof Error ? rollbackError.message : String(rollbackError)
+          })
+        })
       }
       await this.db.completeSessionOperation({
         id: operationId,
@@ -337,15 +331,48 @@ export class GitHistoryService {
     }
   }
 
+  /**
+   * Compensates a just-recorded path-scoped operation when its caller cannot finish its own
+   * database state transition. This deliberately restores only the operation allowlist so an
+   * independently generated page can remain uncommitted in the working tree.
+   */
+  async rollbackCommittedOperation(args: {
+    sessionId: string
+    projectDir: string
+    operation: SessionOperationRecord
+    allowedPaths: string[]
+    reason: string
+  }): Promise<void> {
+    const beforeCommit = args.operation.before_commit
+    if (!beforeCommit) throw new Error('历史补偿失败：缺少提交前版本。')
+    const projectDir = path.resolve(args.projectDir)
+    const metadata = parseJson<Record<string, unknown>>(args.operation.metadata_json, {})
+    await this.moveHeadToCommit(projectDir, beforeCommit)
+    await this.restoreCommitPaths(projectDir, beforeCommit, args.allowedPaths)
+    await this.db.completeSessionOperation({
+      id: args.operation.id,
+      status: 'failed',
+      afterCommit: beforeCommit,
+      metadata: {
+        ...metadata,
+        compensation: 'rolled_back_after_page_finalization_failure',
+        error: args.reason
+      }
+    })
+    await this.db.updateSessionHistoryPointer({
+      sessionId: args.sessionId,
+      operationId: args.operation.parent_operation_id || null,
+      commit: beforeCommit
+    })
+  }
+
   async listVersions(sessionId: string, limit = HISTORY_VERSION_LIMIT): Promise<HistoryVersion[]> {
     const session = await this.db.getSession(sessionId)
     const currentCommit = typeof session?.currentCommit === 'string' ? session.currentCommit : null
     const currentOperationId =
       typeof session?.currentOperationId === 'string' ? session.currentOperationId : null
     const startOperationId =
-      currentOperationId ||
-      (await this.findOperationIdByCommit(sessionId, currentCommit)) ||
-      null
+      currentOperationId || (await this.findOperationIdByCommit(sessionId, currentCommit)) || null
     const maxCount = Math.max(1, Math.min(HISTORY_VERSION_LIMIT, Math.floor(limit)))
     const operations = await this.collectVisibleChainOperations(startOperationId, maxCount)
 
@@ -393,9 +420,10 @@ export class GitHistoryService {
       typeof session?.currentOperationId === 'string' ? session.currentOperationId : null
     const beforeFiles = await this.listTrackedFiles(projectDir, beforeCommit)
 
-    const operationTrackedFiles = parseJson<string[]>(targetOperation.tracked_files_json, []).filter(
-      isControlledFile
-    )
+    const operationTrackedFiles = parseJson<string[]>(
+      targetOperation.tracked_files_json,
+      []
+    ).filter(isControlledFile)
     if (!hasRestorableDeckFiles(operationTrackedFiles)) {
       throw new Error('目标历史版本记录不完整（tracked_files_json 缺少页面文件），无法回退。')
     }
@@ -413,8 +441,15 @@ export class GitHistoryService {
         commit: targetOperation.after_commit
       })
 
-      if (sessionMetadata && typeof sessionMetadata === 'object' && !Array.isArray(sessionMetadata)) {
-        await this.db.updateSessionMetadata(args.sessionId, sessionMetadata as Record<string, unknown>)
+      if (
+        sessionMetadata &&
+        typeof sessionMetadata === 'object' &&
+        !Array.isArray(sessionMetadata)
+      ) {
+        await this.db.updateSessionMetadata(
+          args.sessionId,
+          sessionMetadata as Record<string, unknown>
+        )
       }
       if (targetStyleState) {
         await this.db.restoreSessionStyleState(
@@ -422,10 +457,7 @@ export class GitHistoryService {
           targetStyleState.styleId,
           targetStyleState.snapshot || undefined
         )
-        await this.db.updateSessionDesignContract(
-          args.sessionId,
-          targetStyleState.designContract
-        )
+        await this.db.updateSessionDesignContract(args.sessionId, targetStyleState.designContract)
         log.info('[history] restored session style snapshot', {
           sessionId: args.sessionId,
           versionId: targetOperation.id,
@@ -463,7 +495,9 @@ export class GitHistoryService {
                 : String(styleRollbackError)
           })
         })
-      await this.db.updateSessionDesignContract(args.sessionId, beforeDesignContract).catch(() => {})
+      await this.db
+        .updateSessionDesignContract(args.sessionId, beforeDesignContract)
+        .catch(() => {})
       throw error
     }
 
@@ -498,13 +532,19 @@ export class GitHistoryService {
         throw new Error('目标历史版本页面快照缺少 pageId，无法恢复页面顺序。')
       }
       const fileSlug = item.pageId.trim()
-      const providedId = typeof item.id === 'string' && item.id.trim().length > 0 ? item.id.trim() : ''
-      const existing = (providedId ? existingById.get(providedId) : undefined) || existingByFileSlug.get(fileSlug)
+      const providedId =
+        typeof item.id === 'string' && item.id.trim().length > 0 ? item.id.trim() : ''
+      const existing =
+        (providedId ? existingById.get(providedId) : undefined) || existingByFileSlug.get(fileSlug)
       const pageId = providedId || existing?.id || nanoid()
       activeIds.add(pageId)
       const pageNumberRaw = Number(item.pageNumber)
-      const pageNumber = Number.isFinite(pageNumberRaw) && pageNumberRaw > 0 ? Math.floor(pageNumberRaw) : index + 1
-      const title = typeof item.title === 'string' && item.title.trim().length > 0 ? item.title.trim() : `Page ${pageNumber}`
+      const pageNumber =
+        Number.isFinite(pageNumberRaw) && pageNumberRaw > 0 ? Math.floor(pageNumberRaw) : index + 1
+      const title =
+        typeof item.title === 'string' && item.title.trim().length > 0
+          ? item.title.trim()
+          : `Page ${pageNumber}`
       const snapshotHtmlPath =
         typeof item.htmlPath === 'string' && item.htmlPath.trim().length > 0
           ? item.htmlPath.trim()
@@ -515,14 +555,13 @@ export class GitHistoryService {
         snapshotHtmlPath,
         existingHtmlPath: existing?.html_path || ''
       })
-      const restoredStatus =
-        fs.existsSync(htmlPath)
-          ? 'completed'
-          : ((typeof item.status === 'string' ? item.status : existing?.status) as
-              | 'completed'
-              | 'failed'
-              | 'pending'
-              | undefined) || 'failed'
+      const restoredStatus = fs.existsSync(htmlPath)
+        ? 'completed'
+        : ((typeof item.status === 'string' ? item.status : existing?.status) as
+            | 'completed'
+            | 'failed'
+            | 'pending'
+            | undefined) || 'failed'
       await this.db.upsertSessionPage({
         id: pageId,
         sessionId,
@@ -770,20 +809,38 @@ export class GitHistoryService {
     if (unknownIds.length > 0) {
       await this.db.softDeleteSessionPages(sessionId, unknownIds)
     }
-    const currentActive = currentPages.filter((page) => page.deleted_at === null).map((page) => page.id)
+    const currentActive = currentPages
+      .filter((page) => page.deleted_at === null)
+      .map((page) => page.id)
     const shouldDelete = currentActive.filter((id) => !targetActive.has(id))
     if (shouldDelete.length > 0) {
       await this.db.softDeleteSessionPages(sessionId, shouldDelete)
     }
   }
 
-  private async stageControlledChanges(projectDir: string): Promise<{
+  private async stageControlledChanges(
+    projectDir: string,
+    allowedPaths?: string[]
+  ): Promise<{
     changedFiles: ChangedHistoryFile[]
   }> {
+    const allowedPathSet = allowedPaths
+      ? new Set(
+          allowedPaths
+            .map((item) => normalizeRelativePath(item).replace(/^\/+/, ''))
+            .filter(isControlledFile)
+        )
+      : null
     const matrix = (await git.statusMatrix({ fs, dir: projectDir })) as GitStatusMatrixRow[]
     const changedFiles: ChangedHistoryFile[] = []
     for (const [filepath, head, workdir, stage] of matrix) {
       if (!isControlledFile(filepath)) continue
+      if (allowedPathSet && !allowedPathSet.has(normalizeRelativePath(filepath))) {
+        // A concurrent page worker must never be pulled into this operation merely because a
+        // previous attempt left it in the Git index. Keep its worktree change, but unstage it.
+        if (head !== stage) await git.resetIndex({ fs, dir: projectDir, filepath })
+        continue
+      }
       const hasWorkdirDiff = head !== workdir
       const hasStagedDiff = head !== stage
       if (!hasWorkdirDiff && !hasStagedDiff) continue
@@ -816,7 +873,8 @@ export class GitHistoryService {
   private async rollbackFailedCommit(
     projectDir: string,
     beforeCommit: string | null,
-    beforeFiles: string[]
+    beforeFiles: string[],
+    allowedPaths?: string[]
   ): Promise<void> {
     if (!beforeCommit) {
       await fs.promises.rm(path.join(projectDir, '.git'), { recursive: true, force: true })
@@ -825,8 +883,43 @@ export class GitHistoryService {
     }
 
     await this.moveHeadToCommit(projectDir, beforeCommit)
+    if (allowedPaths && allowedPaths.length > 0) {
+      await this.restoreCommitPaths(projectDir, beforeCommit, allowedPaths)
+      return
+    }
     if (hasRestorableDeckFiles(beforeFiles)) {
       await this.restoreCommitFiles(projectDir, beforeCommit, beforeFiles)
+    }
+  }
+
+  private async restoreCommitPaths(
+    projectDir: string,
+    commit: string,
+    allowedPaths: string[]
+  ): Promise<void> {
+    const beforeFiles = new Set(await this.listTrackedFiles(projectDir, commit))
+    const normalizedPaths = Array.from(
+      new Set(
+        allowedPaths
+          .map((item) => normalizeRelativePath(item).replace(/^\/+/, ''))
+          .filter(isControlledFile)
+      )
+    )
+    for (const relativePath of normalizedPaths) {
+      const targetPath = path.resolve(projectDir, relativePath)
+      if (!targetPath.startsWith(`${path.resolve(projectDir)}${path.sep}`)) continue
+      if (!beforeFiles.has(relativePath)) {
+        await fs.promises.rm(targetPath, { force: true })
+        continue
+      }
+      const { blob } = await git.readBlob({
+        fs,
+        dir: projectDir,
+        oid: commit,
+        filepath: relativePath
+      })
+      await ensureDir(path.dirname(targetPath))
+      await fs.promises.writeFile(targetPath, blob)
     }
   }
 
@@ -868,7 +961,9 @@ export class GitHistoryService {
     )
   }
 
-  private async buildOperationMetadata(args: RecordOperationArgs): Promise<Record<string, unknown>> {
+  private async buildOperationMetadata(
+    args: RecordOperationArgs
+  ): Promise<Record<string, unknown>> {
     const session = await this.db.getSession(args.sessionId)
     const sessionMetadata = parseJson<Record<string, unknown>>(session?.metadata, {})
     const sessionStyleSnapshot = await this.db.getSessionStyleSnapshot(args.sessionId)
@@ -902,9 +997,14 @@ export class GitHistoryService {
     const changedFiles = parseJson<ChangedHistoryFile[]>(operation.changed_files_json, [])
     const rawChangedPages = parseJson<string[]>(operation.changed_pages_json, [])
     // For edit operations, only show the page that was actually edited (not anchor-only changes)
-    const editedPageId = operation.type === 'edit' && typeof metadata.pageId === 'string' ? metadata.pageId : ''
-    const changedPages = editedPageId ? rawChangedPages.filter((p) => p === editedPageId) : rawChangedPages
-    const trackedFiles = parseJson<string[]>(operation.tracked_files_json, []).filter(isControlledFile)
+    const editedPageId =
+      operation.type === 'edit' && typeof metadata.pageId === 'string' ? metadata.pageId : ''
+    const changedPages = editedPageId
+      ? rawChangedPages.filter((p) => p === editedPageId)
+      : rawChangedPages
+    const trackedFiles = parseJson<string[]>(operation.tracked_files_json, []).filter(
+      isControlledFile
+    )
     const commit = operation.after_commit || ''
     return {
       id: operation.id,
@@ -920,7 +1020,7 @@ export class GitHistoryService {
       changedPages,
       isCurrent: Boolean(
         (current.currentCommit && commit === current.currentCommit) ||
-          (current.currentOperationId && operation.id === current.currentOperationId)
+        (current.currentOperationId && operation.id === current.currentOperationId)
       ),
       isRestorable: Boolean(commit) && hasRestorableDeckFiles(trackedFiles)
     }
@@ -934,6 +1034,13 @@ export class GitHistoryService {
     const scope = typeof operation.scope === 'string' ? operation.scope : ''
     const effectiveMode =
       typeof metadata.effectiveMode === 'string' ? metadata.effectiveMode.trim() : ''
+    const styleSwitchPageNumber = Number(metadata.pageNumber)
+
+    if (metadata.jobType === 'style-switch') {
+      return Number.isInteger(styleSwitchPageNumber) && styleSwitchPageNumber > 0
+        ? `切换风格 · 第 ${styleSwitchPageNumber} 页`
+        : '切换风格'
+    }
 
     if (effectiveMode === 'addPage' || metadata.addPage === true) return '新增页面'
     if (effectiveMode === 'retrySinglePage') return '重试页面'

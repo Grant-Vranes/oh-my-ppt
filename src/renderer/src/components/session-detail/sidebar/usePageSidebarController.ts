@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { ipc } from '@renderer/lib/ipc'
 import {
+  hydrateStyleSwitchJob,
   useGenerateStore,
   useSessionDetailUiStore,
   useSessionStore,
@@ -22,6 +23,7 @@ export function usePageSidebarController(sessionId: string) {
   const isGenerating = useGenerateStore((state) => state.isGenerating)
   const pageEditJob = useGenerateStore((state) => state.pageEditJobs[sessionId] || null)
   const deckEditJob = useGenerateStore((state) => state.deckEditJobs[sessionId] || null)
+  const styleSwitchJob = useGenerateStore((state) => state.styleSwitchJobs[sessionId] || null)
   const selectedPageId = useSessionDetailUiStore((state) => state.selectedPageId)
   const interactionMode = useSessionDetailUiStore((state) => state.interactionMode)
   const isAddingPage = useSessionDetailUiStore((state) => state.isAddingPage)
@@ -47,9 +49,53 @@ export function usePageSidebarController(sessionId: string) {
     () => pages.find((page) => page.id === selectedPageId) ?? pages[0] ?? null,
     [pages, selectedPageId]
   )
+  const isStyleSwitchActive =
+    styleSwitchJob?.status === 'starting' ||
+    styleSwitchJob?.status === 'running' ||
+    styleSwitchJob?.status === 'cancelling'
 
   const handleRetryFailedPage = async (page: SessionPreviewPage): Promise<void> => {
     if (!sessionId || !page.id) return
+    if (isStyleSwitchActive) return
+    const stylePageId = page.pageId || page.id
+    const styleSwitchFailedPage = styleSwitchJob?.pages.find(
+      (item) => item.pageId === stylePageId && item.status === 'failed'
+    )
+    if (styleSwitchJob && styleSwitchFailedPage) {
+      const modelConfigId = await modelAction.ensureModelActive()
+      if (!modelConfigId) return
+      useGenerateStore.getState().startStyleSwitch(sessionId, {
+        styleId: styleSwitchJob.styleId,
+        styleName: styleSwitchJob.styleName,
+        totalPages: 1,
+        pages: [{ ...styleSwitchFailedPage, status: 'pending', error: null }]
+      })
+      try {
+        const result = await ipc.retryStyleSwitchPage({
+          sessionId,
+          failedRunId: styleSwitchJob.runId,
+          pageId: styleSwitchFailedPage.pageId,
+          modelConfigId
+        })
+        if (result.alreadyRunning) {
+          hydrateStyleSwitchJob(sessionId, await ipc.getStyleSwitchState(sessionId))
+          return
+        }
+        if (result.runId) {
+          useGenerateStore.getState().updateStyleSwitchJob(sessionId, {
+            runId: result.runId,
+            status: 'running'
+          })
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : t('sessionDetail.retryPageFailed')
+        useGenerateStore
+          .getState()
+          .finishStyleSwitch(sessionId, { status: 'failed', error: message })
+        toastError(message)
+      }
+      return
+    }
     useSessionDetailUiStore.getState().setIsRetryingSinglePage(true)
     useGenerateStore.setState({ isGenerating: true, error: null, status: 'running' })
     try {
@@ -108,6 +154,7 @@ export function usePageSidebarController(sessionId: string) {
       isGenerating ||
       Boolean(pageEditJob) ||
       Boolean(deckEditJob) ||
+      isStyleSwitchActive ||
       isAddingPage ||
       isRetryingSinglePage ||
       isManagingPages,

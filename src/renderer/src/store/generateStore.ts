@@ -36,6 +36,74 @@ export interface DeckEditRetry {
   payload: GenerateStartPayload
 }
 
+export interface StyleSwitchJobPage {
+  pageId: string
+  pageNumber: number
+  title: string
+  status: 'pending' | 'running' | 'completed' | 'failed'
+  error: string | null
+  retryCount: number
+}
+
+export interface StyleSwitchJob {
+  sessionId: string
+  runId?: string
+  styleId: string
+  styleName?: string
+  status: 'starting' | 'running' | 'cancelling' | 'completed' | 'partial' | 'failed' | 'cancelled'
+  progress: number
+  totalPages: number
+  error: string | null
+  pages: StyleSwitchJobPage[]
+}
+
+export type StyleSwitchJobStateSnapshot = {
+  runId: string | null
+  status: 'idle' | StyleSwitchJob['status']
+  progress: number
+  totalPages: number
+  targetStyleId: string | null
+  targetStyleName: string | null
+  error: string | null
+  pages: StyleSwitchJobPage[]
+}
+
+export const hydrateStyleSwitchJob = (
+  sessionId: string,
+  snapshot: StyleSwitchJobStateSnapshot
+): void => {
+  const store = useGenerateStore.getState()
+  if (snapshot.status === 'idle') {
+    store.clearStyleSwitchJob(sessionId)
+    return
+  }
+  store.setStyleSwitchJob(sessionId, {
+    sessionId,
+    runId: snapshot.runId || undefined,
+    styleId: snapshot.targetStyleId || '',
+    styleName: snapshot.targetStyleName || undefined,
+    status: snapshot.status,
+    progress: snapshot.progress,
+    totalPages: snapshot.totalPages,
+    error: snapshot.error,
+    pages: snapshot.pages
+  })
+}
+
+export const isStyleSwitchJobActive = (job: StyleSwitchJob | null | undefined): boolean =>
+  Boolean(
+    job && (job.status === 'starting' || job.status === 'running' || job.status === 'cancelling')
+  )
+
+export const isStyleSwitchPageLocked = (
+  job: StyleSwitchJob | null | undefined,
+  pageId: string | null | undefined
+): boolean => {
+  if (!job || !pageId) return false
+  const page = job.pages.find((item) => item.pageId === pageId)
+  return Boolean(page && page.status !== 'completed')
+}
+
 export interface PendingPageEditPlan {
   sessionId: string
   plan: SessionPageEditPlan
@@ -60,6 +128,7 @@ interface GenerateStore {
   pageEditJobs: Record<string, PageEditJob | undefined>
   deckEditJobs: Record<string, DeckEditJob | undefined>
   deckEditRetries: Record<string, DeckEditRetry | undefined>
+  styleSwitchJobs: Record<string, StyleSwitchJob | undefined>
   pageEditPlanning: Record<string, PageEditPlanningState | undefined>
   currentPages: {
     id: string
@@ -88,6 +157,22 @@ interface GenerateStore {
   updateDeckEdit: (sessionId: string, job: Partial<Omit<DeckEditJob, 'sessionId'>>) => void
   finishDeckEdit: (sessionId: string, retry?: Omit<DeckEditRetry, 'sessionId'>) => void
   clearDeckEditRetry: (sessionId: string) => void
+  startStyleSwitch: (
+    sessionId: string,
+    job: Pick<StyleSwitchJob, 'styleId' | 'styleName' | 'totalPages' | 'pages'>
+  ) => void
+  setStyleSwitchJob: (sessionId: string, job: StyleSwitchJob) => void
+  updateStyleSwitchJob: (
+    sessionId: string,
+    job: Partial<Omit<StyleSwitchJob, 'sessionId' | 'styleId' | 'pages'>>
+  ) => void
+  updateStyleSwitchPage: (
+    sessionId: string,
+    pageId: string,
+    patch: Partial<Omit<StyleSwitchJobPage, 'pageId'>>
+  ) => void
+  finishStyleSwitch: (sessionId: string, result: Pick<StyleSwitchJob, 'status' | 'error'>) => void
+  clearStyleSwitchJob: (sessionId: string) => void
   startPageEditPlanning: (sessionId: string, pageId: string, assessmentId?: string) => void
   setPendingPageEditPlan: (sessionId: string, plan: Omit<PendingPageEditPlan, 'sessionId'>) => void
   finishPageEditPlanning: (sessionId: string, assessmentId?: string) => void
@@ -146,6 +231,7 @@ export const useGenerateStore = create<GenerateStore>((set) => ({
   pageEditJobs: {},
   deckEditJobs: {},
   deckEditRetries: {},
+  styleSwitchJobs: {},
   pageEditPlanning: {},
   currentPages: [],
   error: null,
@@ -250,6 +336,73 @@ export const useGenerateStore = create<GenerateStore>((set) => ({
     set((state) => {
       const { [sessionId]: _cleared, ...deckEditRetries } = state.deckEditRetries
       return { deckEditRetries }
+    }),
+
+  startStyleSwitch: (sessionId, { styleId, styleName, totalPages, pages }) =>
+    set((state) => {
+      const { [sessionId]: _cleared, ...sessionErrors } = state.sessionErrors
+      return {
+        styleSwitchJobs: {
+          ...state.styleSwitchJobs,
+          [sessionId]: {
+            sessionId,
+            styleId,
+            styleName,
+            status: 'starting',
+            progress: 0,
+            totalPages: Math.max(1, totalPages),
+            error: null,
+            pages
+          }
+        },
+        sessionErrors
+      }
+    }),
+
+  setStyleSwitchJob: (sessionId, job) =>
+    set((state) => ({
+      styleSwitchJobs: { ...state.styleSwitchJobs, [sessionId]: { ...job, sessionId } }
+    })),
+
+  updateStyleSwitchJob: (sessionId, job) =>
+    set((state) => ({
+      styleSwitchJobs: state.styleSwitchJobs[sessionId]
+        ? {
+            ...state.styleSwitchJobs,
+            [sessionId]: { ...state.styleSwitchJobs[sessionId], ...job }
+          }
+        : state.styleSwitchJobs
+    })),
+
+  updateStyleSwitchPage: (sessionId, pageId, patch) =>
+    set((state) => {
+      const job = state.styleSwitchJobs[sessionId]
+      if (!job) return { styleSwitchJobs: state.styleSwitchJobs }
+      return {
+        styleSwitchJobs: {
+          ...state.styleSwitchJobs,
+          [sessionId]: {
+            ...job,
+            pages: job.pages.map((page) => (page.pageId === pageId ? { ...page, ...patch } : page))
+          }
+        }
+      }
+    }),
+
+  finishStyleSwitch: (sessionId, result) =>
+    set((state) => ({
+      styleSwitchJobs: state.styleSwitchJobs[sessionId]
+        ? {
+            ...state.styleSwitchJobs,
+            [sessionId]: { ...state.styleSwitchJobs[sessionId], ...result }
+          }
+        : state.styleSwitchJobs
+    })),
+
+  clearStyleSwitchJob: (sessionId) =>
+    set((state) => {
+      const { [sessionId]: _cleared, ...styleSwitchJobs } = state.styleSwitchJobs
+      return { styleSwitchJobs }
     }),
 
   startPageEditPlanning: (sessionId, pageId, assessmentId) =>
@@ -363,6 +516,7 @@ export const useGenerateStore = create<GenerateStore>((set) => ({
       pageEditJobs: {},
       deckEditJobs: {},
       deckEditRetries: {},
+      styleSwitchJobs: {},
       pageEditPlanning: {},
       currentPages: [],
       error: null,

@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { useGenerateStore } from '../../../src/renderer/src/store/generateStore'
+import {
+  hydrateStyleSwitchJob,
+  isStyleSwitchJobActive,
+  isStyleSwitchPageLocked,
+  useGenerateStore
+} from '../../../src/renderer/src/store/generateStore'
 
 describe('generateStore page edit job', () => {
   const sessionId = 'session-1'
@@ -175,5 +180,114 @@ describe('generateStore page edit job', () => {
 
     useGenerateStore.getState().finishDeckEdit(sessionId)
     expect(useGenerateStore.getState().deckEditJobs[sessionId]).toBeUndefined()
+  })
+
+  it('unlocks only pages with a committed style-switch result', () => {
+    useGenerateStore.getState().startStyleSwitch(sessionId, {
+      styleId: 'style-new',
+      styleName: 'New style',
+      totalPages: 2,
+      pages: [
+        {
+          pageId: 'page-1',
+          pageNumber: 1,
+          title: 'Page 1',
+          status: 'pending',
+          error: null,
+          retryCount: 0
+        },
+        {
+          pageId: 'page-2',
+          pageNumber: 2,
+          title: 'Page 2',
+          status: 'pending',
+          error: null,
+          retryCount: 0
+        }
+      ]
+    })
+    useGenerateStore.getState().updateStyleSwitchJob(sessionId, {
+      runId: 'style-run-1',
+      status: 'running'
+    })
+    const job = useGenerateStore.getState().styleSwitchJobs[sessionId]
+
+    expect(isStyleSwitchJobActive(job)).toBe(true)
+    expect(isStyleSwitchPageLocked(job, 'page-1')).toBe(true)
+    expect(isStyleSwitchPageLocked(job, 'page-2')).toBe(true)
+
+    useGenerateStore.getState().updateStyleSwitchPage(sessionId, 'page-1', {
+      status: 'completed',
+      error: null
+    })
+    const afterFirstCommit = useGenerateStore.getState().styleSwitchJobs[sessionId]
+    expect(isStyleSwitchPageLocked(afterFirstCommit, 'page-1')).toBe(false)
+    expect(isStyleSwitchPageLocked(afterFirstCommit, 'page-2')).toBe(true)
+
+    useGenerateStore.getState().finishStyleSwitch(sessionId, { status: 'partial', error: null })
+    expect(isStyleSwitchJobActive(useGenerateStore.getState().styleSwitchJobs[sessionId])).toBe(
+      false
+    )
+    expect(
+      isStyleSwitchPageLocked(useGenerateStore.getState().styleSwitchJobs[sessionId], 'page-2')
+    ).toBe(true)
+  })
+
+  it('replaces an optimistic style-switch job with the persisted active run', () => {
+    useGenerateStore.getState().startStyleSwitch(sessionId, {
+      styleId: 'style-new',
+      totalPages: 1,
+      pages: [
+        {
+          pageId: 'page-1',
+          pageNumber: 1,
+          title: 'Optimistic page',
+          status: 'pending',
+          error: null,
+          retryCount: 0
+        }
+      ]
+    })
+
+    hydrateStyleSwitchJob(sessionId, {
+      runId: 'persisted-run',
+      status: 'running',
+      progress: 40,
+      totalPages: 2,
+      targetStyleId: 'style-existing',
+      targetStyleName: 'Existing style',
+      error: null,
+      pages: [
+        {
+          pageId: 'page-1',
+          pageNumber: 1,
+          title: 'Persisted page',
+          status: 'completed',
+          error: null,
+          retryCount: 1
+        },
+        {
+          pageId: 'page-2',
+          pageNumber: 2,
+          title: 'Running page',
+          status: 'running',
+          error: null,
+          retryCount: 0
+        }
+      ]
+    })
+
+    expect(useGenerateStore.getState().styleSwitchJobs[sessionId]).toMatchObject({
+      runId: 'persisted-run',
+      status: 'running',
+      styleId: 'style-existing',
+      totalPages: 2
+    })
+    expect(
+      isStyleSwitchPageLocked(useGenerateStore.getState().styleSwitchJobs[sessionId], 'page-1')
+    ).toBe(false)
+    expect(
+      isStyleSwitchPageLocked(useGenerateStore.getState().styleSwitchJobs[sessionId], 'page-2')
+    ).toBe(true)
   })
 })

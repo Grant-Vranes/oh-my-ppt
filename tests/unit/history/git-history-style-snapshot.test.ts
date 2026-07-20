@@ -118,11 +118,7 @@ describe('git history style snapshot', () => {
     })
 
     expect(restoreSessionStyleState).toHaveBeenCalledTimes(1)
-    expect(restoreSessionStyleState).toHaveBeenCalledWith(
-      'session-1',
-      'style-old',
-      targetSnapshot
-    )
+    expect(restoreSessionStyleState).toHaveBeenCalledWith('session-1', 'style-old', targetSnapshot)
     expect(db.updateSessionDesignContract).toHaveBeenCalledWith('session-1', {
       theme: 'old-theme'
     })
@@ -165,6 +161,52 @@ describe('git history style snapshot', () => {
         snapshot,
         designContract: { theme: 'old-theme' }
       }
+    })
+  })
+
+  it('compensates a committed path-scoped page operation without touching other page work', async () => {
+    const completeSessionOperation = vi.fn().mockResolvedValue(undefined)
+    const updateSessionHistoryPointer = vi.fn().mockResolvedValue(undefined)
+    const db = { completeSessionOperation, updateSessionHistoryPointer }
+    const service = new GitHistoryService(db as never)
+    const internals = service as any
+    internals.moveHeadToCommit = vi.fn().mockResolvedValue(undefined)
+    internals.restoreCommitPaths = vi.fn().mockResolvedValue(undefined)
+
+    await service.rollbackCommittedOperation({
+      sessionId: 'session-1',
+      projectDir: '/tmp/session-1',
+      operation: {
+        id: 'operation-style-page',
+        session_id: 'session-1',
+        parent_operation_id: 'operation-before',
+        before_commit: 'commit-before',
+        after_commit: 'commit-after',
+        metadata_json: JSON.stringify({ pageId: 'page-1', jobType: 'style-switch' })
+      } as never,
+      allowedPaths: ['page-1.html'],
+      reason: 'generation page update failed'
+    })
+
+    expect(internals.moveHeadToCommit).toHaveBeenCalledWith('/tmp/session-1', 'commit-before')
+    expect(internals.restoreCommitPaths).toHaveBeenCalledWith('/tmp/session-1', 'commit-before', [
+      'page-1.html'
+    ])
+    expect(completeSessionOperation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'operation-style-page',
+        status: 'failed',
+        afterCommit: 'commit-before',
+        metadata: expect.objectContaining({
+          compensation: 'rolled_back_after_page_finalization_failure',
+          pageId: 'page-1'
+        })
+      })
+    )
+    expect(updateSessionHistoryPointer).toHaveBeenCalledWith({
+      sessionId: 'session-1',
+      operationId: 'operation-before',
+      commit: 'commit-before'
     })
   })
 })

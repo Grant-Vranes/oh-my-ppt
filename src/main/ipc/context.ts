@@ -28,9 +28,15 @@ import {
 export type SessionRunState = {
   sessionId: string
   runId: string
-  mode: 'generate' | 'edit' | 'retry' | 'addPage' | 'retrySinglePage'
-  kind?: 'standard' | 'template' | 'retry' | 'edit' | 'page-edit' | 'deck-edit'
-  activityKind?: 'page-edit' | 'deck-edit' | 'edit' | 'style-switch' | 'single-page-retry' | 'addPage'
+  mode: 'generate' | 'edit' | 'retry' | 'addPage' | 'retrySinglePage' | 'style-switch'
+  kind?: 'standard' | 'template' | 'retry' | 'edit' | 'page-edit' | 'deck-edit' | 'style-switch'
+  activityKind?:
+    | 'page-edit'
+    | 'deck-edit'
+    | 'edit'
+    | 'style-switch'
+    | 'single-page-retry'
+    | 'addPage'
   targetPageId?: string
   targetPageNumber?: number
   previousSessionStatus?: string
@@ -85,9 +91,15 @@ export interface IpcContext {
   beginSessionRunState: (args: {
     sessionId: string
     runId: string
-    mode: 'generate' | 'edit' | 'retry' | 'addPage' | 'retrySinglePage'
-    kind?: 'standard' | 'template' | 'retry' | 'edit' | 'page-edit' | 'deck-edit'
-    activityKind?: 'page-edit' | 'deck-edit' | 'edit' | 'style-switch' | 'single-page-retry' | 'addPage'
+    mode: 'generate' | 'edit' | 'retry' | 'addPage' | 'retrySinglePage' | 'style-switch'
+    kind?: 'standard' | 'template' | 'retry' | 'edit' | 'page-edit' | 'deck-edit' | 'style-switch'
+    activityKind?:
+      | 'page-edit'
+      | 'deck-edit'
+      | 'edit'
+      | 'style-switch'
+      | 'single-page-retry'
+      | 'addPage'
     targetPageId?: string
     targetPageNumber?: number
     totalPages: number
@@ -407,9 +419,15 @@ export function createIpcContext(
   const beginSessionRunState = (args: {
     sessionId: string
     runId: string
-    mode: 'generate' | 'edit' | 'retry' | 'addPage' | 'retrySinglePage'
-    kind?: 'standard' | 'template' | 'retry' | 'edit' | 'page-edit' | 'deck-edit'
-    activityKind?: 'page-edit' | 'deck-edit' | 'edit' | 'style-switch' | 'single-page-retry' | 'addPage'
+    mode: 'generate' | 'edit' | 'retry' | 'addPage' | 'retrySinglePage' | 'style-switch'
+    kind?: 'standard' | 'template' | 'retry' | 'edit' | 'page-edit' | 'deck-edit' | 'style-switch'
+    activityKind?:
+      | 'page-edit'
+      | 'deck-edit'
+      | 'edit'
+      | 'style-switch'
+      | 'single-page-retry'
+      | 'addPage'
     targetPageId?: string
     targetPageNumber?: number
     totalPages: number

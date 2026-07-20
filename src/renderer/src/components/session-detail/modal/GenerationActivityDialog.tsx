@@ -9,8 +9,6 @@ import {
   shouldHandleGenerationActivity,
   useGenerationActivityStore
 } from '../../../store/generationActivityStore'
-import { useSessionDetailUiStore } from '../../../store/sessionDetailStore'
-import { useSessionStore } from '../../../store/sessionStore'
 import { useToastStore } from '../../../store/toastStore'
 import type { GenerateChunkEvent } from '@shared/generation'
 import {
@@ -85,8 +83,6 @@ export function GenerationActivityDialog({ sessionId }: { sessionId: string }): 
   const [logs, setLogs] = useState<ActivityLog[]>([])
   const runIdRef = useRef<string | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
-  const activeSessionIdRef = useRef(sessionId)
-  activeSessionIdRef.current = sessionId
 
   useEffect(() => {
     runIdRef.current = null
@@ -108,7 +104,6 @@ export function GenerationActivityDialog({ sessionId }: { sessionId: string }): 
         'activityKind' in event.payload &&
         (event.payload.activityKind === 'page-edit' ||
           event.payload.activityKind === 'edit' ||
-          event.payload.activityKind === 'style-switch' ||
           event.payload.activityKind === 'single-page-retry' ||
           event.payload.activityKind === 'addPage')
           ? event.payload.activityKind
@@ -152,16 +147,6 @@ export function GenerationActivityDialog({ sessionId }: { sessionId: string }): 
       if (shouldAutoCloseGenerationActivity(event.type, nextFailedPageCount)) {
         setOpen(false)
         useGenerationActivityStore.getState().reset()
-        if (activityKind === 'style-switch' || activeRetryContext?.kind === 'style-switch') {
-          void useSessionStore
-            .getState()
-            .loadSession(sessionId, () => activeSessionIdRef.current === sessionId)
-            .then(() => {
-              if (activeSessionIdRef.current === sessionId) {
-                useSessionDetailUiStore.getState().bumpPreviewKey()
-              }
-            })
-        }
         return
       }
 
@@ -209,36 +194,17 @@ export function GenerationActivityDialog({ sessionId }: { sessionId: string }): 
     setLabel(t('sessionDetail.activityRetrying'))
     setCurrentDetail(undefined)
     try {
-      const result =
-        retryContext.kind === 'style-switch'
-          ? await ipc.retrySessionStyle({
-              sessionId,
-              styleId: retryContext.styleId,
-              modelConfigId,
-              failedRunId: failedRunId || undefined
-            })
-          : await ipc.retryDeckEdit({
-              ...retryContext.payload,
-              sessionId,
-              modelConfigId,
-              failedRunId: failedRunId || undefined
-            })
+      const result = await ipc.retryDeckEdit({
+        ...retryContext.payload,
+        sessionId,
+        modelConfigId,
+        failedRunId: failedRunId || undefined
+      })
       if (result.alreadyRunning) return
       if (!result.runId && result.failedPageCount === 0) {
-        if (retryContext.kind === 'style-switch') {
-          setOpen(false)
-          useGenerationActivityStore.getState().reset()
-          await useSessionStore
-            .getState()
-            .loadSession(sessionId, () => activeSessionIdRef.current === sessionId)
-          if (activeSessionIdRef.current === sessionId) {
-            useSessionDetailUiStore.getState().bumpPreviewKey()
-          }
-        } else {
-          setStatus('completed')
-          setLabel(t('sessionDetail.activityCompleted'))
-          useGenerationActivityStore.getState().reset()
-        }
+        setStatus('completed')
+        setLabel(t('sessionDetail.activityCompleted'))
+        useGenerationActivityStore.getState().reset()
       }
     } catch (retryError) {
       const message = retryError instanceof Error ? retryError.message : t('common.retryLater')

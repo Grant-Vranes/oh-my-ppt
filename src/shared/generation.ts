@@ -226,7 +226,8 @@ export const normalizeSessionPageEditPlan = (value: unknown): SessionPageEditPla
     typeof record.confirmationQuestion === 'string'
       ? record.confirmationQuestion.trim().slice(0, 300)
       : ''
-  if (!intent || !target || !summary || changes.length === 0 || !confirmationQuestion) return undefined
+  if (!intent || !target || !summary || changes.length === 0 || !confirmationQuestion)
+    return undefined
   return { intent, target, summary, changes, confirmationQuestion }
 }
 
@@ -385,6 +386,7 @@ export interface GeneratedPagePayload {
   htmlPath?: string
   pageId?: string
   sourceUrl?: string
+  pageCommitReady?: boolean
 }
 
 export interface PageStatusPayload {
@@ -407,7 +409,13 @@ export interface GenerateStagePayload {
   completedPageCount?: number
   failedPageCount?: number
   timestamp?: string
-  activityKind?: 'page-edit' | 'deck-edit' | 'edit' | 'style-switch' | 'single-page-retry' | 'addPage'
+  activityKind?:
+    | 'page-edit'
+    | 'deck-edit'
+    | 'edit'
+    | 'style-switch'
+    | 'single-page-retry'
+    | 'addPage'
 }
 
 export type GenerateChunkEvent =
@@ -433,7 +441,13 @@ export type GenerateChunkEvent =
         chatType?: 'main' | 'page'
         pageId?: string
         timestamp?: string
-        activityKind?: 'page-edit' | 'deck-edit' | 'edit' | 'style-switch' | 'single-page-retry' | 'addPage'
+        activityKind?:
+          | 'page-edit'
+          | 'deck-edit'
+          | 'edit'
+          | 'style-switch'
+          | 'single-page-retry'
+          | 'addPage'
       }
     }
   | {
@@ -461,7 +475,13 @@ export type GenerateChunkEvent =
         completedPageCount?: number
         failedPageCount?: number
         timestamp?: string
-        activityKind?: 'page-edit' | 'deck-edit' | 'edit' | 'style-switch' | 'single-page-retry' | 'addPage'
+        activityKind?:
+          | 'page-edit'
+          | 'deck-edit'
+          | 'edit'
+          | 'style-switch'
+          | 'single-page-retry'
+          | 'addPage'
       }
     }
   | {
@@ -474,6 +494,12 @@ export type GenerateChunkEvent =
         completedPageCount?: number
         failedPageCount?: number
         timestamp?: string
-        activityKind?: 'page-edit' | 'deck-edit' | 'edit' | 'style-switch' | 'single-page-retry' | 'addPage'
+        activityKind?:
+          | 'page-edit'
+          | 'deck-edit'
+          | 'edit'
+          | 'style-switch'
+          | 'single-page-retry'
+          | 'addPage'
       }
     }

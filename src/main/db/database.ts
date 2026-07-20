@@ -32,9 +32,22 @@ type MessageRole = 'user' | 'assistant' | 'system' | 'tool'
 type MessageType = 'text' | 'tool_call' | 'tool_result' | 'stream_chunk'
 type ChatScope = 'main' | 'page'
 type StyleSource = 'builtin' | 'custom' | 'override'
-type GenerationRunMode = 'generate' | 'retry' | 'edit' | 'import' | 'addPage' | 'retrySinglePage'
+type GenerationRunMode =
+  | 'generate'
+  | 'retry'
+  | 'edit'
+  | 'import'
+  | 'addPage'
+  | 'retrySinglePage'
+  | 'style-switch'
 type GenerationRunStatus = 'running' | 'completed' | 'failed' | 'partial'
-export type SessionJobKind = 'standard' | 'template' | 'retry' | 'page-edit' | 'deck-edit'
+export type SessionJobKind =
+  | 'standard'
+  | 'template'
+  | 'retry'
+  | 'page-edit'
+  | 'deck-edit'
+  | 'style-switch'
 export type SessionJobStatus = 'pending' | 'active' | 'finished' | 'aborted'
 type GenerationPageStatus = 'pending' | 'running' | 'completed' | 'failed'
 type SessionPageStatus = schema.SessionPageStatus
@@ -176,6 +189,18 @@ type SessionJobCreateData = {
   targetPageNumber?: number
   selector?: string
   totalPages?: number
+}
+
+type GenerationPageCreateData = {
+  pageId: string
+  pageNumber: number
+  title: string
+  contentOutline?: string | null
+  layoutIntent?: string | null
+  htmlPath?: string | null
+  status?: Extract<GenerationPageStatus, 'pending' | 'running'>
+  error?: string | null
+  retryCount?: number
 }
 
 export interface GenerationPageRecord {
@@ -920,7 +945,11 @@ export class PPTDatabase {
     return {
       id: String(row.id || ''),
       session_id: String(row.sessionId ?? row.session_id ?? ''),
-      kind: (kind === 'template' || kind === 'retry' || kind === 'page-edit' || kind === 'deck-edit'
+      kind: (kind === 'template' ||
+      kind === 'retry' ||
+      kind === 'page-edit' ||
+      kind === 'deck-edit' ||
+      kind === 'style-switch'
         ? kind
         : 'standard') as SessionJobKind,
       previous_session_status:
@@ -1088,6 +1117,14 @@ export class PPTDatabase {
     run: GenerationRunCreateData & { id: string }
     job: SessionJobCreateData
   }): Promise<void> {
+    await this.createGenerationRunWithSessionJobAndPages({ ...data, pages: [] })
+  }
+
+  async createGenerationRunWithSessionJobAndPages(data: {
+    run: GenerationRunCreateData & { id: string }
+    job: SessionJobCreateData
+    pages: GenerationPageCreateData[]
+  }): Promise<void> {
     if (data.run.id !== data.job.id) {
       throw new Error('generation run and session job must share the same id')
     }
@@ -1110,39 +1147,55 @@ export class PPTDatabase {
         : null
 
     await this.db.transaction(async (tx) => {
-      await tx
-        .insert(schema.generationRuns)
-        .values({
-          id: data.run.id,
+      await tx.insert(schema.generationRuns).values({
+        id: data.run.id,
+        sessionId: data.run.sessionId,
+        mode: data.run.mode,
+        status: 'running',
+        totalPages: runTotalPages,
+        error: null,
+        metadata: data.run.metadata ? JSON.stringify(data.run.metadata) : null,
+        animationPreferences,
+        modelConfigId,
+        createdAt: now,
+        updatedAt: now
+      })
+      await tx.insert(schema.sessionJobs).values({
+        id: data.job.id,
+        sessionId: data.job.sessionId,
+        kind: data.job.kind,
+        previousSessionStatus: data.job.previousSessionStatus,
+        targetPageId: data.job.targetPageId || null,
+        targetPageNumber: data.job.targetPageNumber ?? null,
+        selector: data.job.selector || null,
+        totalPages: jobTotalPages,
+        status: data.job.status,
+        abortReason: null,
+        createdAt: now,
+        activatedAt: data.job.status === 'active' ? now : null,
+        updatedAt: now,
+        finishedAt: null
+      })
+
+      if (data.pages.length === 0) return
+      await tx.insert(schema.generationPages).values(
+        data.pages.map((page) => ({
+          id: `${data.run.id}:${page.pageId}`,
+          runId: data.run.id,
           sessionId: data.run.sessionId,
-          mode: data.run.mode,
-          status: 'running',
-          totalPages: runTotalPages,
-          error: null,
-          metadata: data.run.metadata ? JSON.stringify(data.run.metadata) : null,
-          animationPreferences,
-          modelConfigId,
+          pageId: page.pageId,
+          pageNumber: Math.max(1, Math.floor(page.pageNumber)),
+          title: page.title,
+          contentOutline: page.contentOutline || null,
+          layoutIntent: page.layoutIntent || null,
+          htmlPath: page.htmlPath || null,
+          status: page.status || 'pending',
+          error: page.error || null,
+          retryCount: Math.max(0, Math.floor(page.retryCount || 0)),
           createdAt: now,
           updatedAt: now
-        })
-      await tx
-        .insert(schema.sessionJobs)
-        .values({
-          id: data.job.id,
-          sessionId: data.job.sessionId,
-          kind: data.job.kind,
-          previousSessionStatus: data.job.previousSessionStatus,
-          targetPageId: data.job.targetPageId || null,
-          targetPageNumber: data.job.targetPageNumber ?? null,
-          selector: data.job.selector || null,
-          totalPages: jobTotalPages,
-          status: data.job.status,
-          abortReason: null,
-          createdAt: now,
-          activatedAt: data.job.status === 'active' ? now : null,
-          updatedAt: now,
-          finishedAt: null
-        })
+        }))
+      )
     })
   }
 
@@ -1169,11 +1222,7 @@ export class PPTDatabase {
       set.finishedAt = now
       set.abortReason = options?.abortReason || null
     }
-    await this.db
-      .update(schema.sessionJobs)
-      .set(set)
-      .where(eq(schema.sessionJobs.id, jobId))
-      .run()
+    await this.db.update(schema.sessionJobs).set(set).where(eq(schema.sessionJobs.id, jobId)).run()
   }
 
   async getSessionJob(jobId: string): Promise<SessionJobRecord | undefined> {
@@ -1191,7 +1240,10 @@ export class PPTDatabase {
   ): Promise<SessionJobRecord | undefined> {
     const where =
       kinds && kinds.length > 0
-        ? and(eq(schema.sessionJobs.sessionId, sessionId), inArray(schema.sessionJobs.kind, [...kinds]))
+        ? and(
+            eq(schema.sessionJobs.sessionId, sessionId),
+            inArray(schema.sessionJobs.kind, [...kinds])
+          )
         : eq(schema.sessionJobs.sessionId, sessionId)
     const row = await this.db
       .select()
@@ -1230,6 +1282,17 @@ export class PPTDatabase {
       .set({
         status,
         error: error || null,
+        updatedAt: Math.floor(Date.now() / 1000)
+      })
+      .where(eq(schema.generationRuns.id, runId))
+      .run()
+  }
+
+  async updateGenerationRunMetadata(runId: string, metadata: unknown): Promise<void> {
+    await this.db
+      .update(schema.generationRuns)
+      .set({
+        metadata: metadata ? JSON.stringify(metadata) : null,
         updatedAt: Math.floor(Date.now() / 1000)
       })
       .where(eq(schema.generationRuns.id, runId))

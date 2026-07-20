@@ -8,6 +8,7 @@ import { PageSidebar } from '../components/session-detail/sidebar'
 import { PreviewStage } from '../components/session-detail/preview'
 import { BrowseView } from '../components/session-detail/browse/BrowseView'
 import { StyleView } from '../components/session-detail/style/StyleView'
+import { StyleSwitchJobBar } from '../components/session-detail/style/StyleSwitchJobBar'
 import { ElementInspectorPanel } from '../components/session-detail/element-inspector'
 import { SessionDetailRightPanel, WorkspaceRibbon } from '../components/session-detail/workspace'
 import { SessionToolbar } from '../components/session-detail/toolbar'
@@ -39,6 +40,7 @@ import {
   useEditHistoryStore,
   useEditSessionStore,
   useGenerateStore,
+  isStyleSwitchPageLocked,
   useGenerationActivityStore,
   useSessionDetailRuntimeStore,
   useSessionDetailUiStore,
@@ -105,6 +107,13 @@ export function SessionDetailPage(): React.JSX.Element {
   } = useSessionStore()
   const slideSize = currentSession ? requireSessionSlideSize(currentSession) : null
   const { updateProgress, currentPages } = useGenerateStore()
+  const styleSwitchJob = useGenerateStore((state) =>
+    id ? state.styleSwitchJobs[id] || null : null
+  )
+  const isStyleSwitchActive =
+    styleSwitchJob?.status === 'starting' ||
+    styleSwitchJob?.status === 'running' ||
+    styleSwitchJob?.status === 'cancelling'
   const chatType = useSessionDetailUiStore((state) => state.chatType)
   const selectedPageId = useSessionDetailUiStore((state) => state.selectedPageId)
   const setChatType = useSessionDetailUiStore((state) => state.setChatType)
@@ -120,6 +129,7 @@ export function SessionDetailPage(): React.JSX.Element {
   const activeChatRef = useRef<{ chatType: ChatType; pageId?: string }>({ chatType: 'page' })
   const pageEditStateEpochRef = useRef(0)
   const deckEditStateEpochRef = useRef(0)
+  const styleSwitchStateEpochRef = useRef(0)
   const editHistory = useEditHistoryStore()
   const isSavingEdits = useEditSessionStore((state) => state.isSavingEdits)
   const elementSelection = useEditSessionStore((state) => state.selection)
@@ -159,6 +169,7 @@ export function SessionDetailPage(): React.JSX.Element {
       null,
     [normalizedOrderedPages, selectedPageId]
   )
+  const selectedPageStyleLocked = isStyleSwitchPageLocked(styleSwitchJob, selectedPage?.pageId)
 
   const selectedPageRef = useRef(selectedPage)
   selectedPageRef.current = selectedPage
@@ -200,6 +211,13 @@ export function SessionDetailPage(): React.JSX.Element {
     useEditSessionStore.getState().resetForPage()
     clearEditSelectedElement()
   }, [clearEditSelectedElement, resetForPageChange, selectedPage?.pageId])
+
+  useEffect(() => {
+    if (!selectedPageStyleLocked) return
+    useSessionDetailUiStore.getState().setInteractionMode('preview')
+    useSessionDetailUiStore.getState().clearEditSelectedElement()
+    useEditSessionStore.getState().cancelEdit()
+  }, [selectedPageStyleLocked])
 
   const canEditInSessionDetail = useMemo(() => {
     if (!currentSession) return false
@@ -245,7 +263,10 @@ export function SessionDetailPage(): React.JSX.Element {
       useSessionDetailUiStore.getState().isRetryingSinglePage
     )
       return
-    if (!canEditInSessionDetail) {
+    if (canEditInSessionDetail || isStyleSwitchActive) return
+    let disposed = false
+    const redirectToGeneration = (): void => {
+      if (disposed) return
       const metadata = parseSessionMetadata(currentSession.metadata)
       navigate(
         metadata.source === 'template'
@@ -254,13 +275,54 @@ export function SessionDetailPage(): React.JSX.Element {
         { replace: true }
       )
     }
-  }, [canEditInSessionDetail, currentSession, id, navigate])
+    void ipc
+      .getStyleSwitchState(id)
+      .then((state) => {
+        if (!state.hasActiveRun) redirectToGeneration()
+      })
+      .catch(redirectToGeneration)
+    return () => {
+      disposed = true
+    }
+  }, [canEditInSessionDetail, currentSession, id, isStyleSwitchActive, navigate])
 
   useEffect(() => {
     if (!id) return
     const saved = window.localStorage.getItem(`workbench:selected-page-id:${id}`)
     if (!saved) return
     useSessionDetailUiStore.getState().setSelectedPageId(saved)
+  }, [id])
+
+  useEffect(() => {
+    if (!id) return
+    let disposed = false
+    const requestEpoch = styleSwitchStateEpochRef.current
+    void ipc
+      .getStyleSwitchState(id)
+      .then((state) => {
+        if (
+          disposed ||
+          requestEpoch !== styleSwitchStateEpochRef.current ||
+          state.status === 'idle'
+        ) {
+          return
+        }
+        useGenerateStore.getState().setStyleSwitchJob(id, {
+          sessionId: id,
+          runId: state.runId || undefined,
+          styleId: state.targetStyleId || '',
+          styleName: state.targetStyleName || undefined,
+          status: state.status,
+          progress: state.progress,
+          totalPages: state.totalPages,
+          error: state.error,
+          pages: state.pages
+        })
+      })
+      .catch(() => {})
+    return () => {
+      disposed = true
+    }
   }, [id])
 
   useEffect(() => {
@@ -439,12 +501,16 @@ export function SessionDetailPage(): React.JSX.Element {
       if (payload.sessionId && payload.sessionId !== id) return
       const activePageEditJob = useGenerateStore.getState().pageEditJobs[id] || null
       const activeDeckEditJob = useGenerateStore.getState().deckEditJobs[id] || null
+      const activeStyleSwitchJob = useGenerateStore.getState().styleSwitchJobs[id] || null
       const isPageEdit = isPageEditGenerationEvent(payload, activePageEditJob)
       const isDeckEdit = isDeckEditGenerationEvent(payload, activeDeckEditJob)
+      const isStyleSwitch =
+        payload.activityKind === 'style-switch' || activeStyleSwitchJob?.runId === payload.runId
       if (
         type === 'stage_started' ||
         type === 'stage_progress' ||
         type === 'page_generated' ||
+        type === 'page_started' ||
         type === 'llm_status'
       ) {
         if (isPageEdit) {
@@ -472,6 +538,19 @@ export function SessionDetailPage(): React.JSX.Element {
             progress: payload.progress ?? 0,
             totalPages: payload.totalPages
           })
+        } else if (isStyleSwitch) {
+          useGenerateStore.getState().updateStyleSwitchJob(id, {
+            runId: payload.runId,
+            status: activeStyleSwitchJob?.status === 'cancelling' ? 'cancelling' : 'running',
+            progress: payload.progress ?? activeStyleSwitchJob?.progress ?? 0,
+            totalPages: payload.totalPages || activeStyleSwitchJob?.totalPages || 1
+          })
+          if (type === 'page_started' && payload.pageId) {
+            useGenerateStore.getState().updateStyleSwitchPage(id, payload.pageId, {
+              status: 'running',
+              error: null
+            })
+          }
         } else {
           // 不清空 currentPages，保持预览可见
           useGenerateStore.getState().clearSessionError(id)
@@ -543,6 +622,19 @@ export function SessionDetailPage(): React.JSX.Element {
             progress: payload.progress ?? 0,
             totalPages: payload.totalPages
           })
+        } else if (isStyleSwitch) {
+          useGenerateStore.getState().updateStyleSwitchJob(id, {
+            runId: payload.runId,
+            status: activeStyleSwitchJob?.status === 'cancelling' ? 'cancelling' : 'running',
+            progress: payload.progress ?? activeStyleSwitchJob?.progress ?? 0,
+            totalPages: payload.totalPages || activeStyleSwitchJob?.totalPages || 1
+          })
+          if (payload.pageId) {
+            useGenerateStore.getState().updateStyleSwitchPage(id, payload.pageId, {
+              status: 'completed',
+              error: null
+            })
+          }
         } else {
           useGenerateStore.getState().clearSessionError(id)
           useGenerateStore.setState({ isGenerating: true, error: null, status: 'running' })
@@ -569,10 +661,22 @@ export function SessionDetailPage(): React.JSX.Element {
           status: 'completed',
           error: null
         })
-        if (!isPageEdit && !isDeckEdit && payload.focusPage !== false) {
+        if (!isPageEdit && !isDeckEdit && !isStyleSwitch && payload.focusPage !== false) {
           useSessionDetailUiStore.getState().setSelectedPageId(entityId)
         }
         useSessionDetailUiStore.getState().bumpPreviewKey()
+      } else if (type === 'page_failed' && isStyleSwitch) {
+        if (payload.pageId) {
+          useGenerateStore.getState().updateStyleSwitchPage(id, payload.pageId, {
+            status: 'failed',
+            error: payload.error || '页面切换失败'
+          })
+          const store = useGenerateStore.getState()
+          const page = store.currentPages.find((item) => item.pageId === payload.pageId)
+          if (page) {
+            store.addPage({ ...page, status: 'failed', error: payload.error || '页面切换失败' })
+          }
+        }
       } else if (type === 'assistant_message') {
         const incomingType = payload.chatType === 'page' && payload.pageId ? 'page' : 'main'
         const incomingPageId = incomingType === 'page' ? payload.pageId : undefined
@@ -614,6 +718,14 @@ export function SessionDetailPage(): React.JSX.Element {
                 : undefined
             )
           void loadSession(id)
+        } else if (isStyleSwitch) {
+          styleSwitchStateEpochRef.current += 1
+          const failedPageCount = Math.max(0, Number(payload.failedPageCount) || 0)
+          useGenerateStore.getState().finishStyleSwitch(id, {
+            status: failedPageCount > 0 ? 'partial' : 'completed',
+            error: failedPageCount > 0 ? activeStyleSwitchJob?.error || null : null
+          })
+          void loadSession(id)
         } else if (!useSessionDetailUiStore.getState().isAddingPage) {
           useGenerateStore.getState().finishGeneration()
         }
@@ -641,6 +753,18 @@ export function SessionDetailPage(): React.JSX.Element {
           if (!payload.cancelled) {
             useGenerateStore.getState().setSessionError(id, payload.message)
           }
+          void loadSession(id)
+        } else if (isStyleSwitch) {
+          styleSwitchStateEpochRef.current += 1
+          const failedPageCount = Math.max(0, Number(payload.failedPageCount) || 0)
+          const status = payload.cancelled
+            ? 'cancelled'
+            : failedPageCount > 0 ||
+                activeStyleSwitchJob?.pages.some((page) => page.status === 'completed')
+              ? 'partial'
+              : 'failed'
+          useGenerateStore.getState().finishStyleSwitch(id, { status, error: payload.message })
+          if (!payload.cancelled) useGenerateStore.getState().setSessionError(id, payload.message)
           void loadSession(id)
         } else if (!useSessionDetailUiStore.getState().isAddingPage) {
           if (payload.cancelled) {
@@ -1267,6 +1391,7 @@ export function SessionDetailPage(): React.JSX.Element {
 
         <div className="flex min-h-0 flex-1 flex-col bg-[#f5f1e8]">
           <WorkspaceRibbon isSavingEdits={isSavingEdits} />
+          <StyleSwitchJobBar sessionId={id} />
 
           {workspaceTab === 'browse' ? (
             <BrowseView sessionId={id} />
@@ -1299,7 +1424,7 @@ export function SessionDetailPage(): React.JSX.Element {
                 <SessionDetailRightPanel
                   sessionId={id}
                   elementInspector={
-                    elementSelection ? (
+                    elementSelection && !selectedPageStyleLocked ? (
                       <ElementInspectorPanel
                         selection={elementSelection}
                         draft={elementDraft}

@@ -14,6 +14,7 @@ import {
   PencilLine,
   Presentation,
   Plus,
+  RotateCcw,
   Sparkles,
   Trash2,
   X
@@ -290,7 +291,10 @@ export const PageSidebar = memo(function PageSidebar({
     const targetPageId = pendingSwitchPageId
     if (!targetPageId || savingBeforeSwitch) return
     useEditSessionStore.getState().discardAll()
-    if (selectedPage?.pageId && useEditHistoryStore.getState().hasPendingEdits(selectedPage.pageId)) {
+    if (
+      selectedPage?.pageId &&
+      useEditHistoryStore.getState().hasPendingEdits(selectedPage.pageId)
+    ) {
       useEditHistoryStore.getState().clearPage(selectedPage.pageId)
     }
     setSelectedPageId(targetPageId)
@@ -669,6 +673,22 @@ export const PageSidebar = memo(function PageSidebar({
                                 previewVersion={previewKey + (thumbnailVersions[page.pageId] || 0)}
                                 renderPreview={thumbnailPreviewIds.has(page.id)}
                                 onSelect={disabled ? undefined : requestSelectPage}
+                                failureOverlay={
+                                  page.status === 'failed' && onRetryFailedPage ? (
+                                    <button
+                                      type="button"
+                                      disabled={disabled}
+                                      onClick={(event) => {
+                                        event.stopPropagation()
+                                        if (requestSelectPage(page.id)) onRetryFailedPage(page)
+                                      }}
+                                      className="absolute inset-x-2 bottom-2 z-10 flex h-8 items-center justify-center gap-1.5 rounded-[0.7rem] border border-red-600 bg-red-500 px-2 text-[10px] font-semibold text-white shadow-[0_4px_12px_rgba(239,68,68,0.28)] transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-45"
+                                    >
+                                      <RotateCcw className="h-3 w-3" />
+                                      {t('sessionDetail.retryFailedPage')}
+                                    </button>
+                                  ) : undefined
+                                }
                                 actions={
                                   <div className="absolute inset-x-1 top-1 z-10 flex items-start justify-between opacity-0 transition-opacity group-hover:opacity-100">
                                     <button
@@ -782,7 +802,7 @@ export const PageSidebar = memo(function PageSidebar({
                                             e.stopPropagation()
                                             onDeletePage(page)
                                           }}
-                                          className="rounded bg-white/90 p-1 shadow-sm"
+                                          className="rounded bg-white/90 p-1 shadow-sm disabled:cursor-not-allowed disabled:opacity-50 disabled:grayscale"
                                           aria-label={t('pageManagement.deletePage')}
                                           title={t('pageManagement.deletePage')}
                                         >
@@ -795,25 +815,6 @@ export const PageSidebar = memo(function PageSidebar({
                               />
                             )}
                           </SortablePageItem>
-                          {page.status === 'failed' && onRetryFailedPage && (
-                            <button
-                              type="button"
-                              disabled={disabled}
-                              onClick={() => {
-                                if (requestSelectPage(page.id)) onRetryFailedPage(page)
-                              }}
-                              className="group mt-1 block w-full rounded-[1.1rem] bg-[#f3e4df]/85 p-1.5 text-left shadow-[0_8px_18px_rgba(142,90,83,0.08)] transition-all duration-200 hover:bg-[#f1ddd7] hover:shadow-[0_10px_22px_rgba(142,90,83,0.12)] disabled:cursor-not-allowed disabled:opacity-45"
-                            >
-                              <div className="rounded-[0.9rem] border border-[#d7b5ae]/70 bg-[#fbf1ee] px-2.5 py-2">
-                                <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#a36a63]">
-                                  P{page.pageNumber}
-                                </div>
-                                <div className="mt-1 text-[11px] font-medium leading-4 text-[#93564f]">
-                                  {t('sessionDetail.retryFailedPage')}
-                                </div>
-                              </div>
-                            </button>
-                          )}
                         </div>
                       ))}
                     </div>
@@ -913,12 +914,12 @@ export const PageSidebar = memo(function PageSidebar({
                 void handleConfirmSaveAndSwitch()
               }}
             >
-              {savingBeforeSwitch ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              ) : null}
+              {savingBeforeSwitch ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
               {t('sessionDetail.pageSwitchSaveConfirmAction')}
             </AlertDialogAction>
-            <AlertDialogCancel disabled={savingBeforeSwitch}>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogCancel disabled={savingBeforeSwitch}>
+              {t('common.cancel')}
+            </AlertDialogCancel>
           </div>
         </AlertDialogContent>
       </AlertDialog>

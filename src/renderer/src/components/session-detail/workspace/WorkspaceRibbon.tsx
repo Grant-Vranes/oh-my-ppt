@@ -52,6 +52,7 @@ export function WorkspaceRibbon({
     state.isGenerating ||
     state.isPageEditing ||
     state.isDeckEditing ||
+    state.isStyleSwitchPageLocked ||
     state.isSavingEdits ||
     isPreviewSettling
 
@@ -113,7 +114,9 @@ export function WorkspaceRibbon({
               ) : null}
               {t('sessionDetail.workspaceSwitchSaveConfirmAction')}
             </AlertDialogAction>
-            <AlertDialogCancel disabled={savingBeforeTabSwitch}>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogCancel disabled={savingBeforeTabSwitch}>
+              {t('common.cancel')}
+            </AlertDialogCancel>
           </div>
         </AlertDialogContent>
       </AlertDialog>

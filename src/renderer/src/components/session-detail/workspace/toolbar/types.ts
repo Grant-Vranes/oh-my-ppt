@@ -7,6 +7,7 @@ export interface WorkspaceRibbonState {
   isGenerating: boolean
   isPageEditing: boolean
   isDeckEditing: boolean
+  isStyleSwitchPageLocked: boolean
   isSavingEdits: boolean
   canUndo: boolean
   canRedo: boolean

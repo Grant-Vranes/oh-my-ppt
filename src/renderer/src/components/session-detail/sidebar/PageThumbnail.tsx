@@ -13,7 +13,8 @@ export const PageThumbnail = memo(function PageThumbnail({
   previewVersion,
   renderPreview = true,
   onSelect,
-  actions
+  actions,
+  failureOverlay
 }: {
   page: SessionPreviewPage
   isSelected: boolean
@@ -21,6 +22,7 @@ export const PageThumbnail = memo(function PageThumbnail({
   renderPreview?: boolean
   onSelect?: (pageId: string) => void
   actions?: React.ReactNode
+  failureOverlay?: React.ReactNode
 }): React.JSX.Element {
   const t = useT()
   const currentSession = useSessionStore((state) => state.currentSession)
@@ -95,6 +97,7 @@ export const PageThumbnail = memo(function PageThumbnail({
             </div>
           )}
         </div>
+        {failureOverlay}
       </div>
       <Tooltip>
         <TooltipTrigger asChild>

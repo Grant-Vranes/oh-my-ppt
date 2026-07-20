@@ -38,51 +38,39 @@ describe('style switch generation', () => {
     ).toEqual(['page-0', 'page-1', 'legacy-2', 'row-3'])
   })
 
-  it('updates the session snapshot before resolving the deck edit context', () => {
-    const source = fs.readFileSync(
-      path.resolve('src/main/ipc/engine/generation-handlers.ts'),
+  it('uses an independent persistent style-switch job with two workers', () => {
+    const serviceSource = fs.readFileSync(
+      path.resolve('src/main/ipc/edit-jobs/style-switch-job-service.ts'),
       'utf8'
     )
-    const handler = source.slice(source.indexOf("ipcMain.handle('generate:switchStyle'"))
-    expect(handler.indexOf('jobManager.assertNotCancelled(reserved)')).toBeLessThan(
-      handler.indexOf('await db.updateSessionStyleId')
+    const typesSource = fs.readFileSync(
+      path.resolve('src/main/ipc/edit-jobs/style-switch-job-types.ts'),
+      'utf8'
     )
-    expect(handler.indexOf('await db.updateSessionStyleId')).toBeGreaterThan(-1)
-    expect(
-      handler.indexOf('const updatedStyleSnapshot = await db.getSessionStyleSnapshot')
-    ).toBeGreaterThan(handler.indexOf('await db.updateSessionStyleId'))
-    expect(
-      handler.indexOf('await db.updateSessionDesignContract(sessionId, null)')
-    ).toBeGreaterThan(handler.indexOf('await db.getSessionStyleSnapshot'))
-    expect(handler.indexOf('context = await resolveEditContext')).toBeGreaterThan(
-      handler.indexOf('await db.updateSessionDesignContract(sessionId, null)')
+    const flowSource = fs.readFileSync(
+      path.resolve('src/main/ipc/edit-jobs/style-switch-job-flow.ts'),
+      'utf8'
     )
-    expect(handler).toContain('resetVisualStyle: true')
-    expect(handler.indexOf('await buildDesignContractWithLLM')).toBeGreaterThan(
-      handler.indexOf('resetVisualStyle: true')
-    )
-    expect(handler.indexOf('context.designContract = designContract')).toBeGreaterThan(
-      handler.indexOf('await db.updateSessionDesignContract(sessionId, designContract)')
-    )
-    expect(handler.indexOf('await executeDeckAllPageEditGeneration')).toBeGreaterThan(
-      handler.indexOf('context.designContract = designContract')
-    )
-    expect(handler).toContain('await executeDeckAllPageEditGeneration')
-    expect(handler).toContain('restoreSessionStyleState')
-    expect(handler).toContain('styleStateCommitted = true')
-    expect(handler).toContain('stylePageEditingStarted = true')
-    expect(handler).toContain('error instanceof DeckEditIndexMutationError')
-    expect(handler).toContain('failed to restore previous style snapshot')
-    expect(handler).toContain('failed to restore previous design contract')
-
     const databaseSource = fs.readFileSync(path.resolve('src/main/db/database.ts'), 'utf8')
-    const restoreMethod = databaseSource.slice(
-      databaseSource.indexOf('async restoreSessionStyleState'),
-      databaseSource.indexOf('async updateSessionDesignContract')
+
+    expect(typesSource).toContain('const STYLE_SWITCH_CONCURRENCY = 2')
+    expect(typesSource).toContain("jobType: 'style-switch'")
+    expect(serviceSource).toContain("kind: 'style-switch'")
+    expect(serviceSource).toContain("mode: 'style-switch'")
+    expect(serviceSource).toContain('createGenerationRunWithSessionJobAndPages')
+    expect(serviceSource).toContain(
+      'await this.ctx.db.replaceSessionStyleSnapshot(sessionId, styleId)'
     )
-    expect(restoreMethod).toContain('styleId: string | null')
-    expect(restoreMethod).toContain('this.db.transaction')
-    expect(restoreMethod).toContain('.delete(schema.sessionStyleSnapshots)')
+    expect(serviceSource).toContain('context = await resolveEditContext')
+    expect(serviceSource).toContain('await this.runWorkers(job)')
+    expect(serviceSource).toContain('restoreStyleSwitchFileSnapshot(indexPath, indexSnapshot)')
+    expect(serviceSource).toContain('runStyleSwitchPageFlow')
+    expect(flowSource).toContain('runDeepAgentEdit')
+    expect(flowSource).toContain("editScope: 'page'")
+    expect(flowSource).toContain('pageFileMap: { [page.pageId]: page.htmlPath }')
+    expect(serviceSource).not.toContain('executeDeckAllPageEditGeneration')
+    expect(databaseSource).toContain("| 'style-switch'")
+    expect(databaseSource).toContain('createGenerationRunWithSessionJobAndPages')
   })
 
   it('does not carry the previous visual contract into the new style', () => {
@@ -102,64 +90,47 @@ describe('style switch generation', () => {
     )
   })
 
-  it('closes only completed style switches and refreshes through shared stores', () => {
+  it('starts through the dedicated job UI without either style-switch dialog', () => {
     const styleViewSource = fs.readFileSync(
       path.resolve('src/renderer/src/components/session-detail/style/StyleView.tsx'),
       'utf8'
     )
+    const activityStoreSource = fs.readFileSync(
+      path.resolve('src/renderer/src/store/generationActivityStore.ts'),
+      'utf8'
+    )
     const activityDialogSource = fs.readFileSync(
       path.resolve('src/renderer/src/components/session-detail/modal/GenerationActivityDialog.tsx'),
       'utf8'
     )
+    const jobBarSource = fs.readFileSync(
+      path.resolve('src/renderer/src/components/session-detail/style/StyleSwitchJobBar.tsx'),
+      'utf8'
+    )
 
-    expect(styleViewSource).toContain('setSwitchTarget(null)')
     expect(styleViewSource).toContain('startStyleSwitch')
-    expect(activityDialogSource).toContain('activeRetryContext')
-    expect(activityDialogSource).toContain('shouldAutoCloseGenerationActivity(')
-    expect(activityDialogSource).toContain("activityKind === 'style-switch'")
-
-    const ipcContextSource = fs.readFileSync(path.resolve('src/main/ipc/context.ts'), 'utf8')
-    expect(ipcContextSource).toContain('activityKind: state.activityKind')
-    expect(ipcContextSource).toContain('activityKind: chunk.payload.activityKind ?? null')
-    const autoCloseIndex = activityDialogSource.indexOf(
-      'if (shouldAutoCloseGenerationActivity(event.type, nextFailedPageCount))'
-    )
-    expect(activityDialogSource.indexOf('setOpen(false)', autoCloseIndex)).toBeGreaterThan(
-      activityDialogSource.indexOf('activeRetryContext')
-    )
-    expect(activityDialogSource.indexOf('.loadSession(sessionId,')).toBeGreaterThan(
-      activityDialogSource.indexOf('setOpen(false)')
-    )
-    expect(activityDialogSource).toContain('useSessionDetailUiStore.getState().bumpPreviewKey()')
-    expect(activityDialogSource).toContain('activeSessionIdRef.current === sessionId')
-    expect(activityDialogSource).not.toContain('onStyleSwitchCompleted')
+    expect(styleViewSource).toContain('ipc.startStyleSwitch')
+    expect(styleViewSource).not.toContain('AlertDialog')
+    expect(styleViewSource).not.toContain('setSwitchTarget')
+    expect(activityStoreSource).not.toContain('style-switch')
+    expect(activityDialogSource).not.toContain('style-switch')
+    expect(jobBarSource).toContain('ipc.cancelStyleSwitch')
+    expect(jobBarSource).toContain('ipc.retryFailedStyleSwitchPages')
+    expect(jobBarSource).toContain("if (!job || job.status === 'completed') return null")
   })
 
-  it('retries only failed style-switch pages through a dedicated handler', () => {
-    const handlerSource = fs.readFileSync(
-      path.resolve('src/main/ipc/engine/generation-handlers.ts'),
+  it('retries only failed pages through the dedicated style-switch service', () => {
+    const serviceSource = fs.readFileSync(
+      path.resolve('src/main/ipc/edit-jobs/style-switch-job-service.ts'),
       'utf8'
     )
-    const retryHandler = handlerSource.slice(
-      handlerSource.indexOf("ipcMain.handle('generate:retryStyleSwitch'")
-    )
 
-    expect(retryHandler).toContain('collectFailedStyleSwitchPageIds')
-    expect(retryHandler).toContain('await listFailedGenerationPagesForRetry(sessionId, failedRunId)')
-    expect(retryHandler).toContain('context.selectPageIds = failedPageIds')
-    expect(retryHandler).toContain('buildStyleSwitchUserMessage(styleSnapshot.styleName)')
-    expect(retryHandler).toContain('context.designContract = JSON.parse(session.designContract)')
-    expect(retryHandler).not.toContain("if (!style || style.active === false)")
-    expect(retryHandler).toContain('await executeDeckAllPageEditGeneration')
-
-    const activityDialogSource = fs.readFileSync(
-      path.resolve('src/renderer/src/components/session-detail/modal/GenerationActivityDialog.tsx'),
-      'utf8'
-    )
-    expect(activityDialogSource).toContain('await ipc.retrySessionStyle')
-    expect(activityDialogSource).toContain('await ipc.retryDeckEdit')
-    expect(activityDialogSource).toContain('RetryFailedPagesButton')
-    expect(activityDialogSource).toContain("t('sessionDetail.activityRetryFailedPages'")
+    expect(serviceSource).toContain('async retryPage(')
+    expect(serviceSource).toContain("page.page_id === pageId && page.status === 'failed'")
+    expect(serviceSource).toContain('async retryFailed(')
+    expect(serviceSource).toContain(".filter((page) => page.status === 'failed')")
+    expect(serviceSource).toContain("ipcMain.handle('style-switch:retryPage'")
+    expect(serviceSource).toContain("ipcMain.handle('style-switch:retryFailed'")
   })
 
   it('uses the session style snapshot when the global style has been disabled', () => {
@@ -198,8 +169,8 @@ describe('style switch generation', () => {
   })
 
   it('keeps internal style-switch prompts out of the visible chat history', () => {
-    const handlerSource = fs.readFileSync(
-      path.resolve('src/main/ipc/engine/generation-handlers.ts'),
+    const serviceSource = fs.readFileSync(
+      path.resolve('src/main/ipc/edit-jobs/style-switch-job-service.ts'),
       'utf8'
     )
     const editFlowSource = fs.readFileSync(
@@ -207,24 +178,71 @@ describe('style switch generation', () => {
       'utf8'
     )
 
-    expect(handlerSource).toContain('persistUserMessage: false')
+    expect(serviceSource).toContain('persistUserMessage: false')
     expect(editFlowSource).toContain('if (input.persistUserMessage)')
   })
 
-  it('keeps the activity dialog open while failed style-switch pages are pending retry', () => {
-    const activityDialogSource = fs.readFileSync(
-      path.resolve('src/renderer/src/components/session-detail/modal/GenerationActivityDialog.tsx'),
+  it('writes a page history commit before publishing it as editable', () => {
+    const serviceSource = fs.readFileSync(
+      path.resolve('src/main/ipc/edit-jobs/style-switch-job-service.ts'),
       'utf8'
     )
-
-    // 失败状态 + 有 retryContext + 有 failedPageCount 时弹窗不可关：
-    // 失败 + 走开 + 回来，retryContext 仍在线，能直接点「重试失败页面」。
-    // 这避免了 styleId 已提交、retryContext 被清、再也无法重试的死锁。
-    expect(activityDialogSource).toContain(
-      'const blockClose = status === \'running\' || (retryContext !== null && failedPageCount > 0)'
+    const historySource = fs.readFileSync(
+      path.resolve('src/main/history/git-history-service.ts'),
+      'utf8'
     )
-    expect(activityDialogSource).toContain('if (!nextOpen && blockClose) return')
-    expect(activityDialogSource).toContain('showClose={!blockClose}')
-    expect(activityDialogSource).toContain('if (blockClose) event.preventDefault()')
+    const commitPageSource = serviceSource.slice(
+      serviceSource.indexOf('private async commitPage'),
+      serviceSource.indexOf('private emitPageProgress')
+    )
+
+    expect(commitPageSource).toContain("scope: 'page'")
+    expect(commitPageSource).toContain('prompt: `切换风格 · 第 ${page.pageNumber} 页`')
+    expect(commitPageSource).toContain('styleName: job.context.styleName || null')
+    expect(commitPageSource).toContain('allowedPaths: [relativePath]')
+    expect(commitPageSource).toContain('if (!operation?.after_commit)')
+    expect(commitPageSource).toContain("status: 'completed'")
+    expect(commitPageSource.indexOf('recordOperation({')).toBeLessThan(
+      commitPageSource.indexOf("type: 'page_updated'")
+    )
+    expect(commitPageSource.indexOf('recordOperation({')).toBeLessThan(
+      commitPageSource.indexOf('await this.ctx.db.upsertSessionPage({')
+    )
+    expect(commitPageSource.indexOf('recordOperation({')).toBeLessThan(
+      commitPageSource.indexOf('await this.ctx.db.upsertGenerationPage({')
+    )
+    expect(commitPageSource.indexOf('if (!operation?.after_commit)')).toBeLessThan(
+      commitPageSource.indexOf("type: 'page_updated'")
+    )
+    expect(historySource).toContain('allowedPaths?: string[]')
+    expect(historySource).toContain('stageControlledChanges(projectDir, args.allowedPaths)')
+    expect(historySource).toContain('git.resetIndex({ fs, dir: projectDir, filepath })')
+    expect(historySource).toContain('rollbackCommittedOperation')
+    expect(historySource).toContain("if (metadata.jobType === 'style-switch')")
+    expect(historySource).toContain('`切换风格 · 第 ${styleSwitchPageNumber} 页`')
+    expect(commitPageSource).toContain('history.rollbackCommittedOperation')
+  })
+
+  it('does not commit queued pages after cancellation or roll back a durable commit on notify failure', () => {
+    const serviceSource = fs.readFileSync(
+      path.resolve('src/main/ipc/edit-jobs/style-switch-job-service.ts'),
+      'utf8'
+    )
+    const commitPageSource = serviceSource.slice(
+      serviceSource.indexOf('private async commitPage'),
+      serviceSource.indexOf('private emitPageProgress')
+    )
+
+    expect(commitPageSource).toContain('this.assertCommitNotCancelled(job)')
+    expect(commitPageSource.indexOf('this.assertCommitNotCancelled(job)')).toBeLessThan(
+      commitPageSource.indexOf('recordOperation({')
+    )
+    expect(commitPageSource).toContain(
+      "log.warn('[style-switch:job] page commit notification failed'"
+    )
+    expect(commitPageSource.indexOf('if (!operation?.after_commit)')).toBeLessThan(
+      commitPageSource.indexOf("log.warn('[style-switch:job] page commit notification failed'")
+    )
+    expect(commitPageSource).toContain('retryCount: page.retryCount')
   })
 })

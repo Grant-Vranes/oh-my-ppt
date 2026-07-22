@@ -147,7 +147,15 @@ export interface GenerateRunStateSnapshot {
   error: string | null
   startedAt: number | null
   updatedAt: number | null
-  kind?: 'standard' | 'template' | 'retry' | 'edit' | 'page-edit' | 'deck-edit' | 'style-switch'
+  kind?:
+    | 'standard'
+    | 'template'
+    | 'retry'
+    | 'edit'
+    | 'page-edit'
+    | 'deck-edit'
+    | 'style-switch'
+    | 'page-beautify'
   targetPageId?: string
   targetPageNumber?: number
   retryPayload?: GenerateStartPayload
@@ -856,6 +864,23 @@ export const ipc = {
     getIpc().invoke('page-edit:listActive') as Promise<GenerateRunStateSnapshot[]>,
   cancelPageEdit: (sessionId: string) =>
     getIpc().invoke('page-edit:cancel', sessionId) as Promise<{ success: boolean }>,
+  startPageBeautify: (payload: {
+    sessionId: string
+    selectedPageId: string
+    modelConfigId?: string
+    layoutAudit?: string
+  }) =>
+    getIpc().invoke('page-beautify:start', payload) as Promise<{
+      success: boolean
+      runId?: string
+      alreadyRunning?: boolean
+    }>,
+  getPageBeautifyState: (sessionId: string) =>
+    getIpc().invoke('page-beautify:state', sessionId) as Promise<GenerateRunStateSnapshot>,
+  listActivePageBeautifyRuns: () =>
+    getIpc().invoke('page-beautify:listActive') as Promise<GenerateRunStateSnapshot[]>,
+  cancelPageBeautify: (sessionId: string) =>
+    getIpc().invoke('page-beautify:cancel', sessionId) as Promise<{ success: boolean }>,
   startDeckEdit: (payload: GenerateStartPayload) =>
     getIpc().invoke('deck-edit:start', payload) as Promise<{
       success: boolean

@@ -28,6 +28,7 @@ import {
   buildImageMessageCacheKey,
   imageHistoryToMessages,
   isDeckEditGenerationEvent,
+  isPageBeautifyGenerationEvent,
   isPageEditGenerationEvent,
   mergeImageMessages,
   normalizePagesForSelection,
@@ -128,7 +129,13 @@ export function SessionDetailPage(): React.JSX.Element {
   const workspaceTab = useSessionDetailUiStore((state) => state.workspaceTab)
   const activeChatRef = useRef<{ chatType: ChatType; pageId?: string }>({ chatType: 'page' })
   const pageEditStateEpochRef = useRef(0)
+  const pageBeautifyStateEpochRef = useRef(0)
   const deckEditStateEpochRef = useRef(0)
+  // Dedup terminal-run toasts. StrictMode double-invokes effects in dev, and any dep
+  // drift mid-run re-subscribes the generate-chunk handler; both can deliver the same
+  // run_completed/run_error event to a fresh closure. Without this guard the success
+  // toast ("页面美化完成" / "当前页已是最优版本") would fire once per re-subscription.
+  const handledTerminalRunsRef = useRef(new Set<string>())
   const styleSwitchStateEpochRef = useRef(0)
   const editHistory = useEditHistoryStore()
   const isSavingEdits = useEditSessionStore((state) => state.isSavingEdits)
@@ -151,6 +158,7 @@ export function SessionDetailPage(): React.JSX.Element {
     []
   )
   const toastError = useToastStore((state) => state.error)
+  const toastSuccess = useToastStore((state) => state.success)
 
   const orderedPages = useMemo(
     () => [...currentPages].sort((a, b) => a.pageNumber - b.pageNumber),
@@ -291,6 +299,39 @@ export function SessionDetailPage(): React.JSX.Element {
     const saved = window.localStorage.getItem(`workbench:selected-page-id:${id}`)
     if (!saved) return
     useSessionDetailUiStore.getState().setSelectedPageId(saved)
+  }, [id])
+
+  useEffect(() => {
+    if (!id) return
+    let disposed = false
+    const requestEpoch = pageBeautifyStateEpochRef.current
+    void ipc
+      .getPageBeautifyState(id)
+      .then((state) => {
+        if (
+          disposed ||
+          requestEpoch !== pageBeautifyStateEpochRef.current ||
+          !state.hasActiveRun ||
+          state.kind !== 'page-beautify' ||
+          !state.targetPageId
+        )
+          return
+        const generateState = useGenerateStore.getState()
+        if (generateState.pageBeautifyJobs[id]) return
+        generateState.startPageBeautify(id, {
+          pageId: state.targetPageId,
+          pageNumber: state.targetPageNumber
+        })
+        generateState.updatePageBeautify(id, {
+          runId: state.runId || undefined,
+          status: state.status === 'queued' ? 'queued' : 'running',
+          progress: state.progress
+        })
+      })
+      .catch(() => {})
+    return () => {
+      disposed = true
+    }
   }, [id])
 
   useEffect(() => {
@@ -500,9 +541,11 @@ export function SessionDetailPage(): React.JSX.Element {
       const { type, payload } = event
       if (payload.sessionId && payload.sessionId !== id) return
       const activePageEditJob = useGenerateStore.getState().pageEditJobs[id] || null
+      const activePageBeautifyJob = useGenerateStore.getState().pageBeautifyJobs[id] || null
       const activeDeckEditJob = useGenerateStore.getState().deckEditJobs[id] || null
       const activeStyleSwitchJob = useGenerateStore.getState().styleSwitchJobs[id] || null
       const isPageEdit = isPageEditGenerationEvent(payload, activePageEditJob)
+      const isPageBeautify = isPageBeautifyGenerationEvent(payload, activePageBeautifyJob)
       const isDeckEdit = isDeckEditGenerationEvent(payload, activeDeckEditJob)
       const isStyleSwitch =
         payload.activityKind === 'style-switch' || activeStyleSwitchJob?.runId === payload.runId
@@ -518,6 +561,18 @@ export function SessionDetailPage(): React.JSX.Element {
             runId: payload.runId,
             status:
               activePageEditJob?.status === 'cancelling'
+                ? 'cancelling'
+                : payload.stage === 'queued'
+                  ? 'queued'
+                  : 'running',
+            label: payload.label,
+            progress: payload.progress ?? 0
+          })
+        } else if (isPageBeautify) {
+          useGenerateStore.getState().updatePageBeautify(id, {
+            runId: payload.runId,
+            status:
+              activePageBeautifyJob?.status === 'cancelling'
                 ? 'cancelling'
                 : payload.stage === 'queued'
                   ? 'queued'
@@ -614,6 +669,13 @@ export function SessionDetailPage(): React.JSX.Element {
             label: payload.label,
             progress: payload.progress ?? 0
           })
+        } else if (isPageBeautify) {
+          useGenerateStore.getState().updatePageBeautify(id, {
+            runId: payload.runId,
+            status: activePageBeautifyJob?.status === 'cancelling' ? 'cancelling' : 'running',
+            label: payload.label,
+            progress: payload.progress ?? 0
+          })
         } else if (isDeckEdit) {
           useGenerateStore.getState().updateDeckEdit(id, {
             runId: payload.runId,
@@ -661,7 +723,13 @@ export function SessionDetailPage(): React.JSX.Element {
           status: 'completed',
           error: null
         })
-        if (!isPageEdit && !isDeckEdit && !isStyleSwitch && payload.focusPage !== false) {
+        if (
+          !isPageEdit &&
+          !isPageBeautify &&
+          !isDeckEdit &&
+          !isStyleSwitch &&
+          payload.focusPage !== false
+        ) {
           useSessionDetailUiStore.getState().setSelectedPageId(entityId)
         }
         useSessionDetailUiStore.getState().bumpPreviewKey()
@@ -702,9 +770,27 @@ export function SessionDetailPage(): React.JSX.Element {
           created_at: Number.isFinite(createdAt) ? createdAt : Math.floor(Date.now() / 1000)
         })
       } else if (type === 'run_completed') {
+        const terminalKey = `${payload.runId}:completed`
+        if (payload.runId && handledTerminalRunsRef.current.has(terminalKey)) return
+        if (payload.runId) {
+          handledTerminalRunsRef.current.add(terminalKey)
+          if (handledTerminalRunsRef.current.size > 100) {
+            const oldest = handledTerminalRunsRef.current.values().next().value
+            if (typeof oldest === 'string') handledTerminalRunsRef.current.delete(oldest)
+          }
+        }
         if (isPageEdit) {
           pageEditStateEpochRef.current += 1
           useGenerateStore.getState().finishPageEdit(id)
+        } else if (isPageBeautify) {
+          pageBeautifyStateEpochRef.current += 1
+          useGenerateStore.getState().finishPageBeautify(id)
+          toastSuccess(
+            payload.outcome === 'unchanged'
+              ? t('sessionDetail.pageBeautifyUnchanged')
+              : t('sessionDetail.pageBeautifyCompleted')
+          )
+          void loadSession(id)
         } else if (isDeckEdit) {
           deckEditStateEpochRef.current += 1
           const retryPayload = activeDeckEditJob?.payload
@@ -730,11 +816,28 @@ export function SessionDetailPage(): React.JSX.Element {
           useGenerateStore.getState().finishGeneration()
         }
       } else if (type === 'run_error') {
+        const terminalKey = `${payload.runId}:error`
+        if (payload.runId && handledTerminalRunsRef.current.has(terminalKey)) return
+        if (payload.runId) {
+          handledTerminalRunsRef.current.add(terminalKey)
+          if (handledTerminalRunsRef.current.size > 100) {
+            const oldest = handledTerminalRunsRef.current.values().next().value
+            if (typeof oldest === 'string') handledTerminalRunsRef.current.delete(oldest)
+          }
+        }
         if (isPageEdit) {
           pageEditStateEpochRef.current += 1
           useGenerateStore.getState().finishPageEdit(id)
           if (!payload.cancelled) {
             useGenerateStore.getState().setSessionError(id, payload.message)
+          }
+          void loadSession(id)
+        } else if (isPageBeautify) {
+          pageBeautifyStateEpochRef.current += 1
+          useGenerateStore.getState().finishPageBeautify(id)
+          if (!payload.cancelled) {
+            useGenerateStore.getState().setSessionError(id, payload.message)
+            toastError(payload.message || t('sessionDetail.pageBeautifyFailed'))
           }
           void loadSession(id)
         } else if (isDeckEdit) {
@@ -781,7 +884,7 @@ export function SessionDetailPage(): React.JSX.Element {
     return () => {
       unsubscribe?.()
     }
-  }, [addMessage, id, updateProgress])
+  }, [addMessage, id, t, toastError, toastSuccess, updateProgress])
 
   useEffect(() => {
     if (!id) return

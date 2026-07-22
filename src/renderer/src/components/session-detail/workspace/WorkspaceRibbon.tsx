@@ -51,6 +51,7 @@ export function WorkspaceRibbon({
   const toolbarDisabled =
     state.isGenerating ||
     state.isPageEditing ||
+    state.isPageBeautifying ||
     state.isDeckEditing ||
     state.isStyleSwitchPageLocked ||
     state.isSavingEdits ||

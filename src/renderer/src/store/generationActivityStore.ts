@@ -11,7 +11,14 @@ export function shouldAutoCloseGenerationActivity(
 }
 
 export function shouldHandleGenerationActivity(
-  activityKind: 'page-edit' | 'deck-edit' | 'edit' | 'single-page-retry' | 'addPage' | undefined,
+  activityKind:
+    | 'page-edit'
+    | 'deck-edit'
+    | 'edit'
+    | 'page-beautify'
+    | 'single-page-retry'
+    | 'addPage'
+    | undefined,
   retryContext: GenerationRetryContext | null
 ): boolean {
   return (

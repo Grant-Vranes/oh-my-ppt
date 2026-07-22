@@ -19,6 +19,16 @@ export interface PageEditJob {
   progress: number
 }
 
+export interface PageBeautifyJob {
+  sessionId: string
+  pageId: string
+  pageNumber?: number
+  runId?: string
+  status: 'starting' | 'queued' | 'running' | 'cancelling'
+  label: string
+  progress: number
+}
+
 export interface DeckEditJob {
   sessionId: string
   runId?: string
@@ -126,6 +136,7 @@ interface GenerateStore {
   isGenerating: boolean
   progress: GenerateProgress | null
   pageEditJobs: Record<string, PageEditJob | undefined>
+  pageBeautifyJobs: Record<string, PageBeautifyJob | undefined>
   deckEditJobs: Record<string, DeckEditJob | undefined>
   deckEditRetries: Record<string, DeckEditRetry | undefined>
   styleSwitchJobs: Record<string, StyleSwitchJob | undefined>
@@ -153,6 +164,15 @@ interface GenerateStore {
     job: Partial<Omit<PageEditJob, 'sessionId' | 'pageId' | 'pageNumber'>>
   ) => void
   finishPageEdit: (sessionId: string) => void
+  startPageBeautify: (
+    sessionId: string,
+    job: Pick<PageBeautifyJob, 'pageId' | 'pageNumber'>
+  ) => void
+  updatePageBeautify: (
+    sessionId: string,
+    job: Partial<Omit<PageBeautifyJob, 'sessionId' | 'pageId' | 'pageNumber'>>
+  ) => void
+  finishPageBeautify: (sessionId: string) => void
   startDeckEdit: (sessionId: string, job: Pick<DeckEditJob, 'totalPages' | 'payload'>) => void
   updateDeckEdit: (sessionId: string, job: Partial<Omit<DeckEditJob, 'sessionId'>>) => void
   finishDeckEdit: (sessionId: string, retry?: Omit<DeckEditRetry, 'sessionId'>) => void
@@ -229,6 +249,7 @@ export const useGenerateStore = create<GenerateStore>((set) => ({
   isGenerating: false,
   progress: null,
   pageEditJobs: {},
+  pageBeautifyJobs: {},
   deckEditJobs: {},
   deckEditRetries: {},
   styleSwitchJobs: {},
@@ -282,6 +303,42 @@ export const useGenerateStore = create<GenerateStore>((set) => ({
     set((state) => {
       const { [sessionId]: _finished, ...pageEditJobs } = state.pageEditJobs
       return { pageEditJobs }
+    }),
+
+  startPageBeautify: (sessionId, { pageId, pageNumber }) =>
+    set((state) => {
+      const { [sessionId]: _cleared, ...sessionErrors } = state.sessionErrors
+      return {
+        pageBeautifyJobs: {
+          ...state.pageBeautifyJobs,
+          [sessionId]: {
+            sessionId,
+            pageId,
+            pageNumber,
+            status: 'starting',
+            label: '',
+            progress: 0
+          }
+        },
+        error: null,
+        sessionErrors
+      }
+    }),
+
+  updatePageBeautify: (sessionId, job) =>
+    set((state) => ({
+      pageBeautifyJobs: state.pageBeautifyJobs[sessionId]
+        ? {
+            ...state.pageBeautifyJobs,
+            [sessionId]: { ...state.pageBeautifyJobs[sessionId], ...job }
+          }
+        : state.pageBeautifyJobs
+    })),
+
+  finishPageBeautify: (sessionId) =>
+    set((state) => {
+      const { [sessionId]: _finished, ...pageBeautifyJobs } = state.pageBeautifyJobs
+      return { pageBeautifyJobs }
     }),
 
   startDeckEdit: (sessionId, { totalPages, payload }) =>
@@ -514,6 +571,7 @@ export const useGenerateStore = create<GenerateStore>((set) => ({
       isGenerating: false,
       progress: null,
       pageEditJobs: {},
+      pageBeautifyJobs: {},
       deckEditJobs: {},
       deckEditRetries: {},
       styleSwitchJobs: {},

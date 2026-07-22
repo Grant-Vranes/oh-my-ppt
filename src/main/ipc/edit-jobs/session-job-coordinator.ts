@@ -8,7 +8,12 @@ export type SessionJobLease = {
   runId?: string
 }
 
-export type SessionJobOwner = 'page-edit' | 'deck-edit' | 'style-switch' | 'generate'
+export type SessionJobOwner =
+  | 'page-edit'
+  | 'deck-edit'
+  | 'style-switch'
+  | 'page-beautify'
+  | 'generate'
 
 export class SessionJobCoordinator {
   private leases = new Map<string, SessionJobLease>()

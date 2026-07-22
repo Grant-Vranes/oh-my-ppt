@@ -3,7 +3,14 @@ import type { GenerateChunkEvent } from '@shared/generation'
 
 type GenerationWindowRunState = {
   runId: string
-  mode: 'generate' | 'edit' | 'retry' | 'addPage' | 'retrySinglePage' | 'style-switch'
+  mode:
+    | 'generate'
+    | 'edit'
+    | 'retry'
+    | 'addPage'
+    | 'retrySinglePage'
+    | 'style-switch'
+    | 'page-beautify'
 }
 
 export function shouldRevealGenerationWindow(

@@ -414,6 +414,7 @@ export interface GenerateStagePayload {
     | 'deck-edit'
     | 'edit'
     | 'style-switch'
+    | 'page-beautify'
     | 'single-page-retry'
     | 'addPage'
 }
@@ -446,6 +447,7 @@ export type GenerateChunkEvent =
           | 'deck-edit'
           | 'edit'
           | 'style-switch'
+          | 'page-beautify'
           | 'single-page-retry'
           | 'addPage'
       }
@@ -475,11 +477,13 @@ export type GenerateChunkEvent =
         completedPageCount?: number
         failedPageCount?: number
         timestamp?: string
+        outcome?: 'changed' | 'unchanged'
         activityKind?:
           | 'page-edit'
           | 'deck-edit'
           | 'edit'
           | 'style-switch'
+          | 'page-beautify'
           | 'single-page-retry'
           | 'addPage'
       }
@@ -499,6 +503,7 @@ export type GenerateChunkEvent =
           | 'deck-edit'
           | 'edit'
           | 'style-switch'
+          | 'page-beautify'
           | 'single-page-retry'
           | 'addPage'
       }

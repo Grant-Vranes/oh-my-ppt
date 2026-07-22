@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   isDeckEditGenerationEvent,
+  isPageBeautifyGenerationEvent,
   isPageEditGenerationEvent
 } from '../../../src/renderer/src/components/session-detail/shared/pageEditGenerationEvent'
 
@@ -33,5 +34,17 @@ describe('isPageEditGenerationEvent', () => {
     expect(
       isDeckEditGenerationEvent({ runId: 'deck-edit-run', activityKind: 'deck-edit' }, null)
     ).toBe(true)
+  })
+
+  it('recognizes page-beautify events only for its dedicated activity or run', () => {
+    expect(
+      isPageBeautifyGenerationEvent({ runId: 'beautify-run', activityKind: 'page-beautify' }, null)
+    ).toBe(true)
+    expect(
+      isPageBeautifyGenerationEvent(
+        { runId: 'other-run', activityKind: undefined },
+        { runId: 'beautify-run' }
+      )
+    ).toBe(false)
   })
 })

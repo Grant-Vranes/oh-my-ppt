@@ -481,6 +481,7 @@ export type GenerationRunMode =
   | 'import'
   | 'addPage'
   | 'retrySinglePage'
+  | 'page-beautify'
 export type GenerationPageStatus = 'pending' | 'running' | 'completed' | 'failed'
 export type SessionPageStatus = 'completed' | 'failed' | 'pending'
 export type SessionOperationType =

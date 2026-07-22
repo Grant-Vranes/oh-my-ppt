@@ -40,6 +40,7 @@ type GenerationRunMode =
   | 'addPage'
   | 'retrySinglePage'
   | 'style-switch'
+  | 'page-beautify'
 type GenerationRunStatus = 'running' | 'completed' | 'failed' | 'partial'
 export type SessionJobKind =
   | 'standard'
@@ -48,6 +49,7 @@ export type SessionJobKind =
   | 'page-edit'
   | 'deck-edit'
   | 'style-switch'
+  | 'page-beautify'
 export type SessionJobStatus = 'pending' | 'active' | 'finished' | 'aborted'
 type GenerationPageStatus = 'pending' | 'running' | 'completed' | 'failed'
 type SessionPageStatus = schema.SessionPageStatus
@@ -949,7 +951,8 @@ export class PPTDatabase {
       kind === 'retry' ||
       kind === 'page-edit' ||
       kind === 'deck-edit' ||
-      kind === 'style-switch'
+      kind === 'style-switch' ||
+      kind === 'page-beautify'
         ? kind
         : 'standard') as SessionJobKind,
       previous_session_status:

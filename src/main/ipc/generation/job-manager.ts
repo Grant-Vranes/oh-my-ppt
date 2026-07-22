@@ -46,9 +46,7 @@ export class GenerateJobManager {
       return { alreadyRunning: true, runId: existingJob.runId }
     }
     const result = this.coordinator.reserve(operation, sessionId)
-    return result.alreadyRunning
-      ? result
-      : { alreadyRunning: false, reservation: result.lease }
+    return result.alreadyRunning ? result : { alreadyRunning: false, reservation: result.lease }
   }
 
   assertNotCancelled(reservation: GenerateJobReservation | null | undefined): void {
@@ -67,7 +65,13 @@ export class GenerateJobManager {
     kind: Extract<SessionJobKind, 'standard' | 'template' | 'retry'>
     context: TContext
     totalPages: number
-    activityKind?: 'page-edit' | 'edit' | 'style-switch' | 'single-page-retry' | 'addPage'
+    activityKind?:
+      | 'page-edit'
+      | 'edit'
+      | 'style-switch'
+      | 'page-beautify'
+      | 'single-page-retry'
+      | 'addPage'
     targetPageId?: string
     targetPageNumber?: number
     completedPageBaseCount?: number
@@ -174,7 +178,8 @@ export class GenerateJobManager {
       if (willRunNow) {
         this.startingCount = Math.max(0, this.startingCount - 1)
       }
-      const message = error instanceof Error ? error.message : String(error || 'Generation job setup failed')
+      const message =
+        error instanceof Error ? error.message : String(error || 'Generation job setup failed')
       if (jobCreated) {
         await this.ctx.db
           .updateSessionJobStatus(runId, 'aborted', {
@@ -201,7 +206,8 @@ export class GenerateJobManager {
             log.warn('[generate:job] failed to clean up partial job setup', {
               sessionId: context.sessionId,
               runId,
-              message: result.reason instanceof Error ? result.reason.message : String(result.reason)
+              message:
+                result.reason instanceof Error ? result.reason.message : String(result.reason)
             })
           }
         })
@@ -294,7 +300,8 @@ export class GenerateJobManager {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error || '')
       const cancelled =
-        this.coordinator.get(job.sessionId)?.controller.signal.aborted || isCancellationMessage(message)
+        this.coordinator.get(job.sessionId)?.controller.signal.aborted ||
+        isCancellationMessage(message)
       await finalizeGenerationFailure(
         this.ctx,
         job.context,

@@ -33,6 +33,7 @@ import { registerHtmlEditorAiHandlers } from './html-editor/html-editor-ai-handl
 import { SessionJobCoordinator } from './edit-jobs/session-job-coordinator'
 import { registerDeckEditJobHandlers } from './edit-jobs/deck-edit-job-service'
 import { registerPageEditJobHandlers } from './edit-jobs/page-edit-job-service'
+import { registerPageBeautifyJobHandlers } from './edit-jobs/page-beautify-job-service'
 import { registerStyleSwitchJobHandlers } from './edit-jobs/style-switch-job-service'
 
 export { registerLocalAssetProtocol }
@@ -53,6 +54,7 @@ export function setupIPC(
   registerAssetHandlers(context)
   registerThumbnailHandlers(context)
   const pageEditJobs = registerPageEditJobHandlers(context, sessionJobCoordinator)
+  registerPageBeautifyJobHandlers(context, sessionJobCoordinator)
   const deckEditJobs = registerDeckEditJobHandlers(context, sessionJobCoordinator)
   const styleSwitchJobs = registerStyleSwitchJobHandlers(context, sessionJobCoordinator)
   registerGenerationHandlers(

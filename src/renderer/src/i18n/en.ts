@@ -917,6 +917,17 @@ Business presentations, product introductions, project summaries — formal but 
     styleSwitching: 'Switching',
     styleSwitchCompleted: 'Style switched',
     styleSwitchFailed: 'Failed to switch style',
+    pageBeautify: 'Beautify',
+    pageBeautifying: 'Beautifying',
+    pageBeautifyCompleted: 'Page beautified',
+    pageBeautifyUnchanged: 'Page already looks good',
+    pageBeautifyTooltip:
+      "Improve this page's layout and visual hierarchy without changing text or data",
+    pageBeautifyNoPage: 'Select a page to beautify',
+    pageBeautifyFailed: 'Failed to beautify page',
+    pageBeautifyTimeout: 'Model response timed out, please retry',
+    pageBeautifyBusy: 'Another job is running in this session. Wait for it to finish before beautifying.',
+    cancelPageBeautify: 'Stop beautifying',
     styleSwitchConfirmTitle: 'Switch the entire deck style?',
     styleSwitchConfirmDescription:
       'All slides will be redrawn using “{style}”. Each slide keeps its original text and data, while its layout and visual structure may be redesigned.',

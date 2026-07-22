@@ -825,6 +825,96 @@ const normalizeAndInjectPageRuntime = (
   }).then(syncRootBackgroundFromScaffold)
 }
 
+/**
+ * Build a persisted page from a creative fragment using the same shell/runtime
+ * contract as the standard page and style-switch write paths.
+ */
+export async function buildPersistedPageHtmlFromFragment(args: {
+  content: string
+  pageId: string
+  projectDir: string
+  slideSize: SlideSizePreset
+  designFonts?: { titleFont: string; bodyFont: string }
+}): Promise<{ html: string; content: string; repaired: boolean }> {
+  const remoteResources = extractRemoteRuntimeResources(args.content)
+  if (remoteResources.length > 0) {
+    throw new Error(
+      `检测到禁止的 CDN/远程资源引用 (${args.pageId})，仅允许使用系统预注入的本地 ./assets/*。`
+    )
+  }
+  const prepared = validateOrRepairHtmlContent(args.content)
+  const normalizedContent = normalizeCreativePageFragment(preprocessPageHtml(prepared.content))
+  const normalizedValidation = validateHtmlContent(normalizedContent)
+  if (!normalizedValidation.valid) {
+    throw new Error(
+      `HTML 验证失败 (${args.pageId}): ${normalizedValidation.errors.join('; ')}。请修正后重试。`
+    )
+  }
+  const html = await normalizeAndInjectPageRuntime(
+    normalizedContent,
+    args.pageId,
+    args.projectDir,
+    args.slideSize,
+    args.designFonts
+  )
+  const persistedValidation = validatePersistedPageHtml(html, args.pageId)
+  if (!persistedValidation.valid) {
+    throw new Error(
+      `HTML 落盘校验失败 (${args.pageId}): ${persistedValidation.errors.join('; ')}。请修正页面片段后重试。`
+    )
+  }
+  return { html, content: prepared.content, repaired: prepared.repaired }
+}
+
+/**
+ * Swap only the `.ppt-page-content` fragment of an existing persisted page,
+ * preserving the original HTML shell (head, fonts, runtime scripts, CSS variables,
+ * page-root attributes). Used by one-click beautify so the global form stays
+ * stable across all pages — only the target page's body fragment changes.
+ */
+export function replacePageContentFragment(args: {
+  originalHtml: string
+  content: string
+  pageId: string
+}): { html: string; content: string; repaired: boolean } {
+  const remoteResources = extractRemoteRuntimeResources(args.content)
+  if (remoteResources.length > 0) {
+    throw new Error(
+      `检测到禁止的 CDN/远程资源引用 (${args.pageId})，仅允许使用系统预注入的本地 ./assets/*。`
+    )
+  }
+  // Block ids on a beautify candidate are not part of the agent contract. The
+  // editor assigns its own ids later, so remove model-authored values before
+  // validating to prevent repeated selectors from blocking page persistence.
+  const normalizedFragment = normalizeCreativePageFragment(preprocessPageHtml(args.content), {
+    blockIdMode: 'strip'
+  })
+  const prepared = validateOrRepairHtmlContent(normalizedFragment)
+  const normalizedValidation = validateHtmlContent(prepared.content)
+  if (!normalizedValidation.valid) {
+    throw new Error(
+      `HTML 验证失败 (${args.pageId}): ${normalizedValidation.errors.join('; ')}。请修正后重试。`
+    )
+  }
+
+  const $ = cheerio.load(args.originalHtml, { scriptingEnabled: false })
+  const contentNode = $('.ppt-page-root[data-ppt-guard-root="1"] .ppt-page-content').first()
+  if (!contentNode.length) {
+    throw new Error(
+      `一键美化无法定位页面主体容器 (${args.pageId})：页面骨架已被破坏，请先修复页面后再美化。`
+    )
+  }
+  contentNode.html(prepared.content)
+  const html = syncRootBackgroundFromScaffold($.html())
+  const persistedValidation = validatePersistedPageHtml(html, args.pageId)
+  if (!persistedValidation.valid) {
+    throw new Error(
+      `HTML 落盘校验失败 (${args.pageId}): ${persistedValidation.errors.join('; ')}。请修正页面片段后重试。`
+    )
+  }
+  return { html, content: args.content, repaired: prepared.repaired }
+}
+
 type HtmlContentValidation = ReturnType<typeof validateHtmlContent>
 
 const STRUCTURAL_FRAGMENT_ERROR_RE =

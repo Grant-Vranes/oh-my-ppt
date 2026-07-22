@@ -22,3 +22,13 @@ export function isDeckEditGenerationEvent(
   if (!activeDeckEditJob) return false
   return Boolean(payload.runId && activeDeckEditJob.runId === payload.runId)
 }
+
+export function isPageBeautifyGenerationEvent(
+  payload: Pick<GenerateChunkEvent['payload'], 'activityKind' | 'runId'>,
+  activePageBeautifyJob: ActivePageEditJob
+): boolean {
+  if (payload.activityKind === 'page-beautify') return true
+  if (!activePageBeautifyJob) return false
+
+  return Boolean(payload.runId && activePageBeautifyJob.runId === payload.runId)
+}

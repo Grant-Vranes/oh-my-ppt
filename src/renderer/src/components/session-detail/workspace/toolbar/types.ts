@@ -6,6 +6,7 @@ export type { InsertAssetType }
 export interface WorkspaceRibbonState {
   isGenerating: boolean
   isPageEditing: boolean
+  isPageBeautifying: boolean
   isDeckEditing: boolean
   isStyleSwitchPageLocked: boolean
   isSavingEdits: boolean

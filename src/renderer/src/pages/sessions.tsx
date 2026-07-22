@@ -3,9 +3,30 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Card, CardContent, CardTitle } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/Dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '../components/ui/Dialog'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/Tooltip'
-import { FileArchive, FileText, FileUp, FolderOpen, LayoutTemplate, MessageSquare, MessagesSquare, Pencil, Search, Sparkles, Trash2, X, type LucideIcon } from 'lucide-react'
+import {
+  FileArchive,
+  FileText,
+  FileUp,
+  FolderOpen,
+  LayoutTemplate,
+  MessageSquare,
+  MessagesSquare,
+  Pencil,
+  Search,
+  Sparkles,
+  Trash2,
+  X,
+  type LucideIcon
+} from 'lucide-react'
 import { type Session, useSessionStore, useTemplateStore } from '../store'
 import { useToastStore } from '../store'
 import { ipc, type GenerateRunStateSnapshot, type HtmlThumbnailTask } from '../lib/ipc'
@@ -25,13 +46,19 @@ type ActiveGenerateRun = GenerateRunStateSnapshot & {
 }
 
 const localAssetUrl = (filePath: string): string =>
-  import.meta.env.MODE === 'test'
-    ? 'about:blank'
-    : `local-asset://${encodeURIComponent(filePath)}`
+  import.meta.env.MODE === 'test' ? 'about:blank' : `local-asset://${encodeURIComponent(filePath)}`
 
 const getSourceTag = (
   session: Session,
-  labels: { pptx: string; sessionFile: string; saveAsNew: string; document: string; ai: string; thinking: string; template: string }
+  labels: {
+    pptx: string
+    sessionFile: string
+    saveAsNew: string
+    document: string
+    ai: string
+    thinking: string
+    template: string
+  }
 ): { label: string; Icon: LucideIcon; className: string; iconClassName: string } => {
   const metadata = parseSessionMetadata(session.metadata)
   const source = typeof metadata.source === 'string' ? metadata.source : ''
@@ -44,7 +71,11 @@ const getSourceTag = (
       iconClassName: 'text-[#189072]'
     }
   }
-  if (source === 'template' || source === 'template-direct-edit' || session.model === 'template-direct-edit') {
+  if (
+    source === 'template' ||
+    source === 'template-direct-edit' ||
+    session.model === 'template-direct-edit'
+  ) {
     return {
       label: labels.template,
       Icon: LayoutTemplate,
@@ -62,7 +93,11 @@ const getSourceTag = (
       iconClassName: 'text-[#765ee0]'
     }
   }
-  if (source === 'pptx-import' || session.provider === 'import' || session.model === 'pptx-import') {
+  if (
+    source === 'pptx-import' ||
+    session.provider === 'import' ||
+    session.model === 'pptx-import'
+  ) {
     return {
       label: labels.pptx,
       Icon: FileUp,
@@ -100,7 +135,8 @@ const getSourceTag = (
 
 export function SessionsPage(): React.JSX.Element {
   const navigate = useNavigate()
-  const { sessions, fetchSessions, deleteSession, updateSessionTitle, importSessionFile } = useSessionStore()
+  const { sessions, fetchSessions, deleteSession, updateSessionTitle, importSessionFile } =
+    useSessionStore()
   const { createTemplateFromSession } = useTemplateStore()
   const { success, error } = useToastStore()
   const t = useT()
@@ -132,14 +168,18 @@ export function SessionsPage(): React.JSX.Element {
     void Promise.all([
       ipc.listActiveGenerateRuns(),
       ipc.listActivePageEditRuns(),
+      ipc.listActivePageBeautifyRuns(),
       ipc.listActiveDeckEditRuns()
     ])
-      .then(([generationRuns, pageEditRuns, deckEditRuns]) => {
+      .then(([generationRuns, pageEditRuns, pageBeautifyRuns, deckEditRuns]) => {
         if (!mounted) return
         setActiveRuns(
           Object.fromEntries(
-            [...generationRuns, ...pageEditRuns, ...deckEditRuns]
-              .filter((run): run is ActiveGenerateRun => run.status === 'queued' || run.status === 'running')
+            [...generationRuns, ...pageEditRuns, ...pageBeautifyRuns, ...deckEditRuns]
+              .filter(
+                (run): run is ActiveGenerateRun =>
+                  run.status === 'queued' || run.status === 'running'
+              )
               .map((run) => [run.sessionId, run])
           )
         )
@@ -196,7 +236,9 @@ export function SessionsPage(): React.JSX.Element {
                 ? 'page-edit'
                 : chunk.payload.activityKind === 'deck-edit'
                   ? 'deck-edit'
-                : previous?.kind,
+                  : chunk.payload.activityKind === 'page-beautify'
+                    ? 'page-beautify'
+                    : previous?.kind,
             completedPageCount,
             failedPageCount
           }
@@ -229,7 +271,12 @@ export function SessionsPage(): React.JSX.Element {
     page_count: number | null
   }): boolean => getEditorGate(session, 0.68).canEdit
 
-  const getSessionRoute = (session: { id: string; status: string; metadata: string | null; page_count: number | null }): string => {
+  const getSessionRoute = (session: {
+    id: string
+    status: string
+    metadata: string | null
+    page_count: number | null
+  }): string => {
     const activeRun = activeRuns[session.id]
     const metadata = parseSessionMetadata(session.metadata)
     if (activeRun) {
@@ -360,10 +407,14 @@ export function SessionsPage(): React.JSX.Element {
   return (
     <div className="mx-auto w-full max-w-6xl p-6">
       <div className="mb-6">
-        <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">{t('sessions.eyebrow')}</p>
+        <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
+          {t('sessions.eyebrow')}
+        </p>
         <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <h1 className="organic-serif text-[32px] font-semibold leading-none text-[#3e4a32]">{t('sessions.title')}</h1>
+            <h1 className="organic-serif text-[32px] font-semibold leading-none text-[#3e4a32]">
+              {t('sessions.title')}
+            </h1>
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
             {sessions.length > 0 ? (
@@ -419,7 +470,13 @@ export function SessionsPage(): React.JSX.Element {
             <TooltipProvider delayDuration={180}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button size="sm" variant="outline" className="min-w-[132px]" onClick={() => void handleImportSessionFile()} disabled={importingSession}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="min-w-[132px]"
+                    onClick={() => void handleImportSessionFile()}
+                    disabled={importingSession}
+                  >
                     <FileArchive className="mr-2 h-4 w-4" />
                     {importingSession ? t('sessions.importing') : t('sessions.importSessionFile')}
                   </Button>
@@ -465,10 +522,17 @@ export function SessionsPage(): React.JSX.Element {
               ? activeRun.failedPageCount || 0
               : editorGate.failedCount
             const displayTotalCount = activeRun
-              ? Math.max(editorGate.totalCount, activeRun.totalPages, displayGeneratedCount + displayFailedCount)
+              ? Math.max(
+                  editorGate.totalCount,
+                  activeRun.totalPages,
+                  displayGeneratedCount + displayFailedCount
+                )
               : editorGate.totalCount
             const hasCompletedPages = editorGate.generatedCount > 0
-            const isFullyComplete = canEnterEditor(session) && editorGate.generatedCount >= editorGate.totalCount && editorGate.failedCount === 0
+            const isFullyComplete =
+              canEnterEditor(session) &&
+              editorGate.generatedCount >= editorGate.totalCount &&
+              editorGate.failedCount === 0
             const isPartialComplete = !isFullyComplete && canEnterEditor(session)
             const isContinuable = !isFullyComplete && !isPartialComplete && hasCompletedPages
             const statusText = activeRun
@@ -478,19 +542,19 @@ export function SessionsPage(): React.JSX.Element {
                   ? t('sessions.statusGeneratingProgress', { progress: activeRun.progress })
                   : t('sessions.statusGenerating')
               : isFullyComplete
-              ? t('sessions.statusComplete')
-              : isPartialComplete
-                ? t('sessions.statusPartialComplete')
-                : isContinuable
-                  ? t('sessions.statusContinuable')
-                  : t('sessions.statusRegenerate')
+                ? t('sessions.statusComplete')
+                : isPartialComplete
+                  ? t('sessions.statusPartialComplete')
+                  : isContinuable
+                    ? t('sessions.statusContinuable')
+                    : t('sessions.statusRegenerate')
             const actionText = activeRun
               ? t('sessions.actionViewProgress')
               : isFullyComplete || isPartialComplete
-              ? t('sessions.actionEnter')
-              : isContinuable
-                ? t('sessions.actionContinue')
-                : t('sessions.actionRegenerate')
+                ? t('sessions.actionEnter')
+                : isContinuable
+                  ? t('sessions.actionContinue')
+                  : t('sessions.actionRegenerate')
             const sourceTag = getSourceTag(session, {
               pptx: t('sessions.sourcePptx'),
               sessionFile: t('sessions.sourceSessionFile'),
@@ -508,12 +572,12 @@ export function SessionsPage(): React.JSX.Element {
             const statusClassName = activeRun
               ? 'border-[#9fc7df]/80 bg-[#edf8ff] text-[#286a9a] shadow-[0_0_0_1px_rgba(116,182,229,0.14)]'
               : isFullyComplete
-              ? 'border-[#bad8b7]/80 bg-[#eef9ec] text-[#4a7a46]'
-              : isPartialComplete
-                ? 'border-[#b5c9a8]/80 bg-[#eef5e8] text-[#4f7b3f]'
-                : isContinuable
-                  ? 'border-[#d6c08d]/80 bg-[#fff3cf] text-[#7a5a19] shadow-[0_0_0_1px_rgba(214,192,141,0.14)]'
-                  : 'border-[#d7b5ae]/70 bg-[#fbf1ee] text-[#93564f]'
+                ? 'border-[#bad8b7]/80 bg-[#eef9ec] text-[#4a7a46]'
+                : isPartialComplete
+                  ? 'border-[#b5c9a8]/80 bg-[#eef5e8] text-[#4f7b3f]'
+                  : isContinuable
+                    ? 'border-[#d6c08d]/80 bg-[#fff3cf] text-[#7a5a19] shadow-[0_0_0_1px_rgba(214,192,141,0.14)]'
+                    : 'border-[#d7b5ae]/70 bg-[#fbf1ee] text-[#93564f]'
             return (
               <Card
                 key={session.id}
@@ -667,7 +731,9 @@ export function SessionsPage(): React.JSX.Element {
           >
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
-                <h2 className="text-base font-semibold text-[#3e4a32]">{t('sessions.editTitle')}</h2>
+                <h2 className="text-base font-semibold text-[#3e4a32]">
+                  {t('sessions.editTitle')}
+                </h2>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {t('sessions.renameDescription')}
                 </p>
@@ -691,7 +757,13 @@ export function SessionsPage(): React.JSX.Element {
                 onChange={(event) => setRenameTitle(event.target.value)}
               />
               <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" size="sm" onClick={closeRenameDialog} disabled={renaming}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={closeRenameDialog}
+                  disabled={renaming}
+                >
                   {t('common.cancel')}
                 </Button>
                 <Button type="submit" size="sm" disabled={renaming}>
@@ -702,7 +774,10 @@ export function SessionsPage(): React.JSX.Element {
           </div>
         </div>
       ) : null}
-      <Dialog open={Boolean(deleteSessionTarget)} onOpenChange={(open) => !open && closeDeleteDialog()}>
+      <Dialog
+        open={Boolean(deleteSessionTarget)}
+        onOpenChange={(open) => !open && closeDeleteDialog()}
+      >
         <DialogContent showClose={false}>
           <DialogHeader>
             <DialogTitle>{t('sessions.deleteConfirmTitle')}</DialogTitle>
@@ -711,10 +786,21 @@ export function SessionsPage(): React.JSX.Element {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button type="button" variant="outline" size="sm" onClick={closeDeleteDialog} disabled={deleting}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={closeDeleteDialog}
+              disabled={deleting}
+            >
               {t('common.cancel')}
             </Button>
-            <Button type="button" size="sm" onClick={() => void handleDeleteSession()} disabled={deleting}>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => void handleDeleteSession()}
+              disabled={deleting}
+            >
               {deleting ? t('common.saving') : t('common.delete')}
             </Button>
           </DialogFooter>

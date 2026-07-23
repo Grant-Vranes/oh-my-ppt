@@ -496,13 +496,24 @@ export function SessionsPage(): React.JSX.Element {
       </div>
 
       {sessions.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <FolderOpen className="mb-4 h-12 w-12 text-muted-foreground" />
-            <h3 className="mb-2 text-lg font-medium">{t('sessions.emptyTitle')}</h3>
-            <p className="mb-4 text-muted-foreground">{t('sessions.emptyDescription')}</p>
-          </CardContent>
-        </Card>
+        <section className="flex min-h-[calc(100vh-220px)] items-center justify-center px-4 py-12">
+          <div className="flex w-full max-w-[460px] flex-col items-center text-center">
+            <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-lg border border-[#d7cab1] bg-[#fff9ef] text-[#617052] shadow-[0_6px_16px_rgba(78,88,62,0.08)]">
+              <FolderOpen className="h-8 w-8" />
+            </div>
+            <h3 className="text-xl font-semibold text-[#3e4a32]">{t('sessions.emptyTitle')}</h3>
+            <p className="mt-2 text-sm leading-6 text-[#7b705f]">
+              {t('sessions.emptyDescription')}
+            </p>
+            <Button
+              className="mt-6 min-w-[148px] bg-[#5d6b4d] text-white hover:bg-[#4b593d]"
+              onClick={() => navigate('/')}
+            >
+              <FolderOpen className="mr-2 h-4 w-4" />
+              {t('sessions.newSession')}
+            </Button>
+          </div>
+        </section>
       ) : filteredSessions.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">

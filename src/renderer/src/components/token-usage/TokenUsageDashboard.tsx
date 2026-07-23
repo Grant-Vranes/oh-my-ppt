@@ -456,12 +456,27 @@ export function TokenUsageDashboard(): React.JSX.Element {
         })}
       </div>
 
+      <div className="rounded-2xl bg-white p-5">
+        <h3 className="organic-serif mb-3 text-base font-semibold text-[#3E4A32]">
+          {t('settings.usageTodayHourly')}
+        </h3>
+        <div className="h-[clamp(200px,20vw,320px)]">
+          {todayStats?.byHour?.some((item) => item.callCount > 0) ? (
+            <canvas ref={hourlyCanvasRef} />
+          ) : (
+            <div className="flex h-full items-center justify-center text-sm text-[#8A9A7B]">
+              {t('settings.usageEmpty')}
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.65fr)_minmax(280px,1fr)]">
-        <div className="rounded-2xl bg-white p-5">
+        <div className="flex h-full flex-col rounded-2xl bg-white p-5">
           <h3 className="organic-serif mb-3 text-base font-semibold text-[#3E4A32]">
             {t('settings.usageTrend')}
           </h3>
-          <div className="h-[240px]">
+          <div className="min-h-[240px] flex-1">
             {stats?.byDay.length ? (
               <canvas ref={trendCanvasRef} />
             ) : (
@@ -515,21 +530,6 @@ export function TokenUsageDashboard(): React.JSX.Element {
             </>
           ) : (
             <div className="flex h-[220px] items-center justify-center text-sm text-[#8A9A7B]">
-              {t('settings.usageEmpty')}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="rounded-2xl bg-white p-5">
-        <h3 className="organic-serif mb-3 text-base font-semibold text-[#3E4A32]">
-          {t('settings.usageTodayHourly')}
-        </h3>
-        <div className="h-[200px]">
-          {todayStats?.byHour?.some((item) => item.callCount > 0) ? (
-            <canvas ref={hourlyCanvasRef} />
-          ) : (
-            <div className="flex h-full items-center justify-center text-sm text-[#8A9A7B]">
               {t('settings.usageEmpty')}
             </div>
           )}

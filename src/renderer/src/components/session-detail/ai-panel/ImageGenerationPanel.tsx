@@ -12,6 +12,7 @@ import {
 import dayjs from 'dayjs'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { GeneratedImageAsset } from '@shared/image-generation.js'
+import { localAssetUrl } from '@shared/local-asset'
 import { useT } from '@renderer/i18n'
 import { ipc } from '@renderer/lib/ipc'
 import { cn } from '@renderer/lib/utils'
@@ -30,7 +31,7 @@ import { resolveImageSizeOptions } from './imageSizeOptions'
 import { useImageGenerationActions } from '../hooks/useImageGenerationActions'
 
 const localAssetSrc = (absolutePath?: string): string =>
-  absolutePath ? `local-asset://${encodeURIComponent(absolutePath)}` : ''
+  absolutePath ? localAssetUrl(absolutePath) : ''
 
 export function ImageGenerationPanel({ sessionId }: { sessionId: string }): React.JSX.Element {
   const t = useT()

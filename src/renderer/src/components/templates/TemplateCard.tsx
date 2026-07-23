@@ -10,6 +10,7 @@ import {
 import type { TemplateListItem } from '@renderer/lib/ipc'
 import { useT } from '@renderer/i18n'
 import dayjs from 'dayjs'
+import { localAssetUrl } from '@shared/local-asset'
 import { resolveSlideSize } from '@shared/slide-size'
 
 export function TemplateCard({
@@ -30,9 +31,7 @@ export function TemplateCard({
   onPreview: (template: TemplateListItem) => void
 }): React.JSX.Element {
   const t = useT()
-  const thumbnailUrl = template.thumbnailPath
-    ? `local-asset://${encodeURI(template.thumbnailPath.replace(/\\/g, '/'))}`
-    : ''
+  const thumbnailUrl = template.thumbnailPath ? localAssetUrl(template.thumbnailPath) : ''
   const slideSize = resolveSlideSize({
     id: template.slideSizeId,
     width: template.slideWidth,

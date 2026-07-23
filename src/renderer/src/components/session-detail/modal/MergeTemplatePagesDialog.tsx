@@ -7,6 +7,7 @@ import {
   type MergeTemplateSourceSummary
 } from '@renderer/lib/ipc'
 import { useGenerateStore, useSessionDetailUiStore, useToastStore } from '@renderer/store'
+import { localAssetUrl } from '@shared/local-asset'
 import { readPageMergeErrorCode, type PageMergeDisabledReason } from '@shared/page-merge'
 import { requireSlideSize } from '@shared/slide-size'
 import { PreviewIframe } from '../../preview/PreviewIframe'
@@ -30,9 +31,6 @@ interface MergeTemplatePagesDialogProps {
 
 const MAX_MERGE_PAGE_COUNT = 50
 const MERGE_PREVIEW_LIMIT = 6
-
-const localAssetUrl = (filePath: string): string =>
-  `local-asset://${encodeURI(filePath.replace(/\\/g, '/'))}`
 
 function TemplatePagePreview({
   page,

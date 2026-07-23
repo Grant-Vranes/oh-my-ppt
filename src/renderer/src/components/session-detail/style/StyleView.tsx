@@ -6,6 +6,7 @@ import { useModelAction } from '@renderer/hooks/useModelAction'
 import { useThumbnailUpdates } from '@renderer/hooks/useThumbnailUpdates'
 import { useVisibleItemIds } from '@renderer/hooks/useVisibleItemIds'
 import { cn } from '@renderer/lib/utils'
+import { localAssetUrl } from '@shared/local-asset'
 import {
   hydrateStyleSwitchJob,
   useGenerateStore,
@@ -17,7 +18,6 @@ import { ScrollArea } from '../../ui/ScrollArea'
 
 const MAX_VISIBLE_IFRAMES = 8
 
-const localAssetUrl = (filePath: string): string => `local-asset://${encodeURIComponent(filePath)}`
 const stylePreviewUrl = (filePath: string): string =>
   import.meta.env.MODE === 'test' ? 'about:blank' : localAssetUrl(filePath)
 

@@ -13,10 +13,11 @@ import { useToastStore } from '../store/toastStore'
 import { useT } from '../i18n'
 import { useThumbnailUpdates } from '../hooks/useThumbnailUpdates'
 import dayjs from 'dayjs'
+import { localAssetUrl } from '@shared/local-asset'
 
 const getFileName = (filePath: string | null): string => filePath?.split(/[\\/]/).pop() || ''
-const localAssetUrl = (filePath: string): string =>
-  import.meta.env.MODE === 'test' ? 'about:blank' : `local-asset://${encodeURIComponent(filePath)}`
+const thumbnailUrl = (filePath: string): string =>
+  import.meta.env.MODE === 'test' ? 'about:blank' : localAssetUrl(filePath)
 
 /** HTML 编辑器文档库页（/edit-html，带侧栏内容区）。 */
 export function EditHtmlListPage(): ReactElement {
@@ -190,7 +191,7 @@ export function EditHtmlListPage(): ReactElement {
                   >
                     {document.thumbnailPath ? (
                       <img
-                        src={localAssetUrl(document.thumbnailPath)}
+                        src={thumbnailUrl(document.thumbnailPath)}
                         loading="lazy"
                         alt=""
                         aria-hidden="true"

@@ -37,6 +37,7 @@ import { useThumbnailUpdates } from '../hooks/useThumbnailUpdates'
 import sessionPlaceholder from '../assets/images/space.webp'
 import dayjs from 'dayjs'
 import duration from 'dayjs/plugin/duration'
+import { localAssetUrl } from '@shared/local-asset'
 import { resolveSessionSlideSize } from '@shared/slide-size'
 
 dayjs.extend(duration)
@@ -45,8 +46,8 @@ type ActiveGenerateRun = GenerateRunStateSnapshot & {
   status: 'queued' | 'running'
 }
 
-const localAssetUrl = (filePath: string): string =>
-  import.meta.env.MODE === 'test' ? 'about:blank' : `local-asset://${encodeURIComponent(filePath)}`
+const sessionThumbnailUrl = (filePath: string): string =>
+  import.meta.env.MODE === 'test' ? 'about:blank' : localAssetUrl(filePath)
 
 const getSourceTag = (
   session: Session,
@@ -592,7 +593,7 @@ export function SessionsPage(): React.JSX.Element {
                 >
                   {thumbnailPath ? (
                     <img
-                      src={localAssetUrl(thumbnailPath)}
+                      src={sessionThumbnailUrl(thumbnailPath)}
                       loading="lazy"
                       alt=""
                       aria-hidden="true"

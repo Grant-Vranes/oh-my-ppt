@@ -7,6 +7,7 @@ import { filterByStyleKeyword, parseStyleCases } from '../../lib/style-case'
 import { useT } from '../../i18n'
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/Popover'
 import { cn } from '@renderer/lib/utils'
+import { localAssetUrl } from '@shared/local-asset'
 
 export type StyleSelectOption = {
   id: string
@@ -30,7 +31,7 @@ export type StyleSelectProps = {
 }
 
 const thumbnailUrl = (filePath: string): string =>
-  import.meta.env.MODE === 'test' ? 'about:blank' : `local-asset://${encodeURIComponent(filePath)}`
+  import.meta.env.MODE === 'test' ? 'about:blank' : localAssetUrl(filePath)
 
 const compareFavoriteOptions = (
   a: StyleSelectOption,

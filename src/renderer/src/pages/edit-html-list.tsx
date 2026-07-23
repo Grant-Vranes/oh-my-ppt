@@ -1,10 +1,18 @@
 import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react'
 import { useNavigate } from 'react-router-dom'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle
+} from '../components/ui/AlertDialog'
 import { Button } from '../components/ui/Button'
 import { Card, CardContent } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/Tooltip'
-import { FileCode2, FileUp, Pencil, Search, X } from 'lucide-react'
+import { FileCode2, FileUp, Loader2, Pencil, Search, Trash2, X } from 'lucide-react'
 import { useHtmlEditorStore } from '../store/htmlEditorStore'
 import { useHtmlEditStore } from '../store/htmlEditStore'
 import { useHtmlEditHistoryStore } from '../store/htmlEditHistoryStore'
@@ -25,8 +33,11 @@ export function EditHtmlListPage(): ReactElement {
   const t = useT()
   const documents = useHtmlEditorStore((s) => s.documents)
   const importing = useHtmlEditorStore((s) => s.importing)
+  const removeDocument = useHtmlEditorStore((s) => s.removeDocument)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<(typeof documents)[number] | null>(null)
+  const [deletingDocumentId, setDeletingDocumentId] = useState('')
   const searchInputRef = useRef<HTMLInputElement | null>(null)
 
   useThumbnailUpdates('html-editor', (task) => {
@@ -77,6 +88,22 @@ export function EditHtmlListPage(): ReactElement {
       enterDoc(docId)
     } else {
       void useHtmlEditorStore.getState().loadDocuments()
+    }
+  }
+
+  const handleDelete = async (): Promise<void> => {
+    if (!deleteTarget || deletingDocumentId) return
+    setDeletingDocumentId(deleteTarget.id)
+    try {
+      const removed = await removeDocument(deleteTarget.id)
+      if (!removed) {
+        useToastStore.getState().error(t('htmlEditor.removeFromLibraryFailed'))
+        return
+      }
+      useToastStore.getState().success(t('htmlEditor.removedFromLibrary'))
+      setDeleteTarget(null)
+    } finally {
+      setDeletingDocumentId('')
     }
   }
 
@@ -178,60 +205,117 @@ export function EditHtmlListPage(): ReactElement {
               const sourcePath = document.sourcePath || document.htmlPath
               const sourceName = getFileName(sourcePath)
               return (
-                <button
+                <div
                   key={document.id}
-                  type="button"
                   data-html-document-card-id={document.id}
-                  className="group overflow-hidden rounded-lg border border-[#d8cfbc]/75 bg-white/70 text-left shadow-[0_4px_16px_rgba(93,107,77,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(93,107,77,0.15)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8ca77e]"
-                  onClick={() => enterDoc(document.id)}
+                  className="group overflow-hidden rounded-lg border border-[#d8cfbc]/75 bg-white/70 shadow-[0_4px_16px_rgba(93,107,77,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(93,107,77,0.15)]"
                 >
-                  <div
-                    className="relative aspect-video overflow-hidden bg-[#f5f1e8]"
-                    data-html-document-thumbnail-frame
+                  <button
+                    type="button"
+                    className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8ca77e]"
+                    onClick={() => enterDoc(document.id)}
                   >
-                    {document.thumbnailPath ? (
-                      <img
-                        src={thumbnailUrl(document.thumbnailPath)}
-                        loading="lazy"
-                        alt=""
-                        aria-hidden="true"
-                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.015]"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-[#8f9d81]">
-                        <FileCode2 className="h-10 w-10" />
+                    <div
+                      className="relative aspect-video overflow-hidden bg-[#f5f1e8]"
+                      data-html-document-thumbnail-frame
+                    >
+                      {document.thumbnailPath ? (
+                        <img
+                          src={thumbnailUrl(document.thumbnailPath)}
+                          loading="lazy"
+                          alt=""
+                          aria-hidden="true"
+                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.015]"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-[#8f9d81]">
+                          <FileCode2 className="h-10 w-10" />
+                        </div>
+                      )}
+                      <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
+                      <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-md bg-[#fffaf0]/92 px-2.5 py-1 text-xs font-semibold text-[#3e4a32] shadow-[0_4px_12px_rgba(31,38,29,0.16)] backdrop-blur-sm">
+                        <Pencil className="h-3 w-3" />
+                        {t('htmlEditor.edit')}
+                      </span>
+                    </div>
+                    <div className="min-w-0 p-4">
+                      <div className="line-clamp-2 min-h-10 text-base font-semibold leading-5 text-[#3e4a32]">
+                        {document.title || t('htmlEditor.untitled')}
                       </div>
-                    )}
-                    <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
-                    <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-md bg-[#fffaf0]/92 px-2.5 py-1 text-xs font-semibold text-[#3e4a32] shadow-[0_4px_12px_rgba(31,38,29,0.16)] backdrop-blur-sm">
-                      <Pencil className="h-3 w-3" />
-                      {t('htmlEditor.edit')}
-                    </span>
-                  </div>
-                  <div className="min-w-0 p-4">
-                    <div className="line-clamp-2 min-h-10 text-base font-semibold leading-5 text-[#3e4a32]">
-                      {document.title || t('htmlEditor.untitled')}
+                      <div className="mt-1.5 flex min-w-0 items-center gap-2 text-xs text-[#847866]">
+                        <span className="shrink-0 rounded border border-[#d8ccb5]/70 bg-[#fffaf0] px-1.5 py-0.5 text-[10px] font-semibold text-[#6c795e]">
+                          HTML
+                        </span>
+                        <span className="truncate" title={sourcePath}>
+                          {sourceName || sourcePath}
+                        </span>
+                      </div>
                     </div>
-                    <div className="mt-1.5 flex min-w-0 items-center gap-2 text-xs text-[#847866]">
-                      <span className="shrink-0 rounded border border-[#d8ccb5]/70 bg-[#fffaf0] px-1.5 py-0.5 text-[10px] font-semibold text-[#6c795e]">
-                        HTML
-                      </span>
-                      <span className="truncate" title={sourcePath}>
-                        {sourceName || sourcePath}
-                      </span>
-                    </div>
+                  </button>
+                  <div className="flex items-center justify-between border-t border-[#e5dccd]/58 px-4 py-2.5">
                     <time
-                      className="mt-3 block text-xs text-[#847866]"
+                      className="text-xs text-[#847866]"
                       dateTime={dayjs(document.updatedAt).toISOString()}
                     >
                       {dayjs(document.updatedAt).format('YYYY/MM/DD HH:mm')}
                     </time>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 rounded-[6px] p-0 text-[#8a514b] hover:text-[#7a332d]"
+                          aria-label={t('htmlEditor.delete')}
+                          disabled={Boolean(deletingDocumentId)}
+                          onClick={() => setDeleteTarget(document)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">{t('htmlEditor.delete')}</TooltipContent>
+                    </Tooltip>
                   </div>
-                </button>
+                </div>
               )
             })}
           </div>
         )}
+        <AlertDialog
+          open={Boolean(deleteTarget)}
+          onOpenChange={(open) => {
+            if (!open && !deletingDocumentId) setDeleteTarget(null)
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogTitle>{t('htmlEditor.removeFromLibraryTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('htmlEditor.removeFromLibraryDescription', {
+                name: deleteTarget?.title || t('htmlEditor.untitled')
+              })}
+            </AlertDialogDescription>
+            <div className="flex justify-end gap-2">
+              <AlertDialogCancel disabled={Boolean(deletingDocumentId)}>
+                {t('common.cancel')}
+              </AlertDialogCancel>
+              <AlertDialogAction
+                disabled={Boolean(deletingDocumentId)}
+                onClick={(event) => {
+                  event.preventDefault()
+                  void handleDelete()
+                }}
+                className="bg-[#8f3f31] text-white hover:bg-[#743126] disabled:cursor-not-allowed disabled:opacity-65"
+              >
+                {deletingDocumentId ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="mr-2 h-4 w-4" />
+                )}
+                {t('common.delete')}
+              </AlertDialogAction>
+            </div>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </TooltipProvider>
   )

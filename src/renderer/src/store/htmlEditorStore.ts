@@ -40,6 +40,7 @@ interface HtmlEditorStore extends HtmlEditorDocSnapshot {
   importFile: () => Promise<HtmlEditorImportOutcome>
   openDocument: (docId: string) => Promise<HtmlEditorImportOutcome>
   loadDocuments: () => Promise<void>
+  removeDocument: (docId: string) => Promise<boolean>
   setDocumentThumbnail: (docId: string, thumbnailPath: string) => void
   setHtml: (html: string) => void
   exportAs: () => Promise<string | null>
@@ -111,6 +112,20 @@ export const useHtmlEditorStore = create<HtmlEditorStore>((set, get) => ({
       set({ documents })
     } catch {
       /* 忽略，列表保持空 */
+    }
+  },
+
+  removeDocument: async (docId) => {
+    try {
+      const result = await ipc.cleanupHtmlEditor({ docId })
+      if (!result.ok) return false
+      set((state) => {
+        const documents = state.documents.filter((document) => document.id !== docId)
+        return state.docId === docId ? { ...initial, documents } : { documents }
+      })
+      return true
+    } catch {
+      return false
     }
   },
 

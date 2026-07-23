@@ -91,6 +91,27 @@ describe('normalizeImportedHtml', () => {
     expect($('script[src$="ppt-runtime.js"]').length).toBe(1)
     expect($('head script').eq(1).attr('src')).toBe('file:///app/chart.v4.js')
   })
+
+  it('allows external image and video URLs in an imported document CSP without relaxing scripts', () => {
+    const html = `<html><head><meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self'; media-src 'none'; script-src 'self'"></head><body><main class="ppt-page-root" data-ppt-guard-root="1"><div class="ppt-page-fit-scope"></div></main></body></html>`
+    const { html: out } = normalizeImportedHtml({ html, sourceDir: SOURCE_DIR, docId })
+    const csp = cheerio.load(out)('meta[http-equiv="Content-Security-Policy"]').attr('content')
+
+    expect(csp).toContain("img-src 'self' http: https:")
+    expect(csp).toContain('media-src http: https:')
+    expect(csp).toContain("script-src 'self'")
+    expect(csp).not.toContain('script-src *')
+  })
+
+  it('adds dedicated media directives when the imported CSP only has default-src', () => {
+    const html = `<html><head><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'"></head><body><main class="ppt-page-root" data-ppt-guard-root="1"><div class="ppt-page-fit-scope"></div></main></body></html>`
+    const { html: out } = normalizeImportedHtml({ html, sourceDir: SOURCE_DIR, docId })
+    const csp = cheerio.load(out)('meta[http-equiv="Content-Security-Policy"]').attr('content')
+
+    expect(csp).toContain("img-src 'self' data: local-asset: file: http: https:")
+    expect(csp).toContain("media-src 'self' data: local-asset: file: http: https:")
+    expect(csp).toContain("script-src 'self'")
+  })
 })
 
 describe('rewriteRelativeAssetsToSource', () => {

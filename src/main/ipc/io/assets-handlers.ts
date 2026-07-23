@@ -4,6 +4,13 @@ import fs from 'fs'
 import path from 'path'
 import type { IpcContext } from '../context'
 import { getUserFontsRoot } from '../../tools/font-registry'
+import {
+  allowLocalAssetRoot,
+  getDynamicAllowedLocalAssetRoots,
+  normalizeExistingPath
+} from './local-asset-roots'
+
+export { allowLocalAssetRoot } from './local-asset-roots'
 
 const ASSET_MIME_MAP: Record<string, string> = {
   png: 'image/png',
@@ -24,19 +31,10 @@ const ASSET_MIME_MAP: Record<string, string> = {
   html: 'text/html'
 }
 
-const dynamicAllowedRoots = new Set<string>()
-
 const getResourcesRoot = (): string =>
-  is.dev ? path.join(process.cwd(), 'resources') : path.join(process.resourcesPath, 'app.asar.unpacked', 'resources')
-
-const normalizeExistingPath = (filePath: string): string => {
-  const resolved = path.resolve(filePath)
-  try {
-    return fs.realpathSync(resolved)
-  } catch {
-    return resolved
-  }
-}
+  is.dev
+    ? path.join(process.cwd(), 'resources')
+    : path.join(process.resourcesPath, 'app.asar.unpacked', 'resources')
 
 const isPathInside = (candidate: string, root: string): boolean => {
   const relative = path.relative(root, candidate)
@@ -47,15 +45,10 @@ const getStaticAllowedRoots = (): string[] => [getResourcesRoot(), getUserFontsR
 
 export const resolveAllowedLocalAssetPath = (filePath: string): string | null => {
   const normalizedFile = normalizeExistingPath(filePath)
-  const roots = [...getStaticAllowedRoots(), ...dynamicAllowedRoots]
+  const roots = [...getStaticAllowedRoots(), ...getDynamicAllowedLocalAssetRoots()]
     .map(normalizeExistingPath)
     .filter((root) => root.length > 0)
   return roots.some((root) => isPathInside(normalizedFile, root)) ? normalizedFile : null
-}
-
-export function allowLocalAssetRoot(rootPath: string): void {
-  if (!rootPath.trim()) return
-  dynamicAllowedRoots.add(normalizeExistingPath(rootPath))
 }
 
 export function registerLocalAssetProtocol(): void {

@@ -83,12 +83,7 @@ export function EditHtmlListPage(): ReactElement {
       }
       return
     }
-    const docId = useHtmlEditorStore.getState().docId
-    if (docId) {
-      enterDoc(docId)
-    } else {
-      void useHtmlEditorStore.getState().loadDocuments()
-    }
+    await useHtmlEditorStore.getState().loadDocuments()
   }
 
   const handleDelete = async (): Promise<void> => {
@@ -169,28 +164,53 @@ export function EditHtmlListPage(): ReactElement {
                   </Tooltip>
                 )
               ) : null}
-              <Button
-                size="sm"
-                variant="outline"
-                className="min-w-[132px]"
-                onClick={() => void handleImport()}
-                disabled={importing}
-              >
-                <FileUp className="mr-2 h-4 w-4" />
-                {importing ? t('common.loading') : t('htmlEditor.import')}
-              </Button>
+              {documents.length > 0 ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="min-w-[132px]"
+                      onClick={() => void handleImport()}
+                      disabled={importing}
+                    >
+                      <FileUp className="mr-2 h-4 w-4" />
+                      {importing ? t('common.loading') : t('htmlEditor.import')}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" align="end">
+                    {t('htmlEditor.importTooltip')}
+                  </TooltipContent>
+                </Tooltip>
+              ) : null}
             </div>
           </div>
         </div>
 
         {documents.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-              <FileCode2 className="mb-4 h-12 w-12 text-muted-foreground" />
-              <h3 className="mb-2 text-lg font-medium">{t('htmlEditor.emptyTitle')}</h3>
-              <p className="text-muted-foreground">{t('htmlEditor.emptyHint')}</p>
-            </CardContent>
-          </Card>
+          <section className="flex min-h-[calc(100vh-220px)] items-center justify-center px-4 py-12">
+            <div className="flex w-full max-w-[460px] flex-col items-center text-center">
+              <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-lg border border-[#d7cab1] bg-[#fff9ef] text-[#617052] shadow-[0_6px_16px_rgba(78,88,62,0.08)]">
+                <FileCode2 className="h-8 w-8" />
+              </div>
+              <h3 className="text-xl font-semibold text-[#3e4a32]">{t('htmlEditor.emptyTitle')}</h3>
+              <p className="mt-2 text-sm leading-6 text-[#7b705f]">{t('htmlEditor.emptyHint')}</p>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    className="mt-6 min-w-[148px] bg-[#5d6b4d] text-white hover:bg-[#4b593d]"
+                    onClick={() => void handleImport()}
+                    disabled={importing}
+                  >
+                    <FileUp className="mr-2 h-4 w-4" />
+                    {importing ? t('common.loading') : t('htmlEditor.import')}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">{t('htmlEditor.importTooltip')}</TooltipContent>
+              </Tooltip>
+            </div>
+          </section>
         ) : filteredDocuments.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12 text-center">
@@ -228,8 +248,11 @@ export function EditHtmlListPage(): ReactElement {
                           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.015]"
                         />
                       ) : (
-                        <div className="flex h-full items-center justify-center text-[#8f9d81]">
-                          <FileCode2 className="h-10 w-10" />
+                        <div className="flex h-full flex-col items-center justify-center gap-2 text-[#7f8d70]">
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                          <span className="text-xs font-medium">
+                            {t('htmlEditor.thumbnailGenerating')}
+                          </span>
                         </div>
                       )}
                       <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react'
 import { nanoid } from 'nanoid'
+import { Loader2 } from 'lucide-react'
 import {
   buildInspectorCleanupScript,
   buildInspectorInjectScript,
@@ -18,6 +19,7 @@ import {
   type EditSelectionPayload
 } from '../preview/edit-mode-script'
 import { ipc } from '@renderer/lib/ipc'
+import { useT } from '@renderer/i18n'
 import { useHtmlEditorStore } from '../../store/htmlEditorStore'
 import {
   HtmlEditorGuidesOverlay,
@@ -181,6 +183,7 @@ export const HtmlEditorCanvas = forwardRef<
   },
   ref
 ) {
+  const t = useT()
   const containerRef = useRef<HTMLDivElement | null>(null)
   const webviewRef = useRef<Electron.WebviewTag | null>(null)
   const webviewReadyRef = useRef(false)
@@ -853,8 +856,11 @@ export const HtmlEditorCanvas = forwardRef<
                 `var __template = document.createElement("template"); __template.innerHTML = __html;` +
                 `var __nodes = Array.from(__template.content.children); if (__nodes.length === 0) return false;` +
                 `var __blockId = __nodes.map(function(__node){ return __node instanceof Element ? __node.getAttribute("data-block-id") : ""; }).find(Boolean);` +
-                `if (window.__pptEditModeInjectElement) { window.__pptEditModeInjectElement(__parentSelector, __html, __insertIndex, __selectAfterInsert); return !__blockId || Boolean(document.querySelector('[data-block-id="' + __blockId.replace(/"/g, '\\\\"') + '"]')); }` +
-                `var __parent = document.querySelector(__parentSelector); if (!__parent) return false;` +
+                `if (window.__pptEditModeInjectElement) {` +
+                `  window.__pptEditModeInjectElement(__parentSelector, __html, __insertIndex, __selectAfterInsert);` +
+                `  if (!__blockId || document.querySelector('[data-block-id="' + __blockId.replace(/"/g, '\\\\"') + '"]')) return true;` +
+                `}` +
+                `var __parent = document.querySelector(__parentSelector) || document.querySelector('[data-ppt-guard-root="1"]') || document.querySelector('.ppt-page-root'); if (!__parent) return false;` +
                 `var __existingBlock = null;` +
                 `for (var __k = 0; __k < __nodes.length; __k++) {` +
                 `  var __blockId = __nodes[__k] instanceof Element ? __nodes[__k].getAttribute("data-block-id") : "";` +
@@ -1321,7 +1327,9 @@ export const HtmlEditorCanvas = forwardRef<
     <div ref={rootRef} className="relative h-full w-full rounded-[inherit] bg-[#f5f1e8]">
       <div
         ref={containerRef}
-        className="absolute overflow-x-hidden overflow-y-auto"
+        className={`absolute overflow-x-hidden overflow-y-auto transition-opacity duration-150 ${
+          webviewReady ? 'opacity-100' : 'opacity-0'
+        }`}
         style={
           editMode ? { top: EDITOR_INSET, left: EDITOR_INSET, right: 0, bottom: 0 } : { inset: 0 }
         }
@@ -1344,6 +1352,22 @@ export const HtmlEditorCanvas = forwardRef<
           </div>
         ) : null}
       </div>
+      {webviewSrc && !webviewReady ? (
+        <div
+          className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-5 bg-[#f5f1e8] text-[#7c786b]"
+          aria-busy="true"
+          aria-live="polite"
+        >
+          <Loader2 className="h-5 w-5 animate-spin text-[#657050]" aria-hidden="true" />
+          <span className="text-sm">{t('common.loading')}</span>
+          <div className="w-[min(62%,560px)] space-y-3 opacity-70" aria-hidden="true">
+            <div className="h-3 w-2/5 animate-pulse bg-[#e4ddcf]" />
+            <div className="h-2.5 w-full animate-pulse bg-[#e9e2d5]" />
+            <div className="h-2.5 w-4/5 animate-pulse bg-[#e9e2d5]" />
+            <div className="h-24 animate-pulse bg-[#ebe4d7]" />
+          </div>
+        </div>
+      ) : null}
       {editMode && webviewSrc ? (
         <HtmlEditorGuidesOverlay
           rootRef={rootRef}

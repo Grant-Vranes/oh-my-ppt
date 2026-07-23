@@ -22,7 +22,7 @@ import { useHtmlEditHistoryStore } from '../../store/htmlEditHistoryStore'
  * HTML 编辑器的「插入元素」hook（复制自 session-detail.tsx 的 handleAdd*Element，独立实现）。
  * 复用 session-edit 的纯插入片段构造器（shapes/charts/artText/formula），但接 html-edit store，
  * 且画布为 document 模式（按 designWidth 居中、自顶向下堆叠，不依赖固定高度）。
- * v1 暂不含图片/视频插入（需资产生命周期，留后续）。
+ * 媒体文件由 html-editor IPC 复制到当前文档的 assets 目录，再插入其 file:// URL。
  */
 
 const ADDED_ELEMENT_EDGE_PADDING = 20
@@ -34,6 +34,10 @@ const ADDED_ART_TEXT_MIN_HEIGHT = 130
 const ADDED_ICON_SIZE = 96
 const ADDED_CHART_WIDTH = 520
 const ADDED_CHART_HEIGHT = 300
+const ADDED_IMAGE_WIDTH = 480
+const ADDED_IMAGE_HEIGHT = 320
+const ADDED_VIDEO_WIDTH = 640
+const ADDED_VIDEO_HEIGHT = 360
 const DEFAULT_NEW_ELEMENT_Z_INDEX = 20
 
 export interface UseHtmlElementInsertionOptions {
@@ -59,19 +63,21 @@ export function useHtmlElementInsertion(opts: UseHtmlElementInsertionOptions): {
   addShape: (type: InsertShapeType) => Promise<void>
   addIcon: (iconId: string) => Promise<void>
   addChart: (type: InsertChartType) => Promise<void>
+  addImage: (src: string) => Promise<boolean>
+  addVideo: (src: string) => Promise<boolean>
   copyElement: () => Promise<void>
 } {
   const { designWidth, t } = opts
 
-  const addAndSelect = async (blockId: string, htmlFragment: string): Promise<void> => {
+  const addAndSelect = async (blockId: string, htmlFragment: string): Promise<boolean> => {
     const edit = useHtmlEditStore.getState()
     const pc = edit.ctx?.getPageContext()
     const iframe = edit.iframeHandle
-    if (!pc || !iframe) return
+    if (!pc || !iframe) return false
     const parentSelector = `body[data-page-id="${pc.pageId}"] [data-ppt-guard-root="1"]`
     edit.commitCurrentDraft()
     const injected = await iframe.injectElement(parentSelector, htmlFragment)
-    if (!injected) return
+    if (!injected) return false
     useHtmlEditHistoryStore.getState().addElement({
       pageId: pc.pageId,
       htmlPath: pc.htmlPath,
@@ -82,10 +88,11 @@ export function useHtmlElementInsertion(opts: UseHtmlElementInsertionOptions): {
     })
     const selector = `body[data-page-id="${pc.pageId}"] [data-block-id="${blockId}"]`
     const snapshot = await readSnapshotWithRetry((s) => iframe.readElementSnapshot(s), selector)
-    if (!snapshot) return
+    if (!snapshot) return true
     useHtmlEditStore
       .getState()
       .selectElement(buildSelectedElementFromSnapshot({ selector, blockId, snapshot }))
+    return true
   }
 
   // document 模式定位：按 designWidth 水平居中，纵向自顶向下堆叠（不依赖固定高度）
@@ -189,6 +196,35 @@ export function useHtmlElementInsertion(opts: UseHtmlElementInsertionOptions): {
     await addAndSelect(blockId, htmlFragment)
   }
 
+  const addMedia = async (mediaType: 'image' | 'video', src: string): Promise<boolean> => {
+    const normalizedSrc = src.trim()
+    if (!normalizedSrc) return false
+    const blockId = 'select-arcsin1-' + nanoid(8)
+    const width = mediaType === 'video' ? ADDED_VIDEO_WIDTH : ADDED_IMAGE_WIDTH
+    const height = mediaType === 'video' ? ADDED_VIDEO_HEIGHT : ADDED_IMAGE_HEIGHT
+    const { left, top, zIdx } = place(width)
+    const style = [
+      'position:absolute',
+      `left:${left}px`,
+      `top:${top}px`,
+      `width:${width}px`,
+      `height:${height}px`,
+      `z-index:${zIdx}`,
+      'object-fit:contain',
+      'box-sizing:border-box'
+    ].join('; ')
+    const safeSrc = escapeHtmlText(normalizedSrc)
+    const htmlFragment =
+      mediaType === 'video'
+        ? `<video src="${safeSrc}" data-block-id="${blockId}" data-ppt-edit-kind="media" style="${style};" controls playsinline preload="metadata"></video>`
+        : `<img src="${safeSrc}" alt="" data-block-id="${blockId}" data-ppt-edit-kind="media" style="${style};" />`
+    return addAndSelect(blockId, htmlFragment)
+  }
+
+  const addImage = (src: string): Promise<boolean> => addMedia('image', src)
+
+  const addVideo = (src: string): Promise<boolean> => addMedia('video', src)
+
   const copyElement = async (): Promise<void> => {
     const edit = useHtmlEditStore.getState()
     const pc = edit.ctx?.getPageContext()
@@ -226,5 +262,5 @@ export function useHtmlElementInsertion(opts: UseHtmlElementInsertionOptions): {
       )
   }
 
-  return { addText, addArtText, addShape, addIcon, addChart, copyElement }
+  return { addText, addArtText, addShape, addIcon, addChart, addImage, addVideo, copyElement }
 }

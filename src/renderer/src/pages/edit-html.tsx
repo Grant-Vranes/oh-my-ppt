@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react'
 import { useParams } from 'react-router-dom'
-import { Copy, RefreshCw, Trash2 } from 'lucide-react'
+import { Copy, Loader2, RefreshCw, Trash2 } from 'lucide-react'
 import { useT } from '@renderer/i18n'
 import {
   HtmlEditorCanvas,
@@ -160,8 +160,9 @@ export function EditHtmlPage(): ReactElement {
 
   if (!docId) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-[#f5f1e8] text-sm text-[#8a8676]">
-        {t('common.loading')}
+      <div className="flex h-screen w-screen flex-col items-center justify-center gap-3 bg-[#f5f1e8] text-sm text-[#8a8676]">
+        <Loader2 className="h-5 w-5 animate-spin text-[#657050]" aria-hidden="true" />
+        <span>{t('common.loading')}</span>
       </div>
     )
   }

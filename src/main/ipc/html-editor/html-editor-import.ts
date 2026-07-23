@@ -18,6 +18,7 @@ import type { AnyNode } from 'domhandler'
 export const DEFAULT_DESIGN_WIDTH = 1280
 
 const PROTOCOL_RE = /^(https?:|data:|blob:|file:|mailto:|tel:|javascript:|#|\/\/)/i
+const EXTERNAL_MEDIA_PROTOCOLS = ['http:', 'https:']
 
 /** 是否已含 slide 脚手架（`main.ppt-page-root[data-ppt-guard-root]`）。 */
 export function hasSlideScaffold(html: string): boolean {
@@ -81,6 +82,44 @@ function injectRuntimeScripts($: cheerio.CheerioAPI, hrefs: string[]): void {
     $('head').append($('<script></script>').attr('src', href))
     existing.add(fileName)
   }
+}
+
+/**
+ * 编辑器中的文档由 webview 单独加载，不继承应用壳层的 CSP。导入页若自行限制
+ * img-src/media-src，会让用户新增的外链媒体无法加载；仅放开这两类资源，不改脚本策略。
+ */
+function allowExternalMediaInDocumentCsp($: cheerio.CheerioAPI): void {
+  $('meta[http-equiv]').each((_, el) => {
+    const node = $(el)
+    if ((node.attr('http-equiv') || '').trim().toLowerCase() !== 'content-security-policy') return
+    const content = (node.attr('content') || '').trim()
+    if (!content) return
+
+    const directives = content
+      .split(';')
+      .map((rawDirective) => rawDirective.trim())
+      .filter(Boolean)
+      .map((directive) => {
+        const [name = '', ...values] = directive.split(/\s+/)
+        const normalizedName = name.toLowerCase()
+        if (normalizedName !== 'img-src' && normalizedName !== 'media-src') return directive
+        const allowedValues = values.filter((value) => value !== "'none'")
+        for (const protocol of EXTERNAL_MEDIA_PROTOCOLS) {
+          if (!allowedValues.includes(protocol)) allowedValues.push(protocol)
+        }
+        return [name, ...allowedValues].join(' ')
+      })
+
+    const hasDirective = (name: 'img-src' | 'media-src'): boolean =>
+      directives.some((directive) => directive.split(/\s+/, 1)[0]?.toLowerCase() === name)
+    for (const name of ['img-src', 'media-src'] as const) {
+      if (!hasDirective(name)) {
+        directives.push(`${name} 'self' data: local-asset: file: http: https:`)
+      }
+    }
+
+    node.attr('content', directives.join('; '))
+  })
 }
 
 /**
@@ -191,6 +230,8 @@ export function normalizeImportedHtml(input: {
     const inner = main.html()
     main.empty().append(`<div class="ppt-page-fit-scope">${inner}</div>`)
   }
+
+  allowExternalMediaInDocumentCsp($)
 
   let out = $.html()
   out = rewriteRelativeAssetsToSource({ html: out, sourceDir })

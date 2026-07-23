@@ -4,11 +4,13 @@ import {
   ChartLine,
   ChartPie,
   Donut,
+  ImagePlus,
   Radar,
   Shapes,
   Smile,
   Sparkles,
-  Type
+  Type,
+  Video
 } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/Popover'
 import { useT, type I18nKey } from '../../i18n'
@@ -22,6 +24,7 @@ import {
 import { CHART_TYPE_LIST, type InsertChartType } from '../session-detail/workspace/insert-charts'
 import { ART_TEXT_TEMPLATES, type ArtTextTemplateId } from '../../lib/artTextTemplates'
 import type { useHtmlElementInsertion } from './useHtmlElementInsertion'
+import { HtmlEditorMediaInsertDialog } from './HtmlEditorMediaInsertDialog'
 
 type Insertion = ReturnType<typeof useHtmlElementInsertion>
 
@@ -142,6 +145,7 @@ export function HtmlEditorInsertRibbon({
   disabled?: boolean
 }): ReactNode {
   const t = useT()
+  const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null)
   const strokeIcons = ICON_LIST.filter((icon) => icon.variant !== 'badge')
   const badgeIcons = ICON_LIST.filter((icon) => icon.variant === 'badge')
 
@@ -180,6 +184,20 @@ export function HtmlEditorInsertRibbon({
         label={t('editMode.addText')}
         disabled={disabled}
         onClick={() => void insertion.addText()}
+      />
+
+      <DirectButton
+        icon={ImagePlus}
+        label={t('editMode.addImage')}
+        disabled={disabled}
+        onClick={() => setMediaType('image')}
+      />
+
+      <DirectButton
+        icon={Video}
+        label={t('editMode.addVideo')}
+        disabled={disabled}
+        onClick={() => setMediaType('video')}
       />
 
       <HoverInsertButton icon={Sparkles} label={t('editMode.artText')} disabled={disabled}>
@@ -260,7 +278,11 @@ export function HtmlEditorInsertRibbon({
           })}
         </div>
       </HoverInsertButton>
-
+      <HtmlEditorMediaInsertDialog
+        mediaType={mediaType}
+        insertion={insertion}
+        onClose={() => setMediaType(null)}
+      />
     </aside>
   )
 }

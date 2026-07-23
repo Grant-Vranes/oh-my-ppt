@@ -48,6 +48,7 @@ describe('useHtmlElementInsertion', () => {
     const iframe = {
       injectElement: vi.fn((_parentSelector: string, htmlFragment: string) => {
         injectedFragments.push(htmlFragment)
+        return true
       }),
       readElementSnapshot: vi.fn(async (selector: string) => createSnapshot(selector)),
       ensureChartJs: vi.fn(async () => true)
@@ -72,5 +73,57 @@ describe('useHtmlElementInsertion', () => {
     injectedFragments.forEach((fragment) => {
       expect(fragment).toMatch(/z-index:20(?:;|\")/)
     })
+  })
+
+  it('inserts image and video elements with escaped media URLs', async () => {
+    const injectedFragments: string[] = []
+    const iframe = {
+      injectElement: vi.fn((_parentSelector: string, htmlFragment: string) => {
+        injectedFragments.push(htmlFragment)
+        return true
+      }),
+      readElementSnapshot: vi.fn(async (selector: string) => createSnapshot(selector))
+    } as unknown as HtmlEditorCanvasHandle
+
+    useHtmlEditStore.getState().attach({
+      t: () => 'New text',
+      requestRefresh: vi.fn(),
+      bumpThumbnail: vi.fn(),
+      getPageContext: () => PAGE_CONTEXT
+    })
+    useHtmlEditStore.getState().setIframeHandle(iframe)
+
+    const insertion = useHtmlElementInsertion({ designWidth: 1280, t: () => 'New text' })
+    await insertion.addImage('https://cdn.example.com/photo?a=1&b=2')
+    await insertion.addVideo('file:///tmp/demo%20video.mp4')
+
+    expect(injectedFragments).toHaveLength(2)
+    expect(injectedFragments[0]).toContain('<img')
+    expect(injectedFragments[0]).toContain('src="https://cdn.example.com/photo?a=1&amp;b=2"')
+    expect(injectedFragments[0]).toContain('width:480px')
+    expect(injectedFragments[1]).toContain('<video')
+    expect(injectedFragments[1]).toContain('controls')
+    expect(injectedFragments[1]).toContain('preload="metadata"')
+    expect(injectedFragments[1]).toContain('width:640px')
+  })
+
+  it('does not save a media addition when the canvas rejects the injection', async () => {
+    const iframe = {
+      injectElement: vi.fn(async () => false),
+      readElementSnapshot: vi.fn(async (selector: string) => createSnapshot(selector))
+    } as unknown as HtmlEditorCanvasHandle
+
+    useHtmlEditStore.getState().attach({
+      t: () => 'New text',
+      requestRefresh: vi.fn(),
+      bumpThumbnail: vi.fn(),
+      getPageContext: () => PAGE_CONTEXT
+    })
+    useHtmlEditStore.getState().setIframeHandle(iframe)
+
+    const insertion = useHtmlElementInsertion({ designWidth: 1280, t: () => 'New text' })
+
+    await expect(insertion.addImage('https://cdn.example.com/photo.webp')).resolves.toBe(false)
+    expect(useHtmlEditHistoryStore.getState().addElements).toHaveLength(0)
   })
 })

@@ -6,6 +6,7 @@ import log from 'electron-log/main.js'
 import { nanoid } from 'nanoid'
 import * as cheerio from 'cheerio'
 import type { IpcContext } from '../context'
+import { allowLocalAssetRoot } from '../io/local-asset-roots'
 import {
   clampDragValue,
   clampSizeValue,
@@ -31,10 +32,20 @@ import {
   refreshHtmlEditorCoverThumbnail,
   warmHtmlEditorCoverThumbnails
 } from './html-editor-thumbnail'
+import {
+  getHtmlEditorMediaExtensions,
+  importHtmlEditorMedia,
+  listHtmlEditorMedia,
+  type HtmlEditorMediaType
+} from './html-editor-media'
 
 const HTML_EDITOR_DIRNAME = 'html-editor'
 const HTML_EDITOR_HTML_CACHE_LIMIT = 24
 const htmlDocumentHtmlCache = new Map<string, string>()
+const htmlDocumentOpenCache = new Map<
+  string,
+  { html: string; modifiedAtMs: number; size: number }
+>()
 
 function rememberHtmlEditorDocumentHtml(docId: string, html: string): void {
   if (!docId || !html) return
@@ -47,8 +58,24 @@ function rememberHtmlEditorDocumentHtml(docId: string, html: string): void {
   }
 }
 
+function rememberHtmlEditorOpenHtml(
+  docId: string,
+  html: string,
+  file: { mtimeMs: number; size: number }
+): void {
+  if (!docId || !html) return
+  htmlDocumentOpenCache.delete(docId)
+  htmlDocumentOpenCache.set(docId, { html, modifiedAtMs: file.mtimeMs, size: file.size })
+  while (htmlDocumentOpenCache.size > HTML_EDITOR_HTML_CACHE_LIMIT) {
+    const oldestDocId = htmlDocumentOpenCache.keys().next().value
+    if (!oldestDocId) break
+    htmlDocumentOpenCache.delete(oldestDocId)
+  }
+}
+
 function forgetHtmlEditorDocumentHtml(docId: string): void {
   htmlDocumentHtmlCache.delete(docId)
+  htmlDocumentOpenCache.delete(docId)
 }
 
 export function resolveHtmlEditorDocumentPath(input: {
@@ -360,6 +387,49 @@ export function registerHtmlEditorHandlers(ctx: IpcContext): void {
     BrowserWindow.fromWebContents(sender) ?? BrowserWindow.getFocusedWindow() ?? mainWindow
 
   const resolveDocument = (docId: string) => resolveHtmlEditorDocument(ctx, docId)
+
+  // ─── html-editor:listMedia ─────────────────────────────
+  ipcMain.handle('html-editor:listMedia', async (_event, payload: unknown) => {
+    const r = asRecord(payload)
+    const docId = typeof r.docId === 'string' ? r.docId.trim() : ''
+    const mediaType: HtmlEditorMediaType = r.mediaType === 'video' ? 'video' : 'image'
+    if (!docId) throw new Error('文档 ID 不能为空')
+
+    const document = await resolveDocument(docId)
+    allowLocalAssetRoot(document.dir)
+    return { assets: await listHtmlEditorMedia({ workspaceDir: document.dir, mediaType }) }
+  })
+
+  // ─── html-editor:chooseAndImportMedia ──────────────────
+  ipcMain.handle('html-editor:chooseAndImportMedia', async (event, payload: unknown) => {
+    const r = asRecord(payload)
+    const docId = typeof r.docId === 'string' ? r.docId.trim() : ''
+    const mediaType: HtmlEditorMediaType = r.mediaType === 'video' ? 'video' : 'image'
+    if (!docId) throw new Error('文档 ID 不能为空')
+
+    const document = await resolveDocument(docId)
+    const ownerWindow = resolveOwnerWindow(event.sender)
+    const result = await dialog.showOpenDialog(ownerWindow, {
+      title: mediaType === 'video' ? '选择视频' : '选择图片',
+      buttonLabel: '添加',
+      properties: ['openFile'],
+      filters: [
+        {
+          name: mediaType === 'video' ? 'Videos' : 'Images',
+          extensions: getHtmlEditorMediaExtensions(mediaType)
+        }
+      ]
+    })
+    if (result.canceled || result.filePaths.length === 0) return { cancelled: true }
+
+    const media = await importHtmlEditorMedia({
+      workspaceDir: document.dir,
+      sourcePath: result.filePaths[0],
+      mediaType
+    })
+    allowLocalAssetRoot(document.dir)
+    return { cancelled: false, ...media }
+  })
 
   // ─── html-editor:import ────────────────────────────────
   ipcMain.handle('html-editor:import', async (event) => {
@@ -676,38 +746,56 @@ export function registerHtmlEditorHandlers(ctx: IpcContext): void {
     if (!docId) throw new Error('参数无效')
     const document = await resolveDocument(docId)
     const { doc } = document
-    let html = ''
+    let file: { mtimeMs: number; size: number }
     try {
-      html = await fs.promises.readFile(document.htmlPath, 'utf-8')
+      file = await fs.promises.stat(document.htmlPath)
     } catch (error) {
       throw new Error('HTML 文档文件不存在或无法读取', { cause: error })
     }
-    const normalized = normalizeImportedHtml({
-      html,
-      sourceDir: path.dirname(doc.sourcePath || document.htmlPath),
-      docId: doc.id,
-      defaultDesignWidth: doc.designWidth,
-      runtimeScriptHrefs: resolveRuntimeScriptHrefs()
-    })
-    if (normalized.html !== html) {
+    const cached = htmlDocumentOpenCache.get(doc.id)
+    let html =
+      cached && cached.modifiedAtMs === file.mtimeMs && cached.size === file.size ? cached.html : ''
+    if (!html) {
+      let htmlMatchesDisk = true
+      let needsFileMetadataRefresh = false
       try {
-        await fs.promises.writeFile(document.htmlPath, normalized.html, 'utf-8')
-        await ensureHtmlRepo(document.dir)
-        const commitSha = await commitHtmlFile(document.dir, 'current.html', '补全编辑运行时')
-        await db.createHtmlEditVersionAndTouch({
-          id: nanoid(12),
-          docId: doc.id,
-          commitSha,
-          message: '补全编辑运行时',
-          createdAt: Date.now()
-        })
+        html = await fs.promises.readFile(document.htmlPath, 'utf-8')
       } catch (error) {
-        log.warn('[html-editor:openDocument] runtime migration failed', {
-          docId: doc.id,
-          message: error instanceof Error ? error.message : String(error)
-        })
+        throw new Error('HTML 文档文件不存在或无法读取', { cause: error })
       }
-      html = normalized.html
+      const normalized = normalizeImportedHtml({
+        html,
+        sourceDir: path.dirname(doc.sourcePath || document.htmlPath),
+        docId: doc.id,
+        defaultDesignWidth: doc.designWidth,
+        runtimeScriptHrefs: resolveRuntimeScriptHrefs()
+      })
+      if (normalized.html !== html) {
+        try {
+          await fs.promises.writeFile(document.htmlPath, normalized.html, 'utf-8')
+          needsFileMetadataRefresh = true
+          await ensureHtmlRepo(document.dir)
+          const commitSha = await commitHtmlFile(document.dir, 'current.html', '补全编辑运行时')
+          await db.createHtmlEditVersionAndTouch({
+            id: nanoid(12),
+            docId: doc.id,
+            commitSha,
+            message: '补全编辑运行时',
+            createdAt: Date.now()
+          })
+        } catch (error) {
+          log.warn('[html-editor:openDocument] runtime migration failed', {
+            docId: doc.id,
+            message: error instanceof Error ? error.message : String(error)
+          })
+          htmlMatchesDisk = false
+        }
+        html = normalized.html
+      }
+      if (htmlMatchesDisk) {
+        if (needsFileMetadataRefresh) file = await fs.promises.stat(document.htmlPath)
+        rememberHtmlEditorOpenHtml(doc.id, html, file)
+      }
     }
     const result: HtmlEditorImportResult = {
       docId: doc.id,

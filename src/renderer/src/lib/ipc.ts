@@ -701,6 +701,15 @@ export const ipc = {
     getIpc().invoke('session:importFile') as Promise<ImportSessionFileResult>,
   importHtmlFile: () =>
     getIpc().invoke('html-editor:import') as Promise<HtmlEditorFileImportResult>,
+  listHtmlEditorMedia: (payload: { docId: string; mediaType: 'image' | 'video' }) =>
+    getIpc().invoke('html-editor:listMedia', payload) as Promise<{
+      assets: Array<{ fileName: string; filePath: string; relativePath: string; url: string }>
+    }>,
+  chooseAndImportHtmlMedia: (payload: { docId: string; mediaType: 'image' | 'video' }) =>
+    getIpc().invoke('html-editor:chooseAndImportMedia', payload) as Promise<
+      | { cancelled: true }
+      | { cancelled: false; filePath: string; relativePath: string; url: string }
+    >,
   ensureHtmlAnchor: (payload: {
     html: string
     pageId: string

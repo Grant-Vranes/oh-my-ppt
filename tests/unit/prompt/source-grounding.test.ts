@@ -160,7 +160,7 @@ describe('source-grounded prompt rules', () => {
     expect(engine).toContain('setPageAgent(args.sessionId, concurrentDeckPageId, editAgent)')
   })
 
-  it('shows generation progress in an independent modal with local state', () => {
+  it('keeps generation progress in the local page surfaces without a modal', () => {
     const chatPanel = readSource(
       'src/renderer/src/components/session-detail/ai-panel/ChatPanel.tsx'
     )
@@ -168,23 +168,13 @@ describe('source-grounded prompt rules', () => {
       'src/renderer/src/components/session-detail/preview/PreviewStage.tsx'
     )
     const sessionDetail = readSource('src/renderer/src/pages/session-detail.tsx')
-    const activityDialog = readSource(
-      'src/renderer/src/components/session-detail/modal/GenerationActivityDialog.tsx'
-    )
 
     expect(chatPanel).not.toContain('<Progress value={progress.progress}')
+    expect(chatPanel).toContain('(isPageEditing || isDeckEditing)')
     expect(previewStage).not.toContain('useGenerationLoading')
     expect(previewStage).not.toContain('generationLoading')
-    expect(activityDialog).toContain('ipc.onGenerateChunk')
-    expect(activityDialog).toContain('useState<ActivityLog[]>([])')
-    expect(activityDialog).not.toContain('ipc.cancelGenerate')
-    expect(activityDialog).toContain('showClose={!blockClose}')
-    expect(activityDialog).toContain('if (!nextOpen && blockClose) return')
-    expect(activityDialog).not.toContain('useGenerateStore')
-    expect(activityDialog).toContain('useGenerationActivityStore')
-    expect(activityDialog).not.toContain('useSessionStore')
-    expect(activityDialog).not.toContain('style-switch')
-    expect(sessionDetail).toContain('<GenerationActivityDialog sessionId={id} />')
+    expect(previewStage).toContain('pageEditJob && isPageEditing')
+    expect(sessionDetail).not.toContain('GenerationActivityDialog')
     expect(sessionDetail).not.toContain('onStyleSwitchCompleted')
     expect(sessionDetail).not.toContain('<PageProgressOverlay')
   })

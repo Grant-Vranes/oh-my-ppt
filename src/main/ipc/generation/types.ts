@@ -20,6 +20,7 @@ export type FinalizeContext = {
   effectiveMode: GenerateMode
   messageScope: GenerateChatType
   messagePageId?: string
+  targetPageId?: string
   projectId: string
   modelConfigId?: string
   modelConfigName?: string

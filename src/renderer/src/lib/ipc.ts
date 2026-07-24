@@ -151,6 +151,8 @@ export interface GenerateRunStateSnapshot {
     | 'standard'
     | 'template'
     | 'retry'
+    | 'add-page'
+    | 'single-page-retry'
     | 'edit'
     | 'page-edit'
     | 'deck-edit'
@@ -158,6 +160,14 @@ export interface GenerateRunStateSnapshot {
     | 'page-beautify'
   targetPageId?: string
   targetPageNumber?: number
+  activityKind?:
+    | 'page-edit'
+    | 'deck-edit'
+    | 'edit'
+    | 'style-switch'
+    | 'page-beautify'
+    | 'single-page-retry'
+    | 'addPage'
   retryPayload?: GenerateStartPayload
 }
 
@@ -979,11 +989,14 @@ export const ipc = {
       success: boolean
       runId?: string
       alreadyRunning?: boolean
+      queued?: boolean
     }>,
   retrySinglePage: (payload: GenerateRetrySinglePagePayload) =>
     getIpc().invoke('generate:retrySinglePage', payload) as Promise<{
       success: boolean
       runId?: string
+      alreadyRunning?: boolean
+      queued?: boolean
     }>,
   getGenerateState: (sessionId: string) =>
     getIpc().invoke('generate:state', sessionId) as Promise<GenerateRunStateSnapshot>,

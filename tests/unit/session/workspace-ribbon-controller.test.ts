@@ -23,17 +23,14 @@ vi.mock('@renderer/store', async () => {
   const actual = await vi.importActual<typeof import('@renderer/store')>('@renderer/store')
   return {
     ...actual,
-    useToastStore: Object.assign(
-      (selector: unknown) => {
-        if (typeof selector === 'function') {
-          return selector({
-            info: toastInfo
-          })
-        }
-        return actual.useToastStore.getState()
-      },
-      actual.useToastStore
-    )
+    useToastStore: Object.assign((selector: unknown) => {
+      if (typeof selector === 'function') {
+        return selector({
+          info: toastInfo
+        })
+      }
+      return actual.useToastStore.getState()
+    }, actual.useToastStore)
   }
 })
 
@@ -137,6 +134,41 @@ describe('useWorkspaceRibbonController', () => {
       })
       expect(latest?.state.isPageEditing).toBe(false)
       expect(latest?.state.isGenerating).toBe(false)
+    } finally {
+      await cleanup(root, container)
+    }
+  })
+
+  it('keeps other pages editable while a generated page is running', async () => {
+    const { root, container } = await renderHarness()
+
+    try {
+      await act(async () => {
+        useGenerateStore.getState().setPages([
+          ...useGenerateStore.getState().currentPages,
+          {
+            id: 'page-record-2',
+            pageId: 'page-2',
+            pageNumber: 2,
+            title: 'Page 2',
+            html: '<div>Page</div>',
+            htmlPath: '/tmp/page-2.html'
+          }
+        ])
+        useGenerateStore.setState({ isGenerating: true, status: 'running' })
+        useSessionDetailUiStore.setState({
+          isAddingPage: true,
+          addingPageId: 'page-record-2'
+        })
+      })
+
+      expect(latest?.state.isGenerating).toBe(false)
+
+      await act(async () => {
+        useSessionDetailUiStore.getState().setSelectedPageId('page-record-2')
+      })
+
+      expect(latest?.state.isGenerating).toBe(true)
     } finally {
       await cleanup(root, container)
     }

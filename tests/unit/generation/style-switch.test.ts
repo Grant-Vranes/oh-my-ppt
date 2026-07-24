@@ -90,17 +90,9 @@ describe('style switch generation', () => {
     )
   })
 
-  it('starts through the dedicated job UI without either style-switch dialog', () => {
+  it('starts through the dedicated job UI without a style-switch dialog', () => {
     const styleViewSource = fs.readFileSync(
       path.resolve('src/renderer/src/components/session-detail/style/StyleView.tsx'),
-      'utf8'
-    )
-    const activityStoreSource = fs.readFileSync(
-      path.resolve('src/renderer/src/store/generationActivityStore.ts'),
-      'utf8'
-    )
-    const activityDialogSource = fs.readFileSync(
-      path.resolve('src/renderer/src/components/session-detail/modal/GenerationActivityDialog.tsx'),
       'utf8'
     )
     const jobBarSource = fs.readFileSync(
@@ -112,8 +104,6 @@ describe('style switch generation', () => {
     expect(styleViewSource).toContain('ipc.startStyleSwitch')
     expect(styleViewSource).not.toContain('AlertDialog')
     expect(styleViewSource).not.toContain('setSwitchTarget')
-    expect(activityStoreSource).not.toContain('style-switch')
-    expect(activityDialogSource).not.toContain('style-switch')
     expect(jobBarSource).toContain('ipc.cancelStyleSwitch')
     expect(jobBarSource).toContain('ipc.retryFailedStyleSwitchPages')
     expect(jobBarSource).toContain("if (!job || job.status === 'completed') return null")

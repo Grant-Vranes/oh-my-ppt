@@ -368,6 +368,7 @@ export interface GenerateAddPagePayload {
   modelConfigId?: string
   userMessage: string
   insertAfterPageNumber: number
+  targetPageId?: string
 }
 
 export interface GenerateRetrySinglePagePayload {

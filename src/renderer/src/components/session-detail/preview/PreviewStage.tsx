@@ -79,6 +79,8 @@ export const PreviewStage = forwardRef<
   const isInspecting = interactionMode === 'ai-inspect' || isAnimationSelecting
   const isPageEditing = pageEditJob?.pageId === selectedPage?.pageId
   const isPageBeautifying = pageBeautifyJob?.pageId === selectedPage?.pageId
+  const isGeneratingPlaceholder =
+    selectedPage?.status === 'generating' || selectedPage?.status === 'pending'
   const isStyleSwitchLocked = isStyleSwitchPageLocked(styleSwitchJob, selectedPage?.pageId)
   const isStyleSwitchPageRunning = styleSwitchJob?.pages.some(
     (page) => page.pageId === selectedPage?.pageId && page.status === 'running'
@@ -279,51 +281,63 @@ export const PreviewStage = forwardRef<
             ref={frameRef}
             className="relative h-full overflow-hidden rounded-[1.55rem] bg-[#f5f1e8] shadow-[0_10px_24px_rgba(93,107,77,0.11)]"
           >
-            <div
-              ref={canvasHostRef}
-              className={
-                isEditing
-                  ? 'absolute bottom-2 right-2 overflow-hidden rounded-[1rem]'
-                  : 'absolute inset-0 overflow-hidden rounded-[inherit]'
-              }
-              style={isEditing ? { left: EDITOR_INSET, top: EDITOR_INSET } : undefined}
-            >
-              <PreviewIframe
-                ref={setPreviewIframeHandle}
-                key={`preview-${selectedPage.pageId}-${previewKey}-${previewRefreshKey}`}
-                src={selectedPage.sourceUrl}
-                htmlPath={selectedPage.htmlPath}
-                pageId={selectedPage.pageId}
-                title={`preview-page-${selectedPage.pageNumber}`}
-                slideSize={slideSize}
-                inspectable={!isPageEditing && !isDeckEditing && !isStyleSwitchLocked}
-                interactionMode={interactionMode}
-                inspecting={
-                  isInspecting && !isPageEditing && !isDeckEditing && !isStyleSwitchLocked
+            {isGeneratingPlaceholder ? (
+              <div
+                className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#f8f4eb] text-center text-[#4f6340]"
+                aria-live="polite"
+              >
+                <Loader2 className="h-7 w-7 animate-spin" />
+                <div className="max-w-sm px-6 text-sm font-medium">
+                  {t('sessionDetail.activityProcessing')}
+                </div>
+              </div>
+            ) : (
+              <div
+                ref={canvasHostRef}
+                className={
+                  isEditing
+                    ? 'absolute bottom-2 right-2 overflow-hidden rounded-[1rem]'
+                    : 'absolute inset-0 overflow-hidden rounded-[inherit]'
                 }
-                editMode={
-                  isEditing &&
-                  !isPageEditing &&
-                  !isPageBeautifying &&
-                  !isDeckEditing &&
-                  !isStyleSwitchLocked
-                }
-                onSelectorSelected={setSelectedElement}
-                onElementMoved={onElementMoved}
-                onElementSelected={onElementSelected}
-                onInspectExit={() => {
-                  if (isAnimationSelecting && selectedSelector) {
-                    clearSelectedElement()
-                    return
+                style={isEditing ? { left: EDITOR_INSET, top: EDITOR_INSET } : undefined}
+              >
+                <PreviewIframe
+                  ref={setPreviewIframeHandle}
+                  key={`preview-${selectedPage.pageId}-${previewKey}-${previewRefreshKey}`}
+                  src={selectedPage.sourceUrl}
+                  htmlPath={selectedPage.htmlPath}
+                  pageId={selectedPage.pageId}
+                  title={`preview-page-${selectedPage.pageNumber}`}
+                  slideSize={slideSize}
+                  inspectable={!isPageEditing && !isDeckEditing && !isStyleSwitchLocked}
+                  interactionMode={interactionMode}
+                  inspecting={
+                    isInspecting && !isPageEditing && !isDeckEditing && !isStyleSwitchLocked
                   }
-                  setInteractionMode('preview')
-                  setWorkspaceTab('preview')
-                  onCancelElementEdit()
-                }}
-                onDidReload={handleDidReload}
-                onDeleteRequest={onDeleteRequest}
-              />
-            </div>
+                  editMode={
+                    isEditing &&
+                    !isPageEditing &&
+                    !isPageBeautifying &&
+                    !isDeckEditing &&
+                    !isStyleSwitchLocked
+                  }
+                  onSelectorSelected={setSelectedElement}
+                  onElementMoved={onElementMoved}
+                  onElementSelected={onElementSelected}
+                  onInspectExit={() => {
+                    if (isAnimationSelecting && selectedSelector) {
+                      clearSelectedElement()
+                      return
+                    }
+                    setInteractionMode('preview')
+                    setWorkspaceTab('preview')
+                    onCancelElementEdit()
+                  }}
+                  onDidReload={handleDidReload}
+                  onDeleteRequest={onDeleteRequest}
+                />
+              </div>
+            )}
 
             {isEditing && !isPageEditing && !isPageBeautifying && (
               <EditorGuidesOverlay

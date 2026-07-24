@@ -244,8 +244,8 @@ export function registerPageManagementHandlers(ctx: IpcContext): void {
       sourcePageId
     })
     const prompt = sourcePage
-      ? `新增空白页到末尾：复制 P${sourcePage.pageNumber}《${sourcePage.title}》`
-      : '新增空白页到末尾'
+      ? `新增空白页：复制 P${sourcePage.pageNumber}《${sourcePage.title}》`
+      : '新增空白页'
     await recordHistoryOperationStrict(ctx.db, {
       sessionId,
       type: 'addPage',

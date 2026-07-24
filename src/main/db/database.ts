@@ -46,6 +46,8 @@ export type SessionJobKind =
   | 'standard'
   | 'template'
   | 'retry'
+  | 'add-page'
+  | 'single-page-retry'
   | 'page-edit'
   | 'deck-edit'
   | 'style-switch'
@@ -949,6 +951,8 @@ export class PPTDatabase {
       session_id: String(row.sessionId ?? row.session_id ?? ''),
       kind: (kind === 'template' ||
       kind === 'retry' ||
+      kind === 'add-page' ||
+      kind === 'single-page-retry' ||
       kind === 'page-edit' ||
       kind === 'deck-edit' ||
       kind === 'style-switch' ||

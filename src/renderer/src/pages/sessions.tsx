@@ -237,9 +237,13 @@ export function SessionsPage(): React.JSX.Element {
                 ? 'page-edit'
                 : chunk.payload.activityKind === 'deck-edit'
                   ? 'deck-edit'
-                  : chunk.payload.activityKind === 'page-beautify'
-                    ? 'page-beautify'
-                    : previous?.kind,
+                : chunk.payload.activityKind === 'page-beautify'
+                  ? 'page-beautify'
+                  : chunk.payload.activityKind === 'addPage'
+                    ? 'add-page'
+                    : chunk.payload.activityKind === 'single-page-retry'
+                      ? 'single-page-retry'
+                      : previous?.kind,
             completedPageCount,
             failedPageCount
           }
@@ -284,7 +288,9 @@ export function SessionsPage(): React.JSX.Element {
       if (
         (activeRun.kind === 'edit' ||
           activeRun.kind === 'page-edit' ||
-          activeRun.kind === 'deck-edit') &&
+          activeRun.kind === 'deck-edit' ||
+          activeRun.kind === 'add-page' ||
+          activeRun.kind === 'single-page-retry') &&
         canEnterEditor(session)
       ) {
         return `/sessions/${session.id}`

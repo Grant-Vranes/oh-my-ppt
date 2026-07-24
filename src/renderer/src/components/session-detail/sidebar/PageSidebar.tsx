@@ -170,6 +170,7 @@ export const PageSidebar = memo(function PageSidebar({
     canExportPptx,
     onDownloadAllOutlines,
     pageManagementDisabled,
+    isPageActionDisabled,
     collapsed,
     onToggleCollapsed
   } = usePageSidebarController(sessionId)
@@ -179,6 +180,8 @@ export const PageSidebar = memo(function PageSidebar({
   const setSelectedPageId = useSessionDetailUiStore((state) => state.setSelectedPageId)
   const setWorkspaceTab = useSessionDetailUiStore((state) => state.setWorkspaceTab)
   const isAddingPage = useSessionDetailUiStore((state) => state.isAddingPage)
+  const isRetryingSinglePage = useSessionDetailUiStore((state) => state.isRetryingSinglePage)
+  const retryingSinglePageId = useSessionDetailUiStore((state) => state.retryingSinglePageId)
   const isExportingPptx = useSessionDetailUiStore((state) => state.isExportingPptx)
   const mergeSessionPagesDialogOpen = useSessionDetailUiStore(
     (state) => state.mergeSessionPagesDialogOpen
@@ -392,7 +395,7 @@ export const PageSidebar = memo(function PageSidebar({
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
-                    disabled={disabled}
+                    disabled={disabled || pageManagementDisabled}
                     title={t('sessionDetail.addPage')}
                     aria-label={t('sessionDetail.addPage')}
                     className="flex h-8 w-full items-center justify-center rounded-xl bg-[#d4e4c1]/30 text-[#5d6b4d] transition-colors hover:bg-[#d4e4c1]/50 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
@@ -505,6 +508,7 @@ export const PageSidebar = memo(function PageSidebar({
                     const copied = copiedOutlinePageId === page.id
                     const editing = editingOutlinePageId === page.id
                     const savingOutline = savingOutlinePageId === page.id
+                    const pageActionDisabled = disabled || isPageActionDisabled(page)
                     return (
                       <div
                         key={page.id}
@@ -514,7 +518,7 @@ export const PageSidebar = memo(function PageSidebar({
                           selected
                             ? 'bg-[#d4e4c1]/86 shadow-[0_14px_26px_rgba(93,107,77,0.18)]'
                             : 'bg-[#e8e0d0]/34 hover:bg-[#e8e0d0]/68 hover:shadow-[0_8px_18px_rgba(93,107,77,0.09)]'
-                        } ${disabled ? 'opacity-45' : ''}`}
+                        } ${pageActionDisabled ? 'opacity-45' : ''}`}
                       >
                         {editing ? (
                           <div className="block min-w-0 max-w-full overflow-hidden rounded-[1rem] bg-[#fffaf1]/72 px-2.5 py-2 shadow-[0_5px_14px_rgba(93,107,77,0.08)]">
@@ -586,7 +590,7 @@ export const PageSidebar = memo(function PageSidebar({
                                   <TooltipTrigger asChild>
                                     <button
                                       type="button"
-                                      disabled={pageManagementDisabled || disabled}
+                                      disabled={pageActionDisabled}
                                       onClick={(event) => {
                                         event.stopPropagation()
                                         handleStartEditOutline(page, outlineText)
@@ -660,163 +664,175 @@ export const PageSidebar = memo(function PageSidebar({
                 >
                   <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
                     <div className="space-y-2.5">
-                      {pages.map((page) => (
-                        <div key={page.id} data-page-id={page.id} data-preview-window-id={page.id}>
-                          <SortablePageItem
-                            id={page.id}
-                            disabled={pageManagementDisabled || disabled}
+                      {pages.map((page) => {
+                        const pageActionDisabled = disabled || isPageActionDisabled(page)
+                        return (
+                          <div
+                            key={page.id}
+                            data-page-id={page.id}
+                            data-preview-window-id={page.id}
                           >
-                            {({ attributes, listeners, setActivatorNodeRef, isDragging }) => (
-                              <PageThumbnail
-                                page={page}
-                                isSelected={selectedPageId === page.id}
-                                previewVersion={previewKey + (thumbnailVersions[page.pageId] || 0)}
-                                renderPreview={thumbnailPreviewIds.has(page.id)}
-                                onSelect={disabled ? undefined : requestSelectPage}
-                                failureOverlay={
-                                  page.status === 'failed' && onRetryFailedPage ? (
-                                    <button
-                                      type="button"
-                                      disabled={disabled}
-                                      onClick={(event) => {
-                                        event.stopPropagation()
-                                        if (requestSelectPage(page.id)) onRetryFailedPage(page)
-                                      }}
-                                      className="absolute inset-x-2 bottom-2 z-10 flex h-8 items-center justify-center gap-1.5 rounded-[0.7rem] border border-red-600 bg-red-500 px-2 text-[10px] font-semibold text-white shadow-[0_4px_12px_rgba(239,68,68,0.28)] transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-45"
-                                    >
-                                      <RotateCcw className="h-3 w-3" />
-                                      {t('sessionDetail.retryFailedPage')}
-                                    </button>
-                                  ) : undefined
-                                }
-                                actions={
-                                  <div className="absolute inset-x-1 top-1 z-10 flex items-start justify-between opacity-0 transition-opacity group-hover:opacity-100">
-                                    <button
-                                      type="button"
-                                      ref={setActivatorNodeRef}
-                                      disabled={pageManagementDisabled || disabled}
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                      }}
-                                      className="cursor-grab rounded bg-white/90 p-1 text-[#5d6b4d] shadow-sm transition-colors hover:bg-[#f5f1e8] hover:text-[#3e4a32] active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-50"
-                                      aria-label={t('pageManagement.dragHandle')}
-                                      title={t('pageManagement.dragHandle')}
-                                      {...attributes}
-                                      {...listeners}
-                                    >
-                                      <Move
-                                        className={`h-4 w-4 ${isDragging ? 'opacity-60' : ''}`}
-                                      />
-                                    </button>
-                                    <div className="flex items-center gap-1">
-                                      {canExportPptx ? (
-                                        <DropdownMenu>
-                                          <Tooltip>
-                                            <TooltipTrigger asChild>
-                                              <DropdownMenuTrigger asChild>
-                                                <button
-                                                  type="button"
-                                                  disabled={
-                                                    pageManagementDisabled ||
-                                                    disabled ||
-                                                    isExportingPptx
-                                                  }
-                                                  onClick={(e) => e.stopPropagation()}
-                                                  className="rounded bg-white/90 p-1 text-[#5d6b4d] shadow-sm transition-colors hover:bg-[#f5f1e8] hover:text-[#3e4a32] disabled:cursor-not-allowed disabled:opacity-50"
-                                                  aria-label={t(
-                                                    'sessionDetail.exportSinglePagePptx'
-                                                  )}
-                                                >
-                                                  <Presentation className="h-3.5 w-3.5" />
-                                                </button>
-                                              </DropdownMenuTrigger>
-                                            </TooltipTrigger>
-                                            <TooltipContent side="right">
-                                              {t('sessionDetail.exportSinglePagePptx')}
-                                            </TooltipContent>
-                                          </Tooltip>
-                                          <DropdownMenuContent
-                                            side="right"
-                                            align="start"
-                                            className="min-w-[9rem]"
-                                            onClick={(e) => e.stopPropagation()}
+                            <SortablePageItem
+                              id={page.id}
+                              disabled={pageManagementDisabled || disabled}
+                            >
+                              {({ attributes, listeners, setActivatorNodeRef, isDragging }) => (
+                                <PageThumbnail
+                                  page={page}
+                                  isSelected={selectedPageId === page.id}
+                                  previewVersion={
+                                    previewKey + (thumbnailVersions[page.pageId] || 0)
+                                  }
+                                  renderPreview={thumbnailPreviewIds.has(page.id)}
+                                  onSelect={disabled ? undefined : requestSelectPage}
+                                  failureOverlay={
+                                    isRetryingSinglePage && retryingSinglePageId === page.id ? (
+                                      <div className="absolute inset-x-2 bottom-2 z-10 flex h-8 items-center justify-center gap-1.5 rounded-[0.7rem] bg-[#3e4a32]/88 px-2 text-[10px] font-semibold text-white shadow-[0_4px_12px_rgba(62,74,50,0.28)]">
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                        {t('sessionDetail.activityRetrying')}
+                                      </div>
+                                    ) : page.status === 'failed' && onRetryFailedPage ? (
+                                      <button
+                                        type="button"
+                                        disabled={pageManagementDisabled || pageActionDisabled}
+                                        onClick={(event) => {
+                                          event.stopPropagation()
+                                          if (requestSelectPage(page.id)) onRetryFailedPage(page)
+                                        }}
+                                        className="absolute inset-x-2 bottom-2 z-10 flex h-8 items-center justify-center gap-1.5 rounded-[0.7rem] border border-red-600 bg-red-500 px-2 text-[10px] font-semibold text-white shadow-[0_4px_12px_rgba(239,68,68,0.28)] transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-45"
+                                      >
+                                        <RotateCcw className="h-3 w-3" />
+                                        {t('sessionDetail.retryFailedPage')}
+                                      </button>
+                                    ) : undefined
+                                  }
+                                  actions={
+                                    <div className="absolute inset-x-1 top-1 z-10 flex items-start justify-between opacity-0 transition-opacity group-hover:opacity-100">
+                                      <button
+                                        type="button"
+                                        ref={setActivatorNodeRef}
+                                        disabled={pageManagementDisabled || disabled}
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                        }}
+                                        className="cursor-grab rounded bg-white/90 p-1 text-[#5d6b4d] shadow-sm transition-colors hover:bg-[#f5f1e8] hover:text-[#3e4a32] active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-50"
+                                        aria-label={t('pageManagement.dragHandle')}
+                                        title={t('pageManagement.dragHandle')}
+                                        {...attributes}
+                                        {...listeners}
+                                      >
+                                        <Move
+                                          className={`h-4 w-4 ${isDragging ? 'opacity-60' : ''}`}
+                                        />
+                                      </button>
+                                      <div className="flex items-center gap-1">
+                                        {canExportPptx ? (
+                                          <DropdownMenu>
+                                            <Tooltip>
+                                              <TooltipTrigger asChild>
+                                                <DropdownMenuTrigger asChild>
+                                                  <button
+                                                    type="button"
+                                                    disabled={pageActionDisabled || isExportingPptx}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="rounded bg-white/90 p-1 text-[#5d6b4d] shadow-sm transition-colors hover:bg-[#f5f1e8] hover:text-[#3e4a32] disabled:cursor-not-allowed disabled:opacity-50"
+                                                    aria-label={t(
+                                                      'sessionDetail.exportSinglePagePptx'
+                                                    )}
+                                                  >
+                                                    <Presentation className="h-3.5 w-3.5" />
+                                                  </button>
+                                                </DropdownMenuTrigger>
+                                              </TooltipTrigger>
+                                              <TooltipContent side="right">
+                                                {t('sessionDetail.exportSinglePagePptx')}
+                                              </TooltipContent>
+                                            </Tooltip>
+                                            <DropdownMenuContent
+                                              side="right"
+                                              align="start"
+                                              className="min-w-[9rem]"
+                                              onClick={(e) => e.stopPropagation()}
+                                            >
+                                              <DropdownMenuItem
+                                                onSelect={() => onExportPagePptx(page)}
+                                              >
+                                                <Presentation className="h-3.5 w-3.5 shrink-0 text-[#5f6b50]" />
+                                                <span className="whitespace-nowrap">
+                                                  {t('sessionDetail.exportPptxEditable')}
+                                                </span>
+                                              </DropdownMenuItem>
+                                              <DropdownMenuItem
+                                                onSelect={() =>
+                                                  onExportPagePptx(page, { imageOnly: true })
+                                                }
+                                              >
+                                                <ImageIcon className="h-3.5 w-3.5 shrink-0 text-[#7c6a4c]" />
+                                                <span className="whitespace-nowrap">
+                                                  {t('sessionDetail.exportPptxImageOnly')}
+                                                </span>
+                                              </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                          </DropdownMenu>
+                                        ) : null}
+                                        {onRenamePage ? (
+                                          <button
+                                            type="button"
+                                            disabled={pageActionDisabled}
+                                            onClick={(e) => {
+                                              e.stopPropagation()
+                                              onRenamePage(page)
+                                            }}
+                                            className="rounded bg-white/90 p-1 text-[#5d6b4d] shadow-sm transition-colors hover:bg-[#f5f1e8] hover:text-[#3e4a32] disabled:cursor-not-allowed disabled:opacity-50"
+                                            aria-label={t('pageManagement.editPageTitle')}
+                                            title={t('pageManagement.editPageTitle')}
                                           >
-                                            <DropdownMenuItem
-                                              onSelect={() => onExportPagePptx(page)}
-                                            >
-                                              <Presentation className="h-3.5 w-3.5 shrink-0 text-[#5f6b50]" />
-                                              <span className="whitespace-nowrap">
-                                                {t('sessionDetail.exportPptxEditable')}
-                                              </span>
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                              onSelect={() =>
-                                                onExportPagePptx(page, { imageOnly: true })
-                                              }
-                                            >
-                                              <ImageIcon className="h-3.5 w-3.5 shrink-0 text-[#7c6a4c]" />
-                                              <span className="whitespace-nowrap">
-                                                {t('sessionDetail.exportPptxImageOnly')}
-                                              </span>
-                                            </DropdownMenuItem>
-                                          </DropdownMenuContent>
-                                        </DropdownMenu>
-                                      ) : null}
-                                      {onRenamePage ? (
-                                        <button
-                                          type="button"
-                                          disabled={pageManagementDisabled || disabled}
-                                          onClick={(e) => {
-                                            e.stopPropagation()
-                                            onRenamePage(page)
-                                          }}
-                                          className="rounded bg-white/90 p-1 text-[#5d6b4d] shadow-sm transition-colors hover:bg-[#f5f1e8] hover:text-[#3e4a32] disabled:cursor-not-allowed disabled:opacity-50"
-                                          aria-label={t('pageManagement.editPageTitle')}
-                                          title={t('pageManagement.editPageTitle')}
-                                        >
-                                          <PencilLine className="h-3.5 w-3.5" />
-                                        </button>
-                                      ) : null}
-                                      {onDuplicatePage ? (
-                                        <button
-                                          type="button"
-                                          disabled={pageManagementDisabled || disabled}
-                                          onClick={(e) => {
-                                            e.stopPropagation()
-                                            onDuplicatePage(page)
-                                          }}
-                                          className="rounded bg-white/90 p-1 text-[#5d6b4d] shadow-sm transition-colors hover:bg-[#f5f1e8] hover:text-[#3e4a32] disabled:cursor-not-allowed disabled:opacity-50"
-                                          aria-label={t('pageManagement.duplicatePage')}
-                                          title={t('pageManagement.duplicatePage')}
-                                        >
-                                          <Copy className="h-3.5 w-3.5" />
-                                        </button>
-                                      ) : null}
-                                      {onDeletePage ? (
-                                        <button
-                                          type="button"
-                                          disabled={
-                                            pageManagementDisabled || disabled || pages.length <= 1
-                                          }
-                                          onClick={(e) => {
-                                            e.stopPropagation()
-                                            onDeletePage(page)
-                                          }}
-                                          className="rounded bg-white/90 p-1 shadow-sm disabled:cursor-not-allowed disabled:opacity-50 disabled:grayscale"
-                                          aria-label={t('pageManagement.deletePage')}
-                                          title={t('pageManagement.deletePage')}
-                                        >
-                                          <Trash2 className="h-4 w-4" />
-                                        </button>
-                                      ) : null}
+                                            <PencilLine className="h-3.5 w-3.5" />
+                                          </button>
+                                        ) : null}
+                                        {onDuplicatePage ? (
+                                          <button
+                                            type="button"
+                                            disabled={pageManagementDisabled || pageActionDisabled}
+                                            onClick={(e) => {
+                                              e.stopPropagation()
+                                              onDuplicatePage(page)
+                                            }}
+                                            className="rounded bg-white/90 p-1 text-[#5d6b4d] shadow-sm transition-colors hover:bg-[#f5f1e8] hover:text-[#3e4a32] disabled:cursor-not-allowed disabled:opacity-50"
+                                            aria-label={t('pageManagement.duplicatePage')}
+                                            title={t('pageManagement.duplicatePage')}
+                                          >
+                                            <Copy className="h-3.5 w-3.5" />
+                                          </button>
+                                        ) : null}
+                                        {onDeletePage ? (
+                                          <button
+                                            type="button"
+                                            disabled={
+                                              pageManagementDisabled ||
+                                              pageActionDisabled ||
+                                              pages.length <= 1
+                                            }
+                                            onClick={(e) => {
+                                              e.stopPropagation()
+                                              onDeletePage(page)
+                                            }}
+                                            className="rounded bg-white/90 p-1 shadow-sm disabled:cursor-not-allowed disabled:opacity-50 disabled:grayscale"
+                                            aria-label={t('pageManagement.deletePage')}
+                                            title={t('pageManagement.deletePage')}
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </button>
+                                        ) : null}
+                                      </div>
                                     </div>
-                                  </div>
-                                }
-                              />
-                            )}
-                          </SortablePageItem>
-                        </div>
-                      ))}
+                                  }
+                                />
+                              )}
+                            </SortablePageItem>
+                          </div>
+                        )
+                      })}
                     </div>
                   </SortableContext>
                 </DndContext>
@@ -829,7 +845,7 @@ export const PageSidebar = memo(function PageSidebar({
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
-                    disabled={disabled}
+                    disabled={disabled || pageManagementDisabled}
                     className="flex flex-1 items-center justify-center gap-1 rounded-[1rem] border border-dashed border-[#b5c4a1]/60 bg-[#d4e4c1]/30 px-2 py-1.5 text-[11px] font-medium text-[#5d6b4d] transition-colors hover:bg-[#d4e4c1]/50 hover:text-[#3e4a32] disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
                   >
                     <Plus className="h-3 w-3" />

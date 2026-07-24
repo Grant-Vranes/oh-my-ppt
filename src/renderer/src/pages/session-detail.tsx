@@ -18,7 +18,6 @@ import {
   AssetPickerDialog,
   DeleteElementDialog,
   DeletePageDialog,
-  GenerationActivityDialog,
   HistoryDialog,
   MergeSessionPagesDialog,
   MergeTemplatePagesDialog,
@@ -42,7 +41,6 @@ import {
   useEditSessionStore,
   useGenerateStore,
   isStyleSwitchPageLocked,
-  useGenerationActivityStore,
   useSessionDetailRuntimeStore,
   useSessionDetailUiStore,
   useSessionStore,
@@ -236,7 +234,6 @@ export function SessionDetailPage(): React.JSX.Element {
     let cancelled = false
     setMessages([])
     useGenerateStore.getState().setPages([])
-    useGenerationActivityStore.getState().reset()
     resetForSessionChange()
     void (async () => {
       try {
@@ -252,7 +249,6 @@ export function SessionDetailPage(): React.JSX.Element {
     return () => {
       cancelled = true
       useGenerateStore.getState().reset()
-      useGenerationActivityStore.getState().reset()
       useSessionDetailUiStore.getState().resetForSessionChange()
       useEditHistoryStore.getState().clear()
       useEditSessionStore.getState().resetForPage()
@@ -262,6 +258,32 @@ export function SessionDetailPage(): React.JSX.Element {
   useEffect(() => {
     useGenerateStore.getState().setPages(currentGeneratedPages)
   }, [currentGeneratedPages])
+
+  useEffect(() => {
+    if (!id) return
+    let disposed = false
+    void ipc
+      .getGenerateState(id)
+      .then((state) => {
+        if (disposed || !state.hasActiveRun) return
+        const ui = useSessionDetailUiStore.getState()
+        if (state.activityKind === 'addPage') {
+          ui.setIsAddingPage(true)
+          ui.setAddingPageId(state.targetPageId || null)
+          if (state.targetPageId) ui.setSelectedPageId(state.targetPageId)
+        } else if (state.activityKind === 'single-page-retry') {
+          ui.setIsRetryingSinglePage(true)
+          ui.setRetryingSinglePageId(state.targetPageId || null)
+        } else {
+          return
+        }
+        useGenerateStore.setState({ isGenerating: true, error: null, status: 'running' })
+      })
+      .catch(() => {})
+    return () => {
+      disposed = true
+    }
+  }, [id])
 
   useEffect(() => {
     if (!id || !currentSession) return
@@ -549,6 +571,11 @@ export function SessionDetailPage(): React.JSX.Element {
       const isDeckEdit = isDeckEditGenerationEvent(payload, activeDeckEditJob)
       const isStyleSwitch =
         payload.activityKind === 'style-switch' || activeStyleSwitchJob?.runId === payload.runId
+      const isAddingPageRun =
+        payload.activityKind === 'addPage' && useSessionDetailUiStore.getState().isAddingPage
+      const isRetryingSinglePageRun =
+        payload.activityKind === 'single-page-retry' &&
+        useSessionDetailUiStore.getState().isRetryingSinglePage
       if (
         type === 'stage_started' ||
         type === 'stage_progress' ||
@@ -812,6 +839,27 @@ export function SessionDetailPage(): React.JSX.Element {
             error: failedPageCount > 0 ? activeStyleSwitchJob?.error || null : null
           })
           void loadSession(id)
+        } else if (isAddingPageRun) {
+          const selectedPageId = useSessionDetailUiStore.getState().selectedPageId
+          void loadSession(id)
+            .then(() => {
+              useGenerateStore.getState().setPages(useSessionStore.getState().currentGeneratedPages)
+            })
+            .catch((error) => console.warn('[session-detail] reload added page failed', error))
+            .finally(() => {
+              useSessionDetailUiStore.getState().finishAddPage(selectedPageId)
+              useGenerateStore.getState().finishGeneration()
+            })
+        } else if (isRetryingSinglePageRun) {
+          void loadSession(id)
+            .then(() => {
+              useGenerateStore.getState().setPages(useSessionStore.getState().currentGeneratedPages)
+            })
+            .catch((error) => console.warn('[session-detail] reload retried page failed', error))
+            .finally(() => {
+              useSessionDetailUiStore.getState().setIsRetryingSinglePage(false)
+              useGenerateStore.getState().finishGeneration()
+            })
         } else if (!useSessionDetailUiStore.getState().isAddingPage) {
           useGenerateStore.getState().finishGeneration()
         }
@@ -869,6 +917,31 @@ export function SessionDetailPage(): React.JSX.Element {
           useGenerateStore.getState().finishStyleSwitch(id, { status, error: payload.message })
           if (!payload.cancelled) useGenerateStore.getState().setSessionError(id, payload.message)
           void loadSession(id)
+        } else if (isAddingPageRun) {
+          const selectedPageId = useSessionDetailUiStore.getState().selectedPageId
+          void loadSession(id)
+            .then(() => {
+              useGenerateStore.getState().setPages(useSessionStore.getState().currentGeneratedPages)
+            })
+            .catch((error) =>
+              console.warn('[session-detail] reload failed added page failed', error)
+            )
+            .finally(() => {
+              useSessionDetailUiStore.getState().finishAddPage(selectedPageId)
+              useGenerateStore.getState().finishGeneration()
+            })
+        } else if (isRetryingSinglePageRun) {
+          void loadSession(id)
+            .then(() => {
+              useGenerateStore.getState().setPages(useSessionStore.getState().currentGeneratedPages)
+            })
+            .catch((error) =>
+              console.warn('[session-detail] reload failed retried page failed', error)
+            )
+            .finally(() => {
+              useSessionDetailUiStore.getState().setIsRetryingSinglePage(false)
+              useGenerateStore.getState().finishGeneration()
+            })
         } else if (!useSessionDetailUiStore.getState().isAddingPage) {
           if (payload.cancelled) {
             useGenerateStore.getState().cancelGeneration(payload.message)
@@ -1549,7 +1622,6 @@ export function SessionDetailPage(): React.JSX.Element {
         <AddPageDialog sessionId={id} />
         <MergeSessionPagesDialog sessionId={id} />
         <MergeTemplatePagesDialog sessionId={id} />
-        <GenerationActivityDialog sessionId={id} />
         <PageTitleEditDialog sessionId={id} />
         <DeletePageDialog sessionId={id} />
         <AssetPickerDialog

@@ -129,4 +129,32 @@ describe('useGenerationNotifications', () => {
     await flushAsync()
     expect(toastMock.error).not.toHaveBeenCalled()
   })
+
+  it('suppresses the error toast for a failed single-page retry', async () => {
+    captured!({
+      type: 'run_error',
+      payload: {
+        runId: 'run-single-page-fail',
+        sessionId: 's1',
+        activityKind: 'single-page-retry',
+        message: 'boom'
+      }
+    })
+    await flushAsync()
+    expect(toastMock.error).not.toHaveBeenCalled()
+  })
+
+  it('suppresses the error toast for a failed generated-page addition', async () => {
+    captured!({
+      type: 'run_error',
+      payload: {
+        runId: 'run-add-page-fail',
+        sessionId: 's1',
+        activityKind: 'addPage',
+        message: 'boom'
+      }
+    })
+    await flushAsync()
+    expect(toastMock.error).not.toHaveBeenCalled()
+  })
 })

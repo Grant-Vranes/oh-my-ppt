@@ -8,5 +8,5 @@ export {
   isPageBeautifyGenerationEvent,
   isPageEditGenerationEvent
 } from './pageEditGenerationEvent'
-export { normalizePagesForSelection } from './pageUtils'
+export { isPageGenerationLocked, normalizePagesForSelection } from './pageUtils'
 export type { ChatType, SessionPreviewPage } from './types'

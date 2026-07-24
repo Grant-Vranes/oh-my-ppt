@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Copy,
   Image as ImageIcon,
+  Loader2,
   Move,
   PencilLine,
   Presentation,
@@ -17,8 +18,13 @@ import {
 } from '@dnd-kit/core'
 import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { useGenerateStore, useSessionDetailUiStore, useSessionStore } from '@renderer/store'
-import { normalizePagesForSelection } from '../shared'
+import {
+  isStyleSwitchPageLocked,
+  useGenerateStore,
+  useSessionDetailUiStore,
+  useSessionStore
+} from '@renderer/store'
+import { isPageGenerationLocked, normalizePagesForSelection } from '../shared'
 import type { SessionPreviewPage } from '../shared/types'
 import { PreviewIframe } from '../../preview/PreviewIframe'
 import { ScrollArea } from '../../ui/ScrollArea'
@@ -49,6 +55,7 @@ const BrowseCard = memo(function BrowseCard({
 }): React.JSX.Element {
   const currentSession = useSessionStore((state) => state.currentSession)
   const slideSize = trySessionSlideSize(currentSession)
+  const isGeneratingPlaceholder = page.status === 'generating' || page.status === 'pending'
   if (!slideSize) {
     return (
       <div className="group overflow-hidden rounded-[4px] bg-white/60 shadow-[0_4px_16px_rgba(93,107,77,0.08)]">
@@ -67,7 +74,14 @@ const BrowseCard = memo(function BrowseCard({
         style={{ contain: 'paint' }}
       >
         <div className="relative max-h-full max-w-full overflow-hidden" style={thumbnailFitStyle}>
-          {renderPreview ? (
+          {isGeneratingPlaceholder ? (
+            <div
+              className="flex h-full w-full items-center justify-center bg-[#f8f4eb] text-[#5d6b4d]"
+              aria-live="polite"
+            >
+              <Loader2 className="h-5 w-5 animate-spin" />
+            </div>
+          ) : renderPreview ? (
             <PreviewIframe
               key={`browse-${page.id}-${previewVersion}`}
               src={page.sourceUrl}
@@ -113,6 +127,7 @@ function SortableBrowseCard({
   previewVersion,
   renderPreview,
   disabled,
+  structureDisabled,
   dragHandleLabel,
   exportLabel,
   exportEditableLabel,
@@ -133,6 +148,7 @@ function SortableBrowseCard({
   previewVersion: number
   renderPreview: boolean
   disabled: boolean
+  structureDisabled: boolean
   dragHandleLabel: string
   exportLabel: string
   exportEditableLabel: string
@@ -159,7 +175,7 @@ function SortableBrowseCard({
     isDragging
   } = useSortable({
     id: page.id,
-    disabled
+    disabled: structureDisabled
   })
   // Stable composed ref so React doesn't detach/reattach on every render
   // (which would re-register every dnd-kit droppable + re-observe every card
@@ -186,7 +202,7 @@ function SortableBrowseCard({
         <button
           type="button"
           ref={setActivatorNodeRef}
-          disabled={disabled}
+          disabled={structureDisabled}
           onClick={(event) => event.stopPropagation()}
           className={`inline-flex h-8 w-8 items-center justify-center rounded bg-white/90 p-1 text-[#5d6b4d] shadow-sm transition-colors hover:bg-[#f5f1e8] hover:text-[#3e4a32] disabled:cursor-not-allowed disabled:opacity-50 ${
             isDragging ? 'cursor-grabbing' : 'cursor-grab'
@@ -249,7 +265,7 @@ function SortableBrowseCard({
           </button>
           <button
             type="button"
-            disabled={disabled}
+            disabled={disabled || structureDisabled}
             onClick={(event) => {
               event.stopPropagation()
               onDuplicatePage(page)
@@ -262,7 +278,7 @@ function SortableBrowseCard({
           </button>
           <button
             type="button"
-            disabled={disabled || pageCount <= 1}
+            disabled={disabled || structureDisabled || pageCount <= 1}
             onClick={(event) => {
               event.stopPropagation()
               onDeletePage(page)
@@ -289,17 +305,42 @@ export function BrowseView(props: { sessionId: string }): React.JSX.Element {
   const canExportPptx = slideSize ? isDefaultSlideSize(slideSize) : false
   const isGenerating = useGenerateStore((state) => state.isGenerating)
   const isDeckEditing = useGenerateStore((state) => Boolean(state.deckEditJobs[sessionId]))
+  const pageEditJob = useGenerateStore((state) => state.pageEditJobs[sessionId] || null)
+  const pageBeautifyJob = useGenerateStore((state) => state.pageBeautifyJobs[sessionId] || null)
+  const styleSwitchJob = useGenerateStore((state) => state.styleSwitchJobs[sessionId] || null)
   const previewKey = useSessionDetailUiStore((state) => state.previewKey)
   const thumbnailVersions = useSessionDetailUiStore((state) => state.thumbnailVersions)
   const isAddingPage = useSessionDetailUiStore((state) => state.isAddingPage)
+  const addingPageId = useSessionDetailUiStore((state) => state.addingPageId)
   const isRetryingSinglePage = useSessionDetailUiStore((state) => state.isRetryingSinglePage)
+  const retryingSinglePageId = useSessionDetailUiStore((state) => state.retryingSinglePageId)
   const isManagingPages = useSessionDetailUiStore((state) => state.isManagingPages)
-  const disabled =
-    isGenerating || isDeckEditing || isAddingPage || isRetryingSinglePage || isManagingPages
   const { reorder: reorderSessionPages } = useSessionReorderPages(sessionId)
   const pageActions = useSessionPageActions(sessionId)
 
   const pages = useMemo(() => normalizePagesForSelection(currentPages), [currentPages])
+  const hasPageScopedGeneration =
+    isAddingPage ||
+    isRetryingSinglePage ||
+    Boolean(pageEditJob) ||
+    Boolean(pageBeautifyJob) ||
+    Boolean(styleSwitchJob)
+  const isSessionWideGenerating = isGenerating && !hasPageScopedGeneration
+  const structureDisabled =
+    isGenerating || isDeckEditing || isAddingPage || isRetryingSinglePage || isManagingPages
+  const isPageActionDisabled = (page: SessionPreviewPage): boolean =>
+    isSessionWideGenerating ||
+    isDeckEditing ||
+    isManagingPages ||
+    isPageGenerationLocked(page.id, {
+      isAddingPage,
+      addingPageId,
+      isRetryingSinglePage,
+      retryingSinglePageId
+    }) ||
+    pageEditJob?.pageId === page.pageId ||
+    pageBeautifyJob?.pageId === page.pageId ||
+    isStyleSwitchPageLocked(styleSwitchJob, page.pageId)
 
   const pageIds = useMemo(() => new Set(pages.map((page) => page.id)), [pages])
   const [visibleIds, setVisibleIds] = useState<Set<string>>(() => new Set())
@@ -396,7 +437,7 @@ export function BrowseView(props: { sessionId: string }): React.JSX.Element {
   const onDragEnd = (event: DragEndEvent): void => {
     const { active, over } = event
     if (!over || active.id === over.id) return
-    if (disabled) return
+    if (structureDisabled) return
     const oldIndex = pages.findIndex((page) => page.id === String(active.id))
     const newIndex = pages.findIndex((page) => page.id === String(over.id))
     if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return
@@ -412,10 +453,7 @@ export function BrowseView(props: { sessionId: string }): React.JSX.Element {
       <ScrollArea className="flex-1" viewportRef={viewportRef}>
         <div className="p-6">
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-            <SortableContext
-              items={pages.map((page) => page.id)}
-              strategy={rectSortingStrategy}
-            >
+            <SortableContext items={pages.map((page) => page.id)} strategy={rectSortingStrategy}>
               <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">
                 {pages.map((page) => {
                   const previewVersion = previewKey + (thumbnailVersions[page.pageId] || 0)
@@ -425,7 +463,8 @@ export function BrowseView(props: { sessionId: string }): React.JSX.Element {
                       page={page}
                       previewVersion={previewVersion}
                       renderPreview={renderableIds.has(page.id)}
-                      disabled={disabled}
+                      disabled={isPageActionDisabled(page)}
+                      structureDisabled={structureDisabled}
                       dragHandleLabel={t('pageManagement.dragHandle')}
                       exportLabel={t('sessionDetail.exportSinglePagePptx')}
                       exportEditableLabel={t('sessionDetail.exportPptxEditable')}

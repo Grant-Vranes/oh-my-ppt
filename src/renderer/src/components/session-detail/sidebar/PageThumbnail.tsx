@@ -1,4 +1,5 @@
 import { memo } from 'react'
+import { Loader2 } from 'lucide-react'
 import { cn } from '@renderer/lib/utils'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/Tooltip'
 import { PreviewIframe } from '../../preview/PreviewIframe'
@@ -27,6 +28,7 @@ export const PageThumbnail = memo(function PageThumbnail({
   const t = useT()
   const currentSession = useSessionStore((state) => state.currentSession)
   const slideSize = trySessionSlideSize(currentSession)
+  const isGeneratingPlaceholder = page.status === 'generating' || page.status === 'pending'
   if (!slideSize) {
     return <div className="h-[154px] w-full rounded-[1.25rem] bg-[#e8e0d0]/34" />
   }
@@ -80,7 +82,17 @@ export const PageThumbnail = memo(function PageThumbnail({
         }}
       >
         <div className="relative max-h-full max-w-full overflow-hidden" style={thumbnailFitStyle}>
-          {renderPreview ? (
+          {isGeneratingPlaceholder ? (
+            <div
+              className="flex h-full w-full flex-col items-center justify-center gap-2 bg-[#f8f4eb] text-[#5d6b4d]"
+              aria-live="polite"
+            >
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="text-[10px] font-semibold">
+                {t('sessionDetail.activityProcessing')}
+              </span>
+            </div>
+          ) : renderPreview ? (
             <PreviewIframe
               key={`thumb-${page.id}-${previewVersion}`}
               src={page.sourceUrl}

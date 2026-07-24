@@ -119,6 +119,24 @@ export async function finalizeGenerationFailure(
   if (generationRun && generationRun.status === 'running') {
     await db.updateGenerationRunStatus(context.runId, 'failed', message)
   }
+  if (context.effectiveMode === 'addPage' && context.targetPageId) {
+    const targetPage = (await db.listSessionPages(context.sessionId)).find(
+      (page) => page.id === context.targetPageId || page.file_slug === context.targetPageId
+    )
+    if (targetPage) {
+      await db.upsertSessionPage({
+        id: targetPage.id,
+        sessionId: targetPage.session_id,
+        legacyPageId: targetPage.legacy_page_id,
+        fileSlug: targetPage.file_slug,
+        pageNumber: targetPage.page_number,
+        title: targetPage.title,
+        htmlPath: targetPage.html_path,
+        status: 'failed',
+        error: message
+      })
+    }
+  }
   await db.updateSessionStatus(
     context.sessionId,
     cancelled

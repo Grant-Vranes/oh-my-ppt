@@ -6,7 +6,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRoot } from 'react-dom/client'
 import { StyleView } from '../../../src/renderer/src/components/session-detail/style/StyleView'
 import { useGenerateStore } from '../../../src/renderer/src/store/generateStore'
-import { useGenerationActivityStore } from '../../../src/renderer/src/store/generationActivityStore'
 import { useSessionStore } from '../../../src/renderer/src/store/sessionStore'
 
 const ipcMocks = vi.hoisted(() => ({
@@ -74,7 +73,6 @@ describe('StyleView preview rendering', () => {
       }))
     })
     useGenerateStore.getState().reset()
-    useGenerationActivityStore.getState().reset()
     useSessionStore.getState().setCurrentSession({
       id: 'session-1',
       title: 'Session',
@@ -94,7 +92,6 @@ describe('StyleView preview rendering', () => {
     vi.unstubAllGlobals()
     vi.restoreAllMocks()
     useSessionStore.getState().resetRuntimeState()
-    useGenerationActivityStore.getState().reset()
     document.body.innerHTML = ''
   })
 

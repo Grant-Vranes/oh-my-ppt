@@ -38,7 +38,6 @@ export function registerGenerationHandlers(
     agentManager,
     sessionRunStates,
     pruneFinishedSessionRunStates,
-    beginSessionRunState,
     emitGenerateChunk
   } = ctx
   const emitAssistant = createEmitAssistantMessage(db, emitGenerateChunk)
@@ -96,12 +95,19 @@ export function registerGenerationHandlers(
         startedAt: activeState.startedAt,
         updatedAt: activeState.updatedAt,
         kind: activeState.kind,
+        activityKind: activeState.activityKind,
         targetPageId: activeState.targetPageId,
         targetPageNumber: activeState.targetPageNumber
       }
     }
 
-    const latestJob = await db.getLatestSessionJob(sessionId, ['standard', 'template', 'retry'])
+    const latestJob = await db.getLatestSessionJob(sessionId, [
+      'standard',
+      'template',
+      'retry',
+      'add-page',
+      'single-page-retry'
+    ])
     if (latestJob) {
       const generationRun = await db.getGenerationRun(latestJob.id)
       const session = await db.getSession(sessionId)
@@ -134,7 +140,15 @@ export function registerGenerationHandlers(
         error: generationRun?.error || latestJob.abort_reason || null,
         startedAt: (latestJob.activated_at || latestJob.created_at) * 1000,
         updatedAt: latestJob.updated_at * 1000,
-        kind: latestJob.kind
+        kind: latestJob.kind,
+        activityKind:
+          generationRun?.mode === 'addPage'
+            ? 'addPage'
+            : generationRun?.mode === 'retrySinglePage'
+              ? 'single-page-retry'
+              : undefined,
+        targetPageId: latestJob.target_page_id || undefined,
+        targetPageNumber: latestJob.target_page_number || undefined
       }
     }
 
@@ -163,7 +177,13 @@ export function registerGenerationHandlers(
   ipcMain.handle('generate:listActive', async () => {
     await interruptedJobsReady
     pruneFinishedSessionRunStates()
-    const jobs = await db.listActiveSessionJobs(['standard', 'template', 'retry'])
+    const jobs = await db.listActiveSessionJobs([
+      'standard',
+      'template',
+      'retry',
+      'add-page',
+      'single-page-retry'
+    ])
     return jobs.flatMap((job) => {
       const state = sessionRunStates.get(job.session_id)
       if (state?.runId === job.id && state.status !== 'queued' && state.status !== 'running') {
@@ -185,8 +205,15 @@ export function registerGenerationHandlers(
           startedAt: state?.startedAt ?? (job.activated_at || job.created_at) * 1000,
           updatedAt: state?.updatedAt ?? job.updated_at * 1000,
           kind: job.kind,
-          targetPageId: state?.targetPageId,
-          targetPageNumber: state?.targetPageNumber
+          activityKind:
+            state?.activityKind ||
+            (job.kind === 'add-page'
+              ? 'addPage'
+              : job.kind === 'single-page-retry'
+                ? 'single-page-retry'
+                : undefined),
+          targetPageId: state?.targetPageId || job.target_page_id || undefined,
+          targetPageNumber: state?.targetPageNumber || job.target_page_number || undefined
         }
       ]
     })
@@ -402,6 +429,8 @@ export function registerGenerationHandlers(
     }
     const userMsg =
       typeof addPagePayload.userMessage === 'string' ? addPagePayload.userMessage.trim() : ''
+    const targetPageId =
+      typeof addPagePayload.targetPageId === 'string' ? addPagePayload.targetPageId.trim() : ''
     if (!userMsg) {
       throw new Error('userMessage is required for addPage')
     }
@@ -413,6 +442,7 @@ export function registerGenerationHandlers(
 
     const reserved = reservation.reservation
     let addPageCtx: AddPageContext | null = null
+    let handedToBackground = false
     try {
       const insertAfter = Number(addPagePayload.insertAfterPageNumber) || 0
 
@@ -426,41 +456,67 @@ export function registerGenerationHandlers(
         requestedSessionId,
         userMsg,
         insertAfter,
-        modelConfigId
+        modelConfigId,
+        targetPageId || undefined
       )
       jobManager.assertNotCancelled(reserved)
+      const addPageContext = addPageCtx
+      if (!addPageContext) throw new Error('新增页面生成上下文缺失')
 
       // Persist user message
-      await db.addMessage(addPageCtx.sessionId, {
+      await db.addMessage(addPageContext.sessionId, {
         role: 'user',
         content: userMsg,
         type: 'text',
         chat_scope: 'main' as const,
-        run_model: addPageCtx.runModel
+        run_model: addPageContext.runModel
       })
       jobManager.assertNotCancelled(reserved)
-
-      beginSessionRunState({
-        sessionId: addPageCtx.sessionId,
-        runId: addPageCtx.runId,
-        mode: 'addPage',
+      const targetPage = addPageContext.targetPageId
+        ? (await db.listSessionPages(addPageContext.sessionId)).find(
+            (page) =>
+              page.id === addPageContext.targetPageId || page.file_slug === addPageContext.targetPageId
+          )
+        : undefined
+      jobManager.assertNotCancelled(reserved)
+      if (targetPage) {
+        await db.upsertSessionPage({
+          id: targetPage.id,
+          sessionId: targetPage.session_id,
+          legacyPageId: targetPage.legacy_page_id,
+          fileSlug: targetPage.file_slug,
+          pageNumber: targetPage.page_number,
+          title: targetPage.title,
+          htmlPath: targetPage.html_path,
+          status: 'pending',
+          error: null
+        })
+      }
+      jobManager.assertNotCancelled(reserved)
+      const result = await jobManager.enqueue({
+        reservation: reserved,
+        kind: 'add-page',
+        context: addPageContext,
+        totalPages: 1,
         activityKind: 'addPage',
-        previousSessionStatus: addPageCtx.previousSessionStatus,
-        totalPages: 1
+        targetPageId: targetPage?.id || addPageContext.targetPageId,
+        targetPageNumber: targetPage?.page_number,
+        execute: (context) => executeAddPageGeneration(ctx, context)
       })
-
-      await executeAddPageGeneration(ctx, addPageCtx)
-      return { success: true, runId: addPageCtx.runId }
+      handedToBackground = true
+      return { success: true, runId: result.runId, queued: result.queued }
     } catch (error) {
-      if (addPageCtx) {
+      if (addPageCtx && !handedToBackground) {
         await finalizeGenerationFailure(ctx, addPageCtx, error)
       } else {
         logPreContextFailure('generate:addPage', requestedSessionId, error)
       }
       throw error
     } finally {
-      jobManager.release(reserved)
-      if (addPageCtx) {
+      if (!handedToBackground) {
+        jobManager.release(reserved)
+      }
+      if (addPageCtx && !handedToBackground) {
         agentManager.removeSession(addPageCtx.sessionId)
       }
     }
@@ -489,6 +545,7 @@ export function registerGenerationHandlers(
 
     const reserved = reservation.reservation
     let retryCtx: RetrySinglePageContext | null = null
+    let handedToBackground = false
     try {
       const modelConfigId =
         typeof addPagePayload.modelConfigId === 'string'
@@ -501,28 +558,30 @@ export function registerGenerationHandlers(
         modelConfigId
       )
       jobManager.assertNotCancelled(reserved)
-
-      beginSessionRunState({
-        sessionId: retryCtx.sessionId,
-        runId: retryCtx.runId,
-        mode: 'retrySinglePage',
+      const result = await jobManager.enqueue({
+        reservation: reserved,
+        kind: 'single-page-retry',
+        context: retryCtx,
+        totalPages: 1,
         activityKind: 'single-page-retry',
-        previousSessionStatus: retryCtx.previousSessionStatus,
-        totalPages: 1
+        targetPageId: retryCtx.pageId,
+        targetPageNumber: retryCtx.pageNumber,
+        execute: (context) => executeRetrySinglePageGeneration(ctx, context)
       })
-
-      await executeRetrySinglePageGeneration(ctx, retryCtx)
-      return { success: true, runId: retryCtx.runId }
+      handedToBackground = true
+      return { success: true, runId: result.runId, queued: result.queued }
     } catch (error) {
-      if (retryCtx) {
+      if (retryCtx && !handedToBackground) {
         await finalizeGenerationFailure(ctx, retryCtx, error)
       } else {
         logPreContextFailure('generate:retrySinglePage', requestedSessionId, error)
       }
       throw error
     } finally {
-      jobManager.release(reserved)
-      if (retryCtx) {
+      if (!handedToBackground) {
+        jobManager.release(reserved)
+      }
+      if (retryCtx && !handedToBackground) {
         agentManager.removeSession(retryCtx.sessionId)
       }
     }

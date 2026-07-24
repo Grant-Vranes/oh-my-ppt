@@ -12,7 +12,7 @@ import {
 } from '@renderer/store'
 import { useT } from '@renderer/i18n'
 import type { SessionWorkspaceTab } from '@renderer/types/session-detail'
-import { normalizePagesForSelection } from '../shared'
+import { isPageGenerationLocked, normalizePagesForSelection } from '../shared'
 import type { WorkspaceRibbonState } from '../workspace/toolbar/types'
 
 export function useWorkspaceRibbonActionsRegistration(
@@ -82,6 +82,10 @@ export function useWorkspaceRibbonController(isSavingEdits: boolean): {
   const currentPages = useGenerateStore((state) => state.currentPages)
   const toastInfo = useToastStore((state) => state.info)
   const selectedPageId = useSessionDetailUiStore((state) => state.selectedPageId)
+  const isAddingPage = useSessionDetailUiStore((state) => state.isAddingPage)
+  const addingPageId = useSessionDetailUiStore((state) => state.addingPageId)
+  const isRetryingSinglePage = useSessionDetailUiStore((state) => state.isRetryingSinglePage)
+  const retryingSinglePageId = useSessionDetailUiStore((state) => state.retryingSinglePageId)
   const activeTab = useSessionDetailUiStore((state) => state.workspaceTab)
   const setActiveTab = useSessionDetailUiStore((state) => state.setWorkspaceTab)
   const bumpPreviewKey = useSessionDetailUiStore((state) => state.bumpPreviewKey)
@@ -104,6 +108,24 @@ export function useWorkspaceRibbonController(isSavingEdits: boolean): {
   const styleSwitchPageLocked = isStyleSwitchPageLocked(styleSwitchJob, pageId)
   const isPageEditing = pageEditJob?.pageId === pageId
   const isPageBeautifying = pageBeautifyJob?.pageId === pageId
+  const isScopedGeneration =
+    isAddingPage ||
+    isRetryingSinglePage ||
+    Boolean(pageEditJob) ||
+    Boolean(pageBeautifyJob) ||
+    Boolean(styleSwitchJob)
+  const isCurrentPageGenerating =
+    isGenerating &&
+    (!isScopedGeneration ||
+      isPageGenerationLocked(selectedPage?.id, {
+        isAddingPage,
+        addingPageId,
+        isRetryingSinglePage,
+        retryingSinglePageId
+      }) ||
+      isPageEditing ||
+      isPageBeautifying ||
+      styleSwitchPageLocked)
   const canUndo = useEditHistoryStore((state) => state.canUndo(pageId))
   const canRedo = useEditHistoryStore((state) => state.canRedo(pageId))
   const hasPendingEdits = useEditHistoryStore((state) => state.hasPendingEdits(pageId))
@@ -229,7 +251,7 @@ export function useWorkspaceRibbonController(isSavingEdits: boolean): {
 
   const state: WorkspaceRibbonState = useMemo(
     () => ({
-      isGenerating,
+      isGenerating: isCurrentPageGenerating,
       isPageEditing,
       isPageBeautifying,
       isDeckEditing,
@@ -247,7 +269,7 @@ export function useWorkspaceRibbonController(isSavingEdits: boolean): {
       hasPendingEdits,
       isDeckEditing,
       styleSwitchPageLocked,
-      isGenerating,
+      isCurrentPageGenerating,
       isPageEditing,
       isPageBeautifying,
       isSavingEdits

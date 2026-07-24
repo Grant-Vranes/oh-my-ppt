@@ -57,13 +57,14 @@ export function useGenerationNotifications(): void {
       // on top would double up toasts for the same run, which is noisy and redundant. The global
       // notification is reserved for full-deck generation runs where the user may have navigated
       // away from the session and needs a pull-back cue.
-      const activityKind =
-        'activityKind' in event.payload ? event.payload.activityKind : undefined
+      const activityKind = 'activityKind' in event.payload ? event.payload.activityKind : undefined
       if (
         activityKind === 'page-beautify' ||
         activityKind === 'page-edit' ||
         activityKind === 'deck-edit' ||
-        activityKind === 'style-switch'
+        activityKind === 'style-switch' ||
+        activityKind === 'single-page-retry' ||
+        activityKind === 'addPage'
       ) {
         return
       }

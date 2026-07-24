@@ -8,7 +8,6 @@ import {
   useSessionStore,
   useToastStore
 } from '@renderer/store'
-import { useGenerationActivityStore } from '@renderer/store/generationActivityStore'
 import type { GenerateStartPayload } from '@shared/generation.js'
 import type { ChatPanelController } from '@renderer/types/session-detail'
 import { normalizePagesForSelection } from '../shared/pageUtils'
@@ -321,7 +320,6 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
       } else {
         useGenerateStore.getState().clearSessionError(sessionId)
         useGenerateStore.setState({ isGenerating: true, error: null, status: 'running' })
-        useGenerationActivityStore.getState().startEdit(generatePayload)
       }
       addMessage({
         id: crypto.randomUUID(),
@@ -350,7 +348,6 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
         else if (isDeckEdit) useGenerateStore.getState().finishDeckEdit(sessionId)
         else {
           useGenerateStore.getState().finishGeneration()
-          useGenerationActivityStore.getState().reset()
         }
         return false
       }
@@ -372,7 +369,6 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
       if (hadGlobalGeneration) {
         useGenerateStore.setState({ status: 'failed', isGenerating: false, progress: null })
       }
-      useGenerationActivityStore.getState().reset()
       toastError(message)
       return false
     } finally {

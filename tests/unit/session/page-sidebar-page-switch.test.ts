@@ -64,15 +64,19 @@ const controllerMock = vi.hoisted(() => ({
   ]
 }))
 
-vi.mock('../../../src/renderer/src/components/session-detail/sidebar/usePageSidebarController', () => ({
-  usePageSidebarController: () => ({
-    pages: controllerMock.pages,
-    disabled: false,
-    pageManagementDisabled: false,
-    collapsed: false,
-    onToggleCollapsed: vi.fn()
+vi.mock(
+  '../../../src/renderer/src/components/session-detail/sidebar/usePageSidebarController',
+  () => ({
+    usePageSidebarController: () => ({
+      pages: controllerMock.pages,
+      disabled: false,
+      pageManagementDisabled: false,
+      isPageActionDisabled: () => false,
+      collapsed: false,
+      onToggleCollapsed: vi.fn()
+    })
   })
-}))
+)
 
 async function renderSidebar(): Promise<{ container: HTMLDivElement; root: Root }> {
   const container = document.createElement('div')
@@ -135,9 +139,9 @@ describe('PageSidebar page switching', () => {
 
     try {
       await act(async () => {
-        Array.from(container.querySelectorAll('button')).find(
-          (button) => button.textContent === 'sessionDetail.outlineTab'
-        )?.click()
+        Array.from(container.querySelectorAll('button'))
+          .find((button) => button.textContent === 'sessionDetail.outlineTab')
+          ?.click()
       })
       await act(async () => {
         const editButtons = container.querySelectorAll<HTMLButtonElement>(
@@ -174,9 +178,9 @@ describe('PageSidebar page switching', () => {
         container.querySelector<HTMLButtonElement>('[data-testid="page-thumbnail-page-2"]')?.click()
       })
       await act(async () => {
-        Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(
-          (button) => button.textContent === 'common.dontSave'
-        )?.click()
+        Array.from(document.querySelectorAll<HTMLButtonElement>('button'))
+          .find((button) => button.textContent === 'common.dontSave')
+          ?.click()
       })
 
       expect(discardAll).toHaveBeenCalledOnce()

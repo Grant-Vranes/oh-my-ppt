@@ -62,7 +62,10 @@ export class GenerateJobManager {
 
   async enqueue<TContext extends FinalizeContext>(args: {
     reservation: GenerateJobReservation
-    kind: Extract<SessionJobKind, 'standard' | 'template' | 'retry'>
+    kind: Extract<
+      SessionJobKind,
+      'standard' | 'template' | 'retry' | 'add-page' | 'single-page-retry'
+    >
     context: TContext
     totalPages: number
     activityKind?:
@@ -250,7 +253,13 @@ export class GenerateJobManager {
   }
 
   async abortInterruptedJobs(reason: string): Promise<void> {
-    const activeJobs = await this.ctx.db.listActiveSessionJobs(['standard', 'template', 'retry'])
+    const activeJobs = await this.ctx.db.listActiveSessionJobs([
+      'standard',
+      'template',
+      'retry',
+      'add-page',
+      'single-page-retry'
+    ])
     for (const job of activeJobs) {
       if (this.jobsBySession.has(job.session_id)) continue
       const reservation = this.coordinator.get(job.session_id)
@@ -273,7 +282,7 @@ export class GenerateJobManager {
       this.startingCount = Math.max(0, this.startingCount - 1)
     }
     this.activeCount += 1
-    void this.ctx.db.updateSessionJobStatus(job.runId, 'active').catch((error) => {
+    const markActive = this.ctx.db.updateSessionJobStatus(job.runId, 'active').catch((error) => {
       log.warn('[generate:job] failed to mark active', {
         sessionId: job.sessionId,
         runId: job.runId,
@@ -290,7 +299,7 @@ export class GenerateJobManager {
       runId: job.runId,
       kind: job.kind
     })
-    void this.runJob(job)
+    void markActive.then(() => this.runJob(job))
   }
 
   private async runJob(job: BackgroundJob<FinalizeContext>): Promise<void> {

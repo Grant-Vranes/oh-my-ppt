@@ -70,7 +70,9 @@ interface SessionDetailUiStore {
   pageTitleEditDraft: string
   deleteConfirmPageId: string | null
   isAddingPage: boolean
+  addingPageId: string | null
   isRetryingSinglePage: boolean
+  retryingSinglePageId: string | null
   isManagingPages: boolean
   sidebarCollapsed: boolean
   assetPickerOpen: boolean
@@ -144,7 +146,9 @@ interface SessionDetailUiStore {
   closePageTitleEdit: () => void
   setDeleteConfirmPageId: (pageId: string | null) => void
   setIsAddingPage: (adding: boolean) => void
+  setAddingPageId: (pageId: string | null) => void
   setIsRetryingSinglePage: (retrying: boolean) => void
+  setRetryingSinglePageId: (pageId: string | null) => void
   setIsManagingPages: (managing: boolean) => void
   toggleSidebarCollapsed: () => void
   setAssetPickerOpen: (open: boolean, type?: 'image' | 'video') => void
@@ -206,7 +210,9 @@ export const useSessionDetailUiStore = create<SessionDetailUiStore>((set) => ({
   pageTitleEditDraft: '',
   deleteConfirmPageId: null,
   isAddingPage: false,
+  addingPageId: null,
   isRetryingSinglePage: false,
+  retryingSinglePageId: null,
   isManagingPages: false,
   sidebarCollapsed: false,
   assetPickerOpen: false,
@@ -381,8 +387,12 @@ export const useSessionDetailUiStore = create<SessionDetailUiStore>((set) => ({
   setPageTitleEditDraft: (pageTitleEditDraft) => set({ pageTitleEditDraft }),
   closePageTitleEdit: () => set({ pageTitleEditPageId: null, pageTitleEditDraft: '' }),
   setDeleteConfirmPageId: (deleteConfirmPageId) => set({ deleteConfirmPageId }),
-  setIsAddingPage: (isAddingPage) => set({ isAddingPage }),
-  setIsRetryingSinglePage: (isRetryingSinglePage) => set({ isRetryingSinglePage }),
+  setIsAddingPage: (isAddingPage) =>
+    set({ isAddingPage, ...(isAddingPage ? {} : { addingPageId: null }) }),
+  setAddingPageId: (addingPageId) => set({ addingPageId }),
+  setIsRetryingSinglePage: (isRetryingSinglePage) =>
+    set({ isRetryingSinglePage, ...(isRetryingSinglePage ? {} : { retryingSinglePageId: null }) }),
+  setRetryingSinglePageId: (retryingSinglePageId) => set({ retryingSinglePageId }),
   setIsManagingPages: (isManagingPages) => set({ isManagingPages }),
   toggleSidebarCollapsed: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
   setAssetPickerOpen: (open, type) =>
@@ -397,6 +407,7 @@ export const useSessionDetailUiStore = create<SessionDetailUiStore>((set) => ({
   finishAddPage: (selectedPageId) =>
     set((state) => ({
       isAddingPage: false,
+      addingPageId: null,
       selectedPageId: typeof selectedPageId === 'undefined' ? state.selectedPageId : selectedPageId
     })),
   resetForPageChange: () =>
@@ -468,7 +479,9 @@ export const useSessionDetailUiStore = create<SessionDetailUiStore>((set) => ({
       pageTitleEditDraft: '',
       deleteConfirmPageId: null,
       isAddingPage: false,
+      addingPageId: null,
       isRetryingSinglePage: false,
+      retryingSinglePageId: null,
       isManagingPages: false,
       sidebarCollapsed: false,
       assetPickerOpen: false,

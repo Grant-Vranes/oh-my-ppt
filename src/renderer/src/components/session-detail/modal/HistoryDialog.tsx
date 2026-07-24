@@ -39,6 +39,7 @@ export function HistoryDialog({ sessionId }: HistoryDialogProps): React.JSX.Elem
   const isRetryingSinglePage = useSessionDetailUiStore((state) => state.isRetryingSinglePage)
   const isManagingPages = useSessionDetailUiStore((state) => state.isManagingPages)
   const isGenerating = useGenerateStore((state) => state.isGenerating)
+  const isDeckEditing = useGenerateStore((state) => Boolean(state.deckEditJobs[sessionId]))
   const currentSession = useSessionStore((state) => state.currentSession)
   const loadSession = useSessionStore((state) => state.loadSession)
   const toastError = useToastStore((state) => state.error)
@@ -55,6 +56,7 @@ export function HistoryDialog({ sessionId }: HistoryDialogProps): React.JSX.Elem
       : ''
   const historyDisabled =
     isGenerating ||
+    isDeckEditing ||
     isAddingPage ||
     isRetryingSinglePage ||
     isManagingPages ||

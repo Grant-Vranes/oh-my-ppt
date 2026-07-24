@@ -29,6 +29,7 @@ export type AddPageContext = {
   runId: string
   userDescription: string
   insertAfterPageNumber: number
+  targetPageId?: string
   provider: string
   apiKey: string
   model: string
@@ -62,9 +63,14 @@ export async function resolveAddPageContext(
   sessionId: string,
   userDescription: string,
   insertAfterPageNumber: number,
-  modelConfigId?: string
+  modelConfigId?: string,
+  targetPageId?: string
 ): Promise<AddPageContext> {
-  log.info('[generate:addPage] resolving context', { sessionId, insertAfterPageNumber })
+  log.info('[generate:addPage] resolving context', {
+    sessionId,
+    insertAfterPageNumber,
+    targetPageId
+  })
   const common = await resolveCommonContext(ctx, sessionId, modelConfigId)
   const { sessionRecord } = common
 
@@ -82,6 +88,7 @@ export async function resolveAddPageContext(
     sessionId,
     userDescription,
     insertAfterPageNumber,
+    targetPageId,
     sessionRecord,
     messageScope: 'main' as const,
     messagePageId: undefined,
@@ -138,6 +145,14 @@ export async function executeAddPageGeneration(
 
   const insertAfterPageNumber = context.insertAfterPageNumber
   const userDescription = context.userDescription
+  const targetPage = context.targetPageId
+    ? existingPages.find(
+        (page) => page.id === context.targetPageId || page.file_slug === context.targetPageId
+      )
+    : null
+  if (context.targetPageId && !targetPage) {
+    throw new Error('未找到新增页面的空白占位页')
+  }
 
   // ── Step 3: Plan new page ──
   emitChunk({
@@ -151,10 +166,17 @@ export async function executeAddPageGeneration(
     }
   })
 
-  const newPageNumber = Math.max(...existingPages.map((p) => p.page_number)) + 1
-  const newPageEntityId = nanoid()
-  const newPageId = `page-${pageSlugId()}`
-  const newHtmlPath = path.join(context.projectDir, `${newPageId}.html`)
+  const newPageNumber =
+    targetPage?.page_number ?? Math.max(...existingPages.map((p) => p.page_number)) + 1
+  const newPageEntityId = targetPage?.id ?? nanoid()
+  const newPageId = targetPage?.file_slug ?? `page-${pageSlugId()}`
+  const newHtmlPath = targetPage
+    ? resolvePageHtmlPath({
+        projectDir: context.projectDir,
+        fileSlug: newPageId,
+        candidates: [targetPage.html_path]
+      })
+    : path.join(context.projectDir, `${newPageId}.html`)
 
   const existingTitles = existingPages.map((p) => p.title).filter(Boolean)
 
@@ -201,15 +223,20 @@ export async function executeAddPageGeneration(
   }
 
   // ── Step 4: Create scaffold ──
-  await fs.promises.writeFile(
-    newHtmlPath,
-    buildPageScaffoldHtml({
-      pageNumber: newPageNumber,
-      pageId: newPageId,
-      title: planResult.title
-    }, context.slideSize),
-    'utf-8'
-  )
+  if (!targetPage) {
+    await fs.promises.writeFile(
+      newHtmlPath,
+      buildPageScaffoldHtml(
+        {
+          pageNumber: newPageNumber,
+          pageId: newPageId,
+          title: planResult.title
+        },
+        context.slideSize
+      ),
+      'utf-8'
+    )
+  }
 
   // ── Step 5: Generate with agent ──
   emitChunk({
@@ -357,7 +384,7 @@ export async function executeAddPageGeneration(
   const newPageHtml = await fs.promises.readFile(newHtmlPath, 'utf-8')
   const newPageEntry = {
     id: newPageEntityId,
-    pageNumber: insertAfterPageNumber + 1,
+    pageNumber: targetPage?.page_number ?? insertAfterPageNumber + 1,
     title: planResult.title,
     pageId: newPageId,
     htmlPath: newHtmlPath,
@@ -385,10 +412,13 @@ export async function executeAddPageGeneration(
     })
   )
 
-  // Insert new page after insertAfterPageNumber
-  const beforePages = existingPageDescriptors.filter((p) => p.pageNumber <= insertAfterPageNumber)
-  const afterPages = existingPageDescriptors.filter((p) => p.pageNumber > insertAfterPageNumber)
-  const mergedPages = [...beforePages, newPageEntry, ...afterPages]
+  const mergedPages = targetPage
+    ? existingPageDescriptors.map((page) => (page.id === targetPage.id ? newPageEntry : page))
+    : [
+        ...existingPageDescriptors.filter((page) => page.pageNumber <= insertAfterPageNumber),
+        newPageEntry,
+        ...existingPageDescriptors.filter((page) => page.pageNumber > insertAfterPageNumber)
+      ]
 
   // Renumber
   const renumberedPages = mergedPages.map((page, index) => ({

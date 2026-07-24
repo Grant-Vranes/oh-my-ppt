@@ -28,9 +28,35 @@ import {
 export type SessionRunState = {
   sessionId: string
   runId: string
-  mode: 'generate' | 'edit' | 'retry' | 'addPage' | 'retrySinglePage'
-  kind?: 'standard' | 'template' | 'retry'
-  activityKind?: 'edit' | 'style-switch' | 'single-page-retry' | 'addPage'
+  mode:
+    | 'generate'
+    | 'edit'
+    | 'retry'
+    | 'addPage'
+    | 'retrySinglePage'
+    | 'style-switch'
+    | 'page-beautify'
+  kind?:
+    | 'standard'
+    | 'template'
+    | 'retry'
+    | 'add-page'
+    | 'single-page-retry'
+    | 'edit'
+    | 'page-edit'
+    | 'deck-edit'
+    | 'style-switch'
+    | 'page-beautify'
+  activityKind?:
+    | 'page-edit'
+    | 'deck-edit'
+    | 'edit'
+    | 'style-switch'
+    | 'page-beautify'
+    | 'single-page-retry'
+    | 'addPage'
+  targetPageId?: string
+  targetPageNumber?: number
   previousSessionStatus?: string
   status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'
   progress: number
@@ -83,9 +109,35 @@ export interface IpcContext {
   beginSessionRunState: (args: {
     sessionId: string
     runId: string
-    mode: 'generate' | 'edit' | 'retry' | 'addPage' | 'retrySinglePage'
-    kind?: 'standard' | 'template' | 'retry'
-    activityKind?: 'edit' | 'style-switch' | 'single-page-retry' | 'addPage'
+    mode:
+      | 'generate'
+      | 'edit'
+      | 'retry'
+      | 'addPage'
+      | 'retrySinglePage'
+      | 'style-switch'
+      | 'page-beautify'
+    kind?:
+      | 'standard'
+      | 'template'
+      | 'retry'
+      | 'add-page'
+      | 'single-page-retry'
+      | 'edit'
+      | 'page-edit'
+      | 'deck-edit'
+      | 'style-switch'
+      | 'page-beautify'
+    activityKind?:
+      | 'page-edit'
+      | 'deck-edit'
+      | 'edit'
+      | 'style-switch'
+      | 'page-beautify'
+      | 'single-page-retry'
+      | 'addPage'
+    targetPageId?: string
+    targetPageNumber?: number
     totalPages: number
     previousSessionStatus?: string
     status?: 'queued' | 'running'
@@ -179,6 +231,60 @@ export function getSessionRunPageCounts(state: {
     if (!completed.has(pageKey)) failed.add(pageKey)
   }
   return { completedPageCount, failedPageCount: failed.size }
+}
+
+/**
+ * Progress bounds for each deck-progress stage. The emitter clamps incoming progress into these
+ * ranges so multi-stage workflows don't jitter (e.g. planning should never claim 80%).
+ *
+ * `finalizing` is the post-agent commit/persist/history phase used by single-page workflows
+ * (page-beautify). It must allow [80, 100] because those workflows emit explicit 83/87/91/95/100
+ * milestones after the model returns; clamping them to 90 makes the bar stall one tick short.
+ */
+export function getDeckProgressStageBounds(stage: string): { min: number; max: number } {
+  if (stage === 'preflight' || stage === 'planning') {
+    return { min: 0, max: 10 }
+  }
+  if (stage === 'rendering') {
+    return { min: 10, max: 90 }
+  }
+  if (stage === 'finalizing') {
+    return { min: 80, max: 100 }
+  }
+  return { min: 0, max: 90 }
+}
+
+const LLM_STATUS_MIN_PROGRESS_DELTA = 5
+
+export type LlmStatusEmissionSnapshot = {
+  stage: string
+  label: string
+  detail: string
+  progress: number | null
+  emittedAt: number
+}
+
+export function shouldEmitLlmStatusUpdate(
+  previous: LlmStatusEmissionSnapshot | null,
+  next: Omit<LlmStatusEmissionSnapshot, 'emittedAt'>,
+  now: number
+): boolean {
+  if (!previous) return true
+  if (
+    previous.stage !== next.stage ||
+    previous.label !== next.label ||
+    previous.detail !== next.detail
+  ) {
+    return true
+  }
+  if (
+    next.progress !== null &&
+    (previous.progress === null || next.progress - previous.progress >= LLM_STATUS_MIN_PROGRESS_DELTA)
+  ) {
+    return true
+  }
+  void now
+  return false
 }
 
 export function createIpcContext(
@@ -403,9 +509,35 @@ export function createIpcContext(
   const beginSessionRunState = (args: {
     sessionId: string
     runId: string
-    mode: 'generate' | 'edit' | 'retry' | 'addPage' | 'retrySinglePage'
-    kind?: 'standard' | 'template' | 'retry'
-    activityKind?: 'edit' | 'style-switch' | 'single-page-retry' | 'addPage'
+    mode:
+      | 'generate'
+      | 'edit'
+      | 'retry'
+      | 'addPage'
+      | 'retrySinglePage'
+      | 'style-switch'
+      | 'page-beautify'
+    kind?:
+      | 'standard'
+      | 'template'
+      | 'retry'
+      | 'add-page'
+      | 'single-page-retry'
+      | 'edit'
+      | 'page-edit'
+      | 'deck-edit'
+      | 'style-switch'
+      | 'page-beautify'
+    activityKind?:
+      | 'page-edit'
+      | 'deck-edit'
+      | 'edit'
+      | 'style-switch'
+      | 'page-beautify'
+      | 'single-page-retry'
+      | 'addPage'
+    targetPageId?: string
+    targetPageNumber?: number
     totalPages: number
     previousSessionStatus?: string
     status?: 'queued' | 'running'
@@ -420,6 +552,8 @@ export function createIpcContext(
       mode: args.mode,
       kind: args.kind,
       activityKind: args.activityKind,
+      targetPageId: args.targetPageId,
+      targetPageNumber: args.targetPageNumber,
       previousSessionStatus: args.previousSessionStatus,
       status: args.status || 'running',
       progress: 0,
@@ -602,19 +736,13 @@ export function createIpcContext(
     appLocale?: AppLocale
   ): ((chunk: GenerateChunkEvent) => void) => {
     let normalizedProgress = 0
+    let lastLlmStatusEmission: LlmStatusEmissionSnapshot | null = null
 
     const clamp = (value: number, min: number, max: number): number =>
       Math.max(min, Math.min(max, Math.round(value)))
 
-    const getStageBounds = (stage: string): { min: number; max: number } => {
-      if (stage === 'preflight' || stage === 'planning') {
-        return { min: 0, max: 10 }
-      }
-      if (stage === 'rendering') {
-        return { min: 10, max: 90 }
-      }
-      return { min: 0, max: 90 }
-    }
+    const getStageBounds = (stage: string): { min: number; max: number } =>
+      getDeckProgressStageBounds(stage)
 
     return (chunk: GenerateChunkEvent) => {
       if (chunk.type === 'run_completed') {
@@ -644,14 +772,31 @@ export function createIpcContext(
       const bounded = clamp(rawProgress, min, max)
       normalizedProgress = Math.max(normalizedProgress, bounded)
 
-      emitGenerateChunk(sessionId, {
+      const normalizedChunk = {
         ...chunk,
         payload: {
           ...chunk.payload,
           label: progressDisplayLabel(appLocale, chunk.payload.label),
           progress: normalizedProgress
         }
-      } as GenerateChunkEvent)
+      } as GenerateChunkEvent
+
+      if (normalizedChunk.type === 'llm_status') {
+        const now = Date.now()
+        const next = {
+          stage: normalizedChunk.payload.stage,
+          label: normalizedChunk.payload.label,
+          detail: normalizedChunk.payload.detail || '',
+          progress:
+            typeof normalizedChunk.payload.progress === 'number'
+              ? normalizedChunk.payload.progress
+              : null
+        }
+        if (!shouldEmitLlmStatusUpdate(lastLlmStatusEmission, next, now)) return
+        lastLlmStatusEmission = { ...next, emittedAt: now }
+      }
+
+      emitGenerateChunk(sessionId, normalizedChunk)
     }
   }
 

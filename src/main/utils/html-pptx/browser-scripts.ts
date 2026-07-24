@@ -1,3 +1,9 @@
+import {
+  PPTX_SLIDE_HEIGHT_IN,
+  PPTX_SLIDE_WIDTH_IN,
+  PPTX_STATIC_BACKGROUND_EDGE_TOLERANCE_IN
+} from './static-background'
+
 export const FREEZE_PAGE_FOR_EXPORT_SCRIPT = `
 (async () => {
   const root =
@@ -190,13 +196,6 @@ export const FREEZE_PAGE_FOR_EXPORT_SCRIPT = `
     return Number(getComputedStyle(node).opacity || '1') <= 0.04;
   };
 
-  // Mark [data-anim] elements for native PPT animation export. They must not
-  // remain baked into the static background, otherwise the animation appears
-  // to do nothing because the final state is already visible.
-  root.querySelectorAll('[data-anim]').forEach(function (el) {
-    el.setAttribute('data-pptx-native-anim', '1');
-  });
-
   const motionTargets = root.querySelectorAll(
     '.opacity-0, [data-anime], [data-animate], h1, h2, h3, p, li, .card, .panel, .text-section, .diagram-section, .timeline-node, section, section > *'
   );
@@ -321,9 +320,89 @@ export const HIDE_TEXT_FOR_PPTX_BACKGROUND_SCRIPT = `
 })()
 `
 
-// Background capture for PPTX: keep animated elements ([data-pptx-animated] set by freeze),
-// decorative elements (blur blobs), and SVGs visible.
-// Hide text and non-animated shapes/images (which are extracted separately).
+export const buildMarkPptxExtractedTextForBackgroundScript = (
+  texts: Array<{ x: number; y: number; w: number; h: number }>
+): string => {
+  const boxes = texts
+    .filter(
+      (text) =>
+        Number.isFinite(text.x) &&
+        Number.isFinite(text.y) &&
+        Number.isFinite(text.w) &&
+        Number.isFinite(text.h) &&
+        text.w > 0.02 &&
+        text.h > 0.02
+    )
+    .map((text) => ({ x: text.x, y: text.y, w: text.w, h: text.h }))
+
+  return `
+(() => {
+  const root =
+    document.querySelector('.ppt-page-root[data-ppt-guard-root="1"]') ||
+    document.querySelector('.ppt-page-root') ||
+    document.body;
+  // This script is rerun for background-capture retries. Remove stale matches before
+  // evaluating the latest extraction result so a newly unsupported text node stays rasterized.
+  root.querySelectorAll('[data-pptx-background-text-match]').forEach((element) => {
+    element.removeAttribute('data-pptx-background-text-match');
+  });
+  const textBoxes = ${JSON.stringify(boxes)};
+  if (!textBoxes.length) return 0;
+  const rootRect = root.getBoundingClientRect();
+  if (!rootRect.width || !rootRect.height) return 0;
+  const slideWidth = 13.333;
+  const slideHeight = 7.5;
+  const toClientBox = (box) => ({
+    left: rootRect.left + (box.x / slideWidth) * rootRect.width,
+    top: rootRect.top + (box.y / slideHeight) * rootRect.height,
+    width: (box.w / slideWidth) * rootRect.width,
+    height: (box.h / slideHeight) * rootRect.height
+  });
+  const boxesInClientSpace = textBoxes.map(toClientBox);
+  const overlapsExtractedText = (rect) => {
+    if (rect.width < 1 || rect.height < 1) return false;
+    const rectArea = rect.width * rect.height;
+    return boxesInClientSpace.some((box) => {
+      const overlapWidth = Math.max(0, Math.min(rect.right, box.left + box.width) - Math.max(rect.left, box.left));
+      const overlapHeight = Math.max(0, Math.min(rect.bottom, box.top + box.height) - Math.max(rect.top, box.top));
+      const overlap = overlapWidth * overlapHeight;
+      // A native PPT box can be intentionally wider than its painted glyphs, but it must
+      // still cover almost all of this DOM text fragment. Partial or center-only overlap
+      // leaves the fragment in the raster background as a conservative fallback.
+      return overlap / rectArea >= 0.85;
+    });
+  };
+  let marked = 0;
+  root.querySelectorAll('*').forEach((element) => {
+    if (element.closest('script, style, noscript, svg, canvas, video, iframe, .katex, .katex-mathml')) return;
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, {
+      acceptNode: (node) =>
+        String(node.textContent || '').trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT
+    });
+    const textNodes = [];
+    while (walker.nextNode()) textNodes.push(walker.currentNode);
+    if (!textNodes.length) return;
+    const textRects = textNodes.flatMap((node) => {
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      return Array.from(range.getClientRects());
+    });
+    if (textRects.length && textRects.every(overlapsExtractedText)) {
+      // Mark the container only when every descendant text fragment maps to a
+      // native PPT text box. This handles mixed content such as "$528<span>亿</span>"
+      // without hiding a neighboring fallback-only child through inheritance.
+      element.setAttribute('data-pptx-background-text-match', '1');
+      marked += 1;
+    }
+  });
+  return marked;
+})()
+`
+}
+
+// Background capture for PPTX keeps every visual that cannot be represented as
+// a native PPTX object. Only successfully extracted objects are removed. This
+// avoids both text ghosts on animated nodes and missing complex CSS/DOM visuals.
 export const HIDE_FOR_PPTX_BACKGROUND_SCRIPT = `
 (async () => {
   // Helper: same rgbToHex as main extraction script
@@ -374,35 +453,67 @@ export const HIDE_FOR_PPTX_BACKGROUND_SCRIPT = `
     }
   });
 
+  // Large edge-anchored fills are structural backgrounds. Keep them in the
+  // screenshot base instead of relying on a native shape whose z-order can
+  // cover the slide or be accidentally targeted by a text animation.
+  root.querySelectorAll('[data-pptx-extracted-shape]').forEach((el) => {
+    const rect = el.getBoundingClientRect();
+    const rootRect = root.getBoundingClientRect();
+    const pageArea = rootRect.width * rootRect.height;
+    if (!pageArea || rect.width * rect.height < pageArea * 0.2) return;
+    const horizontalTolerance = rootRect.width * ${PPTX_STATIC_BACKGROUND_EDGE_TOLERANCE_IN / PPTX_SLIDE_WIDTH_IN};
+    const verticalTolerance = rootRect.height * ${PPTX_STATIC_BACKGROUND_EDGE_TOLERANCE_IN / PPTX_SLIDE_HEIGHT_IN};
+    const spansWidth = rect.width >= rootRect.width - horizontalTolerance;
+    const spansHeight = rect.height >= rootRect.height - verticalTolerance;
+    if (!spansWidth && !spansHeight) return;
+    const touchesHorizontalEdge = rect.left <= rootRect.left + horizontalTolerance || rect.right >= rootRect.right - horizontalTolerance;
+    const touchesVerticalEdge = rect.top <= rootRect.top + verticalTolerance || rect.bottom >= rootRect.bottom - verticalTolerance;
+    if (touchesHorizontalEdge && touchesVerticalEdge) {
+      el.setAttribute('data-pptx-static-background', '1');
+    }
+  });
+
   // 2. Remove previous style
   const existing = document.getElementById('ohmyppt-pptx-hide-elements');
   if (existing) existing.remove();
 
-  // 3. CSS: keep [data-pptx-animated] and SVGs visible, hide text + non-animated shapes/images
+  // Pseudo-elements are not part of the DOM text extraction. Keep their own
+  // text paint while only confirmed extracted DOM text is made transparent below.
+  root.querySelectorAll('*').forEach((el) => {
+    ['before', 'after'].forEach((kind) => {
+      const pseudo = getComputedStyle(el, '::' + kind);
+      const content = String(pseudo.content || '').trim();
+      if (!content || content === 'none' || content === 'normal') return;
+      el.setAttribute('data-pptx-has-' + kind, '1');
+      el.style.setProperty('--pptx-' + kind + '-color', pseudo.color || 'transparent');
+      el.style.setProperty('--pptx-' + kind + '-text-fill', pseudo.webkitTextFillColor || pseudo.color || 'transparent');
+      el.style.setProperty('--pptx-' + kind + '-text-stroke', pseudo.webkitTextStrokeColor || 'transparent');
+      el.style.setProperty('--pptx-' + kind + '-text-shadow', pseudo.textShadow || 'none');
+      el.style.setProperty('--pptx-' + kind + '-text-decoration', pseudo.textDecorationColor || 'transparent');
+    });
+  });
+
+  // 3. CSS: keep any visual that was not confirmed extracted in the raster
+  // background. This is the fallback for complex or capped-out source content.
   const style = document.createElement('style');
   style.id = 'ohmyppt-pptx-hide-elements';
   style.textContent = [
     // Precisely hide extracted shapes (background/border) and images (visibility)
-    '[data-pptx-extracted-shape] { background-color: transparent !important; border-color: transparent !important; }',
+    '[data-pptx-extracted-shape]:not([data-pptx-static-background]) { background-color: transparent !important; border-color: transparent !important; }',
     '[data-pptx-extracted-image] { opacity: 0 !important; visibility: hidden !important; }',
-    // Hide native animation sources from the static background. Their exported
-    // PPT shapes/text/images are animated separately in slide timing XML.
-    '[data-pptx-native-anim] { background-color: transparent !important; border-color: transparent !important; box-shadow: none !important; }',
-    '[data-pptx-native-anim], [data-pptx-native-anim] * { color: transparent !important; -webkit-text-fill-color: transparent !important; -webkit-text-stroke-color: transparent !important; text-shadow: none !important; text-decoration-color: transparent !important; caret-color: transparent !important; }',
-    '[data-pptx-native-anim] img, [data-pptx-native-anim] canvas, img[data-pptx-native-anim], canvas[data-pptx-native-anim] { opacity: 0 !important; visibility: hidden !important; }',
-    // Hide non-animated images (fallback for non-extracted decorative images)
-    'img:not([data-pptx-animated]):not([data-pptx-extracted-image]), canvas:not([data-pptx-animated]):not([data-pptx-extracted-image]) { opacity: 0 !important; visibility: hidden !important; }',
-    // Make container backgrounds transparent (catch-all for non-extracted containers)
-    'section:not([data-pptx-animated]), main:not([data-pptx-animated]), article:not([data-pptx-animated]), header:not([data-pptx-animated]), footer:not([data-pptx-animated]), aside:not([data-pptx-animated]), div:not([data-pptx-animated]), figure:not([data-pptx-animated]), figcaption:not([data-pptx-animated]), table:not([data-pptx-animated]), td:not([data-pptx-animated]), th:not([data-pptx-animated]) { background-color: transparent !important; border-color: transparent !important; }',
-    // Hide all text (extracted text + fallback for missed text, including .katex which is captured separately)
-    'body :not(canvas):not([data-pptx-animated]):not([data-pptx-extracted-image]) { color: transparent !important; -webkit-text-fill-color: transparent !important; -webkit-text-stroke-color: transparent !important; text-shadow: none !important; text-decoration-color: transparent !important; caret-color: transparent !important; }',
-    'body::before, body::after { color: transparent !important; -webkit-text-fill-color: transparent !important; -webkit-text-stroke-color: transparent !important; text-shadow: none !important; text-decoration-color: transparent !important; }',
+    // Keep unmapped images, shadows and complex containers in the raster background.
+    // Their extraction can fail because of data limits, filters or cross-origin assets.
+    // Only hide text whose source element was confirmed extracted. Hiding all DOM
+    // text leaves no fallback when a text-box limit or complex layout skips it.
+    '[data-pptx-extracted-text], [data-pptx-extracted-text] *, [data-pptx-background-text-match] { color: transparent !important; -webkit-text-fill-color: transparent !important; -webkit-text-stroke-color: transparent !important; text-shadow: none !important; text-decoration-color: transparent !important; caret-color: transparent !important; }',
+    '[data-pptx-has-before]::before { color: var(--pptx-before-color) !important; -webkit-text-fill-color: var(--pptx-before-text-fill) !important; -webkit-text-stroke-color: var(--pptx-before-text-stroke) !important; text-shadow: var(--pptx-before-text-shadow) !important; text-decoration-color: var(--pptx-before-text-decoration) !important; }',
+    '[data-pptx-has-after]::after { color: var(--pptx-after-color) !important; -webkit-text-fill-color: var(--pptx-after-text-fill) !important; -webkit-text-stroke-color: var(--pptx-after-text-stroke) !important; text-shadow: var(--pptx-after-text-shadow) !important; text-decoration-color: var(--pptx-after-text-decoration) !important; }',
     // Hide katex elements (captured as separate images before background capture)
     '.katex { opacity: 0 !important; visibility: hidden !important; }',
     // Hide formula blocks (captured as block-level overlay images)
     '[data-pptx-formula-block] { opacity: 0 !important; visibility: hidden !important; }',
-    // Hide SVG text (can't extract it anyway)
-    'svg text, svg tspan { fill: transparent !important; stroke: transparent !important; }',
+    // An SVG that could not be rasterized stays visible in the background.
+    'svg[data-pptx-extracted-image] text, svg[data-pptx-extracted-image] tspan { fill: transparent !important; stroke: transparent !important; }',
     // Hide input/textarea text
     'input, textarea { color: transparent !important; -webkit-text-fill-color: transparent !important; }'
   ].join('\\n');
@@ -495,7 +606,10 @@ export const COLLECT_PPTX_ANIMATION_TRACES_SCRIPT = `
 (() => {
   const root = document.querySelector('.ppt-page-root') || document.body;
   const pageRect = root.getBoundingClientRect();
-  const supportedTypes = new Set([
+  // These are native PowerPoint effects with a stable final state. Path motion is
+  // intentionally excluded: an HTML path's final CSS transform cannot be
+  // faithfully reconstructed from the static exported geometry.
+  const safeNativeTypes = new Set([
     'fade',
     'fade-up',
     'fade-down',
@@ -520,8 +634,7 @@ export const COLLECT_PPTX_ANIMATION_TRACES_SCRIPT = `
     'exit-scale',
     'exit-zoom',
     'exit-wipe',
-    'exit-fly',
-    'path'
+    'exit-fly'
   ]);
   const supportedTriggers = new Set(['load', 'click', 'with', 'after']);
   const supportedSequences = new Set(['with', 'after']);
@@ -529,22 +642,6 @@ export const COLLECT_PPTX_ANIMATION_TRACES_SCRIPT = `
   let lastSequenceStart = 0;
   let lastSequenceEnd = 0;
   const traces = [];
-  // LINEAR_PATH_RE must be duplicated here (cannot import from Node modules in serialized browser context).
-  // Keep in sync with the duplicated definitions in src/main/tools/html-utils.ts
-  // and src/main/utils/html-pptx/animation-writer.ts (those use unescaped backslashes).
-  const LINEAR_PATH_RE = /^M\\s+-?\\d+(?:\\.\\d+)?\\s+-?\\d+(?:\\.\\d+)?\\s+L\\s+-?\\d+(?:\\.\\d+)?\\s+-?\\d+(?:\\.\\d+)?\\s*$/i;
-  const parseLinearPathDelta = (value) => {
-    const raw = String(value || '').trim();
-    if (!raw || !LINEAR_PATH_RE.test(raw)) return null;
-    const coords = raw.match(/-?\\d+(?:\\.\\d+)?/g);
-    if (!coords || coords.length < 4) return null;
-    const startX = Number(coords[0]);
-    const startY = Number(coords[1]);
-    const endX = Number(coords[coords.length - 2]);
-    const endY = Number(coords[coords.length - 1]);
-    if (![startX, startY, endX, endY].every(Number.isFinite)) return null;
-    return { x: endX - startX, y: endY - startY, raw };
-  };
   const normalizeType = (value) => {
     const type = String(value || 'fade-up').trim().toLowerCase();
     if (type === 'none') return 'none';
@@ -559,7 +656,7 @@ export const COLLECT_PPTX_ANIMATION_TRACES_SCRIPT = `
     if (type === 'pulsestrong') return 'pulse-strong';
     if (type === 'exitscale') return 'exit-scale';
     if (type === 'exitzoom') return 'exit-zoom';
-    return supportedTypes.has(type) ? type : 'fade-up';
+    return safeNativeTypes.has(type) || type === 'path' ? type : 'fade-up';
   };
   const normalizeTrigger = (value) => {
     const trigger = String(value || 'load').trim().toLowerCase();
@@ -597,10 +694,10 @@ export const COLLECT_PPTX_ANIMATION_TRACES_SCRIPT = `
     if (from === 'left' || from === 'right' || from === 'center') return from;
     return fallback || 'bottom';
   };
-  const collectTrace = (el, type, trigger, from, duration, delay, order, clickGroup, pathValue) => {
+  const extractedSelector = '[data-pptx-extracted-text], [data-pptx-extracted-shape], [data-pptx-extracted-image]';
+  const collectTrace = (el, type, trigger, from, duration, delay, order, clickGroup) => {
     const rect = el.getBoundingClientRect();
     if (rect.width < 2 || rect.height < 2) return;
-    el.setAttribute('data-pptx-native-anim', '1');
     const trace = {
       type,
       trigger,
@@ -614,15 +711,25 @@ export const COLLECT_PPTX_ANIMATION_TRACES_SCRIPT = `
       h: Math.round(rect.height)
     };
     if (clickGroup) trace.clickGroup = clickGroup;
-    if (pathValue) trace.path = pathValue;
     traces.push(trace);
+  };
+
+  const collectExtractedTargets = (animationRoot) => {
+    const candidates = [];
+    if (animationRoot.matches(extractedSelector)) candidates.push(animationRoot);
+    animationRoot.querySelectorAll(extractedSelector).forEach((candidate) => {
+      // Nested data-anim blocks own their extracted objects and receive a
+      // separate native effect, avoiding duplicate timing entries.
+      if (candidate.closest('[data-anim]') === animationRoot) candidates.push(candidate);
+    });
+    return Array.from(new Set(candidates));
   };
 
   const elements = Array.from(root.querySelectorAll('[data-anim]'));
 
   elements.forEach((el, order) => {
     const type = normalizeType(el.getAttribute('data-anim'));
-    if (type === 'none') return;
+    if (type === 'none' || !safeNativeTypes.has(type)) return;
 
     const trigger = normalizeTrigger(el.getAttribute('data-anim-trigger'));
     const effectiveTrigger = trigger === 'click' ? 'click' : 'load';
@@ -631,11 +738,6 @@ export const COLLECT_PPTX_ANIMATION_TRACES_SCRIPT = `
     const clickGroup =
       effectiveTrigger === 'click' && isValidClickGroup(clickGroupRaw) ? clickGroupRaw : '';
     const from = normalizeFrom(el.getAttribute('data-anim-from'), defaultFrom(type));
-    const pathValue =
-      type === 'path'
-        ? parseLinearPathDelta(el.getAttribute('data-anim-path'))
-        : null;
-    if (type === 'path' && !pathValue) return;
     const duration = Math.max(100, Math.min(5000, Number(el.getAttribute('data-anim-duration')) || 500));
     const delayRaw = (el.getAttribute('data-anim-delay') || '0').trim();
     const staggerRaw = (el.getAttribute('data-anim-stagger') || '').trim();
@@ -673,26 +775,32 @@ export const COLLECT_PPTX_ANIMATION_TRACES_SCRIPT = `
       }
     }
 
-    collectTrace(el, type, effectiveTrigger, from, duration, delay, order, clickGroup, pathValue?.raw || '');
-  });
-
-  const directMarkers = Array.from(
-    root.querySelectorAll('.opacity-0, [data-anime], [data-animate]')
-  ).filter((el) => !el.closest('[data-anim]'));
-  directMarkers.slice(0, 16).forEach((el, index) => {
-    collectTrace(el, 'fade-up', 'load', 'bottom', 560, index * 45, elements.length + index, '');
-  });
-
-  if (traces.length === 0) {
-    const legacyTargets = Array.from(
-      root.querySelectorAll('h1, h2, h3, p, li, .card, .panel, .text-section, .diagram-section, .timeline-node, section, section > *')
-    ).filter((el) => !el.closest('[data-anim]'));
-    legacyTargets.slice(0, 16).forEach((el, index) => {
-      collectTrace(el, 'fade-up', 'load', 'bottom', 560, index * 45, index, '');
+    // The extractor adds these attributes only after it has created a native
+    // PPT text/shape/image. Use those exact boxes instead of guessing from a
+    // parent container; unmapped source content remains visible in the raster
+    // fallback and can never disappear because of a timing entry.
+    collectExtractedTargets(el).forEach((target) => {
+      collectTrace(target, type, effectiveTrigger, from, duration, delay, order, clickGroup);
     });
-  }
+  });
 
   return traces;
+})()
+`
+
+// PPTX element timing is not reliable enough for normal editable exports. This
+// only detects that the source page contains animation so the slide can use a
+// safe, page-level transition without hiding individual editable objects.
+export const HAS_DECLARED_PPTX_ANIMATION_SCRIPT = `
+(() => {
+  const root =
+    document.querySelector('.ppt-page-root[data-ppt-guard-root="1"]') ||
+    document.querySelector('.ppt-page-root') ||
+    document.body;
+  const selector = '[data-anim]:not([data-anim="none"]), [data-anime], [data-animate]';
+  return Boolean(
+    root.matches(selector) || root.querySelector(selector)
+  );
 })()
 `
 

@@ -28,6 +28,13 @@ import { registerThinkingHandlers } from './thinking/thinking-handlers'
 import { registerTemplateHandlers } from './templates/template-handlers'
 import { registerImageGenerationHandlers } from './image-generation/image-generation-handlers'
 import { registerImageGenerationHistoryHandlers } from './image-generation/image-generation-history-handlers'
+import { registerHtmlEditorHandlers } from './html-editor/html-editor-handlers'
+import { registerHtmlEditorAiHandlers } from './html-editor/html-editor-ai-handlers'
+import { SessionJobCoordinator } from './edit-jobs/session-job-coordinator'
+import { registerDeckEditJobHandlers } from './edit-jobs/deck-edit-job-service'
+import { registerPageEditJobHandlers } from './edit-jobs/page-edit-job-service'
+import { registerPageBeautifyJobHandlers } from './edit-jobs/page-beautify-job-service'
+import { registerStyleSwitchJobHandlers } from './edit-jobs/style-switch-job-service'
 
 export { registerLocalAssetProtocol }
 
@@ -37,6 +44,7 @@ export function setupIPC(
   agentManager: AgentManager
 ): void {
   const context = createIpcContext(mainWindow, db, agentManager)
+  const sessionJobCoordinator = new SessionJobCoordinator(context)
 
   registerSessionHandlers(context)
   registerSessionSaveAsNewHandler(context)
@@ -45,7 +53,17 @@ export function setupIPC(
   registerPageMergeHandlers(context)
   registerAssetHandlers(context)
   registerThumbnailHandlers(context)
-  registerGenerationHandlers(context)
+  const pageEditJobs = registerPageEditJobHandlers(context, sessionJobCoordinator)
+  registerPageBeautifyJobHandlers(context, sessionJobCoordinator)
+  const deckEditJobs = registerDeckEditJobHandlers(context, sessionJobCoordinator)
+  const styleSwitchJobs = registerStyleSwitchJobHandlers(context, sessionJobCoordinator)
+  registerGenerationHandlers(
+    context,
+    sessionJobCoordinator,
+    styleSwitchJobs,
+    pageEditJobs,
+    deckEditJobs
+  )
   registerExportHandlers(context)
   registerStyleHandlers(context)
   registerStylePreviewHandlers(context)
@@ -65,4 +83,6 @@ export function setupIPC(
   registerTemplateHandlers(context)
   registerImageGenerationHandlers(context)
   registerImageGenerationHistoryHandlers(context)
+  registerHtmlEditorHandlers(context)
+  registerHtmlEditorAiHandlers(context)
 }

@@ -1,6 +1,11 @@
 import { useCallback, useEffect, forwardRef, useRef, useState } from 'react'
-import { Sparkles } from 'lucide-react'
-import { useSessionDetailUiStore, useSessionStore } from '@renderer/store'
+import { Loader2, Sparkles } from 'lucide-react'
+import {
+  isStyleSwitchPageLocked,
+  useGenerateStore,
+  useSessionDetailUiStore,
+  useSessionStore
+} from '@renderer/store'
 import { PreviewIframe, type PreviewIframeHandle } from '../../preview/PreviewIframe'
 import type { EditModeMovePayload, EditSelectionPayload } from '../../preview/edit-mode-script'
 import type { SessionPreviewPage } from '../shared/types'
@@ -51,6 +56,18 @@ export const PreviewStage = forwardRef<
   const currentSession = useSessionStore((state) => state.currentSession)
   const slideSize = trySessionSlideSize(currentSession)
   const interactionMode = useSessionDetailUiStore((state) => state.interactionMode)
+  const pageEditJob = useGenerateStore((state) =>
+    currentSession ? state.pageEditJobs[currentSession.id] || null : null
+  )
+  const pageBeautifyJob = useGenerateStore((state) =>
+    currentSession ? state.pageBeautifyJobs[currentSession.id] || null : null
+  )
+  const isDeckEditing = useGenerateStore((state) =>
+    currentSession ? Boolean(state.deckEditJobs[currentSession.id]) : false
+  )
+  const styleSwitchJob = useGenerateStore((state) =>
+    currentSession ? state.styleSwitchJobs[currentSession.id] || null : null
+  )
   const setInteractionMode = useSessionDetailUiStore((state) => state.setInteractionMode)
   const setWorkspaceTab = useSessionDetailUiStore((state) => state.setWorkspaceTab)
   const editSelectedSelector = useSessionDetailUiStore((state) => state.editSelectedSelector)
@@ -60,6 +77,14 @@ export const PreviewStage = forwardRef<
   const isEditing = interactionMode === 'edit'
   const isAnimationSelecting = interactionMode === 'animation-select'
   const isInspecting = interactionMode === 'ai-inspect' || isAnimationSelecting
+  const isPageEditing = pageEditJob?.pageId === selectedPage?.pageId
+  const isPageBeautifying = pageBeautifyJob?.pageId === selectedPage?.pageId
+  const isGeneratingPlaceholder =
+    selectedPage?.status === 'generating' || selectedPage?.status === 'pending'
+  const isStyleSwitchLocked = isStyleSwitchPageLocked(styleSwitchJob, selectedPage?.pageId)
+  const isStyleSwitchPageRunning = styleSwitchJob?.pages.some(
+    (page) => page.pageId === selectedPage?.pageId && page.status === 'running'
+  )
 
   const setPreviewIframeHandle = useCallback(
     (handle: PreviewIframeHandle | null): void => {
@@ -189,6 +214,7 @@ export const PreviewStage = forwardRef<
   ])
 
   useEffect(() => {
+    if (isPageEditing || isStyleSwitchLocked) return
     if (interactionMode === 'preview') return
     const onKeyDown = (event: KeyboardEvent): void => {
       const target = event.target
@@ -227,6 +253,8 @@ export const PreviewStage = forwardRef<
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [
     interactionMode,
+    isPageEditing,
+    isStyleSwitchLocked,
     clearSelectedElement,
     isAnimationSelecting,
     isEditing,
@@ -253,45 +281,65 @@ export const PreviewStage = forwardRef<
             ref={frameRef}
             className="relative h-full overflow-hidden rounded-[1.55rem] bg-[#f5f1e8] shadow-[0_10px_24px_rgba(93,107,77,0.11)]"
           >
-            <div
-              ref={canvasHostRef}
-              className={
-                isEditing
-                  ? 'absolute bottom-2 right-2 overflow-hidden rounded-[1rem]'
-                  : 'absolute inset-0 overflow-hidden rounded-[inherit]'
-              }
-              style={isEditing ? { left: EDITOR_INSET, top: EDITOR_INSET } : undefined}
-            >
-              <PreviewIframe
-                ref={setPreviewIframeHandle}
-                key={`preview-${selectedPage.pageId}-${previewKey}-${previewRefreshKey}`}
-                src={selectedPage.sourceUrl}
-                htmlPath={selectedPage.htmlPath}
-                pageId={selectedPage.pageId}
-                title={`preview-page-${selectedPage.pageNumber}`}
-                slideSize={slideSize}
-                inspectable
-                interactionMode={interactionMode}
-                inspecting={isInspecting}
-                editMode={isEditing}
-                onSelectorSelected={setSelectedElement}
-                onElementMoved={onElementMoved}
-                onElementSelected={onElementSelected}
-                onInspectExit={() => {
-                  if (isAnimationSelecting && selectedSelector) {
-                    clearSelectedElement()
-                    return
+            {isGeneratingPlaceholder ? (
+              <div
+                className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#f8f4eb] text-center text-[#4f6340]"
+                aria-live="polite"
+              >
+                <Loader2 className="h-7 w-7 animate-spin" />
+                <div className="max-w-sm px-6 text-sm font-medium">
+                  {t('sessionDetail.activityProcessing')}
+                </div>
+              </div>
+            ) : (
+              <div
+                ref={canvasHostRef}
+                className={
+                  isEditing
+                    ? 'absolute bottom-2 right-2 overflow-hidden rounded-[1rem]'
+                    : 'absolute inset-0 overflow-hidden rounded-[inherit]'
+                }
+                style={isEditing ? { left: EDITOR_INSET, top: EDITOR_INSET } : undefined}
+              >
+                <PreviewIframe
+                  ref={setPreviewIframeHandle}
+                  key={`preview-${selectedPage.pageId}-${previewKey}-${previewRefreshKey}`}
+                  src={selectedPage.sourceUrl}
+                  htmlPath={selectedPage.htmlPath}
+                  pageId={selectedPage.pageId}
+                  title={`preview-page-${selectedPage.pageNumber}`}
+                  slideSize={slideSize}
+                  inspectable={!isPageEditing && !isDeckEditing && !isStyleSwitchLocked}
+                  interactionMode={interactionMode}
+                  inspecting={
+                    isInspecting && !isPageEditing && !isDeckEditing && !isStyleSwitchLocked
                   }
-                  setInteractionMode('preview')
-                  setWorkspaceTab('preview')
-                  onCancelElementEdit()
-                }}
-                onDidReload={handleDidReload}
-                onDeleteRequest={onDeleteRequest}
-              />
-            </div>
+                  editMode={
+                    isEditing &&
+                    !isPageEditing &&
+                    !isPageBeautifying &&
+                    !isDeckEditing &&
+                    !isStyleSwitchLocked
+                  }
+                  onSelectorSelected={setSelectedElement}
+                  onElementMoved={onElementMoved}
+                  onElementSelected={onElementSelected}
+                  onInspectExit={() => {
+                    if (isAnimationSelecting && selectedSelector) {
+                      clearSelectedElement()
+                      return
+                    }
+                    setInteractionMode('preview')
+                    setWorkspaceTab('preview')
+                    onCancelElementEdit()
+                  }}
+                  onDidReload={handleDidReload}
+                  onDeleteRequest={onDeleteRequest}
+                />
+              </div>
+            )}
 
-            {isEditing && (
+            {isEditing && !isPageEditing && !isPageBeautifying && (
               <EditorGuidesOverlay
                 selectedPageId={selectedPage.pageId}
                 frameRef={frameRef}
@@ -300,6 +348,45 @@ export const PreviewStage = forwardRef<
                 reloadSignal={previewReloadSignal}
                 slideSize={slideSize}
               />
+            )}
+            {isStyleSwitchPageRunning && (
+              <div
+                className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-[#f5f1e8]/72 text-center text-[#4f6340] backdrop-blur-[1px]"
+                aria-live="polite"
+              >
+                <Loader2 className="h-7 w-7 animate-spin" />
+                <div className="max-w-sm px-6 text-sm font-medium">
+                  {t('sessionDetail.styleSwitching')}
+                </div>
+              </div>
+            )}
+            {pageEditJob && isPageEditing && (
+              <div
+                className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-[#f5f1e8]/72 text-center text-[#4f6340] backdrop-blur-[1px]"
+                aria-live="polite"
+              >
+                <Loader2 className="h-7 w-7 animate-spin" />
+                <div className="max-w-sm px-6 text-sm font-medium">
+                  {pageEditJob.label || t('sessionDetail.activityProcessing')}
+                </div>
+                <div className="text-xs tabular-nums text-[#6d7b5d]">
+                  {Math.round(pageEditJob.progress)}%
+                </div>
+              </div>
+            )}
+            {pageBeautifyJob && isPageBeautifying && (
+              <div
+                className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-[#f5f1e8]/72 text-center text-[#4f6340] backdrop-blur-[1px]"
+                aria-live="polite"
+              >
+                <Loader2 className="h-7 w-7 animate-spin" />
+                <div className="max-w-sm px-6 text-sm font-medium">
+                  {pageBeautifyJob.label || t('sessionDetail.pageBeautifying')}
+                </div>
+                <div className="text-xs tabular-nums text-[#6d7b5d]">
+                  {Math.round(pageBeautifyJob.progress)}%
+                </div>
+              </div>
             )}
             {selectedPage.status === 'failed' && (
               <div className="absolute bottom-5 left-5 z-20 max-w-[520px] rounded-[1rem] bg-[#fff4ef]/92 px-3 py-2 text-xs text-[#8e5a53] shadow-[0_10px_24px_rgba(142,90,83,0.12)] backdrop-blur-sm">

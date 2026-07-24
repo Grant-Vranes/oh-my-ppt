@@ -20,6 +20,7 @@ export type FinalizeContext = {
   effectiveMode: GenerateMode
   messageScope: GenerateChatType
   messagePageId?: string
+  targetPageId?: string
   projectId: string
   modelConfigId?: string
   modelConfigName?: string
@@ -81,6 +82,7 @@ export type EditContext = GenerationContext & {
   resetVisualStyle?: boolean
   designContract?: DesignContract
   onDeckEditStarted?: () => void
+  skipGenerationRunCreation?: boolean
 }
 export type RetryContext = GenerationContext & { effectiveMode: 'retry' }
 

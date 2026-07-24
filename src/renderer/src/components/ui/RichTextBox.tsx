@@ -24,7 +24,7 @@ import {
 } from 'slate-react'
 import { cn } from '@renderer/lib/utils'
 
-type RichTextValue = { html: string; text: string }
+export type RichTextValue = { html: string; text: string }
 type Mark = 'bold' | 'italic' | 'underline'
 
 type RichTextNode = {
@@ -87,6 +87,32 @@ const normalizeColor = (value: string | undefined): string | undefined => {
   if (/^#[0-9a-f]{6}$/i.test(text)) return text
   if (/^rgba?\(/i.test(text)) return text
   return undefined
+}
+
+const getColorChannels = (value: string | undefined): [number, number, number] | undefined => {
+  const color = String(value || '').trim()
+  const hexMatch = color.match(/^#([0-9a-f]{6})$/i)
+  if (hexMatch) {
+    const hex = hexMatch[1]
+    return [
+      parseInt(hex.slice(0, 2), 16),
+      parseInt(hex.slice(2, 4), 16),
+      parseInt(hex.slice(4, 6), 16)
+    ]
+  }
+
+  const rgbMatch = color.match(/^rgba?\(\s*(\d{1,3})[\s,]+(\d{1,3})[\s,]+(\d{1,3})/i)
+  if (!rgbMatch) return undefined
+  return [Number(rgbMatch[1]), Number(rgbMatch[2]), Number(rgbMatch[3])]
+}
+
+const getTextPreviewShadow = (color: string | undefined): string | undefined => {
+  const channels = getColorChannels(color)
+  if (!channels) return undefined
+  const [red, green, blue] = channels.map((channel) => Math.max(0, Math.min(255, channel)) / 255)
+  const luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue
+  if (luminance < 0.72) return undefined
+  return '0 1px 1px rgba(20, 28, 23, 0.9), 0 0 1px rgba(20, 28, 23, 0.72)'
 }
 
 const parseStyleAttribute = (style: string | undefined): React.CSSProperties | undefined => {
@@ -264,6 +290,23 @@ const serializeValue = (value: Descendant[]): RichTextValue => ({
   text: value.map((node) => SlateNode.string(node)).join('')
 })
 
+export function applyColorMark(
+  editor: Editor,
+  color: string,
+  cachedSelection?: BaseSelection
+): RichTextValue | null {
+  if (!/^#[0-9a-f]{6}$/i.test(color)) return null
+
+  let selection = cachedSelection
+  if (!selection || Range.isCollapsed(selection)) selection = editor.selection
+  if (!selection || Range.isCollapsed(selection)) selection = Editor.range(editor, [])
+  if (Range.isCollapsed(selection)) return null
+
+  Transforms.select(editor, selection)
+  Editor.addMark(editor, 'color', color)
+  return serializeValue(editor.children)
+}
+
 function getNodeMaxFontSize(node: Descendant | RichTextNode | RichTextLeaf): number {
   if (Text.isText(node)) return parsePixelSize(node.fontSize) || 0
   const ownSize = parsePixelSize(getStyleProperty(node.style, 'font-size')) || 0
@@ -303,10 +346,15 @@ function toggleMark(editor: Editor, mark: Mark): void {
   else Editor.addMark(editor, mark, true)
 }
 
-function setColorMark(editor: Editor, color: string): void {
-  if (!/^#[0-9a-f]{6}$/i.test(color)) return
+function setColorMark(
+  editor: Editor,
+  color: string,
+  cachedSelection?: BaseSelection
+): RichTextValue | null {
+  const nextValue = applyColorMark(editor, color, cachedSelection)
+  if (!nextValue) return null
   ReactEditor.focus(editor)
-  Editor.addMark(editor, 'color', color)
+  return nextValue
 }
 
 function getCurrentFontSize(editor: Editor, defaultFontSize?: string): number {
@@ -350,12 +398,20 @@ function setFontSizeMark(editor: Editor, value: number, selection?: BaseSelectio
   Editor.addMark(editor, 'fontSize', `${clamped}px`)
 }
 
-function ColorMarkButton({ defaultColor }: { defaultColor?: string }): React.JSX.Element {
+function ColorMarkButton({
+  defaultColor,
+  onCommit
+}: {
+  defaultColor?: string
+  onCommit?: (value: RichTextValue) => void
+}): React.JSX.Element {
   const editor = useSlate()
   const selectionRef = useRef<BaseSelection>(null)
   const color = useSlateSelector((selectorEditor) => getCurrentColor(selectorEditor, defaultColor))
   const captureSelection = (): void => {
-    selectionRef.current = editor.selection
+    if (editor.selection && Range.isExpanded(editor.selection)) {
+      selectionRef.current = editor.selection
+    }
   }
   return (
     <label
@@ -373,8 +429,8 @@ function ColorMarkButton({ defaultColor }: { defaultColor?: string }): React.JSX
         className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
         value={/^#[0-9a-f]{6}$/i.test(color) ? color : '#34402c'}
         onChange={(event) => {
-          if (selectionRef.current) Transforms.select(editor, selectionRef.current)
-          setColorMark(editor, event.target.value)
+          const nextValue = setColorMark(editor, event.target.value, selectionRef.current)
+          if (nextValue) onCommit?.(nextValue)
         }}
       />
     </label>
@@ -388,7 +444,9 @@ function FontSizeMarkInput({ defaultFontSize }: { defaultFontSize?: string }): R
     getCurrentFontSize(selectorEditor, defaultFontSize)
   )
   const captureSelection = (): void => {
-    selectionRef.current = editor.selection
+    if (editor.selection && Range.isExpanded(editor.selection)) {
+      selectionRef.current = editor.selection
+    }
   }
   return (
     <input
@@ -504,7 +562,8 @@ export function RichTextBox({
         {...props.attributes}
         style={{
           color: props.leaf.color,
-          fontSize: props.leaf.fontSize
+          fontSize: props.leaf.fontSize,
+          textShadow: props.leaf.color ? getTextPreviewShadow(props.leaf.color) || 'none' : undefined
         }}
       >
         {children}
@@ -538,7 +597,7 @@ export function RichTextBox({
           {commandButtons.map((button) => (
             <ToolbarButton key={button.mark} {...button} />
           ))}
-          <ColorMarkButton defaultColor={defaultColor} />
+          <ColorMarkButton defaultColor={defaultColor} onCommit={onCommit} />
           <FontSizeMarkInput defaultFontSize={defaultFontSize} />
         </div>
         <Editable
@@ -549,10 +608,12 @@ export function RichTextBox({
             fontSize: editorFontSize,
             lineHeight: 'normal',
             whiteSpace: 'pre',
-            zoom: editorZoom
+            zoom: editorZoom,
+            caretColor: '#20271f',
+            textShadow: getTextPreviewShadow(editorColor)
           }}
           className={cn(
-            'min-h-[120px] overflow-auto px-3 py-2 outline-none focus-visible:bg-white/40 [&_a]:underline [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic [&_u]:underline',
+            'min-h-[120px] overflow-auto px-3 py-2 outline-none selection:bg-[#d4e4c1]/72 selection:text-[#20271f] focus-visible:bg-white/40 [&_a]:underline [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic [&_u]:underline',
             className
           )}
         />

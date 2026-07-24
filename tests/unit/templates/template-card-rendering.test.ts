@@ -54,11 +54,34 @@ describe('TemplateCard rendering', () => {
     })
 
     expect(container.querySelectorAll('img')).toHaveLength(1)
-    expect((container.querySelector('img') as HTMLImageElement).src).toContain(
-      '/cache/template-1.png'
+    expect(container.querySelector('img')?.getAttribute('src')).toBe(
+      'local-asset://%2Fcache%2Ftemplate-1.png'
     )
     expect(container.querySelectorAll('iframe')).toHaveLength(0)
     expect(container.textContent).not.toMatch(/\d{2}:\d{2}/)
+    await act(async () => root.unmount())
+  })
+
+  it('encodes a Windows thumbnail path for the local asset protocol', async () => {
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+    await act(async () => {
+      root.render(
+        React.createElement(TemplateCard, {
+          template: createTemplate('C:\\Users\\Chan\\AppData\\Roaming\\OhMyPPT\\cover.png'),
+          onUseDirect: vi.fn(),
+          onUseGenerate: vi.fn(),
+          onEdit: vi.fn(),
+          onDelete: vi.fn(),
+          onPreview: vi.fn()
+        })
+      )
+    })
+
+    expect(container.querySelector('img')?.getAttribute('src')).toBe(
+      'local-asset://C%3A%5CUsers%5CChan%5CAppData%5CRoaming%5COhMyPPT%5Ccover.png'
+    )
     await act(async () => root.unmount())
   })
 

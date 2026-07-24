@@ -1,5 +1,8 @@
 import type { IpcContext } from '../context'
 import type { EditContext, EmitAssistantFn, GenerateChatType } from './types'
+import { tool, type StructuredToolInterface } from '@langchain/core/tools'
+import { FilesystemBackend, createDeepAgent } from 'deepagents'
+import { z } from 'zod'
 import {
   buildEditNoChangeRetryMessage,
   buildEditToolSchemaRetryMessage,
@@ -19,7 +22,15 @@ import { nanoid } from 'nanoid'
 import { normalizeLayoutIntent } from '@shared/layout-intent'
 import type { DesignContract } from '../../tools/types'
 import { runDeepAgentEdit } from '../engine/generate'
-import type { GeneratedPagePayload } from '@shared/generation'
+import {
+  SESSION_PAGE_EDIT_INTENTS,
+  type GeneratedPagePayload,
+  type SessionPageEditAssessment,
+  type SessionPageEditPlan
+} from '@shared/generation'
+import { resolveModel } from '../../agent'
+import { resolveModelTimeoutMs } from '@shared/model-timeout'
+import { resolveGlobalModelTimeouts, resolveModelConfigForTask } from '../config/model-config-utils'
 import {
   buildOutlineTitles,
   buildTotalPages,
@@ -35,6 +46,235 @@ import {
   buildLocalSuccessfulEditSummary,
   emitSuccessfulEditSummary
 } from './edit-summary'
+
+const sessionPageEditAssessmentSchema = z.object({
+  intent: z.enum(SESSION_PAGE_EDIT_INTENTS),
+  target: z.string().min(1).max(500),
+  summary: z.string().min(1).max(1500),
+  changes: z.array(z.string().min(1).max(500)).min(1).max(8),
+  confirmationQuestion: z.string().min(1).max(300),
+  requiresConfirmation: z.boolean()
+})
+
+type PageEditAssessmentResult = SessionPageEditAssessment & {
+  reply: string
+  targetPageId: string
+  targetPageNumber?: number
+}
+
+type RecordedSessionPageEditAssessment = SessionPageEditPlan & {
+  requiresConfirmation: boolean
+}
+
+const buildApprovedPlanInstruction = (plan: SessionPageEditPlan | undefined): string => {
+  if (!plan) return ''
+  return [
+    '[User-approved edit plan]',
+    `Intent: ${plan.intent}`,
+    `Target: ${plan.target}`,
+    `Summary: ${plan.summary}`,
+    'Approved changes:',
+    ...plan.changes.map((change, index) => `${index + 1}. ${change}`),
+    'Apply this approved scope. If page source requires a small implementation adjustment, keep the result within the approved intent and changes.'
+  ].join('\n')
+}
+
+const buildPageEditAssessmentSystemPrompt = (locale: 'zh' | 'en', args: {
+  targetPageId: string
+  targetPageNumber?: number
+  selector?: string
+  elementTag?: string
+  elementText?: string
+}): string => {
+  const target = `/${args.targetPageId}.html${args.targetPageNumber ? ` (slide ${args.targetPageNumber})` : ''}`
+  const selectorContext = [
+    args.selector ? `CSS selector: ${args.selector}` : '',
+    args.elementTag ? `Element: <${args.elementTag}>${args.elementText ? ` ${args.elementText}` : ''}` : ''
+  ]
+    .filter(Boolean)
+    .join('\n')
+  const localeRule = locale === 'en' ? 'Use English.' : '使用简体中文。'
+  return [
+    'You are a presentation page-edit intent and execution-risk assessor.',
+    'This is a read-only assessment phase. You must never modify, create, rename, or delete files.',
+    'You may inspect the project files only to understand the target page and selected element.',
+    'Do not propose changes outside the target page. Preserve unrelated content and page shell structure.',
+    'Before finishing, call record_session_page_edit_assessment exactly once.',
+    'Set requiresConfirmation=false only when the request has a concrete target and outcome, and can be applied without choosing a design direction, scope, or content strategy.',
+    'Set requiresConfirmation=true when the request is ambiguous, broad, requests optimization/redesign, has multiple plausible outcomes, or could change meaning or page structure beyond an explicit local instruction.',
+    'Always provide the concrete proposed changes. They are shown to the user only when confirmation is required.',
+    localeRule,
+    '',
+    `Target page: ${target}`,
+    selectorContext
+  ]
+    .filter(Boolean)
+    .join('\n')
+}
+
+const buildPageEditAssessmentUserPrompt = (args: {
+  userMessage: string
+  imagePrompt: string
+  targetPageId: string
+  targetPageNumber?: number
+  selector?: string
+  elementTag?: string
+  elementText?: string
+}): string =>
+  [
+    'Assess the edit intent and whether explicit confirmation is required. Do not perform the edit.',
+    '',
+    'User request:',
+    args.userMessage,
+    args.imagePrompt,
+    '',
+    `Target page: ${args.targetPageId}${args.targetPageNumber ? ` (slide ${args.targetPageNumber})` : ''}`,
+    args.selector ? `Target selector: ${args.selector}` : '',
+    args.elementTag ? `Target element: <${args.elementTag}>${args.elementText ? ` ${args.elementText}` : ''}` : ''
+  ]
+    .filter(Boolean)
+    .join('\n')
+
+const createSessionPageEditAssessmentTool = (): {
+  tool: StructuredToolInterface
+  getAssessment: () => SessionPageEditAssessment | null
+} => {
+  let assessment: RecordedSessionPageEditAssessment | null = null
+  const recorder = tool(
+    async (input) => {
+      assessment = input as RecordedSessionPageEditAssessment
+      return assessment.requiresConfirmation
+        ? 'Assessment recorded. The host will show the proposed plan to the user for confirmation.'
+        : 'Assessment recorded. The host will start the existing page-edit job directly.'
+    },
+    {
+      name: 'record_session_page_edit_assessment',
+      description:
+        'Record the single-page edit intent, scope, proposed changes, and whether user confirmation is needed. Call exactly once for every request. This tool only records an assessment and cannot modify the presentation.',
+      schema: sessionPageEditAssessmentSchema
+    }
+  )
+  return {
+    tool: recorder as unknown as StructuredToolInterface,
+    getAssessment: () => {
+      if (!assessment) return null
+      const { requiresConfirmation, ...plan } = assessment
+      return { plan, requiresConfirmation }
+    }
+  }
+}
+
+export async function assessPageEdit(
+  ctx: IpcContext,
+  payload: unknown,
+  signal?: AbortSignal
+): Promise<PageEditAssessmentResult> {
+  const input = normalizeGeneratePayload(payload)
+  if (!input.sessionId) throw new Error('sessionId 不能为空')
+  if (input.requestedType !== 'page' || input.chatType !== 'page') {
+    throw new Error('仅支持分析当前页面的修改请求')
+  }
+  if (!input.rawUserMessage.trim()) throw new Error('请输入页面修改需求')
+  const requestedPageId = input.chatPageId || input.selectedPageId
+  if (!requestedPageId) throw new Error('页面修改分析需要指定目标页面')
+
+  const [session, pages, activeModel, modelTimeouts] = await Promise.all([
+    ctx.db.getSession(input.sessionId),
+    ctx.db.listSessionPages(input.sessionId),
+    resolveModelConfigForTask(ctx, {
+      modelConfigId: input.modelConfigId,
+      purpose: 'generation:page-edit-plan'
+    }),
+    resolveGlobalModelTimeouts(ctx)
+  ])
+  if (!session) throw new Error('Session not found')
+  if (!activeModel.apiKey) {
+    throw new Error(`当前 provider "${activeModel.provider}" 缺少 API Key，请先到设置页配置。`)
+  }
+  const page = pages.find((item) => item.id === requestedPageId || item.file_slug === requestedPageId)
+  if (!page) throw new Error(`Selected page not found in session_pages: ${requestedPageId}`)
+  const projectDir = await ctx.resolveSessionProjectDir(input.sessionId)
+  const pagePath = resolvePageHtmlPath({
+    projectDir,
+    fileSlug: page.file_slug,
+    candidates: [page.html_path]
+  })
+  if (!fs.existsSync(pagePath)) throw new Error(`目标页面文件不存在: ${page.file_slug}.html`)
+
+  const appLocale = (await ctx.db.getAllSettings()).locale === 'en' ? 'en' : 'zh'
+  const model = resolveModel(
+    activeModel.provider,
+    activeModel.apiKey,
+    activeModel.model,
+    activeModel.baseUrl,
+    0.2,
+    activeModel.maxTokens
+  )
+  const assessmentRecorder = createSessionPageEditAssessmentTool()
+  const agent = createDeepAgent({
+    model: model as any,
+    backend: new FilesystemBackend({ rootDir: projectDir, virtualMode: true }),
+    tools: [assessmentRecorder.tool] as unknown as StructuredToolInterface[],
+    permissions: [
+      { operations: ['read'], paths: ['/**'] },
+      { operations: ['write'], paths: ['/**'], mode: 'deny' }
+    ],
+    systemPrompt: buildPageEditAssessmentSystemPrompt(appLocale, {
+      targetPageId: page.file_slug,
+      targetPageNumber: page.page_number,
+      selector: input.selector,
+      elementTag: input.elementTag,
+      elementText: input.elementText
+    })
+  })
+  const imagePrompt = ctx.formatImagePathsForPrompt(input.rawImagePaths, input.rawVideoPaths)
+  const stream = await agent.stream(
+    {
+      messages: [
+        {
+          role: 'user',
+          content: buildPageEditAssessmentUserPrompt({
+            userMessage: input.rawUserMessage,
+            imagePrompt,
+            targetPageId: page.file_slug,
+            targetPageNumber: page.page_number,
+            selector: input.selector,
+            elementTag: input.elementTag,
+            elementText: input.elementText
+          })
+        }
+      ]
+    },
+    {
+      streamMode: ['updates', 'messages'],
+      subgraphs: true,
+      signal: signal
+        ? AbortSignal.any([
+            signal,
+            AbortSignal.timeout(resolveModelTimeoutMs(modelTimeouts.planning, 'planning'))
+          ])
+        : AbortSignal.timeout(resolveModelTimeoutMs(modelTimeouts.planning, 'planning'))
+    }
+  )
+  for await (const _chunk of stream as AsyncIterable<unknown>) {
+    // Consuming the stream executes the read-only assessment tool call.
+  }
+  const assessment = assessmentRecorder.getAssessment()
+  if (!assessment) throw new Error('AI 未完成页面修改意图分析，请重试或补充需求。')
+  log.info('[page-edit:assess] complete', {
+    sessionId: input.sessionId,
+    targetPageId: page.file_slug,
+    targetPageNumber: page.page_number,
+    intent: assessment.plan.intent,
+    requiresConfirmation: assessment.requiresConfirmation
+  })
+  return {
+    reply: assessment.plan.summary,
+    ...assessment,
+    targetPageId: page.file_slug,
+    targetPageNumber: page.page_number
+  }
+}
 
 export async function resolveEditContext(
   ctx: IpcContext,
@@ -55,7 +295,13 @@ export async function resolveEditContext(
   })
   const imagePaths = input.rawImagePaths
   const videoPaths = input.rawVideoPaths
-  const userMessage = `${input.rawUserMessage}${formatImagePathsForPrompt(imagePaths, videoPaths)}`
+  const userMessage = [
+    input.rawUserMessage,
+    formatImagePathsForPrompt(imagePaths, videoPaths),
+    buildApprovedPlanInstruction(input.approvedPlan)
+  ]
+    .filter(Boolean)
+    .join('\n\n')
   const chatType: GenerateChatType = input.chatType
   const chatPageId = chatType === 'page' ? input.chatPageId || input.selectedPageId : undefined
   if (chatType === 'page' && !chatPageId) {
@@ -221,6 +467,7 @@ export async function executeEditGeneration(
   }
   const resolvedSelectedPageNumber =
     pageRefs.find((ref) => ref.pageId === resolvedSelectedPageId)?.pageNumber || undefined
+  const editTotalPages = 1
   if (outlineTitles.length !== pageRefs.length) {
     outlineTitles = pageRefs.map((ref) => ref.title)
   }
@@ -255,22 +502,6 @@ export async function executeEditGeneration(
     beforeMap.set(item.pageId, item.html)
   }
 
-  await db.createGenerationRun({
-    id: context.runId,
-    sessionId: context.sessionId,
-    mode: 'edit',
-    totalPages: pageRefs.length,
-    modelConfigId: context.modelConfigId,
-    metadata: {
-      editScope: 'page',
-      selectedPageId: resolvedSelectedPageId || null,
-      selector: selectedSelector || null,
-      modelConfigId: context.modelConfigId,
-      modelConfigName: context.modelConfigName,
-      provider: context.provider,
-      model: context.model
-    }
-  })
   const emitEditChunk = createDeckProgressEmitter(context.sessionId, context.appLocale)
 
   emitEditChunk({
@@ -286,7 +517,7 @@ export async function executeEditGeneration(
           )
         : uiText(context.appLocale, '正在定位需要编辑的页面', 'Locating pages to edit'),
       progress: 10,
-      totalPages: outlineTitles.length
+      totalPages: editTotalPages
     }
   })
 
@@ -352,7 +583,7 @@ export async function executeEditGeneration(
               )
             : uiText(context.appLocale, '正在重试页面编辑', 'Retrying the page edit'),
           progress: 55,
-          totalPages: pageRefs.length,
+          totalPages: editTotalPages,
           detail: retryDetail
         }
       })
@@ -617,7 +848,7 @@ export async function executeEditGeneration(
         label: progressText(context.appLocale, 'completed'),
         progress: 90,
         currentPage: page.pageNumber,
-        totalPages: pageRefs.length,
+        totalPages: editTotalPages,
         ...payload
       }
     })
@@ -723,7 +954,7 @@ export async function executeEditGeneration(
     type: 'run_completed',
     payload: {
       runId: context.runId,
-      totalPages: pageRefs.length
+      totalPages: editTotalPages
     }
   })
 }

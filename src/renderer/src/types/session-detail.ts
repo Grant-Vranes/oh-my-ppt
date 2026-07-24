@@ -1,6 +1,7 @@
 import type { GeneratedImageAsset } from '@shared/image-generation.js'
 import type { GeneratedPage } from '@renderer/store/sessionStore'
 import type { GenerateProgress } from '@renderer/store/generateStore'
+import type { DeckEditRetry, PendingPageEditPlan } from '@renderer/store/generateStore'
 import type { ArtTextTemplateId } from '@renderer/lib/artTextTemplates'
 import type { InsertShapeType } from '@renderer/components/session-detail/workspace/insert-shapes'
 import type { InsertChartType } from '@renderer/components/session-detail/workspace/insert-charts'
@@ -67,11 +68,20 @@ export interface ChatPanelController {
   selectedPageExists: boolean
   selectedPageNumber?: number
   isGenerating: boolean
+  isPageEditing: boolean
+  isDeckEditing: boolean
+  deckEditRetry: DeckEditRetry | null
+  isPlanningPageEdit: boolean
+  pendingPageEditPlan: PendingPageEditPlan | null
+  hasActivePageEditJob: boolean
   progress: GenerateProgress | null
   error: string | null
   uploadFiles: (files: File[]) => Promise<void>
   chooseAssets: (assetType: 'image' | 'video') => Promise<void>
   send: (modelConfigId: string, selectPageIds?: string[]) => Promise<boolean>
+  confirmPageEditPlan: () => Promise<boolean>
+  cancelPageEditPlan: () => void
+  retryDeckEdit: (modelConfigId: string) => Promise<boolean>
   cancel: () => Promise<void>
 }
 

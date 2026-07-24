@@ -24,7 +24,13 @@ export function WorkspaceTabs({
   ]
 
   return (
-    <div className="flex min-w-0 flex-1 justify-center">
+    <div
+      className={cn(
+        'flex min-w-0 flex-1 justify-center',
+        disabled && 'pointer-events-none grayscale opacity-45'
+      )}
+      aria-disabled={disabled || undefined}
+    >
       <div className="flex max-w-full items-center gap-0.5 overflow-x-auto rounded-full bg-[#d4e4c1]/30 p-0.5 shadow-[inset_0_1px_4px_rgba(62,74,50,0.08)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {tabs.map((tab) => (
           <button

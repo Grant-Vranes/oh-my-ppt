@@ -180,6 +180,55 @@ export interface GenerateStartPayload {
   videoPaths?: string[]
   docPaths?: string[]
   animationPreferences?: AnimationPreferencesPayload
+  autoApply?: boolean
+  approvedPlan?: SessionPageEditPlan
+}
+
+export const SESSION_PAGE_EDIT_INTENTS = [
+  'content',
+  'style',
+  'layout',
+  'redesign',
+  'other'
+] as const
+
+export type SessionPageEditIntent = (typeof SESSION_PAGE_EDIT_INTENTS)[number]
+
+export interface SessionPageEditPlan {
+  intent: SessionPageEditIntent
+  target: string
+  summary: string
+  changes: string[]
+  confirmationQuestion: string
+}
+
+export interface SessionPageEditAssessment {
+  plan: SessionPageEditPlan
+  requiresConfirmation: boolean
+}
+
+export const normalizeSessionPageEditPlan = (value: unknown): SessionPageEditPlan | undefined => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined
+  const record = value as Record<string, unknown>
+  const intent = SESSION_PAGE_EDIT_INTENTS.includes(record.intent as SessionPageEditIntent)
+    ? (record.intent as SessionPageEditIntent)
+    : undefined
+  const target = typeof record.target === 'string' ? record.target.trim().slice(0, 500) : ''
+  const summary = typeof record.summary === 'string' ? record.summary.trim().slice(0, 1500) : ''
+  const changes = Array.isArray(record.changes)
+    ? record.changes
+        .filter((item): item is string => typeof item === 'string')
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .slice(0, 8)
+    : []
+  const confirmationQuestion =
+    typeof record.confirmationQuestion === 'string'
+      ? record.confirmationQuestion.trim().slice(0, 300)
+      : ''
+  if (!intent || !target || !summary || changes.length === 0 || !confirmationQuestion)
+    return undefined
+  return { intent, target, summary, changes, confirmationQuestion }
 }
 
 export interface SwitchSessionStylePayload {
@@ -319,6 +368,7 @@ export interface GenerateAddPagePayload {
   modelConfigId?: string
   userMessage: string
   insertAfterPageNumber: number
+  targetPageId?: string
 }
 
 export interface GenerateRetrySinglePagePayload {
@@ -337,6 +387,7 @@ export interface GeneratedPagePayload {
   htmlPath?: string
   pageId?: string
   sourceUrl?: string
+  pageCommitReady?: boolean
 }
 
 export interface PageStatusPayload {
@@ -359,7 +410,14 @@ export interface GenerateStagePayload {
   completedPageCount?: number
   failedPageCount?: number
   timestamp?: string
-  activityKind?: 'edit' | 'style-switch' | 'single-page-retry' | 'addPage'
+  activityKind?:
+    | 'page-edit'
+    | 'deck-edit'
+    | 'edit'
+    | 'style-switch'
+    | 'page-beautify'
+    | 'single-page-retry'
+    | 'addPage'
 }
 
 export type GenerateChunkEvent =
@@ -385,7 +443,14 @@ export type GenerateChunkEvent =
         chatType?: 'main' | 'page'
         pageId?: string
         timestamp?: string
-        activityKind?: 'edit' | 'style-switch' | 'single-page-retry' | 'addPage'
+        activityKind?:
+          | 'page-edit'
+          | 'deck-edit'
+          | 'edit'
+          | 'style-switch'
+          | 'page-beautify'
+          | 'single-page-retry'
+          | 'addPage'
       }
     }
   | {
@@ -413,7 +478,15 @@ export type GenerateChunkEvent =
         completedPageCount?: number
         failedPageCount?: number
         timestamp?: string
-        activityKind?: 'edit' | 'style-switch' | 'single-page-retry' | 'addPage'
+        outcome?: 'changed' | 'unchanged'
+        activityKind?:
+          | 'page-edit'
+          | 'deck-edit'
+          | 'edit'
+          | 'style-switch'
+          | 'page-beautify'
+          | 'single-page-retry'
+          | 'addPage'
       }
     }
   | {
@@ -426,6 +499,13 @@ export type GenerateChunkEvent =
         completedPageCount?: number
         failedPageCount?: number
         timestamp?: string
-        activityKind?: 'edit' | 'style-switch' | 'single-page-retry' | 'addPage'
+        activityKind?:
+          | 'page-edit'
+          | 'deck-edit'
+          | 'edit'
+          | 'style-switch'
+          | 'page-beautify'
+          | 'single-page-retry'
+          | 'addPage'
       }
     }

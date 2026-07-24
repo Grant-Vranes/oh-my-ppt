@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildSlideTimingXml,
   type PptxTargetAnimation
-} from '../../../src/main/utils/html-pptx/animation-writer'
+} from '@arcsin1/html2pptx/animation'
 
 const makeAnim = (overrides: Partial<PptxTargetAnimation> = {}): PptxTargetAnimation => ({
   spid: 2,

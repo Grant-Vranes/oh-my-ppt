@@ -109,6 +109,7 @@ export async function finalizeGenerationFailure(
   const { db, emitGenerateChunk } = ctx
   const message =
     error instanceof Error && error.message.length > 0 ? error.message : 'Generation failed'
+  const cancelled = isCancellationMessage(message)
   log.error('[generate:start] failed', {
     sessionId: context.sessionId,
     styleId: context.styleId,
@@ -118,9 +119,27 @@ export async function finalizeGenerationFailure(
   if (generationRun && generationRun.status === 'running') {
     await db.updateGenerationRunStatus(context.runId, 'failed', message)
   }
+  if (context.effectiveMode === 'addPage' && context.targetPageId) {
+    const targetPage = (await db.listSessionPages(context.sessionId)).find(
+      (page) => page.id === context.targetPageId || page.file_slug === context.targetPageId
+    )
+    if (targetPage) {
+      await db.upsertSessionPage({
+        id: targetPage.id,
+        sessionId: targetPage.session_id,
+        legacyPageId: targetPage.legacy_page_id,
+        fileSlug: targetPage.file_slug,
+        pageNumber: targetPage.page_number,
+        title: targetPage.title,
+        htmlPath: targetPage.html_path,
+        status: 'failed',
+        error: message
+      })
+    }
+  }
   await db.updateSessionStatus(
     context.sessionId,
-    isCancellationMessage(message)
+    cancelled
       ? normalizeRestoredSessionStatus(context.previousSessionStatus)
       : (context.effectiveMode === 'edit' ||
             context.effectiveMode === 'retry' ||
@@ -140,6 +159,6 @@ export async function finalizeGenerationFailure(
   })
   emitGenerateChunk(context.sessionId, {
     type: 'run_error',
-    payload: { runId: context.runId, message }
+    payload: { runId: context.runId, message, cancelled }
   })
 }

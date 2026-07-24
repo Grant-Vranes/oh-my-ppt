@@ -22,6 +22,98 @@ import type { InteractionMode } from '@renderer/store'
 import { requireSlideSize, type SlideSizePreset } from '@shared/slide-size'
 import type { InsertChartSeries } from '../session-detail/workspace/insert-charts'
 
+const PAGE_LAYOUT_AUDIT_SCRIPT = `
+(() => {
+  const root = document.querySelector('.ppt-page-root[data-ppt-guard-root="1"]') || document.querySelector('.ppt-page-root');
+  const content = root && (root.querySelector(':scope > .ppt-page-fit-scope > .ppt-page-content') || root.querySelector('.ppt-page-content'));
+  if (!(root instanceof HTMLElement) || !(content instanceof HTMLElement)) return '';
+
+  const rootRect = root.getBoundingClientRect();
+  if (rootRect.width <= 0 || rootRect.height <= 0) return '';
+  const round = (value) => Math.round(value);
+  const compact = (value, limit) => String(value || '').replace(/\\s+/g, ' ').trim().slice(0, limit);
+  const isVisible = (element, rect) => {
+    const style = getComputedStyle(element);
+    return style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity || 1) > 0 && rect.width > 2 && rect.height > 2;
+  };
+  const directText = (element) => Array.from(element.childNodes)
+    .filter((node) => node.nodeType === Node.TEXT_NODE)
+    .map((node) => node.textContent || '')
+    .join(' ')
+    .replace(/\\s+/g, ' ')
+    .trim();
+  const describe = (element) => {
+    const classes = String(element.className || '').split(/\\s+/).filter(Boolean).slice(0, 2).join('.');
+    const text = compact(directText(element) || element.getAttribute('aria-label') || '', 42);
+    return '<' + element.tagName.toLowerCase() + (classes ? '.' + classes : '') + '>' + (text ? ' “' + text + '”' : '');
+  };
+  const rectInCanvas = (rect) => ({
+    x: round(rect.left - rootRect.left),
+    y: round(rect.top - rootRect.top),
+    width: round(rect.width),
+    height: round(rect.height)
+  });
+  const elements = Array.from(content.querySelectorAll('*')).filter((element) => {
+    if (!(element instanceof HTMLElement)) return false;
+    return isVisible(element, element.getBoundingClientRect());
+  });
+  const issues = [];
+  const seen = new Set();
+  const addIssue = (kind, element, detail) => {
+    const key = kind + ':' + detail;
+    if (seen.has(key) || issues.length >= 12) return;
+    seen.add(key);
+    issues.push('[' + kind + '] ' + describe(element) + ': ' + detail);
+  };
+  for (const element of elements) {
+    const rect = element.getBoundingClientRect();
+    const text = directText(element);
+    const isLeafText = Boolean(text) && element.children.length === 0;
+    const isMedia = /^(CANVAS|IMG|VIDEO|SVG)$/.test(element.tagName);
+    if (isLeafText || isMedia) {
+      const overflowLeft = rootRect.left - rect.left;
+      const overflowTop = rootRect.top - rect.top;
+      const overflowRight = rect.right - rootRect.right;
+      const overflowBottom = rect.bottom - rootRect.bottom;
+      const overflow = Math.max(overflowLeft, overflowTop, overflowRight, overflowBottom);
+      if (overflow > 2) {
+        addIssue('canvas-overflow', element, 'extends ' + round(overflow) + 'px beyond the canvas at ' + JSON.stringify(rectInCanvas(rect)));
+      }
+    }
+    if (isLeafText && (element.scrollWidth > element.clientWidth + 2 || element.scrollHeight > element.clientHeight + 2)) {
+      const horizontal = Math.max(0, element.scrollWidth - element.clientWidth);
+      const vertical = Math.max(0, element.scrollHeight - element.clientHeight);
+      addIssue('text-overflow', element, 'text needs ' + horizontal + 'px more width and ' + vertical + 'px more height');
+    }
+    const style = getComputedStyle(element);
+    const clipsX = style.overflowX !== 'visible';
+    const clipsY = style.overflowY !== 'visible';
+    if ((clipsX && element.scrollWidth > element.clientWidth + 2) || (clipsY && element.scrollHeight > element.clientHeight + 2)) {
+      const horizontal = Math.max(0, element.scrollWidth - element.clientWidth);
+      const vertical = Math.max(0, element.scrollHeight - element.clientHeight);
+      addIssue('scroll-overflow', element, 'clipped container has ' + horizontal + 'px horizontal and ' + vertical + 'px vertical overflow');
+    }
+  }
+  const regions = elements
+    .filter((element) => {
+      const style = getComputedStyle(element);
+      return /^(HEADER|FOOTER|SECTION|MAIN|ARTICLE|ASIDE)$/.test(element.tagName) || (element.children.length >= 2 && (style.display === 'grid' || style.display === 'flex'));
+    })
+    .slice(0, 10)
+    .map((element) => {
+      const rect = rectInCanvas(element.getBoundingClientRect());
+      return describe(element) + ' at x=' + rect.x + ', y=' + rect.y + ', w=' + rect.width + ', h=' + rect.height;
+    });
+  return [
+    'Canvas: ' + round(rootRect.width) + 'px x ' + round(rootRect.height) + 'px.',
+    regions.length ? 'Key regions:' : '',
+    ...regions.map((region) => '- ' + region),
+    issues.length ? 'Measured defects:' : 'Measured defects: none.',
+    ...issues.map((issue) => '- ' + issue)
+  ].filter(Boolean).join('\\n');
+})()
+`
+
 export interface PreviewIframeHandle {
   patchPageContent: (pageId: string, newHtml: string) => void
   liveUpdateElement: (
@@ -126,6 +218,7 @@ export interface PreviewIframeHandle {
   ) => void
   setEditSnapSettings: (settings: EditSnapSettings) => Promise<boolean>
   readEditSnapPoints: () => Promise<EditSnapPoints>
+  readPageLayoutAudit: () => Promise<string | null>
 }
 
 export const PreviewIframe = forwardRef<
@@ -489,6 +582,18 @@ export const PreviewIframe = forwardRef<
           }
         } catch {
           return { x: [], y: [] }
+        }
+      },
+      async readPageLayoutAudit(): Promise<string | null> {
+        const wv = webviewRef.current
+        if (!wv || !canExecuteJavaScript(wv)) return null
+        try {
+          const report = await wv.executeJavaScript(PAGE_LAYOUT_AUDIT_SCRIPT)
+          if (typeof report !== 'string') return null
+          const normalized = report.trim().slice(0, 6000)
+          return normalized || null
+        } catch {
+          return null
         }
       },
       async restoreEditModeSelection(selector: string): Promise<boolean> {

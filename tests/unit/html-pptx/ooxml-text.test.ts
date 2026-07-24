@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { buildSlideXml } from '../../../src/main/utils/html-pptx/ooxml-writer'
-import type { HtmlToPptxSlide } from '../../../src/main/utils/html-pptx/types'
+import { buildSlideXml } from '@arcsin1/html2pptx/ooxml'
+import type { HtmlToPptxSlide } from '@arcsin1/html2pptx'
 
 describe('buildSlideXml text export', () => {
   it('writes text box padding as PPTX body insets', () => {

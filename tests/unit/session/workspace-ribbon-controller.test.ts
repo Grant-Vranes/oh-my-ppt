@@ -9,7 +9,8 @@ import {
   useEditHistoryStore,
   useEditSessionStore,
   useGenerateStore,
-  useSessionDetailUiStore
+  useSessionDetailUiStore,
+  useSessionStore
 } from '@renderer/store'
 
 const toastInfo = vi.hoisted(() => vi.fn())
@@ -22,17 +23,14 @@ vi.mock('@renderer/store', async () => {
   const actual = await vi.importActual<typeof import('@renderer/store')>('@renderer/store')
   return {
     ...actual,
-    useToastStore: Object.assign(
-      (selector: unknown) => {
-        if (typeof selector === 'function') {
-          return selector({
-            info: toastInfo
-          })
-        }
-        return actual.useToastStore.getState()
-      },
-      actual.useToastStore
-    )
+    useToastStore: Object.assign((selector: unknown) => {
+      if (typeof selector === 'function') {
+        return selector({
+          info: toastInfo
+        })
+      }
+      return actual.useToastStore.getState()
+    }, actual.useToastStore)
   }
 })
 
@@ -79,6 +77,7 @@ describe('useWorkspaceRibbonController', () => {
         htmlPath: '/tmp/page-1.html'
       }
     ])
+    useSessionStore.setState({ currentSession: { id: 'session-1' } as never })
     useSessionDetailUiStore.getState().resetForSessionChange()
     useSessionDetailUiStore.setState({
       selectedPageId: 'page-record-1',
@@ -105,6 +104,127 @@ describe('useWorkspaceRibbonController', () => {
       })
       expect(toastInfo).toHaveBeenCalledWith('sessionDetail.animationModeToast')
     } finally {
+      await cleanup(root, container)
+    }
+  })
+
+  it('locks editing tools only while the selected page has an active AI edit job', async () => {
+    const { root, container } = await renderHarness()
+
+    try {
+      await act(async () => {
+        useGenerateStore.getState().startPageEdit('session-1', { pageId: 'page-1', pageNumber: 1 })
+      })
+      expect(latest?.state.isPageEditing).toBe(true)
+      expect(latest?.state.isGenerating).toBe(false)
+
+      await act(async () => {
+        useGenerateStore.getState().setPages([
+          ...useGenerateStore.getState().currentPages,
+          {
+            id: 'page-record-2',
+            pageId: 'page-2',
+            pageNumber: 2,
+            title: 'Page 2',
+            html: '<div>Page</div>',
+            htmlPath: '/tmp/page-2.html'
+          }
+        ])
+        useSessionDetailUiStore.getState().setSelectedPageId('page-record-2')
+      })
+      expect(latest?.state.isPageEditing).toBe(false)
+      expect(latest?.state.isGenerating).toBe(false)
+    } finally {
+      await cleanup(root, container)
+    }
+  })
+
+  it('keeps other pages editable while a generated page is running', async () => {
+    const { root, container } = await renderHarness()
+
+    try {
+      await act(async () => {
+        useGenerateStore.getState().setPages([
+          ...useGenerateStore.getState().currentPages,
+          {
+            id: 'page-record-2',
+            pageId: 'page-2',
+            pageNumber: 2,
+            title: 'Page 2',
+            html: '<div>Page</div>',
+            htmlPath: '/tmp/page-2.html'
+          }
+        ])
+        useGenerateStore.setState({ isGenerating: true, status: 'running' })
+        useSessionDetailUiStore.setState({
+          isAddingPage: true,
+          addingPageId: 'page-record-2'
+        })
+      })
+
+      expect(latest?.state.isGenerating).toBe(false)
+
+      await act(async () => {
+        useSessionDetailUiStore.getState().setSelectedPageId('page-record-2')
+      })
+
+      expect(latest?.state.isGenerating).toBe(true)
+    } finally {
+      await cleanup(root, container)
+    }
+  })
+
+  it('locks the workspace for a deck edit in the current session', async () => {
+    const { root, container } = await renderHarness()
+
+    try {
+      await act(async () => {
+        useGenerateStore.getState().startDeckEdit('session-1', { totalPages: 2 })
+      })
+      expect(latest?.state.isDeckEditing).toBe(true)
+
+      await act(async () => {
+        useGenerateStore.getState().startDeckEdit('session-2', { totalPages: 2 })
+        useGenerateStore.getState().finishDeckEdit('session-1')
+      })
+      expect(latest?.state.isDeckEditing).toBe(false)
+    } finally {
+      await cleanup(root, container)
+    }
+  })
+
+  it('discards the current page history before switching to a pending workspace tab', async () => {
+    const discardAll = vi.fn(() => useEditHistoryStore.getState().clearPage('page-1'))
+    const originalDiscardAll = useEditSessionStore.getState().discardAll
+    useEditSessionStore.setState({ discardAll })
+    const { root, container } = await renderHarness()
+
+    try {
+      await act(async () => {
+        useEditHistoryStore.getState().upsertTextEdit({
+          pageId: 'page-1',
+          htmlPath: '/tmp/page-1.html',
+          selector: '[data-block-id="title"]',
+          patch: { text: 'Updated title', style: {} }
+        })
+      })
+      await act(async () => {
+        latest?.activateTab('ai')
+      })
+      expect(latest?.pendingTab).toBe('ai')
+
+      await act(async () => {
+        latest?.discardPendingTab()
+      })
+
+      expect(discardAll).toHaveBeenCalledOnce()
+      expect(useEditHistoryStore.getState().hasPendingEdits('page-1')).toBe(false)
+      expect(useSessionDetailUiStore.getState()).toMatchObject({
+        workspaceTab: 'ai',
+        interactionMode: 'ai-inspect'
+      })
+    } finally {
+      useEditSessionStore.setState({ discardAll: originalDiscardAll })
       await cleanup(root, container)
     }
   })

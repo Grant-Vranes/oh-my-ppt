@@ -1,10 +1,11 @@
+/** @vitest-environment happy-dom */
 import { describe, expect, it } from 'vitest'
 import fs from 'fs'
 import path from 'path'
 import {
   buildHtmlToPptxExtractScript,
   normalizeExtractedHtmlToPptxSlide
-} from '../../../src/main/utils/html-pptx'
+} from '@arcsin1/html2pptx'
 
 describe('buildHtmlToPptxExtractScript', () => {
   const buildScript = () =>
@@ -12,6 +13,44 @@ describe('buildHtmlToPptxExtractScript', () => {
       pageWidthPx: 1600,
       pageHeightPx: 900
     })
+
+  const rect = (left: number, top: number, width: number, height: number) => ({
+    x: left,
+    y: top,
+    left,
+    top,
+    width,
+    height,
+    right: left + width,
+    bottom: top + height
+  })
+
+  const assignRect = (selector: string, left: number, top: number, width: number, height: number) => {
+    const element = document.querySelector(selector)
+    if (!element) throw new Error(`Missing test node: ${selector}`)
+    Object.defineProperty(element, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => rect(left, top, width, height)
+    })
+  }
+
+  const extractInDom = async ({
+    maxTextBoxes = 360,
+    unsupportedTransformStrategy
+  }: {
+    maxTextBoxes?: number
+    unsupportedTransformStrategy?: 'native' | 'raster-fallback'
+  } = {}) =>
+    new Function(
+      `return ${
+        buildHtmlToPptxExtractScript({
+          pageWidthPx: 1600,
+          pageHeightPx: 900,
+          maxTextBoxes,
+          unsupportedTransformStrategy
+        }).trim()
+      }`
+    )() as Promise<Record<string, unknown>>
 
   it('exports Tailwind rings with a visual hint map and computed spread fallback', () => {
     const script = buildScript()
@@ -37,6 +76,56 @@ describe('buildHtmlToPptxExtractScript', () => {
 
   it('generates parseable browser extraction JavaScript', () => {
     expect(() => new Function(buildScript())).not.toThrow()
+  })
+
+  it('keeps an unexported text block in the raster fallback when the text limit is reached', async () => {
+    document.body.innerHTML = `
+      <div class="ppt-page-root" style="display:block">
+        <p id="first" style="display:block;font-size:20px">First text</p>
+        <p id="second" style="display:block;font-size:20px">Second text</p>
+      </div>
+    `
+    assignRect('.ppt-page-root', 0, 0, 1600, 900)
+    assignRect('#first', 100, 100, 320, 36)
+    assignRect('#second', 100, 160, 320, 36)
+
+    const extracted = await extractInDom({ maxTextBoxes: 1 })
+
+    expect(extracted.texts).toHaveLength(1)
+    expect(extracted.extractionReport).toMatchObject({ textLimitReached: true })
+    expect(document.querySelector('#first')?.getAttribute('data-pptx-extracted-text')).toBe('1')
+    expect(document.querySelector('#second')?.hasAttribute('data-pptx-extracted-text')).toBe(false)
+  })
+
+  it('keeps rotated shapes in the raster fallback instead of exporting a distorted rectangle', async () => {
+    document.body.innerHTML = `
+      <div class="ppt-page-root" style="display:block">
+        <div id="rotated" style="display:block;background-color:rgb(22, 96, 171);border:1px solid rgb(22, 96, 171);transform:rotate(25deg)"></div>
+      </div>
+    `
+    assignRect('.ppt-page-root', 0, 0, 1600, 900)
+    assignRect('#rotated', 120, 90, 360, 180)
+
+    const extracted = await extractInDom({ unsupportedTransformStrategy: 'raster-fallback' })
+
+    expect(extracted.shapes).toHaveLength(0)
+    expect(extracted.extractionReport).toMatchObject({ unsupportedTransformCount: 1 })
+    expect(document.querySelector('#rotated')?.hasAttribute('data-pptx-extracted-shape')).toBe(false)
+  })
+
+  it('keeps transformed elements in the public API output unless raster fallback is requested', async () => {
+    document.body.innerHTML = `
+      <div class="ppt-page-root" style="display:block">
+        <div id="rotated" style="display:block;background-color:rgb(22, 96, 171);border:1px solid rgb(22, 96, 171);transform:rotate(25deg)"></div>
+      </div>
+    `
+    assignRect('.ppt-page-root', 0, 0, 1600, 900)
+    assignRect('#rotated', 120, 90, 360, 180)
+
+    const extracted = await extractInDom()
+
+    expect(extracted.shapes).toHaveLength(1)
+    expect(extracted.extractionReport).toMatchObject({ unsupportedTransformCount: 0 })
   })
 
   it('uses Tailwind font weight hints when no inline font weight overrides them', () => {
@@ -65,7 +154,8 @@ describe('buildHtmlToPptxExtractScript', () => {
     expect(script).toContain('const hasStyledRun = runs.some((run) => !sameTextRunStyle(run, baseRun));')
     expect(script).toContain('const inlineRuns = collectInlineTextRuns(element, style);')
     expect(script).toContain('const inlineLineRuns = inlineRuns?.length ? collectInlineTextLineRuns(element, style) : [];')
-    expect(script).toContain('inlineLineRuns.forEach((line) => {')
+    expect(script).toContain('inlineLineRuns.every((line) =>')
+    expect(script).toContain('const rollbackTextExtraction = (startIndex, seenBefore) =>')
     expect(script).toContain('runs: inlineRuns')
     expect(script).toContain('...(richTextRuns?.length ? { runs: richTextRuns } : {})')
   })
@@ -160,7 +250,8 @@ describe('buildHtmlToPptxExtractScript', () => {
     expect(script).toContain('/grid/i.test(parentDisplay)')
     expect(script).toContain('!normalize(element.innerText || element.textContent)')
     expect(script).toContain('!hasBorder && !isSmallBadge && !isGridPaintCell')
-    expect(script).toContain('if (shapes.length >= maxShapes) continue;')
+    expect(script).toContain('if (shapes.length >= maxShapes) {')
+    expect(script).toContain('extractionReport.shapeLimitReached = true;')
     expect(script).not.toContain('if (shapes.length >= maxShapes) break;')
   })
 
@@ -186,13 +277,15 @@ describe('buildHtmlToPptxExtractScript', () => {
     expect(script).toContain('const shouldExportOnlyBorderLines =')
   })
 
-  it('uses enough shape budget for dense Tailwind grid panels during PPTX export', () => {
+  it('uses enough text, shape and image budget for dense PPTX export', () => {
     const rendererSource = fs.readFileSync(
       path.join(process.cwd(), 'src/main/utils/html-pptx/renderer.ts'),
       'utf-8'
     )
 
-    expect(rendererSource).toContain('maxShapes: 240')
+    expect(rendererSource).toContain('maxTextBoxes: 360')
+    expect(rendererSource).toContain('maxShapes: 400')
+    expect(rendererSource).toContain('maxImages: 80')
     expect(rendererSource).not.toContain('maxShapes: 80')
   })
 })

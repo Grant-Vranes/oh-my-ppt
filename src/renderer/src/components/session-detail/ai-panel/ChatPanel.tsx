@@ -45,10 +45,20 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
     selectedPageExists,
     selectedPageNumber,
     isGenerating,
+    isPageEditing,
+    isDeckEditing,
+    deckEditRetry,
+    isPlanningPageEdit,
+    pendingPageEditPlan,
+    hasActivePageEditJob,
+    progress,
     error,
     uploadFiles,
     chooseAssets,
     send,
+    confirmPageEditPlan,
+    cancelPageEditPlan,
+    retryDeckEdit,
     cancel
   } = useChatPanelController(sessionId)
   const messages = useSessionStore((state) => state.currentMessages)
@@ -153,6 +163,12 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
     }
   }
 
+  const handleRetryDeckEdit = async (): Promise<void> => {
+    const modelConfigId = await modelAction.ensureModelActive()
+    if (!modelConfigId) return
+    await retryDeckEdit(modelConfigId)
+  }
+
   const toggleMainPage = (pageId: string): void => {
     if (
       !selectedMainPageIds.includes(pageId) &&
@@ -226,6 +242,78 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
               <div className="rounded-[1.15rem] bg-[rgba(217,124,139,0.12)] px-3 py-2 text-sm text-destructive">
                 {error}
               </div>
+            )}
+            {(isPageEditing || isDeckEditing) && (
+              <div className="flex items-center gap-2 rounded-[1.15rem] border border-[#c7d9b4]/70 bg-[#edf5e5]/76 px-3 py-2 text-sm text-[#4f6340]">
+                <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                <span className="min-w-0 flex-1 break-words">
+                  {progress?.label || t('sessionDetail.activityProcessing')}
+                </span>
+                <span className="shrink-0 text-xs tabular-nums text-[#6d7b5d]">
+                  {Math.round(progress?.progress || 0)}%
+                </span>
+              </div>
+            )}
+            {deckEditRetry && !isDeckEditing && (
+              <div className="flex items-center gap-2 rounded-lg border border-[#d8c48b]/75 bg-[#fff8df] px-3 py-2 text-sm text-[#765b18]">
+                <span className="min-w-0 flex-1 break-words">
+                  {t('sessionDetail.activityPartialCompleted', {
+                    count: deckEditRetry.failedPageCount
+                  })}
+                </span>
+                <Button size="sm" onClick={() => void handleRetryDeckEdit()} className="h-8 px-2.5 text-xs">
+                  {t('sessionDetail.activityRetryFailedPages', {
+                    count: deckEditRetry.failedPageCount
+                  })}
+                </Button>
+              </div>
+            )}
+            {isPlanningPageEdit && (
+              <div className="flex items-center gap-2 rounded-lg border border-[#c7d9b4]/70 bg-[#edf5e5]/76 px-3 py-2 text-sm text-[#4f6340]" aria-live="polite">
+                <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                <span>{t('sessionDetail.pageEditPlanning')}</span>
+              </div>
+            )}
+            {pendingPageEditPlan && (
+              <section className="rounded-lg border border-[#c7d9b4]/80 bg-[#f7fbf2] px-3 py-2.5 text-sm text-[#405333]" aria-live="polite">
+                <div className="flex items-start justify-between gap-3">
+                  <h4 className="font-semibold">{t('sessionDetail.pageEditPlanTitle')}</h4>
+                  <span className="shrink-0 text-xs text-[#6d7b5d]">
+                    {pendingPageEditPlan.targetPageNumber
+                      ? t('sessionDetail.pageContext', {
+                          pageNumber: pendingPageEditPlan.targetPageNumber
+                        })
+                      : pendingPageEditPlan.targetPageId}
+                  </span>
+                </div>
+                <p className="mt-1.5 break-words leading-5">{pendingPageEditPlan.plan.summary}</p>
+                <ul className="mt-2 list-disc space-y-1 pl-4 text-xs leading-5 text-[#536847]">
+                  {pendingPageEditPlan.plan.changes.map((change, index) => (
+                    <li key={`${index}-${change}`}>{change}</li>
+                  ))}
+                </ul>
+                <p className="mt-2 break-words text-xs leading-5 text-[#5f7150]">
+                  {pendingPageEditPlan.plan.confirmationQuestion}
+                </p>
+                <div className="mt-2.5 flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={cancelPageEditPlan}
+                    className="h-8 px-2.5 text-xs"
+                  >
+                    {t('sessionDetail.pageEditPlanCancel')}
+                  </Button>
+                  <Button
+                    size="sm"
+                    disabled={hasActivePageEditJob}
+                    onClick={() => void confirmPageEditPlan()}
+                    className="h-8 px-2.5 text-xs"
+                  >
+                    {t('sessionDetail.pageEditPlanConfirm')}
+                  </Button>
+                </div>
+              </section>
             )}
             <div ref={messagesEndRef} />
           </div>
@@ -437,7 +525,7 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
               className="shrink-0 whitespace-nowrap rounded-full px-3 text-xs shadow-[0_8px_18px_rgba(177,90,88,0.22)]"
             >
               <StopCircle className="mr-1 h-4 w-4" />
-              {t('sessionDetail.stop')}
+              {isDeckEditing ? t('common.cancel') : t('sessionDetail.stop')}
             </Button>
           ) : (
             <ModelSplitButton

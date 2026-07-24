@@ -178,10 +178,15 @@ CREATE TABLE IF NOT EXISTS generation_runs (
 );
 CREATE INDEX IF NOT EXISTS idx_generation_runs_session ON generation_runs(session_id, created_at);
 
-CREATE TABLE IF NOT EXISTS generation_jobs (
+CREATE TABLE IF NOT EXISTS session_jobs (
   id TEXT PRIMARY KEY REFERENCES generation_runs(id) ON DELETE CASCADE,
   session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
   kind TEXT NOT NULL,
+  previous_session_status TEXT NOT NULL,
+  target_page_id TEXT,
+  target_page_number INTEGER,
+  selector TEXT,
+  total_pages INTEGER,
   status TEXT NOT NULL,
   abort_reason TEXT,
   created_at INTEGER NOT NULL,
@@ -189,8 +194,8 @@ CREATE TABLE IF NOT EXISTS generation_jobs (
   updated_at INTEGER NOT NULL,
   finished_at INTEGER
 );
-CREATE INDEX IF NOT EXISTS idx_generation_jobs_session_status ON generation_jobs(session_id, status, updated_at);
-CREATE INDEX IF NOT EXISTS idx_generation_jobs_status ON generation_jobs(status, updated_at);
+CREATE INDEX IF NOT EXISTS idx_session_jobs_session_status ON session_jobs(session_id, status, updated_at);
+CREATE INDEX IF NOT EXISTS idx_session_jobs_status ON session_jobs(status, updated_at);
 
 CREATE TABLE IF NOT EXISTS generation_pages (
   id TEXT PRIMARY KEY,
@@ -414,10 +419,14 @@ const getTableColumns = async (
     | 'projects'
     | 'generation_runs'
     | 'generation_jobs'
+    | 'session_jobs'
+    | 'page_edit_jobs'
+    | 'deck_edit_jobs'
     | 'generation_pages'
     | 'session_pages'
     | 'model_configs'
     | 'image_model_configs'
+    | 'html_edit_messages'
 ): Promise<Set<string>> => {
   const result = await client.execute(`PRAGMA table_info(${tableName})`)
   const rows = Array.isArray((result as { rows?: unknown[] }).rows)
@@ -514,10 +523,14 @@ const enforceSessionsSchema = async (client: LibSqlClient): Promise<void> => {
     )
   }
   if (!columns.has('slide_width')) {
-    await client.execute('ALTER TABLE sessions ADD COLUMN slide_width INTEGER NOT NULL DEFAULT 1600')
+    await client.execute(
+      'ALTER TABLE sessions ADD COLUMN slide_width INTEGER NOT NULL DEFAULT 1600'
+    )
   }
   if (!columns.has('slide_height')) {
-    await client.execute('ALTER TABLE sessions ADD COLUMN slide_height INTEGER NOT NULL DEFAULT 900')
+    await client.execute(
+      'ALTER TABLE sessions ADD COLUMN slide_height INTEGER NOT NULL DEFAULT 900'
+    )
   }
   await client.execute({
     sql: `
@@ -533,7 +546,8 @@ const enforceSessionsSchema = async (client: LibSqlClient): Promise<void> => {
         OR slide_width <= 0
         OR slide_height IS NULL
         OR slide_height <= 0
-    `
+    `,
+    args: []
   })
   if (!columns.has('current_operation_id')) {
     await client.execute('ALTER TABLE sessions ADD COLUMN current_operation_id TEXT')
@@ -752,10 +766,15 @@ const enforceMessagesSchema = async (client: LibSqlClient): Promise<void> => {
 
 const enforceGenerationSchema = async (client: LibSqlClient): Promise<void> => {
   await client.execute(`
-    CREATE TABLE IF NOT EXISTS generation_jobs (
+    CREATE TABLE IF NOT EXISTS session_jobs (
       id TEXT PRIMARY KEY REFERENCES generation_runs(id) ON DELETE CASCADE,
       session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
       kind TEXT NOT NULL,
+      previous_session_status TEXT NOT NULL DEFAULT 'active',
+      target_page_id TEXT,
+      target_page_number INTEGER,
+      selector TEXT,
+      total_pages INTEGER,
       status TEXT NOT NULL,
       abort_reason TEXT,
       created_at INTEGER NOT NULL,
@@ -771,15 +790,160 @@ const enforceGenerationSchema = async (client: LibSqlClient): Promise<void> => {
   if (!runColumns.has('animation_preferences')) {
     await client.execute('ALTER TABLE generation_runs ADD COLUMN animation_preferences TEXT')
   }
-  const jobColumns = await getTableColumns(client, 'generation_jobs')
-  if (!jobColumns.has('abort_reason')) {
+  let legacyGenerationJobColumns = await getTableColumns(client, 'generation_jobs')
+  if (legacyGenerationJobColumns.size > 0 && !legacyGenerationJobColumns.has('abort_reason')) {
     await client.execute('ALTER TABLE generation_jobs ADD COLUMN abort_reason TEXT')
   }
-  if (!jobColumns.has('activated_at')) {
+  if (legacyGenerationJobColumns.size > 0 && !legacyGenerationJobColumns.has('activated_at')) {
     await client.execute('ALTER TABLE generation_jobs ADD COLUMN activated_at INTEGER')
   }
-  if (!jobColumns.has('finished_at')) {
+  if (legacyGenerationJobColumns.size > 0 && !legacyGenerationJobColumns.has('finished_at')) {
     await client.execute('ALTER TABLE generation_jobs ADD COLUMN finished_at INTEGER')
+  }
+  if (legacyGenerationJobColumns.size > 0) {
+    legacyGenerationJobColumns = await getTableColumns(client, 'generation_jobs')
+  }
+  const legacyPageEditJobColumns = await getTableColumns(client, 'page_edit_jobs')
+  const legacyDeckEditJobColumns = await getTableColumns(client, 'deck_edit_jobs')
+  // Keep every legacy table until every source has been copied. A failed migration can then
+  // be retried on the next startup without losing the original job records.
+  const migration = await client.transaction('write')
+  const upsertSessionJob = `
+    ON CONFLICT(id) DO UPDATE SET
+      session_id = excluded.session_id,
+      kind = excluded.kind,
+      previous_session_status = excluded.previous_session_status,
+      target_page_id = excluded.target_page_id,
+      target_page_number = excluded.target_page_number,
+      selector = excluded.selector,
+      total_pages = excluded.total_pages,
+      status = excluded.status,
+      abort_reason = excluded.abort_reason,
+      created_at = excluded.created_at,
+      activated_at = excluded.activated_at,
+      updated_at = excluded.updated_at,
+      finished_at = excluded.finished_at
+  `
+  try {
+    if (legacyGenerationJobColumns.size > 0) {
+      const specializedJobGuards = [
+        legacyPageEditJobColumns.size > 0
+          ? 'NOT EXISTS (SELECT 1 FROM page_edit_jobs AS page_jobs WHERE page_jobs.id = jobs.id)'
+          : '',
+        legacyDeckEditJobColumns.size > 0
+          ? 'NOT EXISTS (SELECT 1 FROM deck_edit_jobs AS deck_jobs WHERE deck_jobs.id = jobs.id)'
+          : ''
+      ].filter(Boolean)
+      await migration.execute(`
+      INSERT INTO session_jobs (
+        id, session_id, kind, previous_session_status, target_page_id, target_page_number,
+        selector, total_pages, status, abort_reason, created_at, activated_at, updated_at, finished_at
+      )
+      SELECT
+        jobs.id,
+        jobs.session_id,
+        CASE jobs.kind
+          WHEN 'template' THEN 'template'
+          WHEN 'retry' THEN 'retry'
+          WHEN 'edit' THEN 'deck-edit'
+          ELSE 'standard'
+        END,
+        COALESCE(
+          CASE
+            WHEN runs.metadata IS NOT NULL AND json_valid(runs.metadata)
+              THEN json_extract(runs.metadata, '$.previousSessionStatus')
+          END,
+          'active'
+        ),
+        NULL,
+        NULL,
+        NULL,
+        runs.total_pages,
+        jobs.status,
+        jobs.abort_reason,
+        jobs.created_at,
+        jobs.activated_at,
+        jobs.updated_at,
+        jobs.finished_at
+      FROM generation_jobs AS jobs
+      LEFT JOIN generation_runs AS runs ON runs.id = jobs.id
+      WHERE ${specializedJobGuards.join(' AND ') || '1'}
+      ${upsertSessionJob}
+    `)
+    }
+    if (legacyPageEditJobColumns.size > 0) {
+      const deckJobGuard =
+        legacyDeckEditJobColumns.size > 0
+          ? 'WHERE NOT EXISTS (SELECT 1 FROM deck_edit_jobs AS deck_jobs WHERE deck_jobs.id = page_edit_jobs.id)'
+          : 'WHERE 1'
+      await migration.execute(`
+      INSERT INTO session_jobs (
+        id, session_id, kind, previous_session_status, target_page_id, target_page_number,
+        selector, total_pages, status, abort_reason, created_at, activated_at, updated_at, finished_at
+      )
+      SELECT
+        id,
+        session_id,
+        'page-edit',
+        previous_session_status,
+        target_page_id,
+        target_page_number,
+        selector,
+        1,
+        status,
+        abort_reason,
+        created_at,
+        activated_at,
+        updated_at,
+        finished_at
+      FROM page_edit_jobs
+      ${deckJobGuard}
+      ${upsertSessionJob}
+    `)
+    }
+    if (legacyDeckEditJobColumns.size > 0) {
+      await migration.execute(`
+      INSERT INTO session_jobs (
+        id, session_id, kind, previous_session_status, target_page_id, target_page_number,
+        selector, total_pages, status, abort_reason, created_at, activated_at, updated_at, finished_at
+      )
+      SELECT
+        id,
+        session_id,
+        'deck-edit',
+        previous_session_status,
+        NULL,
+        NULL,
+        NULL,
+        total_pages,
+        status,
+        abort_reason,
+        created_at,
+        activated_at,
+        updated_at,
+        finished_at
+      FROM deck_edit_jobs
+      WHERE 1
+      ${upsertSessionJob}
+    `)
+    }
+    if (legacyGenerationJobColumns.size > 0) {
+      await migration.execute('DROP TABLE generation_jobs')
+    }
+    if (legacyPageEditJobColumns.size > 0) {
+      await migration.execute('DROP TABLE page_edit_jobs')
+    }
+    if (legacyDeckEditJobColumns.size > 0) {
+      await migration.execute('DROP TABLE deck_edit_jobs')
+    }
+    await migration.commit()
+  } catch (error) {
+    try {
+      await migration.rollback()
+    } catch {
+      // Preserve the migration error when a failed transaction has already closed itself.
+    }
+    throw error
   }
   const columns = await getTableColumns(client, 'generation_pages')
   if (!columns.has('content_outline')) {
@@ -795,10 +959,10 @@ const enforceGenerationSchema = async (client: LibSqlClient): Promise<void> => {
     'CREATE INDEX IF NOT EXISTS idx_generation_runs_model_config ON generation_runs(model_config_id)'
   )
   await client.execute(
-    'CREATE INDEX IF NOT EXISTS idx_generation_jobs_session_status ON generation_jobs(session_id, status, updated_at)'
+    'CREATE INDEX IF NOT EXISTS idx_session_jobs_session_status ON session_jobs(session_id, status, updated_at)'
   )
   await client.execute(
-    'CREATE INDEX IF NOT EXISTS idx_generation_jobs_status ON generation_jobs(status, updated_at)'
+    'CREATE INDEX IF NOT EXISTS idx_session_jobs_status ON session_jobs(status, updated_at)'
   )
   await client.execute(
     'CREATE INDEX IF NOT EXISTS idx_generation_pages_run ON generation_pages(run_id, page_number)'
@@ -1297,7 +1461,10 @@ const patchSessionPagesFromGenerationPages = async (args: {
           : ('failed' as const)
       const error =
         status === 'failed'
-          ? String(getRowValue(row, 'error') || (fsExistsSafe(htmlPath) ? '页面生成失败' : '页面文件不存在'))
+          ? String(
+              getRowValue(row, 'error') ||
+                (fsExistsSafe(htmlPath) ? '页面生成失败' : '页面文件不存在')
+            )
           : null
 
       await db
@@ -1330,6 +1497,70 @@ const fsExistsSafe = (filePath: string): boolean => {
   }
 }
 
+const HTML_EDITOR_DOCS_TABLE_SQL = `
+CREATE TABLE IF NOT EXISTS html_edit_documents (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL DEFAULT '',
+  source_path TEXT,
+  html_path TEXT NOT NULL,
+  design_width INTEGER NOT NULL DEFAULT 1280,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+`
+
+const HTML_EDITOR_MESSAGES_TABLE_SQL = `
+CREATE TABLE IF NOT EXISTS html_edit_messages (
+  id TEXT PRIMARY KEY,
+  doc_id TEXT NOT NULL REFERENCES html_edit_documents(id) ON DELETE CASCADE,
+  role TEXT NOT NULL,
+  content TEXT NOT NULL,
+  intent TEXT,
+  plan_json TEXT,
+  requires_confirmation INTEGER NOT NULL DEFAULT 0,
+  selected_selector TEXT,
+  selected_label TEXT,
+  selected_element_tag TEXT,
+  selected_element_text TEXT,
+  created_at INTEGER NOT NULL
+);
+`
+
+const HTML_EDITOR_VERSIONS_TABLE_SQL = `
+CREATE TABLE IF NOT EXISTS html_edit_versions (
+  id TEXT PRIMARY KEY,
+  doc_id TEXT NOT NULL REFERENCES html_edit_documents(id) ON DELETE CASCADE,
+  commit_sha TEXT NOT NULL,
+  message TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL
+);
+`
+
+const enforceHtmlEditorSchema = async (client: LibSqlClient): Promise<void> => {
+  await client.execute(HTML_EDITOR_DOCS_TABLE_SQL)
+  await client.execute(HTML_EDITOR_MESSAGES_TABLE_SQL)
+  await client.execute(HTML_EDITOR_VERSIONS_TABLE_SQL)
+  const messageColumns = await getTableColumns(client, 'html_edit_messages')
+  if (!messageColumns.has('selected_selector')) {
+    await client.execute('ALTER TABLE html_edit_messages ADD COLUMN selected_selector TEXT')
+  }
+  if (!messageColumns.has('selected_label')) {
+    await client.execute('ALTER TABLE html_edit_messages ADD COLUMN selected_label TEXT')
+  }
+  if (!messageColumns.has('selected_element_tag')) {
+    await client.execute('ALTER TABLE html_edit_messages ADD COLUMN selected_element_tag TEXT')
+  }
+  if (!messageColumns.has('selected_element_text')) {
+    await client.execute('ALTER TABLE html_edit_messages ADD COLUMN selected_element_text TEXT')
+  }
+  await client.execute(
+    'CREATE INDEX IF NOT EXISTS idx_html_edit_messages_doc ON html_edit_messages(doc_id, created_at);'
+  )
+  await client.execute(
+    'CREATE INDEX IF NOT EXISTS idx_html_edit_versions_doc ON html_edit_versions(doc_id, created_at);'
+  )
+}
+
 export const runDatabasePatches = async (args: {
   client: LibSqlClient
   db: DrizzleDb
@@ -1348,6 +1579,7 @@ export const runDatabasePatches = async (args: {
   await enforceSessionPagesSchema(client)
   await enforceSessionOperationsSchema(client)
   await enforceSessionOperationPagesSchema(client)
+  await enforceHtmlEditorSchema(client)
   await patchStylesColumns(client)
   await client.execute('PRAGMA foreign_keys = ON;')
   await ensureDefaultSettings(client)

@@ -64,15 +64,19 @@ const controllerMock = vi.hoisted(() => ({
   ]
 }))
 
-vi.mock('../../../src/renderer/src/components/session-detail/sidebar/usePageSidebarController', () => ({
-  usePageSidebarController: () => ({
-    pages: controllerMock.pages,
-    disabled: false,
-    pageManagementDisabled: false,
-    collapsed: false,
-    onToggleCollapsed: vi.fn()
+vi.mock(
+  '../../../src/renderer/src/components/session-detail/sidebar/usePageSidebarController',
+  () => ({
+    usePageSidebarController: () => ({
+      pages: controllerMock.pages,
+      disabled: false,
+      pageManagementDisabled: false,
+      isPageActionDisabled: () => false,
+      collapsed: false,
+      onToggleCollapsed: vi.fn()
+    })
   })
-}))
+)
 
 async function renderSidebar(): Promise<{ container: HTMLDivElement; root: Root }> {
   const container = document.createElement('div')
@@ -135,9 +139,9 @@ describe('PageSidebar page switching', () => {
 
     try {
       await act(async () => {
-        Array.from(container.querySelectorAll('button')).find(
-          (button) => button.textContent === 'sessionDetail.outlineTab'
-        )?.click()
+        Array.from(container.querySelectorAll('button'))
+          .find((button) => button.textContent === 'sessionDetail.outlineTab')
+          ?.click()
       })
       await act(async () => {
         const editButtons = container.querySelectorAll<HTMLButtonElement>(
@@ -151,6 +155,42 @@ describe('PageSidebar page switching', () => {
         workspaceTab: 'edit'
       })
     } finally {
+      await cleanupRoot(root, container)
+    }
+  })
+
+  it('clears unsaved history before switching when the user chooses not to save', async () => {
+    const discardAll = vi.fn(() => useEditHistoryStore.getState().clearPage('page-1'))
+    const originalDiscardAll = useEditSessionStore.getState().discardAll
+    useEditSessionStore.setState({ discardAll })
+    const { container, root } = await renderSidebar()
+
+    try {
+      await act(async () => {
+        useEditHistoryStore.getState().upsertTextEdit({
+          pageId: 'page-1',
+          htmlPath: '/tmp/page-1.html',
+          selector: '[data-block-id="title"]',
+          patch: { text: 'Updated title', style: {} }
+        })
+      })
+      await act(async () => {
+        container.querySelector<HTMLButtonElement>('[data-testid="page-thumbnail-page-2"]')?.click()
+      })
+      await act(async () => {
+        Array.from(document.querySelectorAll<HTMLButtonElement>('button'))
+          .find((button) => button.textContent === 'common.dontSave')
+          ?.click()
+      })
+
+      expect(discardAll).toHaveBeenCalledOnce()
+      expect(useEditHistoryStore.getState().hasPendingEdits('page-1')).toBe(false)
+      expect(useSessionDetailUiStore.getState()).toMatchObject({
+        selectedPageId: 'page-2',
+        workspaceTab: 'preview'
+      })
+    } finally {
+      useEditSessionStore.setState({ discardAll: originalDiscardAll })
       await cleanupRoot(root, container)
     }
   })

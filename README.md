@@ -73,6 +73,7 @@
 - 📐 **多尺寸 / 多内容格式画布** — 不只支持传统 PPT 尺寸，也支持宽屏演示、4:3 投屏、竖屏 9:16、竖版 3:4、方图 1:1、小红书图文等格式，生成、预览、编辑和导出都会保留真实比例
 - 📄 **从文档创建** — 也支持上传 txt、md、csv、docx 文档，自动整理主题、页数和详细描述，生成时**继续参考原文件内容生成创意PPT**
 - 📥 **导入 PPTX 编辑** — 可把本地 PPTX 转成应用内 HTML 页面，继续预览、调整位置和对话修改（也会提取pptx风格到系统中复用）
+- 🌐 **HTML 编辑** — 导入单个 HTML 文件后可在应用内直接编辑和保存，支持 AI 修改、素材添加、历史管理、预览和导出
 - 🧱 **模板库与模板创建** — 可将已生成或已编辑的演示保存为模板，也支持 PPTX 导入为模板，并可复用模板创建新的 PPT 会话
 - 🎨️ **图片识别生成风格与大纲** — 支持上传截图/设计稿，自动识别视觉特征并生成独特风格与演示大纲(需要支持多模态模型的AI)
 - 🔒 **本地优先** — 全部跑在自己电脑上，不用注册、不用担心数据泄露
@@ -301,7 +302,8 @@ Windows 可能会因为安装包未签名而触发 SmartScreen 提示，例如�
 <a id="references"></a>
 ## 参考
 
-- [@arcsin1/pptx2json](https://github.com/arcsin1/pptx2json) — Oh My PPT 可编辑 PPTX 导入能力的底层基础包，用于解析 PPTX 并转换为可继续编辑的结构化数据；目前已经开源，后续会持续完善复杂形状、图表、表格、动画等还原能力。
+- [@arcsin1/pptx2json](https://www.npmjs.com/package/@arcsin1/pptx2json) — Oh My PPT 可编辑 PPTX 导入能力的底层基础包，用于解析 PPTX 并转换为可继续编辑的结构化真实数据；后续会持续完善复杂形状、图表、表格、动画等还原能力。
+- [@arcsin1/html2pptx](https://www.npmjs.com/package/@arcsin1/html2pptx) — Oh My PPT 可编辑 PPTX 导出能力的底层基础包，用于解析 html 并转换为可继续编辑的真实pptx文件；后续会持续完善复杂形状、图表、表格、动画等还原能力。
 - [arcsin1/style-generate-skill](https://github.com/arcsin1/style-generate-skill) — Oh My PPT 官方风格生成 Skill，用于把参考设计、配色、排版和场景要求整理成可导入应用的风格包。
 - [ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)
 - [html-ppt-skill](https://github.com/lewislulu/html-ppt-skill)

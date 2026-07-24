@@ -91,8 +91,8 @@ export const generationRuns = sqliteTable('generation_runs', {
   updatedAt: integer('updated_at').notNull()
 })
 
-export const generationJobs = sqliteTable(
-  'generation_jobs',
+export const sessionJobs = sqliteTable(
+  'session_jobs',
   {
     id: text('id')
       .primaryKey()
@@ -101,6 +101,11 @@ export const generationJobs = sqliteTable(
       .notNull()
       .references(() => sessions.id, { onDelete: 'cascade' }),
     kind: text('kind').notNull(),
+    previousSessionStatus: text('previous_session_status').notNull(),
+    targetPageId: text('target_page_id'),
+    targetPageNumber: integer('target_page_number'),
+    selector: text('selector'),
+    totalPages: integer('total_pages'),
     status: text('status').notNull(),
     abortReason: text('abort_reason'),
     createdAt: integer('created_at').notNull(),
@@ -109,12 +114,12 @@ export const generationJobs = sqliteTable(
     finishedAt: integer('finished_at')
   },
   (table) => ({
-    generationJobsSessionStatusIdx: index('idx_generation_jobs_session_status').on(
+    sessionJobsSessionStatusIdx: index('idx_session_jobs_session_status').on(
       table.sessionId,
       table.status,
       table.updatedAt
     ),
-    generationJobsStatusIdx: index('idx_generation_jobs_status').on(table.status, table.updatedAt)
+    sessionJobsStatusIdx: index('idx_session_jobs_status').on(table.status, table.updatedAt)
   })
 )
 
@@ -338,9 +343,7 @@ export const sessionStyleSnapshots = sqliteTable(
     createdAt: integer('created_at').notNull()
   },
   (table) => ({
-    sessionIdUniqueIdx: uniqueIndex('session_style_snapshots_session_id_unique').on(
-      table.sessionId
-    )
+    sessionIdUniqueIdx: uniqueIndex('session_style_snapshots_session_id_unique').on(table.sessionId)
   })
 )
 
@@ -399,6 +402,55 @@ export const sessionOperationPages = sqliteTable(
   })
 )
 
+export const htmlEditDocuments = sqliteTable('html_edit_documents', {
+  id: text('id').primaryKey(),
+  title: text('title').notNull().default(''),
+  sourcePath: text('source_path'),
+  htmlPath: text('html_path').notNull(),
+  designWidth: integer('design_width').notNull().default(1280),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull()
+})
+
+export const htmlEditMessages = sqliteTable(
+  'html_edit_messages',
+  {
+    id: text('id').primaryKey(),
+    docId: text('doc_id')
+      .notNull()
+      .references(() => htmlEditDocuments.id, { onDelete: 'cascade' }),
+    role: text('role').notNull(),
+    content: text('content').notNull(),
+    intent: text('intent'),
+    planJson: text('plan_json'),
+    requiresConfirmation: integer('requires_confirmation').notNull().default(0),
+    selectedSelector: text('selected_selector'),
+    selectedLabel: text('selected_label'),
+    selectedElementTag: text('selected_element_tag'),
+    selectedElementText: text('selected_element_text'),
+    createdAt: integer('created_at').notNull()
+  },
+  (table) => ({
+    htmlEditMessagesDocIdx: index('idx_html_edit_messages_doc').on(table.docId, table.createdAt)
+  })
+)
+
+export const htmlEditVersions = sqliteTable(
+  'html_edit_versions',
+  {
+    id: text('id').primaryKey(),
+    docId: text('doc_id')
+      .notNull()
+      .references(() => htmlEditDocuments.id, { onDelete: 'cascade' }),
+    commitSha: text('commit_sha').notNull(),
+    message: text('message').notNull().default(''),
+    createdAt: integer('created_at').notNull()
+  },
+  (table) => ({
+    htmlEditVersionsDocIdx: index('idx_html_edit_versions_doc').on(table.docId, table.createdAt)
+  })
+)
+
 export type Session = typeof sessions.$inferSelect
 export type Message = typeof messages.$inferSelect
 export type ModelUsageEvent = typeof modelUsageEvents.$inferSelect
@@ -413,13 +465,23 @@ export type MemorySummary = typeof memorySummaries.$inferSelect
 export type UserPreference = typeof userPreferences.$inferSelect
 export type SessionOperation = typeof sessionOperations.$inferSelect
 export type SessionOperationPage = typeof sessionOperationPages.$inferSelect
+export type HtmlEditDocument = typeof htmlEditDocuments.$inferSelect
+export type HtmlEditMessage = typeof htmlEditMessages.$inferSelect
+export type HtmlEditVersion = typeof htmlEditVersions.$inferSelect
 
 export type SessionStatus = 'active' | 'completed' | 'failed' | 'archived'
 export type MessageRole = 'user' | 'assistant' | 'system' | 'tool'
 export type MessageType = 'text' | 'tool_call' | 'tool_result' | 'stream_chunk'
 export type ChatScope = 'main' | 'page'
 export type GenerationRunStatus = 'running' | 'completed' | 'failed' | 'partial'
-export type GenerationRunMode = 'generate' | 'retry' | 'edit' | 'import' | 'addPage' | 'retrySinglePage'
+export type GenerationRunMode =
+  | 'generate'
+  | 'retry'
+  | 'edit'
+  | 'import'
+  | 'addPage'
+  | 'retrySinglePage'
+  | 'page-beautify'
 export type GenerationPageStatus = 'pending' | 'running' | 'completed' | 'failed'
 export type SessionPageStatus = 'completed' | 'failed' | 'pending'
 export type SessionOperationType =

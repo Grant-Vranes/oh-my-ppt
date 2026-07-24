@@ -160,7 +160,7 @@ describe('source-grounded prompt rules', () => {
     expect(engine).toContain('setPageAgent(args.sessionId, concurrentDeckPageId, editAgent)')
   })
 
-  it('shows generation progress in an independent modal with local state', () => {
+  it('keeps generation progress in the local page surfaces without a modal', () => {
     const chatPanel = readSource(
       'src/renderer/src/components/session-detail/ai-panel/ChatPanel.tsx'
     )
@@ -168,22 +168,13 @@ describe('source-grounded prompt rules', () => {
       'src/renderer/src/components/session-detail/preview/PreviewStage.tsx'
     )
     const sessionDetail = readSource('src/renderer/src/pages/session-detail.tsx')
-    const activityDialog = readSource(
-      'src/renderer/src/components/session-detail/modal/GenerationActivityDialog.tsx'
-    )
 
     expect(chatPanel).not.toContain('<Progress value={progress.progress}')
+    expect(chatPanel).toContain('(isPageEditing || isDeckEditing)')
     expect(previewStage).not.toContain('useGenerationLoading')
     expect(previewStage).not.toContain('generationLoading')
-    expect(activityDialog).toContain('ipc.onGenerateChunk')
-    expect(activityDialog).toContain('useState<ActivityLog[]>([])')
-    expect(activityDialog).not.toContain('ipc.cancelGenerate')
-    expect(activityDialog).toContain("showClose={!blockClose}")
-    expect(activityDialog).toContain("if (!nextOpen && blockClose) return")
-    expect(activityDialog).not.toContain('useGenerateStore')
-    expect(activityDialog).toContain('useGenerationActivityStore')
-    expect(activityDialog).toContain('useSessionStore')
-    expect(sessionDetail).toContain('<GenerationActivityDialog sessionId={id} />')
+    expect(previewStage).toContain('pageEditJob && isPageEditing')
+    expect(sessionDetail).not.toContain('GenerationActivityDialog')
     expect(sessionDetail).not.toContain('onStyleSwitchCompleted')
     expect(sessionDetail).not.toContain('<PageProgressOverlay')
   })
@@ -369,7 +360,9 @@ describe('source-grounded prompt rules', () => {
     expect(sharedSource).toContain('Apply these rules only when source documents')
     expect(sharedSource).toContain('Stay source-grounded and avoid creative drift')
     expect(sharedSource).toContain('evidence, not a slide checklist')
-    expect(sharedSource).toContain('split into multiple slides when one page would become a data dump')
+    expect(sharedSource).toContain(
+      'split into multiple slides when one page would become a data dump'
+    )
     expect(sharedSource).toContain('split source-backed sections')
     expect(sharedSource).toContain('deepen each slide from the available material')
     expect(sharedSource).toContain('SOURCE_GROUNDED_EXPANSION_RULES')
@@ -410,8 +403,12 @@ describe('source-grounded prompt rules', () => {
     expect(source).toContain('expansion must be source-grounded')
     expect(source).toContain('SOURCE_GROUNDED_EXPANSION_RULES')
     expect(source).toContain('if inspected material is thin, enrich the slide')
-    expect(readSource('src/main/prompt/deck-system.ts')).toContain('SOURCE_GROUNDED_EXPANSION_RULES')
-    expect(readSource('src/main/prompt/edit-system.ts')).toContain('SOURCE_GROUNDED_EXPANSION_RULES')
+    expect(readSource('src/main/prompt/deck-system.ts')).toContain(
+      'SOURCE_GROUNDED_EXPANSION_RULES'
+    )
+    expect(readSource('src/main/prompt/edit-system.ts')).toContain(
+      'SOURCE_GROUNDED_EXPANSION_RULES'
+    )
     expect(source).toContain('SOURCE_DOCUMENT_FACT_RULE')
     expect(sharedSource).toContain('examples, risks, decisions, or conclusions')
     expect(source).not.toContain('first use grep or glob')

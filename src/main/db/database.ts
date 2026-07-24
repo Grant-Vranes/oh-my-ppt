@@ -25,16 +25,34 @@ import type {
 import type { AnimationPreferencesPayload } from '@shared/generation'
 import { normalizeThinkingParameterMode } from '@shared/model-config'
 import { requirePersistedSlideSize, type SlideSizePresetId } from '@shared/slide-size'
+import type { HtmlEditDocument, HtmlEditMessage, HtmlEditVersion } from './schema'
 
 type SessionStatus = 'active' | 'completed' | 'failed' | 'archived'
 type MessageRole = 'user' | 'assistant' | 'system' | 'tool'
 type MessageType = 'text' | 'tool_call' | 'tool_result' | 'stream_chunk'
 type ChatScope = 'main' | 'page'
 type StyleSource = 'builtin' | 'custom' | 'override'
-type GenerationRunMode = 'generate' | 'retry' | 'edit' | 'import' | 'addPage' | 'retrySinglePage'
+type GenerationRunMode =
+  | 'generate'
+  | 'retry'
+  | 'edit'
+  | 'import'
+  | 'addPage'
+  | 'retrySinglePage'
+  | 'style-switch'
+  | 'page-beautify'
 type GenerationRunStatus = 'running' | 'completed' | 'failed' | 'partial'
-export type GenerationJobKind = 'standard' | 'template' | 'retry'
-export type GenerationJobStatus = 'pending' | 'active' | 'finished' | 'aborted'
+export type SessionJobKind =
+  | 'standard'
+  | 'template'
+  | 'retry'
+  | 'add-page'
+  | 'single-page-retry'
+  | 'page-edit'
+  | 'deck-edit'
+  | 'style-switch'
+  | 'page-beautify'
+export type SessionJobStatus = 'pending' | 'active' | 'finished' | 'aborted'
 type GenerationPageStatus = 'pending' | 'running' | 'completed' | 'failed'
 type SessionPageStatus = schema.SessionPageStatus
 type SourcePageSkeletonRole = 'chapter-divider' | 'content'
@@ -138,16 +156,55 @@ export interface GenerationRunRecord {
   updated_at: number
 }
 
-export interface GenerationJobRecord {
+export interface SessionJobRecord {
   id: string
   session_id: string
-  kind: GenerationJobKind
-  status: GenerationJobStatus
+  kind: SessionJobKind
+  previous_session_status: SessionStatus
+  target_page_id: string | null
+  target_page_number: number | null
+  selector: string | null
+  total_pages: number | null
+  status: SessionJobStatus
   abort_reason: string | null
   created_at: number
   activated_at: number | null
   updated_at: number
   finished_at: number | null
+}
+
+type GenerationRunCreateData = {
+  id?: string
+  sessionId: string
+  mode: GenerationRunMode
+  totalPages: number
+  metadata?: unknown
+  animationPreferences?: AnimationPreferencesPayload | null
+  modelConfigId?: string | null
+}
+
+type SessionJobCreateData = {
+  id: string
+  sessionId: string
+  kind: SessionJobKind
+  status: Extract<SessionJobStatus, 'pending' | 'active'>
+  previousSessionStatus: SessionStatus
+  targetPageId?: string
+  targetPageNumber?: number
+  selector?: string
+  totalPages?: number
+}
+
+type GenerationPageCreateData = {
+  pageId: string
+  pageNumber: number
+  title: string
+  contentOutline?: string | null
+  layoutIntent?: string | null
+  htmlPath?: string | null
+  status?: Extract<GenerationPageStatus, 'pending' | 'running'>
+  error?: string | null
+  retryCount?: number
 }
 
 export interface GenerationPageRecord {
@@ -410,6 +467,204 @@ export class PPTDatabase {
   async close(): Promise<void> {
     await this.client.close()
     this._initialized = false
+  }
+
+  // ========== HTML Editor ==========
+
+  async createHtmlEditDocument(data: {
+    id: string
+    title: string
+    sourcePath?: string | null
+    htmlPath: string
+    designWidth: number
+    createdAt: number
+    updatedAt: number
+  }): Promise<void> {
+    await this.db.insert(schema.htmlEditDocuments).values({
+      id: data.id,
+      title: data.title,
+      sourcePath: data.sourcePath ?? null,
+      htmlPath: data.htmlPath,
+      designWidth: data.designWidth,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt
+    })
+  }
+
+  async touchHtmlEditDocument(docId: string, updatedAt: number): Promise<void> {
+    await this.db
+      .update(schema.htmlEditDocuments)
+      .set({ updatedAt })
+      .where(eq(schema.htmlEditDocuments.id, docId))
+  }
+
+  async createHtmlEditMessage(data: {
+    id: string
+    docId: string
+    role: 'user' | 'assistant'
+    content: string
+    intent?: string | null
+    planJson?: string | null
+    requiresConfirmation?: boolean
+    selectedElement?: {
+      selector: string
+      label?: string
+      elementTag?: string
+      elementText?: string
+    } | null
+    createdAt: number
+  }): Promise<void> {
+    const selectedElement = data.selectedElement?.selector ? data.selectedElement : null
+    await this.db
+      .insert(schema.htmlEditMessages)
+      .values({
+        id: data.id,
+        docId: data.docId,
+        role: data.role,
+        content: data.content,
+        intent: data.intent ?? null,
+        planJson: data.planJson ?? null,
+        requiresConfirmation: data.requiresConfirmation ? 1 : 0,
+        selectedSelector: selectedElement?.selector.slice(0, 2_000) ?? null,
+        selectedLabel: selectedElement?.label?.slice(0, 500) ?? null,
+        selectedElementTag: selectedElement?.elementTag?.slice(0, 80) ?? null,
+        selectedElementText: selectedElement?.elementText?.slice(0, 2_000) ?? null,
+        createdAt: data.createdAt
+      })
+      .run()
+  }
+
+  async listHtmlEditMessages(docId: string, limit = 100): Promise<HtmlEditMessage[]> {
+    const safeLimit = Math.max(1, Math.min(Math.floor(limit), 500))
+    const rows = await this.db
+      .select()
+      .from(schema.htmlEditMessages)
+      .where(eq(schema.htmlEditMessages.docId, docId))
+      .orderBy(desc(schema.htmlEditMessages.createdAt))
+      .limit(safeLimit)
+      .all()
+    return rows.reverse()
+  }
+
+  async clearHtmlEditMessages(docId: string): Promise<void> {
+    await this.db
+      .delete(schema.htmlEditMessages)
+      .where(eq(schema.htmlEditMessages.docId, docId))
+      .run()
+  }
+
+  async createHtmlEditVersion(data: {
+    id: string
+    docId: string
+    commitSha: string
+    message: string
+    createdAt: number
+  }): Promise<void> {
+    await this.db.insert(schema.htmlEditVersions).values({
+      id: data.id,
+      docId: data.docId,
+      commitSha: data.commitSha,
+      message: data.message,
+      createdAt: data.createdAt
+    })
+  }
+
+  async createHtmlEditDocumentWithVersion(data: {
+    document: {
+      id: string
+      title: string
+      sourcePath?: string | null
+      htmlPath: string
+      designWidth: number
+      createdAt: number
+      updatedAt: number
+    }
+    version: {
+      id: string
+      commitSha: string
+      message: string
+      createdAt: number
+    }
+  }): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      await tx.insert(schema.htmlEditDocuments).values({
+        id: data.document.id,
+        title: data.document.title,
+        sourcePath: data.document.sourcePath ?? null,
+        htmlPath: data.document.htmlPath,
+        designWidth: data.document.designWidth,
+        createdAt: data.document.createdAt,
+        updatedAt: data.document.updatedAt
+      })
+      await tx.insert(schema.htmlEditVersions).values({
+        id: data.version.id,
+        docId: data.document.id,
+        commitSha: data.version.commitSha,
+        message: data.version.message,
+        createdAt: data.version.createdAt
+      })
+    })
+  }
+
+  async createHtmlEditVersionAndTouch(data: {
+    id: string
+    docId: string
+    commitSha: string
+    message: string
+    createdAt: number
+  }): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      await tx.insert(schema.htmlEditVersions).values({
+        id: data.id,
+        docId: data.docId,
+        commitSha: data.commitSha,
+        message: data.message,
+        createdAt: data.createdAt
+      })
+      await tx
+        .update(schema.htmlEditDocuments)
+        .set({ updatedAt: data.createdAt })
+        .where(eq(schema.htmlEditDocuments.id, data.docId))
+    })
+  }
+
+  async listHtmlEditVersions(docId: string): Promise<HtmlEditVersion[]> {
+    return this.db
+      .select()
+      .from(schema.htmlEditVersions)
+      .where(eq(schema.htmlEditVersions.docId, docId))
+      .orderBy(desc(schema.htmlEditVersions.createdAt))
+  }
+
+  async getHtmlEditVersion(versionId: string): Promise<HtmlEditVersion | undefined> {
+    const rows = await this.db
+      .select()
+      .from(schema.htmlEditVersions)
+      .where(eq(schema.htmlEditVersions.id, versionId))
+      .limit(1)
+    return rows[0]
+  }
+
+  async listHtmlEditDocuments(): Promise<HtmlEditDocument[]> {
+    return this.db
+      .select()
+      .from(schema.htmlEditDocuments)
+      .orderBy(desc(schema.htmlEditDocuments.updatedAt))
+  }
+
+  async getHtmlEditDocument(docId: string): Promise<HtmlEditDocument | undefined> {
+    const rows = await this.db
+      .select()
+      .from(schema.htmlEditDocuments)
+      .where(eq(schema.htmlEditDocuments.id, docId))
+      .limit(1)
+    return rows[0]
+  }
+
+  /** 删除文档的数据库记录（含版本行）。不删磁盘文件——文件留存供审计/恢复。 */
+  async deleteHtmlEditDocument(docId: string): Promise<void> {
+    await this.db.delete(schema.htmlEditVersions).where(eq(schema.htmlEditVersions.docId, docId))
+    await this.db.delete(schema.htmlEditDocuments).where(eq(schema.htmlEditDocuments.id, docId))
   }
 
   // ========== Session ==========
@@ -685,16 +940,49 @@ export class PPTDatabase {
     }
   }
 
-  private normalizeGenerationJobRow(row: Record<string, unknown>): GenerationJobRecord {
+  private normalizeSessionJobRow(row: Record<string, unknown>): SessionJobRecord {
     const status = String(row.status || 'pending')
     const kind = String(row.kind || 'standard')
+    const previousSessionStatus = String(
+      row.previousSessionStatus ?? row.previous_session_status ?? 'active'
+    )
     return {
       id: String(row.id || ''),
       session_id: String(row.sessionId ?? row.session_id ?? ''),
-      kind: (kind === 'template' || kind === 'retry' ? kind : 'standard') as GenerationJobKind,
-      status: (
-        status === 'active' || status === 'finished' || status === 'aborted' ? status : 'pending'
-      ) as GenerationJobStatus,
+      kind: (kind === 'template' ||
+      kind === 'retry' ||
+      kind === 'add-page' ||
+      kind === 'single-page-retry' ||
+      kind === 'page-edit' ||
+      kind === 'deck-edit' ||
+      kind === 'style-switch' ||
+      kind === 'page-beautify'
+        ? kind
+        : 'standard') as SessionJobKind,
+      previous_session_status:
+        previousSessionStatus === 'completed' ||
+        previousSessionStatus === 'failed' ||
+        previousSessionStatus === 'archived'
+          ? previousSessionStatus
+          : 'active',
+      target_page_id:
+        typeof (row.targetPageId ?? row.target_page_id) === 'string' &&
+        String(row.targetPageId ?? row.target_page_id).trim().length > 0
+          ? String(row.targetPageId ?? row.target_page_id)
+          : null,
+      target_page_number:
+        typeof (row.targetPageNumber ?? row.target_page_number) === 'number'
+          ? Number(row.targetPageNumber ?? row.target_page_number)
+          : null,
+      selector:
+        typeof row.selector === 'string' && row.selector.trim().length > 0 ? row.selector : null,
+      total_pages:
+        typeof (row.totalPages ?? row.total_pages) === 'number'
+          ? Math.max(1, Number(row.totalPages ?? row.total_pages) || 1)
+          : null,
+      status: (status === 'active' || status === 'finished' || status === 'aborted'
+        ? status
+        : 'pending') as SessionJobStatus,
       abort_reason:
         typeof (row.abortReason ?? row.abort_reason) === 'string'
           ? String(row.abortReason ?? row.abort_reason)
@@ -787,15 +1075,7 @@ export class PPTDatabase {
     }
   }
 
-  async createGenerationRun(data: {
-    id?: string
-    sessionId: string
-    mode: GenerationRunMode
-    totalPages: number
-    metadata?: unknown
-    animationPreferences?: AnimationPreferencesPayload | null
-    modelConfigId?: string | null
-  }): Promise<string> {
+  async createGenerationRun(data: GenerationRunCreateData): Promise<string> {
     const id = data.id || crypto.randomUUID()
     const now = Math.floor(Date.now() / 1000)
     const animationPreferences = data.animationPreferences
@@ -840,44 +1120,95 @@ export class PPTDatabase {
     return id
   }
 
-  async createGenerationJob(data: {
-    id: string
-    sessionId: string
-    kind: GenerationJobKind
-    status: Extract<GenerationJobStatus, 'pending' | 'active'>
+  async createGenerationRunWithSessionJob(data: {
+    run: GenerationRunCreateData & { id: string }
+    job: SessionJobCreateData
   }): Promise<void> {
+    await this.createGenerationRunWithSessionJobAndPages({ ...data, pages: [] })
+  }
+
+  async createGenerationRunWithSessionJobAndPages(data: {
+    run: GenerationRunCreateData & { id: string }
+    job: SessionJobCreateData
+    pages: GenerationPageCreateData[]
+  }): Promise<void> {
+    if (data.run.id !== data.job.id) {
+      throw new Error('generation run and session job must share the same id')
+    }
+    if (data.run.sessionId !== data.job.sessionId) {
+      throw new Error('generation run and session job must belong to the same session')
+    }
+
     const now = Math.floor(Date.now() / 1000)
-    await this.db
-      .insert(schema.generationJobs)
-      .values({
-        id: data.id,
-        sessionId: data.sessionId,
-        kind: data.kind,
-        status: data.status,
+    const animationPreferences = data.run.animationPreferences
+      ? JSON.stringify(data.run.animationPreferences)
+      : null
+    const runTotalPages = Math.max(0, Math.floor(data.run.totalPages || 0))
+    const modelConfigId =
+      typeof data.run.modelConfigId === 'string' && data.run.modelConfigId.trim().length > 0
+        ? data.run.modelConfigId.trim()
+        : null
+    const jobTotalPages =
+      typeof data.job.totalPages === 'number' && Number.isFinite(data.job.totalPages)
+        ? Math.max(1, Math.floor(data.job.totalPages))
+        : null
+
+    await this.db.transaction(async (tx) => {
+      await tx.insert(schema.generationRuns).values({
+        id: data.run.id,
+        sessionId: data.run.sessionId,
+        mode: data.run.mode,
+        status: 'running',
+        totalPages: runTotalPages,
+        error: null,
+        metadata: data.run.metadata ? JSON.stringify(data.run.metadata) : null,
+        animationPreferences,
+        modelConfigId,
+        createdAt: now,
+        updatedAt: now
+      })
+      await tx.insert(schema.sessionJobs).values({
+        id: data.job.id,
+        sessionId: data.job.sessionId,
+        kind: data.job.kind,
+        previousSessionStatus: data.job.previousSessionStatus,
+        targetPageId: data.job.targetPageId || null,
+        targetPageNumber: data.job.targetPageNumber ?? null,
+        selector: data.job.selector || null,
+        totalPages: jobTotalPages,
+        status: data.job.status,
         abortReason: null,
         createdAt: now,
-        activatedAt: data.status === 'active' ? now : null,
+        activatedAt: data.job.status === 'active' ? now : null,
         updatedAt: now,
         finishedAt: null
       })
-      .onConflictDoUpdate({
-        target: schema.generationJobs.id,
-        set: {
-          sessionId: data.sessionId,
-          kind: data.kind,
-          status: data.status,
-          abortReason: null,
-          activatedAt: data.status === 'active' ? now : null,
-          updatedAt: now,
-          finishedAt: null
-        }
-      })
-      .run()
+
+      if (data.pages.length === 0) return
+      await tx.insert(schema.generationPages).values(
+        data.pages.map((page) => ({
+          id: `${data.run.id}:${page.pageId}`,
+          runId: data.run.id,
+          sessionId: data.run.sessionId,
+          pageId: page.pageId,
+          pageNumber: Math.max(1, Math.floor(page.pageNumber)),
+          title: page.title,
+          contentOutline: page.contentOutline || null,
+          layoutIntent: page.layoutIntent || null,
+          htmlPath: page.htmlPath || null,
+          status: page.status || 'pending',
+          error: page.error || null,
+          retryCount: Math.max(0, Math.floor(page.retryCount || 0)),
+          createdAt: now,
+          updatedAt: now
+        }))
+      )
+    })
   }
 
-  async updateGenerationJobStatus(
+  async updateSessionJobStatus(
     jobId: string,
-    status: GenerationJobStatus,
+    status: SessionJobStatus,
     options?: { abortReason?: string | null }
   ): Promise<void> {
     const now = Math.floor(Date.now() / 1000)
@@ -898,41 +1229,54 @@ export class PPTDatabase {
       set.finishedAt = now
       set.abortReason = options?.abortReason || null
     }
-    await this.db
-      .update(schema.generationJobs)
-      .set(set)
-      .where(eq(schema.generationJobs.id, jobId))
-      .run()
+    await this.db.update(schema.sessionJobs).set(set).where(eq(schema.sessionJobs.id, jobId)).run()
   }
 
-  async getGenerationJob(jobId: string): Promise<GenerationJobRecord | undefined> {
+  async getSessionJob(jobId: string): Promise<SessionJobRecord | undefined> {
     const row = await this.db
       .select()
-      .from(schema.generationJobs)
-      .where(eq(schema.generationJobs.id, jobId))
+      .from(schema.sessionJobs)
+      .where(eq(schema.sessionJobs.id, jobId))
       .get()
-    return row ? this.normalizeGenerationJobRow(row as Record<string, unknown>) : undefined
+    return row ? this.normalizeSessionJobRow(row as Record<string, unknown>) : undefined
   }
 
-  async getLatestGenerationJob(sessionId: string): Promise<GenerationJobRecord | undefined> {
+  async getLatestSessionJob(
+    sessionId: string,
+    kinds?: readonly SessionJobKind[]
+  ): Promise<SessionJobRecord | undefined> {
+    const where =
+      kinds && kinds.length > 0
+        ? and(
+            eq(schema.sessionJobs.sessionId, sessionId),
+            inArray(schema.sessionJobs.kind, [...kinds])
+          )
+        : eq(schema.sessionJobs.sessionId, sessionId)
     const row = await this.db
       .select()
-      .from(schema.generationJobs)
-      .where(eq(schema.generationJobs.sessionId, sessionId))
-      .orderBy(desc(schema.generationJobs.updatedAt), desc(schema.generationJobs.createdAt))
+      .from(schema.sessionJobs)
+      .where(where)
+      .orderBy(desc(schema.sessionJobs.updatedAt), desc(schema.sessionJobs.createdAt))
       .limit(1)
       .get()
-    return row ? this.normalizeGenerationJobRow(row as Record<string, unknown>) : undefined
+    return row ? this.normalizeSessionJobRow(row as Record<string, unknown>) : undefined
   }
 
-  async listActiveGenerationJobs(): Promise<GenerationJobRecord[]> {
+  async listActiveSessionJobs(kinds?: readonly SessionJobKind[]): Promise<SessionJobRecord[]> {
+    const where =
+      kinds && kinds.length > 0
+        ? and(
+            inArray(schema.sessionJobs.status, ['pending', 'active']),
+            inArray(schema.sessionJobs.kind, [...kinds])
+          )
+        : inArray(schema.sessionJobs.status, ['pending', 'active'])
     const rows = await this.db
       .select()
-      .from(schema.generationJobs)
-      .where(inArray(schema.generationJobs.status, ['pending', 'active']))
-      .orderBy(asc(schema.generationJobs.createdAt))
+      .from(schema.sessionJobs)
+      .where(where)
+      .orderBy(asc(schema.sessionJobs.createdAt))
       .all()
-    return rows.map((row) => this.normalizeGenerationJobRow(row as Record<string, unknown>))
+    return rows.map((row) => this.normalizeSessionJobRow(row as Record<string, unknown>))
   }
 
   async updateGenerationRunStatus(
@@ -945,6 +1289,17 @@ export class PPTDatabase {
       .set({
         status,
         error: error || null,
+        updatedAt: Math.floor(Date.now() / 1000)
+      })
+      .where(eq(schema.generationRuns.id, runId))
+      .run()
+  }
+
+  async updateGenerationRunMetadata(runId: string, metadata: unknown): Promise<void> {
+    await this.db
+      .update(schema.generationRuns)
+      .set({
+        metadata: metadata ? JSON.stringify(metadata) : null,
         updatedAt: Math.floor(Date.now() / 1000)
       })
       .where(eq(schema.generationRuns.id, runId))
@@ -1280,7 +1635,9 @@ export class PPTDatabase {
         deletedAt: now,
         updatedAt: now
       })
-      .where(and(eq(schema.sessionPages.sessionId, sessionId), inArray(schema.sessionPages.id, ids)))
+      .where(
+        and(eq(schema.sessionPages.sessionId, sessionId), inArray(schema.sessionPages.id, ids))
+      )
       .run()
   }
 
@@ -2551,9 +2908,7 @@ export class PPTDatabase {
           }
 
           if (scope === 'system') {
-            if (
-              existing.source === 'builtin'
-            ) {
+            if (existing.source === 'builtin') {
               await this.updateStyleRow(existing.id, {
                 styleName: item.name.zh,
                 styleNameZh: item.name.zh,
@@ -2792,7 +3147,9 @@ export class PPTDatabase {
     resourceIds: string[],
     variant = 'default'
   ): Promise<ThumbnailRecord[]> {
-    const ids = Array.from(new Set(resourceIds.map((id) => String(id || '').trim()).filter(Boolean)))
+    const ids = Array.from(
+      new Set(resourceIds.map((id) => String(id || '').trim()).filter(Boolean))
+    )
     if (ids.length === 0) return []
     const rows = await this.db
       .select()

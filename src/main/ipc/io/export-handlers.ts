@@ -12,11 +12,11 @@ import { PDFDocument } from 'pdf-lib'
 import type { IpcContext } from '../context'
 import { resolveOutlinesForPages } from '../session/page-outline-utils'
 import {
-  writeHtmlToPptx,
-  collectEmbeddedFonts,
   type HtmlToPptxEmbeddedFont,
   type HtmlToPptxSlide
-} from '../../utils/html-pptx'
+} from '@arcsin1/html2pptx'
+import { writeHtmlToPptx } from '@arcsin1/html2pptx/node'
+import { collectEmbeddedFonts } from '../../utils/html-pptx/font-collect'
 import {
   captureHtmlPageToPptxImageSlide,
   extractHtmlPageToPptxSlide
@@ -708,6 +708,7 @@ export function registerExportHandlers(ctx: IpcContext): void {
                 page,
                 timeoutMs: EXPORT_PAGE_READY_TIMEOUT_MS,
                 settleMs: EXPORT_CAPTURE_SETTLE_MS,
+                animationMode: 'slide-transition',
                 waitForPrintReadySignal
               })
         })

@@ -40,6 +40,7 @@ import { useVisibleItemIds } from '../hooks/useVisibleItemIds'
 import { filterByStyleCase, filterByStyleKeyword, parseStyleCases } from '@renderer/lib/style-case'
 import { StyleCaseFilter } from '../components/style/StyleCaseFilter'
 import { cn } from '@renderer/lib/utils'
+import { localAssetUrl } from '@shared/local-asset'
 
 type StyleSummary = {
   id: string
@@ -59,7 +60,6 @@ type StyleSummary = {
 const MAX_VISIBLE_IFRAMES = 8
 const OFFICIAL_STYLE_SKILL_URL = 'https://github.com/arcsin1/style-generate-skill'
 
-const localAssetUrl = (filePath: string): string => `local-asset://${encodeURIComponent(filePath)}`
 const stylePreviewUrl = (filePath: string): string =>
   import.meta.env.MODE === 'test' ? 'about:blank' : localAssetUrl(filePath)
 const compareStylesByUpdated = (a: StyleSummary, b: StyleSummary): number =>

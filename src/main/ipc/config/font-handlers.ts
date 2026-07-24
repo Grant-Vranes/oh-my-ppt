@@ -3,6 +3,7 @@ import crypto from 'crypto'
 import fs from 'fs'
 import path from 'path'
 import { nanoid } from 'nanoid'
+import { localAssetUrl } from '@shared/local-asset'
 import type { IpcContext } from '../context'
 import {
   AVAILABLE_GOOGLE_FONTS,
@@ -223,10 +224,10 @@ export function registerFontHandlers(_ctx: IpcContext): void {
       try {
         const raw = await fs.promises.readFile(facesCssPath, 'utf-8')
         const fontDir = path.join(bundledRoot, dirName(font.family))
-        // Rewrite url("./xxx.woff2") → url("local-asset:///abs/path/xxx.woff2")
+        // Rewrite url("./xxx.woff2") to a local-asset URL.
         const rewritten = raw.replace(
           /url\(\s*"\.\/([^"]+)"\s*\)/g,
-          (_, fileName) => `url("local-asset://${encodeURI(path.join(fontDir, fileName))}")`
+          (_, fileName) => `url("${localAssetUrl(path.join(fontDir, fileName))}")`
         )
         cssBlocks.push(rewritten)
       } catch {
@@ -239,7 +240,7 @@ export function registerFontHandlers(_ctx: IpcContext): void {
     for (const entry of registry.fonts) {
       const fontDir = path.join(getUserFontFilesRoot(), entry.id)
       for (const file of entry.files) {
-        const fileUrl = `local-asset://${encodeURI(path.join(fontDir, file.file))}`
+        const fileUrl = localAssetUrl(path.join(fontDir, file.file))
         cssBlocks.push(
           `@font-face{font-family:"${cssEscapeString(entry.family)}";src:url("${cssEscapeString(fileUrl)}") format("woff2");font-weight:${file.weight};font-style:${file.style};font-display:swap}`
         )

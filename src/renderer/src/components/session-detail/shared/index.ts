@@ -3,5 +3,10 @@ export {
   imageHistoryToMessages,
   mergeImageMessages
 } from './imageMessageUtils'
-export { normalizePagesForSelection } from './pageUtils'
+export {
+  isDeckEditGenerationEvent,
+  isPageBeautifyGenerationEvent,
+  isPageEditGenerationEvent
+} from './pageEditGenerationEvent'
+export { isPageGenerationLocked, normalizePagesForSelection } from './pageUtils'
 export type { ChatType, SessionPreviewPage } from './types'

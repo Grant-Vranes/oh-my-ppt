@@ -1,5 +1,32 @@
 # 更新日志 / Changelog
 
+## 2026-07-24 · v2.1.0
+
+### 中文
+
+- 新增 HTML 编辑功能：导入单HTML 文件后可在应用内直接编辑，保存，支持 AI 修改、素材添加、历史管理、预览和导出。
+- 新增编辑页一键页面美化：自动优化当前页面的版式和视觉效果，同时保留原有文字与数据。
+- 优化 PPTX 导入：升级独立的 `@arcsin1/pptx2json` 包，导入后的内容更接近原稿，也更方便继续编辑，大幅度优化导入效果，覆盖更多能力。
+- 优化可编辑 PPTX 导出：升级独立的 `@arcsin1/html2pptx` 包，导出的文件更接近应用内的效果，大幅度优化导出效果，覆盖更多能力。
+- 大幅优化整套风格切换交互：支持后台处理，切换过程中可继续使用应用，并可查看进度和重试失败页面，在后台独立运行。
+- 大幅优化新增内容页交互：输入页面需求后可在后台生成新页面，沿用现有风格，生成状态和结果更清晰，在后台独立运行。
+- 大幅优化编辑任务和界面反馈：页面修改与 PPTX 导出更稳定，会话、模板和用量查看更清晰，可重试，可中断，在后台独立运行。
+- 大幅优化ai模式的交互：升级为更智能的ai对话，完全后台独立运行，执行中，可重试，可中断，在后台独立运行。
+- 修复 Windows 本地资源加载问题。
+- 修复文字颜色修改后点击编辑区外会恢复的问题。
+
+### English
+
+- Added HTML editing: import HTML files and continue working on them in the app with AI edits, media insertion, history, preview, and export.
+- Added one-click slide beautification: automatically improve the current slide's layout and visual quality while keeping its text and data unchanged.
+- Improved PPTX import: upgraded the standalone `@arcsin1/pptx2json` package so imported content stays closer to the original and is easier to continue editing.
+- Improved editable PPTX export: upgraded the standalone `@arcsin1/html2pptx` package so exported files more closely match the in-app result.
+- Significantly improved full-deck style switching: it now runs in the background, so you can keep using the app while tracking progress and retrying failed slides.
+- Significantly improved content-slide creation: describe the page you need and generate it in the background using the presentation's existing style, with clearer progress and results.
+- Improved editing reliability and interface feedback: page edits and PPTX export are more stable, while Sessions, Templates, and Token Usage are clearer to manage.
+- Fixed Windows local-resource loading issues.
+- Fixed an issue where text color changes could revert after clicking outside the editing area.
+
 ## 2026-07-12 · v2.0.20
 
 ### 中文

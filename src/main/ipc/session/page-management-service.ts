@@ -166,12 +166,15 @@ export async function createBlankSessionPage(
   const { sessionId, sourcePageId } = args
   const { projectDir, indexPath, deckTitle, pages } = await loadEditableSessionPages(ctx, sessionId)
   if (pages.length === 0) throw new Error('当前会话没有可复制的页面')
-  const sourcePage = pages.find((page) => page.id === sourcePageId || page.pageId === sourcePageId)
-  if (!sourcePage) throw new Error('未找到要复制的页面')
+  const sourceIndex = pages.findIndex(
+    (page) => page.id === sourcePageId || page.pageId === sourcePageId
+  )
+  if (sourceIndex < 0) throw new Error('未找到要复制的页面')
+  const sourcePage = pages[sourceIndex]
   if (!fs.existsSync(sourcePage.htmlPath)) throw new Error('源页面文件不存在')
 
   await ensureSessionRuntimeCompatible(ctx, projectDir)
-  const insertAfterPageNumber = pages.length
+  const insertAfterPageNumber = sourcePage.pageNumber
   const nextPageEntityId = nanoid()
   const nextPageId = `page-${pageSlugId()}`
   const nextHtmlPath = path.join(projectDir, `${nextPageId}.html`)
@@ -200,7 +203,11 @@ export async function createBlankSessionPage(
     status: 'completed',
     error: null
   }
-  const mergedPages = [...pages, newPage]
+  const mergedPages = [
+    ...pages.slice(0, sourceIndex + 1),
+    newPage,
+    ...pages.slice(sourceIndex + 1)
+  ]
 
   await ctx.db.upsertSessionPage({
     id: newPage.id,
@@ -221,7 +228,7 @@ export async function createBlankSessionPage(
     deckTitle,
     pages: mergedPages,
     operation: 'addPage',
-    prompt: `新增空白页到末尾：复制 P${sourcePage.pageNumber}`
+    prompt: `新增空白页：复制 P${sourcePage.pageNumber}`
   })
   const project = await ctx.db.getProject(sessionId)
   if (project?.id) await ctx.db.updateProjectStatus(project.id, 'draft')
@@ -277,11 +284,7 @@ export async function duplicateSessionPage(
     error: null
   }
   // 插到源页紧后方（区别于空白页追加到末尾）。
-  const mergedPages = [
-    ...pages.slice(0, sourceIndex + 1),
-    newPage,
-    ...pages.slice(sourceIndex + 1)
-  ]
+  const mergedPages = [...pages.slice(0, sourceIndex + 1), newPage, ...pages.slice(sourceIndex + 1)]
 
   await ctx.db.upsertSessionPage({
     id: newPage.id,

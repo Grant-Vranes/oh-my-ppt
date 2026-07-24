@@ -1,4 +1,4 @@
-import { ChevronDown, Eye, LayoutTemplate, PencilLine, Plus, Sparkles, Trash2 } from 'lucide-react'
+import { ChevronDown, Eye, LayoutTemplate, PencilLine, Sparkles, Trash2 } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card'
 import {
@@ -10,6 +10,7 @@ import {
 import type { TemplateListItem } from '@renderer/lib/ipc'
 import { useT } from '@renderer/i18n'
 import dayjs from 'dayjs'
+import { localAssetUrl } from '@shared/local-asset'
 import { resolveSlideSize } from '@shared/slide-size'
 
 export function TemplateCard({
@@ -30,9 +31,7 @@ export function TemplateCard({
   onPreview: (template: TemplateListItem) => void
 }): React.JSX.Element {
   const t = useT()
-  const thumbnailUrl = template.thumbnailPath
-    ? `local-asset://${encodeURI(template.thumbnailPath.replace(/\\/g, '/'))}`
-    : ''
+  const thumbnailUrl = template.thumbnailPath ? localAssetUrl(template.thumbnailPath) : ''
   const slideSize = resolveSlideSize({
     id: template.slideSizeId,
     width: template.slideWidth,
@@ -174,20 +173,15 @@ export function TemplateEmptyState(): React.JSX.Element {
   const t = useT()
 
   return (
-    <div className="flex min-h-[360px] items-center justify-center px-4 py-12">
-      <div className="flex w-full max-w-[680px] flex-col items-center rounded-xl border border-[#ded2bd]/45 bg-[#fffdf8]/54 px-10 py-10 text-center shadow-[0_8px_20px_rgba(74,59,42,0.045)]">
-        <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-[#ede4d4]/82 text-[#6f7d62]">
-          <LayoutTemplate className="h-7 w-7" />
+    <section className="flex min-h-[calc(100vh-220px)] items-center justify-center px-4 py-12">
+      <div className="flex w-full max-w-[460px] flex-col items-center text-center">
+        <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-lg border border-[#d7cab1] bg-[#fff9ef] text-[#617052] shadow-[0_6px_16px_rgba(78,88,62,0.08)]">
+          <LayoutTemplate className="h-8 w-8" />
         </div>
-        <h3 className="text-lg font-semibold text-[#34402c]">{t('templates.emptyTitle')}</h3>
-        <p className="mt-2 max-w-[520px] text-sm leading-6 text-[#756855]">
-          {t('templates.emptyDescription')}
-        </p>
-        <div className="mt-5 flex items-center gap-2 rounded-md bg-[#f3ecdf]/78 px-3 py-2 text-xs text-[#7c6a4c]">
-          <Plus className="h-3.5 w-3.5 text-[#5d6b4d]" />
-          {t('templates.emptyHint')}
-        </div>
+        <h3 className="text-xl font-semibold text-[#3e4a32]">{t('templates.emptyTitle')}</h3>
+        <p className="mt-2 text-sm leading-6 text-[#7b705f]">{t('templates.emptyDescription')}</p>
+        <p className="mt-1 text-xs leading-5 text-[#95866f]">{t('templates.emptyHint')}</p>
       </div>
-    </div>
+    </section>
   )
 }

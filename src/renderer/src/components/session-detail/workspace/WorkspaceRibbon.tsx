@@ -30,6 +30,7 @@ export function WorkspaceRibbon({
     pendingTabLabel,
     savingBeforeTabSwitch,
     cancelPendingTab,
+    discardPendingTab,
     confirmPendingTab
   } = useWorkspaceRibbonController(isSavingEdits)
 
@@ -47,7 +48,14 @@ export function WorkspaceRibbon({
 
   if (!selectedPageKey) return null
 
-  const toolbarDisabled = state.isGenerating || state.isSavingEdits || isPreviewSettling
+  const toolbarDisabled =
+    state.isGenerating ||
+    state.isPageEditing ||
+    state.isPageBeautifying ||
+    state.isDeckEditing ||
+    state.isStyleSwitchPageLocked ||
+    state.isSavingEdits ||
+    isPreviewSettling
 
   return (
     <>
@@ -84,7 +92,16 @@ export function WorkspaceRibbon({
             })}
           </AlertDialogDescription>
           <div className="flex justify-end gap-2">
-            <AlertDialogCancel disabled={savingBeforeTabSwitch}>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={savingBeforeTabSwitch}
+              className="border border-[#d7cbb7]/80 bg-[#fffdf8]/92 text-[#657058] hover:bg-[#f5efe4] disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={(event) => {
+                event.preventDefault()
+                discardPendingTab()
+              }}
+            >
+              {t('common.dontSave')}
+            </AlertDialogAction>
             <AlertDialogAction
               disabled={savingBeforeTabSwitch}
               className="bg-[#5d6b4d] text-white hover:bg-[#4d5a40] disabled:cursor-not-allowed disabled:opacity-60"
@@ -98,6 +115,9 @@ export function WorkspaceRibbon({
               ) : null}
               {t('sessionDetail.workspaceSwitchSaveConfirmAction')}
             </AlertDialogAction>
+            <AlertDialogCancel disabled={savingBeforeTabSwitch}>
+              {t('common.cancel')}
+            </AlertDialogCancel>
           </div>
         </AlertDialogContent>
       </AlertDialog>

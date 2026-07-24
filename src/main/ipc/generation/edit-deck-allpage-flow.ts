@@ -181,23 +181,25 @@ export async function executeDeckAllPageEditGeneration(
     existingPageIdsBeforeRun.push(item.pageId)
   }
 
-  await db.createGenerationRun({
-    id: context.runId,
-    sessionId: context.sessionId,
-    mode: 'edit',
-    totalPages: selectedPageRefs.length,
-    modelConfigId: context.modelConfigId,
-    metadata: {
-      editScope: 'deck',
-      selectedPageId: null,
-      selectPageIds: selectedPageIds,
-      selector: null,
+  if (!context.skipGenerationRunCreation) {
+    await db.createGenerationRun({
+      id: context.runId,
+      sessionId: context.sessionId,
+      mode: 'edit',
+      totalPages: selectedPageRefs.length,
       modelConfigId: context.modelConfigId,
-      modelConfigName: context.modelConfigName,
-      provider: context.provider,
-      model: context.model
-    }
-  })
+      metadata: {
+        editScope: 'deck',
+        selectedPageId: null,
+        selectPageIds: selectedPageIds,
+        selector: null,
+        modelConfigId: context.modelConfigId,
+        modelConfigName: context.modelConfigName,
+        provider: context.provider,
+        model: context.model
+      }
+    })
+  }
 
   const emitEditChunk = createDeckProgressEmitter(context.sessionId, context.appLocale)
   emitEditChunk({
@@ -447,13 +449,6 @@ export async function executeDeckAllPageEditGeneration(
       message
     })
     await db.updateGenerationRunStatus(context.runId, 'failed', message)
-    emitEditChunk({
-      type: 'run_error',
-      payload: {
-        runId: context.runId,
-        message
-      }
-    })
     throw error
   }
 

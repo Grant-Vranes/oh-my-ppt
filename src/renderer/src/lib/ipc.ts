@@ -5,6 +5,7 @@ import type {
   GenerateRetryFailedPayload,
   GenerateRetrySinglePagePayload,
   GenerateStartPayload,
+  SessionPageEditAssessment,
   ParseDocumentPlanPayload,
   ParseImageReferencePayload,
   ParsedDocumentPlanResult,
@@ -24,10 +25,7 @@ import type { SpeechConfig } from '@shared/speech'
 import type { HistoryVersion, RollbackHistoryResult } from '@shared/history.js'
 import type { HtmlThumbnailResourceType } from '@shared/thumbnail'
 import type { IndexTransitionConfig, IndexTransitionType } from '@shared/index-transition.js'
-import type {
-  ElementAnimationConfig,
-  ElementAnimationPatch
-} from '@shared/element-animation.js'
+import type { ElementAnimationConfig, ElementAnimationPatch } from '@shared/element-animation.js'
 import type {
   ThinkingStage,
   ThinkingChatMessage,
@@ -149,7 +147,53 @@ export interface GenerateRunStateSnapshot {
   error: string | null
   startedAt: number | null
   updatedAt: number | null
-  kind?: 'standard' | 'template' | 'retry'
+  kind?:
+    | 'standard'
+    | 'template'
+    | 'retry'
+    | 'add-page'
+    | 'single-page-retry'
+    | 'edit'
+    | 'page-edit'
+    | 'deck-edit'
+    | 'style-switch'
+    | 'page-beautify'
+  targetPageId?: string
+  targetPageNumber?: number
+  activityKind?:
+    | 'page-edit'
+    | 'deck-edit'
+    | 'edit'
+    | 'style-switch'
+    | 'page-beautify'
+    | 'single-page-retry'
+    | 'addPage'
+  retryPayload?: GenerateStartPayload
+}
+
+export interface StyleSwitchJobSnapshot {
+  sessionId: string
+  runId: string | null
+  status: 'idle' | 'running' | 'completed' | 'partial' | 'failed' | 'cancelled'
+  hasActiveRun: boolean
+  progress: number
+  totalPages: number
+  completedPageCount: number
+  failedPageCount: number
+  targetStyleId: string | null
+  targetStyleName: string | null
+  pages: Array<{
+    pageId: string
+    pageNumber: number
+    title: string
+    status: 'pending' | 'running' | 'completed' | 'failed'
+    error: string | null
+    retryCount: number
+  }>
+  error: string | null
+  startedAt: number | null
+  updatedAt: number | null
+  kind: 'style-switch'
 }
 
 export interface ExportDeckResult {
@@ -213,6 +257,60 @@ export interface ImportSessionFileResult {
   pageCount?: number
   warnings?: string[]
 }
+
+export interface HtmlEditorImportResult {
+  docId: string
+  title: string
+  htmlPath: string
+  sourcePath: string
+  designWidth: number
+  html: string
+}
+
+export interface HtmlEditorAiMessage {
+  role: 'user' | 'assistant'
+  content: string
+  selectedElement?: HtmlEditorAiElementContext
+}
+
+export interface HtmlEditorAiElementContext {
+  selector: string
+  label?: string
+  elementTag?: string
+  elementText?: string
+  html?: string
+}
+
+export interface HtmlEditorAiEditBatch {
+  propertyEdits: Array<Record<string, unknown>>
+  textEdits: Array<Record<string, unknown>>
+  dragEdits: Array<Record<string, unknown>>
+  deletes: Array<Record<string, unknown>>
+  addElements: Array<Record<string, unknown>>
+}
+
+export type HtmlEditorAiIntent = 'inspect' | 'redesign' | 'style' | 'layout' | 'content' | 'other'
+
+export interface HtmlEditorAiPlan {
+  intent: HtmlEditorAiIntent
+  target: string
+  summary: string
+  changes: string[]
+  confirmationQuestion: string
+  edits: HtmlEditorAiEditBatch
+}
+
+export interface HtmlEditorAiHistoryMessage extends HtmlEditorAiMessage {
+  id: string
+  createdAt: number
+  intent?: HtmlEditorAiIntent
+  plan?: HtmlEditorAiPlan | null
+  requiresConfirmation?: boolean
+}
+
+export type HtmlEditorFileImportResult =
+  | { cancelled: true; reason?: 'user-cancelled' | 'storage-not-configured' }
+  | ({ cancelled: false } & HtmlEditorImportResult)
 
 export interface TemplateListItem {
   id: string
@@ -424,10 +522,11 @@ export const ipc = {
       MergeTemplateSourceSummary[]
     >,
   listMergeSourceTemplatePages: (payload: { targetSessionId: string; templateId: string }) =>
-    getIpc().invoke(
-      'session:listMergeSourcePages',
-      { targetSessionId: payload.targetSessionId, sourceType: 'template', templateId: payload.templateId }
-    ) as Promise<MergeSourcePageSummary[]>,
+    getIpc().invoke('session:listMergeSourcePages', {
+      targetSessionId: payload.targetSessionId,
+      sourceType: 'template',
+      templateId: payload.templateId
+    }) as Promise<MergeSourcePageSummary[]>,
   mergeTemplatePages: (payload: {
     targetSessionId: string
     templateId: string
@@ -610,6 +709,99 @@ export const ipc = {
     getIpc().invoke('session:updateTitle', payload) as Promise<{ ok: boolean }>,
   importSessionFile: () =>
     getIpc().invoke('session:importFile') as Promise<ImportSessionFileResult>,
+  importHtmlFile: () =>
+    getIpc().invoke('html-editor:import') as Promise<HtmlEditorFileImportResult>,
+  listHtmlEditorMedia: (payload: { docId: string; mediaType: 'image' | 'video' }) =>
+    getIpc().invoke('html-editor:listMedia', payload) as Promise<{
+      assets: Array<{ fileName: string; filePath: string; relativePath: string; url: string }>
+    }>,
+  chooseAndImportHtmlMedia: (payload: { docId: string; mediaType: 'image' | 'video' }) =>
+    getIpc().invoke('html-editor:chooseAndImportMedia', payload) as Promise<
+      | { cancelled: true }
+      | { cancelled: false; filePath: string; relativePath: string; url: string }
+    >,
+  ensureHtmlAnchor: (payload: {
+    html: string
+    pageId: string
+    selector: string
+    elementTag?: string
+    formula?: { latex?: unknown; html?: unknown; displayMode?: unknown }
+  }) =>
+    getIpc().invoke('html-editor:ensureAnchor', payload) as Promise<{
+      html: string
+      selector: string
+      blockId: string
+      changed: boolean
+    }>,
+  applyHtmlEdits: (payload: {
+    html: string
+    pageId: string
+    dragEdits?: unknown[]
+    textEdits?: unknown[]
+    propertyEdits?: unknown[]
+    deletes?: unknown[]
+    addElements?: unknown[]
+  }) =>
+    getIpc().invoke('html-editor:applyEdits', payload) as Promise<{
+      html: string
+      warnings: string[]
+    }>,
+  exportHtml: (payload: { html: string; suggestedName?: string }) =>
+    getIpc().invoke('html-editor:export', payload) as Promise<
+      { cancelled: true } | { cancelled: false; path: string }
+    >,
+  cleanupHtmlEditor: (payload: { docId: string }) =>
+    getIpc().invoke('html-editor:cleanup', payload) as Promise<{ ok: boolean }>,
+  openHtmlInBrowser: (payload: { docId: string }) =>
+    getIpc().invoke('html-editor:openInBrowser', payload) as Promise<{ ok: boolean }>,
+  revealHtmlFile: (payload: { docId: string }) =>
+    getIpc().invoke('html-editor:revealFile', payload) as Promise<{ ok: boolean }>,
+  listHtmlVersions: (payload: { docId: string }) =>
+    getIpc().invoke('html-editor:listVersions', payload) as Promise<{
+      versions: Array<{ id: string; commitSha: string; message: string; createdAt: number }>
+    }>,
+  restoreHtmlVersion: (payload: { docId: string; versionId: string }) =>
+    getIpc().invoke('html-editor:restoreVersion', payload) as Promise<{ html: string }>,
+  listHtmlDocuments: () =>
+    getIpc().invoke('html-editor:listDocuments') as Promise<{
+      documents: Array<{
+        id: string
+        title: string
+        sourcePath: string | null
+        htmlPath: string
+        designWidth: number
+        updatedAt: number
+        thumbnailPath: string | null
+      }>
+    }>,
+  openHtmlDocument: (payload: { docId: string }) =>
+    getIpc().invoke('html-editor:openDocument', payload) as Promise<HtmlEditorFileImportResult>,
+  htmlEditorAiChat: (payload: {
+    documentId: string
+    documentTitle?: string
+    pageHtml?: string
+    selectedElement?: HtmlEditorAiElementContext
+    recentMessages?: HtmlEditorAiMessage[]
+    pendingPlan?: HtmlEditorAiPlan
+    userMessage: string
+    modelConfigId?: string
+  }) =>
+    getIpc().invoke('html-editor:aiChat', payload) as Promise<{
+      reply: string
+      model: string
+      intent: HtmlEditorAiIntent
+      plan: HtmlEditorAiPlan | null
+      requiresConfirmation: boolean
+      applied: boolean
+      appliedHtml?: string
+      warnings: string[]
+    }>,
+  listHtmlEditorMessages: (payload: { docId: string }) =>
+    getIpc().invoke('html-editor:listMessages', payload) as Promise<{
+      messages: HtmlEditorAiHistoryMessage[]
+    }>,
+  clearHtmlEditorMessages: (payload: { docId: string }) =>
+    getIpc().invoke('html-editor:clearMessages', payload) as Promise<{ ok: boolean }>,
   listTemplates: () => getIpc().invoke('templates:list') as Promise<{ items: TemplateListItem[] }>,
   createTemplateFromSession: (payload: {
     sessionId: string
@@ -671,8 +863,91 @@ export const ipc = {
       alreadyRunning?: boolean
       queued?: boolean
     }>,
+  assessPageEdit: (payload: GenerateStartPayload) =>
+    getIpc().invoke('page-edit:assess', payload) as Promise<
+      SessionPageEditAssessment & {
+        reply: string
+        targetPageId: string
+        targetPageNumber?: number
+      }
+    >,
+  startPageEdit: (payload: GenerateStartPayload) =>
+    getIpc().invoke('page-edit:start', payload) as Promise<{
+      success: boolean
+      runId?: string
+      alreadyRunning?: boolean
+    }>,
+  getPageEditState: (sessionId: string) =>
+    getIpc().invoke('page-edit:state', sessionId) as Promise<GenerateRunStateSnapshot>,
+  listActivePageEditRuns: () =>
+    getIpc().invoke('page-edit:listActive') as Promise<GenerateRunStateSnapshot[]>,
+  cancelPageEdit: (sessionId: string) =>
+    getIpc().invoke('page-edit:cancel', sessionId) as Promise<{ success: boolean }>,
+  startPageBeautify: (payload: {
+    sessionId: string
+    selectedPageId: string
+    modelConfigId?: string
+    layoutAudit?: string
+  }) =>
+    getIpc().invoke('page-beautify:start', payload) as Promise<{
+      success: boolean
+      runId?: string
+      alreadyRunning?: boolean
+    }>,
+  getPageBeautifyState: (sessionId: string) =>
+    getIpc().invoke('page-beautify:state', sessionId) as Promise<GenerateRunStateSnapshot>,
+  listActivePageBeautifyRuns: () =>
+    getIpc().invoke('page-beautify:listActive') as Promise<GenerateRunStateSnapshot[]>,
+  cancelPageBeautify: (sessionId: string) =>
+    getIpc().invoke('page-beautify:cancel', sessionId) as Promise<{ success: boolean }>,
+  startDeckEdit: (payload: GenerateStartPayload) =>
+    getIpc().invoke('deck-edit:start', payload) as Promise<{
+      success: boolean
+      runId?: string
+      alreadyRunning?: boolean
+    }>,
+  getDeckEditState: (sessionId: string) =>
+    getIpc().invoke('deck-edit:state', sessionId) as Promise<GenerateRunStateSnapshot>,
+  listActiveDeckEditRuns: () =>
+    getIpc().invoke('deck-edit:listActive') as Promise<GenerateRunStateSnapshot[]>,
+  cancelDeckEdit: (sessionId: string) =>
+    getIpc().invoke('deck-edit:cancel', sessionId) as Promise<{ success: boolean }>,
+  startStyleSwitch: (payload: SwitchSessionStylePayload) =>
+    getIpc().invoke('style-switch:start', payload) as Promise<{
+      success: boolean
+      runId?: string
+      styleId: string
+      unchanged?: boolean
+      alreadyRunning?: boolean
+    }>,
+  retryStyleSwitchPage: (payload: {
+    sessionId: string
+    failedRunId?: string
+    pageId: string
+    modelConfigId?: string
+  }) =>
+    getIpc().invoke('style-switch:retryPage', payload) as Promise<{
+      success: boolean
+      runId?: string
+      styleId: string
+      alreadyRunning?: boolean
+    }>,
+  retryFailedStyleSwitchPages: (payload: RetrySessionStylePayload) =>
+    getIpc().invoke('style-switch:retryFailed', payload) as Promise<{
+      success: boolean
+      runId?: string
+      styleId: string
+      alreadyRunning?: boolean
+      failedPageCount: number
+    }>,
+  getStyleSwitchState: (sessionId: string) =>
+    getIpc().invoke('style-switch:state', sessionId) as Promise<StyleSwitchJobSnapshot>,
+  listActiveStyleSwitchRuns: () =>
+    getIpc().invoke('style-switch:listActive') as Promise<StyleSwitchJobSnapshot[]>,
+  cancelStyleSwitch: (sessionId: string) =>
+    getIpc().invoke('style-switch:cancel', sessionId) as Promise<{ success: boolean }>,
   switchSessionStyle: (payload: SwitchSessionStylePayload) =>
-    getIpc().invoke('generate:switchStyle', payload) as Promise<{
+    getIpc().invoke('style-switch:start', payload) as Promise<{
       success: boolean
       runId?: string
       styleId: string
@@ -681,7 +956,7 @@ export const ipc = {
       failedPageCount?: number
     }>,
   retrySessionStyle: (payload: RetrySessionStylePayload) =>
-    getIpc().invoke('generate:retryStyleSwitch', payload) as Promise<{
+    getIpc().invoke('style-switch:retryFailed', payload) as Promise<{
       success: boolean
       runId?: string
       styleId: string
@@ -714,11 +989,14 @@ export const ipc = {
       success: boolean
       runId?: string
       alreadyRunning?: boolean
+      queued?: boolean
     }>,
   retrySinglePage: (payload: GenerateRetrySinglePagePayload) =>
     getIpc().invoke('generate:retrySinglePage', payload) as Promise<{
       success: boolean
       runId?: string
+      alreadyRunning?: boolean
+      queued?: boolean
     }>,
   getGenerateState: (sessionId: string) =>
     getIpc().invoke('generate:state', sessionId) as Promise<GenerateRunStateSnapshot>,

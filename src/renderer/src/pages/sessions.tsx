@@ -3,9 +3,30 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Card, CardContent, CardTitle } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/Dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '../components/ui/Dialog'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/Tooltip'
-import { FileArchive, FileText, FileUp, FolderOpen, LayoutTemplate, MessageSquare, MessagesSquare, Pencil, Search, Sparkles, Trash2, X, type LucideIcon } from 'lucide-react'
+import {
+  FileArchive,
+  FileText,
+  FileUp,
+  FolderOpen,
+  LayoutTemplate,
+  MessageSquare,
+  MessagesSquare,
+  Pencil,
+  Search,
+  Sparkles,
+  Trash2,
+  X,
+  type LucideIcon
+} from 'lucide-react'
 import { type Session, useSessionStore, useTemplateStore } from '../store'
 import { useToastStore } from '../store'
 import { ipc, type GenerateRunStateSnapshot, type HtmlThumbnailTask } from '../lib/ipc'
@@ -16,6 +37,7 @@ import { useThumbnailUpdates } from '../hooks/useThumbnailUpdates'
 import sessionPlaceholder from '../assets/images/space.webp'
 import dayjs from 'dayjs'
 import duration from 'dayjs/plugin/duration'
+import { localAssetUrl } from '@shared/local-asset'
 import { resolveSessionSlideSize } from '@shared/slide-size'
 
 dayjs.extend(duration)
@@ -24,14 +46,20 @@ type ActiveGenerateRun = GenerateRunStateSnapshot & {
   status: 'queued' | 'running'
 }
 
-const localAssetUrl = (filePath: string): string =>
-  import.meta.env.MODE === 'test'
-    ? 'about:blank'
-    : `local-asset://${encodeURIComponent(filePath)}`
+const sessionThumbnailUrl = (filePath: string): string =>
+  import.meta.env.MODE === 'test' ? 'about:blank' : localAssetUrl(filePath)
 
 const getSourceTag = (
   session: Session,
-  labels: { pptx: string; sessionFile: string; saveAsNew: string; document: string; ai: string; thinking: string; template: string }
+  labels: {
+    pptx: string
+    sessionFile: string
+    saveAsNew: string
+    document: string
+    ai: string
+    thinking: string
+    template: string
+  }
 ): { label: string; Icon: LucideIcon; className: string; iconClassName: string } => {
   const metadata = parseSessionMetadata(session.metadata)
   const source = typeof metadata.source === 'string' ? metadata.source : ''
@@ -44,7 +72,11 @@ const getSourceTag = (
       iconClassName: 'text-[#189072]'
     }
   }
-  if (source === 'template' || source === 'template-direct-edit' || session.model === 'template-direct-edit') {
+  if (
+    source === 'template' ||
+    source === 'template-direct-edit' ||
+    session.model === 'template-direct-edit'
+  ) {
     return {
       label: labels.template,
       Icon: LayoutTemplate,
@@ -62,7 +94,11 @@ const getSourceTag = (
       iconClassName: 'text-[#765ee0]'
     }
   }
-  if (source === 'pptx-import' || session.provider === 'import' || session.model === 'pptx-import') {
+  if (
+    source === 'pptx-import' ||
+    session.provider === 'import' ||
+    session.model === 'pptx-import'
+  ) {
     return {
       label: labels.pptx,
       Icon: FileUp,
@@ -100,7 +136,8 @@ const getSourceTag = (
 
 export function SessionsPage(): React.JSX.Element {
   const navigate = useNavigate()
-  const { sessions, fetchSessions, deleteSession, updateSessionTitle, importSessionFile } = useSessionStore()
+  const { sessions, fetchSessions, deleteSession, updateSessionTitle, importSessionFile } =
+    useSessionStore()
   const { createTemplateFromSession } = useTemplateStore()
   const { success, error } = useToastStore()
   const t = useT()
@@ -129,14 +166,21 @@ export function SessionsPage(): React.JSX.Element {
 
   useEffect(() => {
     let mounted = true
-    void ipc
-      .listActiveGenerateRuns()
-      .then((runs) => {
+    void Promise.all([
+      ipc.listActiveGenerateRuns(),
+      ipc.listActivePageEditRuns(),
+      ipc.listActivePageBeautifyRuns(),
+      ipc.listActiveDeckEditRuns()
+    ])
+      .then(([generationRuns, pageEditRuns, pageBeautifyRuns, deckEditRuns]) => {
         if (!mounted) return
         setActiveRuns(
           Object.fromEntries(
-            runs
-              .filter((run): run is ActiveGenerateRun => run.status === 'queued' || run.status === 'running')
+            [...generationRuns, ...pageEditRuns, ...pageBeautifyRuns, ...deckEditRuns]
+              .filter(
+                (run): run is ActiveGenerateRun =>
+                  run.status === 'queued' || run.status === 'running'
+              )
               .map((run) => [run.sessionId, run])
           )
         )
@@ -188,7 +232,18 @@ export function SessionsPage(): React.JSX.Element {
             error: null,
             startedAt: previous?.startedAt || Date.now(),
             updatedAt: Date.now(),
-            kind: previous?.kind,
+            kind:
+              chunk.payload.activityKind === 'page-edit'
+                ? 'page-edit'
+                : chunk.payload.activityKind === 'deck-edit'
+                  ? 'deck-edit'
+                : chunk.payload.activityKind === 'page-beautify'
+                  ? 'page-beautify'
+                  : chunk.payload.activityKind === 'addPage'
+                    ? 'add-page'
+                    : chunk.payload.activityKind === 'single-page-retry'
+                      ? 'single-page-retry'
+                      : previous?.kind,
             completedPageCount,
             failedPageCount
           }
@@ -221,10 +276,25 @@ export function SessionsPage(): React.JSX.Element {
     page_count: number | null
   }): boolean => getEditorGate(session, 0.68).canEdit
 
-  const getSessionRoute = (session: { id: string; status: string; metadata: string | null; page_count: number | null }): string => {
+  const getSessionRoute = (session: {
+    id: string
+    status: string
+    metadata: string | null
+    page_count: number | null
+  }): string => {
     const activeRun = activeRuns[session.id]
     const metadata = parseSessionMetadata(session.metadata)
     if (activeRun) {
+      if (
+        (activeRun.kind === 'edit' ||
+          activeRun.kind === 'page-edit' ||
+          activeRun.kind === 'deck-edit' ||
+          activeRun.kind === 'add-page' ||
+          activeRun.kind === 'single-page-retry') &&
+        canEnterEditor(session)
+      ) {
+        return `/sessions/${session.id}`
+      }
       return activeRun.kind === 'template' || metadata.source === 'template'
         ? `/sessions/${session.id}/template-generating`
         : `/sessions/${session.id}/generating`
@@ -344,10 +414,14 @@ export function SessionsPage(): React.JSX.Element {
   return (
     <div className="mx-auto w-full max-w-6xl p-6">
       <div className="mb-6">
-        <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">{t('sessions.eyebrow')}</p>
+        <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
+          {t('sessions.eyebrow')}
+        </p>
         <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <h1 className="organic-serif text-[32px] font-semibold leading-none text-[#3e4a32]">{t('sessions.title')}</h1>
+            <h1 className="organic-serif text-[32px] font-semibold leading-none text-[#3e4a32]">
+              {t('sessions.title')}
+            </h1>
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
             {sessions.length > 0 ? (
@@ -403,7 +477,13 @@ export function SessionsPage(): React.JSX.Element {
             <TooltipProvider delayDuration={180}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button size="sm" variant="outline" className="min-w-[132px]" onClick={() => void handleImportSessionFile()} disabled={importingSession}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="min-w-[132px]"
+                    onClick={() => void handleImportSessionFile()}
+                    disabled={importingSession}
+                  >
                     <FileArchive className="mr-2 h-4 w-4" />
                     {importingSession ? t('sessions.importing') : t('sessions.importSessionFile')}
                   </Button>
@@ -422,13 +502,24 @@ export function SessionsPage(): React.JSX.Element {
       </div>
 
       {sessions.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <FolderOpen className="mb-4 h-12 w-12 text-muted-foreground" />
-            <h3 className="mb-2 text-lg font-medium">{t('sessions.emptyTitle')}</h3>
-            <p className="mb-4 text-muted-foreground">{t('sessions.emptyDescription')}</p>
-          </CardContent>
-        </Card>
+        <section className="flex min-h-[calc(100vh-220px)] items-center justify-center px-4 py-12">
+          <div className="flex w-full max-w-[460px] flex-col items-center text-center">
+            <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-lg border border-[#d7cab1] bg-[#fff9ef] text-[#617052] shadow-[0_6px_16px_rgba(78,88,62,0.08)]">
+              <FolderOpen className="h-8 w-8" />
+            </div>
+            <h3 className="text-xl font-semibold text-[#3e4a32]">{t('sessions.emptyTitle')}</h3>
+            <p className="mt-2 text-sm leading-6 text-[#7b705f]">
+              {t('sessions.emptyDescription')}
+            </p>
+            <Button
+              className="mt-6 min-w-[148px] bg-[#5d6b4d] text-white hover:bg-[#4b593d]"
+              onClick={() => navigate('/')}
+            >
+              <FolderOpen className="mr-2 h-4 w-4" />
+              {t('sessions.newSession')}
+            </Button>
+          </div>
+        </section>
       ) : filteredSessions.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
@@ -449,10 +540,17 @@ export function SessionsPage(): React.JSX.Element {
               ? activeRun.failedPageCount || 0
               : editorGate.failedCount
             const displayTotalCount = activeRun
-              ? Math.max(editorGate.totalCount, activeRun.totalPages, displayGeneratedCount + displayFailedCount)
+              ? Math.max(
+                  editorGate.totalCount,
+                  activeRun.totalPages,
+                  displayGeneratedCount + displayFailedCount
+                )
               : editorGate.totalCount
             const hasCompletedPages = editorGate.generatedCount > 0
-            const isFullyComplete = canEnterEditor(session) && editorGate.generatedCount >= editorGate.totalCount && editorGate.failedCount === 0
+            const isFullyComplete =
+              canEnterEditor(session) &&
+              editorGate.generatedCount >= editorGate.totalCount &&
+              editorGate.failedCount === 0
             const isPartialComplete = !isFullyComplete && canEnterEditor(session)
             const isContinuable = !isFullyComplete && !isPartialComplete && hasCompletedPages
             const statusText = activeRun
@@ -462,19 +560,19 @@ export function SessionsPage(): React.JSX.Element {
                   ? t('sessions.statusGeneratingProgress', { progress: activeRun.progress })
                   : t('sessions.statusGenerating')
               : isFullyComplete
-              ? t('sessions.statusComplete')
-              : isPartialComplete
-                ? t('sessions.statusPartialComplete')
-                : isContinuable
-                  ? t('sessions.statusContinuable')
-                  : t('sessions.statusRegenerate')
+                ? t('sessions.statusComplete')
+                : isPartialComplete
+                  ? t('sessions.statusPartialComplete')
+                  : isContinuable
+                    ? t('sessions.statusContinuable')
+                    : t('sessions.statusRegenerate')
             const actionText = activeRun
               ? t('sessions.actionViewProgress')
               : isFullyComplete || isPartialComplete
-              ? t('sessions.actionEnter')
-              : isContinuable
-                ? t('sessions.actionContinue')
-                : t('sessions.actionRegenerate')
+                ? t('sessions.actionEnter')
+                : isContinuable
+                  ? t('sessions.actionContinue')
+                  : t('sessions.actionRegenerate')
             const sourceTag = getSourceTag(session, {
               pptx: t('sessions.sourcePptx'),
               sessionFile: t('sessions.sourceSessionFile'),
@@ -492,12 +590,12 @@ export function SessionsPage(): React.JSX.Element {
             const statusClassName = activeRun
               ? 'border-[#9fc7df]/80 bg-[#edf8ff] text-[#286a9a] shadow-[0_0_0_1px_rgba(116,182,229,0.14)]'
               : isFullyComplete
-              ? 'border-[#bad8b7]/80 bg-[#eef9ec] text-[#4a7a46]'
-              : isPartialComplete
-                ? 'border-[#b5c9a8]/80 bg-[#eef5e8] text-[#4f7b3f]'
-                : isContinuable
-                  ? 'border-[#d6c08d]/80 bg-[#fff3cf] text-[#7a5a19] shadow-[0_0_0_1px_rgba(214,192,141,0.14)]'
-                  : 'border-[#d7b5ae]/70 bg-[#fbf1ee] text-[#93564f]'
+                ? 'border-[#bad8b7]/80 bg-[#eef9ec] text-[#4a7a46]'
+                : isPartialComplete
+                  ? 'border-[#b5c9a8]/80 bg-[#eef5e8] text-[#4f7b3f]'
+                  : isContinuable
+                    ? 'border-[#d6c08d]/80 bg-[#fff3cf] text-[#7a5a19] shadow-[0_0_0_1px_rgba(214,192,141,0.14)]'
+                    : 'border-[#d7b5ae]/70 bg-[#fbf1ee] text-[#93564f]'
             return (
               <Card
                 key={session.id}
@@ -512,7 +610,7 @@ export function SessionsPage(): React.JSX.Element {
                 >
                   {thumbnailPath ? (
                     <img
-                      src={localAssetUrl(thumbnailPath)}
+                      src={sessionThumbnailUrl(thumbnailPath)}
                       loading="lazy"
                       alt=""
                       aria-hidden="true"
@@ -651,7 +749,9 @@ export function SessionsPage(): React.JSX.Element {
           >
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
-                <h2 className="text-base font-semibold text-[#3e4a32]">{t('sessions.editTitle')}</h2>
+                <h2 className="text-base font-semibold text-[#3e4a32]">
+                  {t('sessions.editTitle')}
+                </h2>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {t('sessions.renameDescription')}
                 </p>
@@ -675,7 +775,13 @@ export function SessionsPage(): React.JSX.Element {
                 onChange={(event) => setRenameTitle(event.target.value)}
               />
               <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" size="sm" onClick={closeRenameDialog} disabled={renaming}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={closeRenameDialog}
+                  disabled={renaming}
+                >
                   {t('common.cancel')}
                 </Button>
                 <Button type="submit" size="sm" disabled={renaming}>
@@ -686,7 +792,10 @@ export function SessionsPage(): React.JSX.Element {
           </div>
         </div>
       ) : null}
-      <Dialog open={Boolean(deleteSessionTarget)} onOpenChange={(open) => !open && closeDeleteDialog()}>
+      <Dialog
+        open={Boolean(deleteSessionTarget)}
+        onOpenChange={(open) => !open && closeDeleteDialog()}
+      >
         <DialogContent showClose={false}>
           <DialogHeader>
             <DialogTitle>{t('sessions.deleteConfirmTitle')}</DialogTitle>
@@ -695,10 +804,21 @@ export function SessionsPage(): React.JSX.Element {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button type="button" variant="outline" size="sm" onClick={closeDeleteDialog} disabled={deleting}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={closeDeleteDialog}
+              disabled={deleting}
+            >
               {t('common.cancel')}
             </Button>
-            <Button type="button" size="sm" onClick={() => void handleDeleteSession()} disabled={deleting}>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => void handleDeleteSession()}
+              disabled={deleting}
+            >
               {deleting ? t('common.saving') : t('common.delete')}
             </Button>
           </DialogFooter>

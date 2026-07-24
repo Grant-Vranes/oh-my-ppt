@@ -88,7 +88,15 @@ const blockIdBaseForVisualElement = (
   return 'block'
 }
 
-export const normalizeCreativePageFragment = (html: string): string => {
+export type NormalizeCreativePageFragmentOptions = {
+  blockIdMode?: 'assign' | 'strip'
+}
+
+export const normalizeCreativePageFragment = (
+  html: string,
+  options: NormalizeCreativePageFragmentOptions = {}
+): string => {
+  const shouldAssignBlockIds = options.blockIdMode !== 'strip'
   const $ = cheerio.load(html.trim(), { scriptingEnabled: false }, false)
   let scaffold: cheerio.Cheerio<AnyNode> = $('section[data-page-scaffold]').first()
 
@@ -98,7 +106,9 @@ export const normalizeCreativePageFragment = (html: string): string => {
     const main = $('<main></main>')
     section.attr('data-page-scaffold', '1')
     section.attr('class', CREATIVE_FRAGMENT_SECTION_CLASS)
-    main.attr('data-block-id', 'content')
+    if (shouldAssignBlockIds) {
+      main.attr('data-block-id', 'content')
+    }
     main.attr('data-role', 'content')
     main.attr('class', CREATIVE_FRAGMENT_MAIN_CLASS)
     main.append(originalNodes)
@@ -124,7 +134,7 @@ export const normalizeCreativePageFragment = (html: string): string => {
     scaffold.empty().append(main)
     content = main
   }
-  if (!content.attr('data-block-id')) {
+  if (shouldAssignBlockIds && !content.attr('data-block-id')) {
     content.attr('data-block-id', 'content')
   }
   content.attr('data-role', 'content')
@@ -134,13 +144,19 @@ export const normalizeCreativePageFragment = (html: string): string => {
   )
 
   const usedBlockIds = new Set<string>()
-  $('[data-block-id]').each((_, node) => {
-    const el = $(node)
-    const current = (el.attr('data-block-id') || '').trim()
-    if (current) {
-      usedBlockIds.add(current)
-    }
-  })
+  if (shouldAssignBlockIds) {
+    $('[data-block-id]').each((_, node) => {
+      const el = $(node)
+      const current = (el.attr('data-block-id') || '').trim()
+      if (!current) return
+      const normalized = normalizeBlockIdBase(current)
+      if (usedBlockIds.has(normalized)) {
+        el.attr('data-block-id', allocateBlockId(current, usedBlockIds))
+      } else {
+        usedBlockIds.add(normalized)
+      }
+    })
+  }
 
   let hasTitleRole = $('[data-role="title"]').length > 0
   content.find(EDITABLE_TEXT_SELECTOR).each((_, node) => {
@@ -153,7 +169,7 @@ export const normalizeCreativePageFragment = (html: string): string => {
       ? el.text().trim()
       : directText
     if (!text || text.replace(/\s+/g, '').length === 0) return
-    if (!el.attr('data-block-id')) {
+    if (shouldAssignBlockIds && !el.attr('data-block-id')) {
       el.attr(
         'data-block-id',
         allocateBlockId(blockIdBaseForTag(tagName, !hasTitleRole), usedBlockIds)
@@ -168,7 +184,7 @@ export const normalizeCreativePageFragment = (html: string): string => {
   content.find(VISUAL_BLOCK_SELECTOR).each((_, node) => {
     const el = $(node)
     if (el.closest('script, style').length) return
-    if (el.attr('data-block-id')) return
+    if (shouldAssignBlockIds && el.attr('data-block-id')) return
     if (el.attr('data-role') === 'content') return
     const tagName = (node.type === 'tag' ? node.name : '').toLowerCase()
     if (!tagName) return
@@ -186,7 +202,9 @@ export const normalizeCreativePageFragment = (html: string): string => {
       const dt = directTextContent(el)
       if (!dt || dt.replace(/\s+/g, '').length === 0) return
     }
-    el.attr('data-block-id', allocateBlockId(blockIdBaseForVisualElement(tagName, el), usedBlockIds))
+    if (shouldAssignBlockIds) {
+      el.attr('data-block-id', allocateBlockId(blockIdBaseForVisualElement(tagName, el), usedBlockIds))
+    }
   })
 
   // Pass 3: inline leaf text nodes — only add block-id to inline elements that are
@@ -207,13 +225,19 @@ export const normalizeCreativePageFragment = (html: string): string => {
   content.find(INLINE_TEXT_CANDIDATE_SELECTOR).each((_, node) => {
     const el = $(node)
     if (el.closest('script, style, svg, canvas').length) return
-    if (el.attr('data-block-id')) return
+    if (shouldAssignBlockIds && el.attr('data-block-id')) return
     if (!hasOnlyInlineOrTextChildren(el)) return
     const text = el.text().replace(/\s+/g, ' ').trim()
     if (!text || text.replace(/\s+/g, '').length === 0) return
     const tagName = (node.type === 'tag' ? node.name : '').toLowerCase()
-    el.attr('data-block-id', allocateBlockId(blockIdBaseForTag(tagName, !hasTitleRole), usedBlockIds))
+    if (shouldAssignBlockIds) {
+      el.attr('data-block-id', allocateBlockId(blockIdBaseForTag(tagName, !hasTitleRole), usedBlockIds))
+    }
   })
+
+  if (!shouldAssignBlockIds) {
+    $('[data-block-id]').removeAttr('data-block-id')
+  }
 
   return ($.root().html() || html).trim()
 }

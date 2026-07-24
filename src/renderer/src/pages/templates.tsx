@@ -16,18 +16,15 @@ import { ipc, type TemplateListItem } from '../lib/ipc'
 import { useT } from '../i18n'
 import { useModelAction } from '@renderer/hooks/useModelAction'
 import { useThumbnailUpdates } from '@renderer/hooks/useThumbnailUpdates'
+import { localAssetUrl } from '@shared/local-asset'
 import { resolveSlideSize } from '@shared/slide-size'
 
 const MAX_PPTX_SIZE_MB = 80
 const MAX_PPTX_SIZE_BYTES = MAX_PPTX_SIZE_MB * 1024 * 1024
 const DIRECT_CREATE_DONE_DELAY_MS = 500
 
-const localAssetUrl = (filePath: string): string =>
-  `local-asset://${encodeURI(filePath.replace(/\\/g, '/'))}`
-
 const templateThumbnailUrl = (filePath: string): string => {
-  const separator = filePath.includes('?') ? '&' : '?'
-  return `${localAssetUrl(filePath)}${separator}print=1&thumbnail=1&fit=off&pptPlayback=0`
+  return `${localAssetUrl(filePath)}?print=1&thumbnail=1&fit=off&pptPlayback=0`
 }
 
 const wait = (ms: number): Promise<void> => new Promise((resolve) => window.setTimeout(resolve, ms))

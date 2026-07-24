@@ -105,6 +105,8 @@ describe('style switch generation', () => {
     expect(styleViewSource).not.toContain('AlertDialog')
     expect(styleViewSource).not.toContain('setSwitchTarget')
     expect(jobBarSource).toContain('ipc.cancelStyleSwitch')
+    expect(jobBarSource).toContain('if (!result.success)')
+    expect(jobBarSource).toContain('ipc.getStyleSwitchState(sessionId)')
     expect(jobBarSource).toContain('ipc.retryFailedStyleSwitchPages')
     expect(jobBarSource).toContain("if (!job || job.status === 'completed') return null")
   })

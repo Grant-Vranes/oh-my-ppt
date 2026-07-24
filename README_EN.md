@@ -298,7 +298,8 @@ Oh My PPT is currently mainly developed and maintained by one person. If it help
 <a id="references"></a>
 ## Reference
 
-- [@arcsin1/pptx2json](https://github.com/arcsin1/pptx2json) — the foundation package behind Oh My PPT's editable PPTX import, used to parse PPTX files into structured data that can remain editable; it is now open source and will continue improving restoration for complex shapes, charts, tables, animations, and more.
+- [@arcsin1/pptx2json](https://www.npmjs.com/package/@arcsin1/pptx2json) — the foundation package behind Oh My PPT's editable PPTX import, used to parse PPTX files into editable structured data. Support for complex shapes, charts, tables, animations, and more will continue to improve.
+- [@arcsin1/html2pptx](https://www.npmjs.com/package/@arcsin1/html2pptx) — the foundation package behind Oh My PPT's editable PPTX export, used to convert HTML into editable PPTX files. Support for complex shapes, charts, tables, animations, and more will continue to improve.
 - [arcsin1/style-generate-skill](https://github.com/arcsin1/style-generate-skill) — the official Oh My PPT style-generation Skill for turning reference designs, palettes, layouts, and scenario requirements into importable style packages.
 - [ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)
 - [html-ppt-skill](https://github.com/lewislulu/html-ppt-skill)

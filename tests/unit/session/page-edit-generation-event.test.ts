@@ -24,25 +24,28 @@ describe('isPageEditGenerationEvent', () => {
     ).toBe(false)
   })
 
-  it('recognizes the backend page-edit activity marker without an in-memory job', () => {
+  it('does not claim a tagged event without the active job run', () => {
     expect(
       isPageEditGenerationEvent({ runId: 'page-edit-run', activityKind: 'page-edit' }, null)
-    ).toBe(true)
+    ).toBe(false)
   })
 
-  it('recognizes deck-edit events without routing them to the shared generation dialog', () => {
+  it('matches only the active run for each dedicated job type', () => {
     expect(
-      isDeckEditGenerationEvent({ runId: 'deck-edit-run', activityKind: 'deck-edit' }, null)
-    ).toBe(true)
-  })
-
-  it('recognizes page-beautify events only for its dedicated activity or run', () => {
-    expect(
-      isPageBeautifyGenerationEvent({ runId: 'beautify-run', activityKind: 'page-beautify' }, null)
+      isDeckEditGenerationEvent(
+        { runId: 'deck-edit-run', activityKind: 'deck-edit' },
+        { runId: 'deck-edit-run' }
+      )
     ).toBe(true)
     expect(
       isPageBeautifyGenerationEvent(
-        { runId: 'other-run', activityKind: undefined },
+        { runId: 'beautify-run', activityKind: 'page-beautify' },
+        { runId: 'beautify-run' }
+      )
+    ).toBe(true)
+    expect(
+      isPageBeautifyGenerationEvent(
+        { runId: 'other-run', activityKind: 'page-beautify' },
         { runId: 'beautify-run' }
       )
     ).toBe(false)

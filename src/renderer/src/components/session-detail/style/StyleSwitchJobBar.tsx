@@ -17,9 +17,16 @@ export function StyleSwitchJobBar({ sessionId }: { sessionId: string }): React.J
     if (!active || job.status === 'cancelling') return
     useGenerateStore.getState().updateStyleSwitchJob(sessionId, { status: 'cancelling' })
     try {
-      await ipc.cancelStyleSwitch(sessionId)
+      const result = await ipc.cancelStyleSwitch(sessionId)
+      if (!result.success) {
+        hydrateStyleSwitchJob(sessionId, await ipc.getStyleSwitchState(sessionId))
+      }
     } catch (error) {
-      useGenerateStore.getState().updateStyleSwitchJob(sessionId, { status: 'running' })
+      try {
+        hydrateStyleSwitchJob(sessionId, await ipc.getStyleSwitchState(sessionId))
+      } catch {
+        useGenerateStore.getState().updateStyleSwitchJob(sessionId, { status: 'running' })
+      }
       toastError(error instanceof Error ? error.message : '取消风格切换失败')
     }
   }

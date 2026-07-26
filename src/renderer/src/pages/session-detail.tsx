@@ -29,6 +29,7 @@ import {
   isDeckEditGenerationEvent,
   isPageBeautifyGenerationEvent,
   isPageEditGenerationEvent,
+  isStyleSwitchGenerationEvent,
   mergeImageMessages,
   normalizePagesForSelection,
   type ChatType
@@ -569,8 +570,7 @@ export function SessionDetailPage(): React.JSX.Element {
       const isPageEdit = isPageEditGenerationEvent(payload, activePageEditJob)
       const isPageBeautify = isPageBeautifyGenerationEvent(payload, activePageBeautifyJob)
       const isDeckEdit = isDeckEditGenerationEvent(payload, activeDeckEditJob)
-      const isStyleSwitch =
-        payload.activityKind === 'style-switch' || activeStyleSwitchJob?.runId === payload.runId
+      const isStyleSwitch = isStyleSwitchGenerationEvent(payload, activeStyleSwitchJob)
       const isAddingPageRun =
         payload.activityKind === 'addPage' && useSessionDetailUiStore.getState().isAddingPage
       const isRetryingSinglePageRun =

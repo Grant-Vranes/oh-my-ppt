@@ -812,6 +812,9 @@ export const zh = {
     mainPageScopeLimitReached: '一次最多选择 {count} 页',
     mainPageScopeAllLimitReached:
       '当前共有 {count} 页，一次最多编辑 {limit} 页，请先选择具体页面。',
+    mainPageScopeNotFound: '没有找到指令中指定的页面，请检查页码或先从页面范围中选择。',
+    mainPageStructureUnsupported:
+      '主会话暂不支持通过聊天新增、删除或调整页面顺序，请使用左侧页面工具。',
     mainDisabled: '主会话已禁用发送。请将“上下文”切换到“当前页”后再继续编辑。',
     removeAsset: '移除素材',
     addAsset: '添加素材',
@@ -873,6 +876,7 @@ export const zh = {
     styleSwitching: '切换中',
     styleSwitchCompleted: '风格切换完成',
     styleSwitchFailed: '风格切换失败',
+    styleSwitchCancelFailed: '取消风格切换失败',
     pageBeautify: '一键美化',
     pageBeautifying: '美化中',
     pageBeautifyCompleted: '页面美化完成',

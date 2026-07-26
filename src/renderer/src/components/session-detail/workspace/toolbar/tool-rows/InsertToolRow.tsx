@@ -388,10 +388,13 @@ export function InsertToolRow({ disabled }: ToolRowProps): React.JSX.Element {
           toastError(t('sessionDetail.pageBeautifyBusy'))
         }
       } else {
-        useGenerateStore.getState().updatePageBeautify(currentSession.id, {
-          runId: result.runId,
-          status: 'running'
-        })
+        const currentJob = useGenerateStore.getState().pageBeautifyJobs[currentSession.id]
+        if (currentJob && result.runId) {
+          useGenerateStore.getState().updatePageBeautify(currentSession.id, {
+            runId: result.runId,
+            status: currentJob.status === 'cancelling' ? 'cancelling' : 'running'
+          })
+        }
       }
     } catch (error) {
       useGenerateStore.getState().finishPageBeautify(currentSession.id)

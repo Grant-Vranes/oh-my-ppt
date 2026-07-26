@@ -99,14 +99,19 @@ describe('style switch generation', () => {
       path.resolve('src/renderer/src/components/session-detail/style/StyleSwitchJobBar.tsx'),
       'utf8'
     )
+    const cancelHookSource = fs.readFileSync(
+      path.resolve('src/renderer/src/components/session-detail/hooks/useCancelStyleSwitch.ts'),
+      'utf8'
+    )
 
     expect(styleViewSource).toContain('startStyleSwitch')
     expect(styleViewSource).toContain('ipc.startStyleSwitch')
     expect(styleViewSource).not.toContain('AlertDialog')
     expect(styleViewSource).not.toContain('setSwitchTarget')
-    expect(jobBarSource).toContain('ipc.cancelStyleSwitch')
-    expect(jobBarSource).toContain('if (!result.success)')
-    expect(jobBarSource).toContain('ipc.getStyleSwitchState(sessionId)')
+    expect(jobBarSource).toContain('useCancelStyleSwitch')
+    expect(cancelHookSource).toContain('ipc.cancelStyleSwitch')
+    expect(cancelHookSource).toContain('if (!result.success)')
+    expect(cancelHookSource).toContain('ipc.getStyleSwitchState(sessionId)')
     expect(jobBarSource).toContain('ipc.retryFailedStyleSwitchPages')
     expect(jobBarSource).toContain("if (!job || job.status === 'completed') return null")
   })

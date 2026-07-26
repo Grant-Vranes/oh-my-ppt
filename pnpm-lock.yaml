@@ -16,8 +16,8 @@ importers:
         specifier: ^0.0.4
         version: 0.0.4
       '@arcsin1/pptx2json':
-        specifier: ^0.1.7
-        version: 0.1.7
+        specifier: ^0.1.8
+        version: 0.1.8
       '@chenglou/pretext':
         specifier: ^0.0.6
         version: 0.0.6
@@ -332,8 +332,8 @@ packages:
   '@arcsin1/html2pptx@0.0.4':
     resolution: {integrity: sha512-2Ea7zOiPI41V/MXnEjGMU5gmFEc+R3PiZybdi7SZ2R0tDOlUlIZgGvVgOH2UuyxnI6kGfAfBjYNDqriTsrr2yw==}
 
-  '@arcsin1/pptx2json@0.1.7':
-    resolution: {integrity: sha512-fEcOxuFcXYLZnQ6WlCxjmclDgd1LH3hBh2nRs8xLXtiLA7Zw+6Y+IeSVEkB3w/JP5SBplSB1DT5JUdxaJOGc0A==}
+  '@arcsin1/pptx2json@0.1.8':
+    resolution: {integrity: sha512-SFPMqh+24VSrGFR1rAxO5xSFvT/ZpNz9tYa+nZ42VsC3fkbeozAY3Zx/3fGH0B4uPEq18ueORkbPbv3fgvjeEQ==}
 
   '@babel/code-frame@7.29.0':
     resolution: {integrity: sha512-9NhCeYjq9+3uxgdtp20LSiJXJvN0FeCtNGpJxuMFZ1Kv3cWUNb6DOhJwUvcVCzKGR66cw4njwM6hrJLqgOwbcw==}
@@ -5647,7 +5647,7 @@ snapshots:
       '@chenglou/pretext': 0.0.6
       fflate: 0.8.3
 
-  '@arcsin1/pptx2json@0.1.7':
+  '@arcsin1/pptx2json@0.1.8':
     dependencies:
       fast-xml-parser: 5.10.1
       jszip: 3.10.1

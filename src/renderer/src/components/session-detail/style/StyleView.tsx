@@ -122,10 +122,13 @@ export function StyleView({ sessionId }: { sessionId: string }): React.JSX.Eleme
         })
         useGenerateStore.getState().clearStyleSwitchJob(sessionId)
       } else if (result.runId) {
-        useGenerateStore.getState().updateStyleSwitchJob(sessionId, {
-          runId: result.runId,
-          status: 'running'
-        })
+        const currentJob = useGenerateStore.getState().styleSwitchJobs[sessionId]
+        if (currentJob) {
+          useGenerateStore.getState().updateStyleSwitchJob(sessionId, {
+            runId: result.runId,
+            status: currentJob.status === 'cancelling' ? 'cancelling' : 'running'
+          })
+        }
       }
     } catch (switchError) {
       const message = switchError instanceof Error ? switchError.message : t('common.retryLater')

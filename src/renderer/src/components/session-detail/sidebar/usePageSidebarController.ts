@@ -105,10 +105,13 @@ export function usePageSidebarController(sessionId: string) {
           return
         }
         if (result.runId) {
-          useGenerateStore.getState().updateStyleSwitchJob(sessionId, {
-            runId: result.runId,
-            status: 'running'
-          })
+          const currentJob = useGenerateStore.getState().styleSwitchJobs[sessionId]
+          if (currentJob) {
+            useGenerateStore.getState().updateStyleSwitchJob(sessionId, {
+              runId: result.runId,
+              status: currentJob.status === 'cancelling' ? 'cancelling' : 'running'
+            })
+          }
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : t('sessionDetail.retryPageFailed')

@@ -1,33 +1,43 @@
 import type { GenerateChunkEvent } from '@shared/generation'
 
-type ActivePageEditJob = {
+type ActiveScopedJob = {
   runId?: string
 } | null
 
 function matchesActiveJobRun(
-  payload: Pick<GenerateChunkEvent['payload'], 'runId'>,
-  activeJob: ActivePageEditJob
+  payload: Pick<GenerateChunkEvent['payload'], 'activityKind' | 'runId'>,
+  activeJob: ActiveScopedJob,
+  expectedActivityKind: GenerateChunkEvent['payload']['activityKind']
 ): boolean {
-  return Boolean(payload.runId && activeJob?.runId && payload.runId === activeJob.runId)
+  if (!payload.runId || !activeJob) return false
+  if (activeJob.runId) return payload.runId === activeJob.runId
+  return payload.activityKind === expectedActivityKind
 }
 
 export function isPageEditGenerationEvent(
   payload: Pick<GenerateChunkEvent['payload'], 'activityKind' | 'runId'>,
-  activePageEditJob: ActivePageEditJob
+  activePageEditJob: ActiveScopedJob
 ): boolean {
-  return matchesActiveJobRun(payload, activePageEditJob)
+  return matchesActiveJobRun(payload, activePageEditJob, 'page-edit')
 }
 
 export function isDeckEditGenerationEvent(
   payload: Pick<GenerateChunkEvent['payload'], 'activityKind' | 'runId'>,
-  activeDeckEditJob: ActivePageEditJob
+  activeDeckEditJob: ActiveScopedJob
 ): boolean {
-  return matchesActiveJobRun(payload, activeDeckEditJob)
+  return matchesActiveJobRun(payload, activeDeckEditJob, 'deck-edit')
 }
 
 export function isPageBeautifyGenerationEvent(
   payload: Pick<GenerateChunkEvent['payload'], 'activityKind' | 'runId'>,
-  activePageBeautifyJob: ActivePageEditJob
+  activePageBeautifyJob: ActiveScopedJob
 ): boolean {
-  return matchesActiveJobRun(payload, activePageBeautifyJob)
+  return matchesActiveJobRun(payload, activePageBeautifyJob, 'page-beautify')
+}
+
+export function isStyleSwitchGenerationEvent(
+  payload: Pick<GenerateChunkEvent['payload'], 'activityKind' | 'runId'>,
+  activeStyleSwitchJob: ActiveScopedJob
+): boolean {
+  return matchesActiveJobRun(payload, activeStyleSwitchJob, 'style-switch')
 }

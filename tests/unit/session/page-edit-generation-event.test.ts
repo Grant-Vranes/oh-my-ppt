@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   isDeckEditGenerationEvent,
   isPageBeautifyGenerationEvent,
-  isPageEditGenerationEvent
+  isPageEditGenerationEvent,
+  isStyleSwitchGenerationEvent
 } from '../../../src/renderer/src/components/session-detail/shared/pageEditGenerationEvent'
 
 describe('isPageEditGenerationEvent', () => {
@@ -47,6 +48,36 @@ describe('isPageEditGenerationEvent', () => {
       isPageBeautifyGenerationEvent(
         { runId: 'other-run', activityKind: 'page-beautify' },
         { runId: 'beautify-run' }
+      )
+    ).toBe(false)
+  })
+
+  it('claims the first tagged event while an optimistic job is still waiting for its run id', () => {
+    expect(
+      isDeckEditGenerationEvent(
+        { runId: 'deck-edit-run', activityKind: 'deck-edit' },
+        { runId: undefined }
+      )
+    ).toBe(true)
+    expect(
+      isDeckEditGenerationEvent(
+        { runId: 'page-edit-run', activityKind: 'page-edit' },
+        { runId: undefined }
+      )
+    ).toBe(false)
+  })
+
+  it('does not let an activity marker override an already-bound foreign run', () => {
+    expect(
+      isDeckEditGenerationEvent(
+        { runId: 'stale-run', activityKind: 'deck-edit' },
+        { runId: 'active-run' }
+      )
+    ).toBe(false)
+    expect(
+      isStyleSwitchGenerationEvent(
+        { runId: 'stale-style-run', activityKind: 'style-switch' },
+        { runId: 'active-style-run' }
       )
     ).toBe(false)
   })

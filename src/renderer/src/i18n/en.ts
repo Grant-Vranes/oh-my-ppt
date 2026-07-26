@@ -851,6 +851,10 @@ Business presentations, product introductions, project summaries — formal but 
     mainPageScopeLimitReached: 'You can select at most {count} pages at a time.',
     mainPageScopeAllLimitReached:
       'This deck has {count} pages. Select at most {limit} specific pages before editing.',
+    mainPageScopeNotFound:
+      'No matching slide was found in the instruction. Check the slide number or select a scope first.',
+    mainPageStructureUnsupported:
+      'Main-session chat cannot add, delete, or reorder slides yet. Use the slide tools on the left.',
     mainDisabled:
       'Main-session sending is disabled. Switch Context to Current page before editing.',
     removeAsset: 'Remove asset',
@@ -917,6 +921,7 @@ Business presentations, product introductions, project summaries — formal but 
     styleSwitching: 'Switching',
     styleSwitchCompleted: 'Style switched',
     styleSwitchFailed: 'Failed to switch style',
+    styleSwitchCancelFailed: 'Failed to cancel style switch',
     pageBeautify: 'Beautify',
     pageBeautifying: 'Beautifying',
     pageBeautifyCompleted: 'Page beautified',
@@ -926,7 +931,8 @@ Business presentations, product introductions, project summaries — formal but 
     pageBeautifyNoPage: 'Select a page to beautify',
     pageBeautifyFailed: 'Failed to beautify page',
     pageBeautifyTimeout: 'Model response timed out, please retry',
-    pageBeautifyBusy: 'Another job is running in this session. Wait for it to finish before beautifying.',
+    pageBeautifyBusy:
+      'Another job is running in this session. Wait for it to finish before beautifying.',
     cancelPageBeautify: 'Stop beautifying',
     styleSwitchConfirmTitle: 'Switch the entire deck style?',
     styleSwitchConfirmDescription:
@@ -1497,7 +1503,8 @@ Business presentations, product introductions, project summaries — formal but 
     noSearchResultsTitle: 'No matching HTML files',
     noSearchResultsDescription: 'Try another file name or path keyword.',
     removeFromLibraryTitle: 'Remove from the document library?',
-    removeFromLibraryDescription: 'This removes the database record for "{name}". The HTML file stays on your computer.',
+    removeFromLibraryDescription:
+      'This removes the database record for "{name}". The HTML file stays on your computer.',
     removedFromLibrary: 'Removed from the document library',
     removeFromLibraryFailed: 'Unable to remove the document. Please try again.',
     undo: 'Undo',

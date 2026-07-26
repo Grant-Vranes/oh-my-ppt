@@ -6,7 +6,8 @@ export {
 export {
   isDeckEditGenerationEvent,
   isPageBeautifyGenerationEvent,
-  isPageEditGenerationEvent
+  isPageEditGenerationEvent,
+  isStyleSwitchGenerationEvent
 } from './pageEditGenerationEvent'
 export { isPageGenerationLocked, normalizePagesForSelection } from './pageUtils'
 export type { ChatType, SessionPreviewPage } from './types'

@@ -1,14 +1,14 @@
 import * as cheerio from 'cheerio'
 import { describe, expect, it, vi } from 'vitest'
 
-vi.mock('../../../src/main/ipc/html-editor/html-editor-thumbnail', () => ({
+vi.mock('../../../src/main/html-editor/html-editor-thumbnail', () => ({
   refreshHtmlEditorCoverThumbnail: vi.fn(),
   warmHtmlEditorCoverThumbnails: vi.fn(async () => new Map())
 }))
 
-import { applyEditsToHtml } from '../../../src/main/ipc/html-editor/html-editor-handlers'
-import { resolveHtmlEditorDocumentPath } from '../../../src/main/ipc/html-editor/html-editor-handlers'
-import { ensureElementAnchorInHtml } from '../../../src/main/ipc/editor/shared'
+import { applyEditsToHtml } from '../../../src/main/html-editor/html-editor-handlers'
+import { resolveHtmlEditorDocumentPath } from '../../../src/main/html-editor/html-editor-handlers'
+import { ensureElementAnchorInHtml } from '../../../src/main/element-editor/shared'
 
 const PAGE_ID = 'd1'
 

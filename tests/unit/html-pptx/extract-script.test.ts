@@ -279,7 +279,7 @@ describe('buildHtmlToPptxExtractScript', () => {
 
   it('uses enough text, shape and image budget for dense PPTX export', () => {
     const rendererSource = fs.readFileSync(
-      path.join(process.cwd(), 'src/main/utils/html-pptx/renderer.ts'),
+      path.join(process.cwd(), 'src/main/io/html-pptx/renderer.ts'),
       'utf-8'
     )
 

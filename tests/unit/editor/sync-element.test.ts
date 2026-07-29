@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { applySyncElementToPageHtml, SYNC_ELEMENT_ATTR } from '../../../src/main/ipc/editor/sync-element'
+import {
+  applySyncElementToPageHtml,
+  SYNC_ELEMENT_ATTR
+} from '../../../src/main/element-editor/sync-element'
 
 const pageHtml = (body: string): string => `
 <!doctype html>

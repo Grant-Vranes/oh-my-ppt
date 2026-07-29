@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createPptxImportPostPersistProgress } from '../../src/main/ipc/io/pptx-import-progress'
+import { createPptxImportPostPersistProgress } from '../../src/main/io/pptx-import/progress'
 
 describe('pptx import progress', () => {
   it('reserves 100% completion until post-import style work finishes', () => {
@@ -31,4 +31,3 @@ describe('pptx import progress', () => {
     })
   })
 })
-

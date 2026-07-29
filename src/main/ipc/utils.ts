@@ -106,14 +106,6 @@ export const sleep = (ms: number, signal?: AbortSignal) =>
     }
   });
 
-export const escapeHtml = (value: string) =>
-  value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-
 export const extractOutlineTitles = (prompt: string): string[] =>
   prompt
     .split(/\r?\n/)
@@ -128,65 +120,4 @@ export const extractOutlineTitles = (prompt: string): string[] =>
     })
     .filter((line) => line.length > 0);
 
-export const extractModelText = (value: unknown): string => {
-  if (typeof value === "string") return value;
-  if (!value || typeof value !== "object") return "";
-  const content = "content" in value ? (value as { content?: unknown }).content : undefined;
-  if (typeof content === "string") return content;
-  if (Array.isArray(content)) {
-    return content
-      .map((item) => {
-        if (typeof item === "string") return item;
-        if (item && typeof item === "object" && "text" in item) {
-          return typeof (item as { text?: unknown }).text === "string" ? String((item as { text?: unknown }).text) : "";
-        }
-        return "";
-      })
-      .join("\n")
-      .trim();
-  }
-  return "";
-};
-
-export const extractJsonBlock = (raw: string): string => {
-  const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  if (fenced?.[1]) return fenced[1].trim();
-
-  const extractBalanced = (open: "{" | "[", close: "}" | "]"): string | null => {
-    const start = raw.indexOf(open);
-    if (start < 0) return null;
-    let depth = 0;
-    let inString = false;
-    let escaped = false;
-
-    for (let index = start; index < raw.length; index += 1) {
-      const char = raw[index];
-      if (inString) {
-        if (escaped) {
-          escaped = false;
-        } else if (char === "\\") {
-          escaped = true;
-        } else if (char === "\"") {
-          inString = false;
-        }
-        continue;
-      }
-      if (char === "\"") {
-        inString = true;
-        continue;
-      }
-      if (char === open) depth += 1;
-      if (char === close) {
-        depth -= 1;
-        if (depth === 0) return raw.slice(start, index + 1);
-      }
-    }
-    return null;
-  };
-
-  const objectBlock = extractBalanced("{", "}");
-  if (objectBlock) return objectBlock.trim();
-  const arrayBlock = extractBalanced("[", "]");
-  if (arrayBlock) return arrayBlock.trim();
-  return raw.trim();
-};
+export { extractJsonBlock, extractModelText } from '../agent-runtime/model'

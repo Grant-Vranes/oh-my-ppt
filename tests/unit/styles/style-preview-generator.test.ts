@@ -4,7 +4,7 @@ import path from 'path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { writeStylePackage } from '../../../src/main/styles/style-package'
 
-vi.mock('../../../src/main/agent', () => ({
+vi.mock('../../../src/main/agent-runtime/model', () => ({
   resolveModel: vi.fn()
 }))
 
@@ -49,7 +49,7 @@ describe('generateStylePreview', () => {
 
   it('generates in a temporary package and saves a validated preview.html', async () => {
     const stylePackageDir = await makeStylePackage()
-    const { generateStylePreviewHtml } = await import('../../../src/main/utils/style-preview-generator')
+    const { generateStylePreviewHtml } = await import('../../../src/main/styles/preview/generator')
     const runAgent = vi.fn(async ({ workspaceDir, prompt }) => {
       expect(prompt).toContain('original, presentation-ready copy')
       expect(prompt).toContain('copy language consistent')
@@ -73,7 +73,7 @@ describe('generateStylePreview', () => {
 
   it('does not leave an invalid generated preview in the style package', async () => {
     const stylePackageDir = await makeStylePackage()
-    const { generateStylePreviewHtml } = await import('../../../src/main/utils/style-preview-generator')
+    const { generateStylePreviewHtml } = await import('../../../src/main/styles/preview/generator')
 
     await expect(
       generateStylePreviewHtml(
@@ -101,7 +101,7 @@ describe('generateStylePreview', () => {
       'utf8'
     )
     const { generateStylePreviewHtml } = await import(
-      '../../../src/main/utils/style-preview-generator'
+      '../../../src/main/styles/preview/generator'
     )
     const runAgent = vi.fn()
 

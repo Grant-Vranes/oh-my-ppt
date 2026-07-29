@@ -4,7 +4,7 @@ import {
   ensureElementAnchorInHtml,
   patchDraggedElementStyle,
   patchGenericElementProperties
-} from '../../../src/main/ipc/editor/shared'
+} from '../../../src/main/element-editor/shared'
 
 describe('ensureElementAnchorInHtml', () => {
   it('keeps an existing block id only when it is unique', () => {

@@ -3,7 +3,7 @@ import {
   MAX_KEY_POINTS_PER_SLIDE,
   normalizeKeyPoints,
   normalizeOutlineText
-} from '../../../src/main/ipc/engine/outline-normalizer'
+} from '../../../src/main/generation/outline-normalizer'
 
 describe('outline normalizer', () => {
   it('preserves explicit one-slide topic lists beyond four items', () => {

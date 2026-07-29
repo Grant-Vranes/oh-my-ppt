@@ -3,7 +3,7 @@ import {
   canUseSourcePlanDirectly,
   mapSourcePlanToOutlineItems,
   sourcePlanFromSkeletonRows
-} from '../../../src/main/ipc/generation/source-plan'
+} from '../../../src/main/generation/source-plan'
 
 describe('source page skeleton planning', () => {
   it('normalizes database rows into a source plan', () => {

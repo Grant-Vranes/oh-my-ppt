@@ -23,21 +23,21 @@ const {
 
 vi.mock('electron', () => ({ ipcMain: { handle: vi.fn() } }))
 vi.mock('electron-log/main.js', () => ({ default: { info: vi.fn(), error: vi.fn(), warn: vi.fn() } }))
-vi.mock('../../../src/main/ipc/edit-jobs/page-beautify-agent', () => ({
+vi.mock('../../../src/main/edit-jobs/page-beautify-agent', () => ({
   runPageBeautifyAgent: runPageBeautifyAgentMock
 }))
-vi.mock('../../../src/main/ipc/config/model-config-utils', () => ({
+vi.mock('../../../src/main/config/model-config-utils', () => ({
   resolveGlobalModelTimeouts: resolveGlobalModelTimeoutsMock,
   resolveModelConfigForTask: resolveModelConfigForTaskMock
 }))
-vi.mock('../../../src/main/ipc/generation/generation-utils', () => ({
+vi.mock('../../../src/main/generation/generation-utils', () => ({
   resolvePageHtmlPath: resolvePageHtmlPathMock
 }))
 vi.mock('../../../src/main/history/git-history-service', () => ({
   ensureHistoryBaselineSafe: ensureHistoryBaselineSafeMock,
   recordHistoryOperationStrict: recordHistoryOperationStrictMock
 }))
-vi.mock('../../../src/main/tools/page-writer', () => ({
+vi.mock('../../../src/main/presentation/html/page-writer-core', () => ({
   replacePageContentFragment: replacePageContentFragmentMock
 }))
 
@@ -45,8 +45,8 @@ import {
   extractPageBeautifyContent,
   hasMeaningfulPageBeautifyChange,
   PageBeautifyJobService
-} from '../../../src/main/ipc/edit-jobs/page-beautify-job-service'
-import { SessionJobCoordinator } from '../../../src/main/ipc/edit-jobs/session-job-coordinator'
+} from '../../../src/main/edit-jobs/page-beautify-job-service'
+import { JobCoordinator, sessionLockKey } from '../../../src/main/agent-runtime'
 
 describe('page beautify layout review', () => {
   it('requires a re-layout instead of accepting text, animation, and data-attribute churn', () => {
@@ -94,8 +94,14 @@ describe('PageBeautifyJobService guards', () => {
   it('does not start when another session write Job holds the lease', async () => {
     const sessionId = 'session-lease'
     const ctx = { sessionRunStates: new Map() }
-    const coordinator = new SessionJobCoordinator(ctx as never)
-    coordinator.reserve('deck-edit:start', sessionId)
+    const coordinator = new JobCoordinator()
+    await coordinator.reserve({
+      jobId: 'deck-edit-run',
+      domain: 'edit',
+      owner: { kind: 'session', id: sessionId },
+      claims: { write: [sessionLockKey(sessionId)] },
+      wait: 'fail'
+    })
     const service = new PageBeautifyJobService(ctx as never, coordinator)
 
     await expect(
@@ -139,7 +145,7 @@ describe('PageBeautifyJobService guards', () => {
     }
     const service = new PageBeautifyJobService(
       ctx as never,
-      new SessionJobCoordinator(ctx as never)
+      new JobCoordinator()
     )
 
     await expect(
@@ -197,11 +203,18 @@ describe('PageBeautifyJobService guards', () => {
       },
       createDeckProgressEmitter: vi.fn(() => vi.fn()),
       emitGenerateChunk: vi.fn(),
+      emitRuntimeJobTerminal: vi.fn(),
       getPageSourceUrl: vi.fn(() => 'file://page-1.html')
     }
-    const coordinator = new SessionJobCoordinator(ctx as never)
-    const reservation = coordinator.reserve('page-beautify:start', sessionId)
-    if (reservation.alreadyRunning) throw new Error('Expected a new page-beautify lease')
+    const coordinator = new JobCoordinator()
+    const reservation = await coordinator.reserve({
+      jobId: 'history-scope-run',
+      domain: 'edit',
+      owner: { kind: 'session', id: sessionId },
+      claims: { write: [sessionLockKey(sessionId)] },
+      wait: 'fail'
+    })
+    if (reservation.status !== 'acquired') throw new Error('Expected a new page-beautify lease')
     const service = new PageBeautifyJobService(ctx as never, coordinator)
     const context = {
       sessionId,
@@ -267,6 +280,7 @@ describe('PageBeautifyJobService guards', () => {
     const updateGenerationRunMetadata = vi.fn(async () => undefined)
     const updateSessionStatus = vi.fn(async () => undefined)
     const updateSessionJobStatus = vi.fn(async () => undefined)
+    const emitRuntimeJobTerminal = vi.fn()
     const emit = vi.fn()
     const sessionId = 'session-unchanged'
     const ctx = {
@@ -278,11 +292,18 @@ describe('PageBeautifyJobService guards', () => {
         updateSessionJobStatus
       },
       createDeckProgressEmitter: vi.fn(() => emit),
-      emitGenerateChunk: vi.fn()
+      emitGenerateChunk: vi.fn(),
+      emitRuntimeJobTerminal
     }
-    const coordinator = new SessionJobCoordinator(ctx as never)
-    const reservation = coordinator.reserve('page-beautify:start', sessionId)
-    if (reservation.alreadyRunning) throw new Error('Expected a new page-beautify lease')
+    const coordinator = new JobCoordinator()
+    const reservation = await coordinator.reserve({
+      jobId: 'unchanged-run',
+      domain: 'edit',
+      owner: { kind: 'session', id: sessionId },
+      claims: { write: [sessionLockKey(sessionId)] },
+      wait: 'fail'
+    })
+    if (reservation.status !== 'acquired') throw new Error('Expected a new page-beautify lease')
     const service = new PageBeautifyJobService(ctx as never, coordinator)
     const context = {
       sessionId,
@@ -330,6 +351,15 @@ describe('PageBeautifyJobService guards', () => {
       outcome: 'unchanged'
     })
     expect(updateSessionJobStatus).toHaveBeenCalledWith('unchanged-run', 'finished')
+    expect(emitRuntimeJobTerminal).toHaveBeenCalledWith({
+      sessionId,
+      jobId: 'unchanged-run',
+      domain: 'edit',
+      status: 'completed'
+    })
+    expect(updateSessionJobStatus.mock.invocationCallOrder[0]).toBeLessThan(
+      emitRuntimeJobTerminal.mock.invocationCallOrder[0]
+    )
     // No history commit, no rollback, no fake page_updated.
     expect(recordHistoryOperationStrictMock).not.toHaveBeenCalled()
     const pageUpdatedCall = emit.mock.calls.find((call) => call[0]?.type === 'page_updated')
@@ -379,11 +409,18 @@ describe('PageBeautifyJobService guards', () => {
       },
       createDeckProgressEmitter: vi.fn(() => emit),
       emitGenerateChunk: vi.fn(),
+      emitRuntimeJobTerminal: vi.fn(),
       getPageSourceUrl: vi.fn(() => 'file://page-1.html')
     }
-    const coordinator = new SessionJobCoordinator(ctx as never)
-    const reservation = coordinator.reserve('page-beautify:start', sessionId)
-    if (reservation.alreadyRunning) throw new Error('Expected a new page-beautify lease')
+    const coordinator = new JobCoordinator()
+    const reservation = await coordinator.reserve({
+      jobId: 'progress-run',
+      domain: 'edit',
+      owner: { kind: 'session', id: sessionId },
+      claims: { write: [sessionLockKey(sessionId)] },
+      wait: 'fail'
+    })
+    if (reservation.status !== 'acquired') throw new Error('Expected a new page-beautify lease')
     const service = new PageBeautifyJobService(ctx as never, coordinator)
     const context = {
       sessionId,
@@ -463,7 +500,7 @@ describe('PageBeautifyJobService guards', () => {
         }))
       }
     }
-    const service = new PageBeautifyJobService(ctx as never, new SessionJobCoordinator(ctx as never))
+    const service = new PageBeautifyJobService(ctx as never, new JobCoordinator())
 
     const state = await service.getState(sessionId)
 
@@ -499,7 +536,7 @@ describe('PageBeautifyJobService guards', () => {
         }))
       }
     }
-    const service = new PageBeautifyJobService(ctx as never, new SessionJobCoordinator(ctx as never))
+    const service = new PageBeautifyJobService(ctx as never, new JobCoordinator())
 
     const state = await service.getState(sessionId)
 

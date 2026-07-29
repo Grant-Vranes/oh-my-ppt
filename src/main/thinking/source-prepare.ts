@@ -7,6 +7,7 @@ import { HumanMessage } from '@langchain/core/messages'
 import { resolveModelTimeoutMs } from '@shared/model-timeout'
 import { isSupportedImageMimeType, normalizeImageMimeType } from '@shared/image-mime'
 import { resolveModel } from '../agent'
+import type { ModelRuntimeConfig } from '../agent'
 import { extractModelText } from '../ipc/utils'
 import type { ThinkingSource } from '@shared/thinking'
 
@@ -113,6 +114,7 @@ export interface ImageTextExtractionOptions {
   model: string
   baseUrl: string
   maxTokens?: number
+  modelRuntime?: ModelRuntimeConfig
   modelTimeoutMs: number
 }
 
@@ -150,7 +152,8 @@ async function extractImageText(args: {
     args.options.model,
     args.options.baseUrl,
     0.1,
-    args.options.maxTokens
+    args.options.maxTokens,
+    args.options.modelRuntime
   )
   const result = await model.invoke(
     [

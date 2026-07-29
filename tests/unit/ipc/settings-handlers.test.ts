@@ -43,15 +43,22 @@ vi.mock('electron-log/main.js', () => ({
   default: settingsHandlersState.logMock
 }))
 
-vi.mock('../../../src/main/agent', () => ({
-  resolveModel: settingsHandlersState.resolveModelMock
+vi.mock('../../../src/main/agent-runtime/model', () => ({
+  resolveModel: settingsHandlersState.resolveModelMock,
+  runWithModelTemperatureControl: <T>(_config: unknown, task: () => T): T => task(),
+  OPENAI_RESPONSES_FORMAT_ERROR_EN: 'Invalid OpenAI Responses API payload.',
+  OPENAI_RESPONSES_FORMAT_ERROR_ZH: '当前 provider 返回的不是 OpenAI Responses API 格式。',
+  isOpenAIResponsesFormatError: (error: unknown) =>
+    /Cannot read propert(?:y|ies).*undefined.*map|Cannot read propert(?:y|ies).*map.*undefined/i.test(
+      error instanceof Error ? error.message : ''
+    )
 }))
 
 vi.mock('../../../src/main/utils/proxy', () => ({
   applyProxy: settingsHandlersState.applyProxyMock
 }))
 
-vi.mock('../../../src/main/ipc/config/locale-utils', () => ({
+vi.mock('../../../src/main/config/locale-utils', () => ({
   readAppLocale: settingsHandlersState.localeMock.readAppLocale,
   uiText: settingsHandlersState.localeMock.uiText
 }))
@@ -74,7 +81,7 @@ async function registerWithDb(overrides: Partial<Record<string, unknown>> = {}) 
   vi.resetModules()
   settingsHandlersState.handlers.clear()
 
-  const { registerSettingsHandlers } = await import('../../../src/main/ipc/config/settings-handlers')
+  const { registerSettingsHandlers } = await import('../../../src/main/config/settings-handlers')
 
   const db = {
     getAllSettings: vi.fn(async () => ({})),

@@ -38,7 +38,7 @@ describe('registerHistoryHandlers', () => {
   })
 
   it('caps history list requests at 20 versions in the main process', async () => {
-    const { registerHistoryHandlers } = await import('../../../src/main/ipc/history/history-handlers')
+    const { registerHistoryHandlers } = await import('../../../src/main/history/handlers')
     const ctx = {
       db: {},
       resolveSessionProjectDir: vi.fn().mockResolvedValue('/tmp/session-1'),

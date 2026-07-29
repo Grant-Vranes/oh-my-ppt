@@ -3,7 +3,7 @@ import {
   PRODUCT_SKILLS_ROUTE,
   REQUIRED_PRODUCT_SKILL_NAMES,
   type RequiredProductSkillName
-} from '../skills/skill-contract'
+} from '../product-skills/contract'
 
 const getRecord = (value: unknown): Record<string, unknown> | null =>
   value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : null

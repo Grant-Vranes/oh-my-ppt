@@ -1,9 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
   ModelUsageCallbackHandler,
-  configureModelUsageRecorder,
   extractModelUsage
-} from '../../src/main/model-usage'
+} from '../../src/main/agent-runtime/model'
 
 describe('model usage tracking', () => {
   it('prefers provider-reported usage metadata', () => {
@@ -34,11 +33,10 @@ describe('model usage tracking', () => {
 
   it('uses heuristic estimates when the provider omits usage', async () => {
     const recordModelUsage = vi.fn(async () => undefined)
-    configureModelUsageRecorder({ recordModelUsage } as never)
     const handler = new ModelUsageCallbackHandler({
       provider: 'openai',
       model: 'compatible-model'
-    })
+    }, { record: recordModelUsage })
 
     handler.handleLLMStart({} as never, ['Create a concise presentation outline.'], 'run-1')
     await handler.handleLLMEnd(

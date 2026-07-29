@@ -1,0 +1,181 @@
+import { createPromptCatalog } from '../catalog'
+
+import styleImageImportTemplate from '../templates/style-import/image.md?raw'
+import stylePreviewTemplate from '../templates/style-import/preview.md?raw'
+
+type StaticStylePromptTemplateVars = {
+  'image-import': {}
+  preview: {}
+}
+
+const staticStylePromptCatalog = createPromptCatalog<StaticStylePromptTemplateVars>({
+  'image-import': styleImageImportTemplate.trimEnd(),
+  preview: stylePreviewTemplate.trimEnd()
+})
+
+const CATEGORY_GUIDE = [
+  { zh: '浅色 · 沉静', en: 'light-calm' },
+  { zh: '深色 · 沉稳', en: 'dark-steady' },
+  { zh: '大胆 · 宣言', en: 'bold-statement' },
+  { zh: '自然 · 有机', en: 'natural-organic' },
+  { zh: '活力 · 创意', en: 'vibrant-creative' },
+  { zh: '自定义', en: 'custom' }
+]
+
+const buildCategoryTable = (): string =>
+  CATEGORY_GUIDE.map((item) => `- ${item.zh} => ${item.en}`).join('\n')
+
+export const buildStyleImageImportPrompt = (): string =>
+  staticStylePromptCatalog.render('image-import', {})
+
+export const buildStyleImportPrompt = (virtualPath: string): string => {
+  const categoryTable = buildCategoryTable()
+  return [
+    '你是一个 PPT 风格解析专家。用户会提供一段描述 PPT 风格的文本（可能是 Markdown、纯文本、HTML 片段、或其他工具的风格描述）。',
+    '你必须先使用 read_file 读取文件，再进行解析。',
+    '请将其解析为严格 JSON，且只返回 JSON，不要返回额外说明。',
+    '',
+    '输出结构：',
+    '{',
+    '  "label": "风格显示名，如 暗夜科技",',
+    '  "description": "一句话描述风格特征，20 字以内",',
+    '  "category": "分类标签（必须从给定中文枚举中选一个）",',
+    '  "aliases": ["搜索别名1", "别名2"],',
+    '  "styleCase": "适用场景，列出 3-4 个典型用例，用顿号分隔，如：技术分享、开发者社区 Meetup、编程教学、黑客马拉松",',
+    '  "styleSkill": "完整的 Markdown 风格技能文本"',
+    '}',
+    '',
+    'category 映射：',
+    categoryTable,
+    '',
+    'styleSkill 撰写要求：',
+    'styleSkill 是面向 AI 生成模型的风格指令，要具体、生动、有灵魂，让模型读完能精准复刻。',
+    '不要写成冷冰冰的规范文档，要像有品味的设计师在描述"这次要做什么感觉的东西"。',
+    '',
+    '用 Markdown 格式，开头一段话总括整体气质，然后用 ## 分 section 描述各维度。每个 section 内部用自然语言描述，配色融入情感描述（如"温暖的浅蓝"），插画列举具体意象（纸船、雨伞），字体描述传达感觉（手写风、圆润亲切）。',
+    '配色描述要同时包含情绪/质感与可执行的具体色值，主色、背景色、正文色、强调色建议尽量给出 hex。',
+    '',
+    '参考示例：',
+    '注意：示例只展示写法和结构，不得复制示例中的颜色、意象、字体、场景或适用领域；必须以输入文件的真实内容为准。',
+    '---',
+    '采用手绘水彩绘本风格，整体以低饱和暖色与海洋系浅蓝为主，营造治愈、温柔、富有故事感的视觉氛围。',
+    '',
+    '## 配色',
+    '主色包含天蓝 #87CEEB、湖蓝、米白 #F5F5DC、浅卡其、暖黄色与橘粉色，辅以淡灰蓝、浅棕和少量珊瑚红 #FF7F50 作点缀。背景多为大面积留白或纸张质感的浅米色底。',
+    '',
+    '## 排版',
+    '标题使用较粗的毛笔/手写风字体，黑色或深棕色，高辨识度且富有情绪；副标题与正文则采用较细的手写字或简洁印刷体，字号层级清晰，整体不强调严肃规范而更注重陪伴感与可读性。',
+    '',
+    '## 插画与装饰',
+    '设计元素以彩铅+水彩晕染插画为核心，如海浪、太阳、纸船、雨伞、云朵、天气图标、丝带横幅、手绘边框和轻微纹理底色，图形轮廓柔和自然，带有儿童绘本式的不规则感。',
+    '',
+    '## 布局',
+    '偏向上下分区或模块化排布，上方常用大幅场景插画营造情绪，中部放置醒目主标题和副标题，下方结合卡片宫格与说明文字进行信息组织。留白充足，元素之间呼吸感明显。',
+    '',
+    '## 动画',
+    '节奏舒缓，元素入场使用 ease-out 缓动，时长 0.8s–1.2s。插画元素可做轻微浮动或摇摆，文字淡入或从下方轻滑入。',
+    '',
+    '## 适合场景',
+    '适合制作面向青少年、心理成长、教育科普类的温暖型 PPT。',
+    '',
+    '## 不要',
+    '- 不要使用高饱和、刺眼的颜色',
+    '- 不要使用尖锐的几何图形或硬朗的线条',
+    '- 不要使用复杂的渐变或强烈的阴影效果',
+    '- 不要让布局过于拥挤，保持充足的呼吸感',
+    '---',
+    '',
+    '规则：',
+    '1. 如果用户文本中有明确颜色值，优先使用。',
+    '2. 如果字段缺失，根据风格语义补充合理默认值。',
+    '3. category 字段必须输出中文枚举值；styleSkill 中的分类必须输出对应英文标识。',
+    '4. 只输出 JSON，且使用 ```json ... ``` 包裹。',
+    '5. 如果文件较长，分段多次 read_file 后再总结，不要只读取开头。',
+    '',
+    `读取文件路径：${virtualPath}`
+  ].join('\n')
+}
+
+export function buildStylePptxImportPrompt(args: {
+  deckRootPath: string
+  indexPath: string
+  samplePagePaths: string[]
+}): string {
+  const categoryTable = buildCategoryTable()
+  const sampleList = args.samplePagePaths.map((item) => `- ${item}`).join('\n')
+  return [
+    '你是 PPT 视觉风格解析专家。现在你拿到的是由 PPTX 转换得到的 HTML 页面目录。',
+    '你必须先 grep，再 read_file，最后再输出 JSON。',
+    '',
+    '工作步骤（必须按顺序）：',
+    '1. 先用 grep 在整个目录检索样式线索：color/background/font-family/gradient。',
+    '2. 再用 read_file 精读以下关键文件：index.html + 指定抽样页。',
+    '3. 综合提取配色、字体、布局比例、视觉氛围，生成标准风格 JSON。',
+    '',
+    '读取根目录：',
+    args.deckRootPath,
+    '',
+    '必须精读文件：',
+    `- ${args.indexPath}`,
+    sampleList || '- 无',
+    '',
+    '输出结构：',
+    '{',
+    '  "label": "风格显示名，如 暗夜科技",',
+    '  "description": "一句话描述风格特征，20 字以内",',
+    '  "category": "分类标签（必须从给定中文枚举中选一个）",',
+    '  "aliases": ["搜索别名1", "别名2"],',
+    '  "styleCase": "适用场景，列出 3-4 个典型用例，用顿号分隔，如：技术分享、开发者社区 Meetup、编程教学、黑客马拉松",',
+    '  "styleSkill": "完整的 Markdown 风格技能文本"',
+    '}',
+    '',
+    'category 映射：',
+    categoryTable,
+    '',
+    'styleSkill 撰写要求：',
+    'styleSkill 是面向 AI 生成模型的风格指令，要具体、生动、有灵魂，让模型读完能精准复刻。',
+    '不要写成冷冰冰的规范文档，要像有品味的设计师在描述"这次要做什么感觉的东西"。',
+    '',
+    '用 Markdown 格式，开头一段话总括整体气质，然后用 ## 分 section 描述各维度。每个 section 内部用自然语言描述，配色融入情感描述（如"温暖的浅蓝"），插画列举具体意象（纸船、雨伞），字体描述传达感觉（手写风、圆润亲切）。',
+    '配色描述要同时包含情绪/质感与可执行的具体色值，主色、背景色、正文色、强调色建议尽量给出 hex。',
+    '',
+    '参考示例：',
+    '注意：示例只展示写法和结构，不得复制示例中的颜色、意象、字体、场景或适用领域；必须以导入 PPTX 的真实视觉为准。',
+    '---',
+    '采用手绘水彩绘本风格，整体以低饱和暖色与海洋系浅蓝为主，营造治愈、温柔、富有故事感的视觉氛围。',
+    '',
+    '## 配色',
+    '主色包含天蓝 #87CEEB、湖蓝、米白 #F5F5DC、浅卡其、暖黄色与橘粉色，辅以淡灰蓝、浅棕和少量珊瑚红 #FF7F50 作点缀。背景多为大面积留白或纸张质感的浅米色底。',
+    '',
+    '## 排版',
+    '标题使用较粗的毛笔/手写风字体，黑色或深棕色，高辨识度且富有情绪；副标题与正文则采用较细的手写字或简洁印刷体，字号层级清晰，整体不强调严肃规范而更注重陪伴感与可读性。',
+    '',
+    '## 插画与装饰',
+    '设计元素以彩铅+水彩晕染插画为核心，如海浪、太阳、纸船、雨伞、云朵、天气图标、丝带横幅、手绘边框和轻微纹理底色，图形轮廓柔和自然，带有儿童绘本式的不规则感。',
+    '',
+    '## 布局',
+    '偏向上下分区或模块化排布，上方常用大幅场景插画营造情绪，中部放置醒目主标题和副标题，下方结合卡片宫格与说明文字进行信息组织。留白充足，元素之间呼吸感明显。',
+    '',
+    '## 动画',
+    '节奏舒缓，元素入场使用 ease-out 缓动，时长 0.8s–1.2s。插画元素可做轻微浮动或摇摆，文字淡入或从下方轻滑入。',
+    '',
+    '## 适合场景',
+    '适合制作面向青少年、心理成长、教育科普类的温暖型 PPT。',
+    '',
+    '## 不要',
+    '- 不要使用高饱和、刺眼的颜色',
+    '- 不要使用尖锐的几何图形或硬朗的线条',
+    '- 不要使用复杂的渐变或强烈的阴影效果',
+    '- 不要让布局过于拥挤，保持充足的呼吸感',
+    '---',
+    '',
+    '规则：',
+    '1. 优先使用 grep/read_file 中出现的真实颜色和字体。',
+    '2. 如果字段缺失，可根据整体视觉语义做合理补全。',
+    '3. category 字段必须输出中文枚举值；styleSkill 中的分类必须输出对应英文标识。',
+    '4. 只输出 JSON，且使用 ```json ... ``` 包裹。',
+    '5. 不要输出任何解释性文字。'
+  ].join('\n')
+}
+
+export const buildStylePreviewPrompt = (): string => staticStylePromptCatalog.render('preview', {})

@@ -4,8 +4,8 @@ import path from 'path'
 import {
   buildDeckAgentSystemPrompt,
   buildSinglePageGenerationPrompt
-} from '../../../src/main/prompt'
-import type { SessionDeckGenerationContext } from '../../../src/main/tools/types'
+} from '../../../src/main/agent-runtime/prompt'
+import type { SessionDeckGenerationContext } from '../../../src/main/agent-runtime/agent'
 import { resolveSlideSize } from '../../../src/shared/slide-size'
 
 const readSource = (relativePath: string): string =>
@@ -29,7 +29,7 @@ const baseContext: SessionDeckGenerationContext = {
 
 describe('content expansion rules — always-on, not source-gated', () => {
   it('scenario expansion rules expand only when the page is truly thin', () => {
-    const scenario = readSource('src/main/prompt/canvas-scenario.ts')
+const scenario = readSource('src/main/agent-runtime/prompt/composers/canvas-scenario.ts')
 
     // Expansion is conditional: enough content means choose, group, and budget —
     // not more modules. This guards against dense source pages overflowing.
@@ -44,8 +44,8 @@ describe('content expansion rules — always-on, not source-gated', () => {
   })
 
   it('density control is single-sourced in canvas constraints, not duplicated in scenario expansion rules', () => {
-    const shared = readSource('src/main/prompt/shared.ts')
-    const scenario = readSource('src/main/prompt/canvas-scenario.ts')
+    const shared = readSource('src/main/agent-runtime/prompt/composers/shared.ts')
+    const scenario = readSource('src/main/agent-runtime/prompt/composers/canvas-scenario.ts')
     const expansionStart = scenario.indexOf('export function buildCanvasScenarioExpansionRules')
     const expansionBlock = scenario.slice(
       expansionStart,
@@ -66,8 +66,8 @@ describe('content expansion rules — always-on, not source-gated', () => {
   })
 
   it('is imported by the real deck-agent entry and single-page generation', () => {
-    const deckSystem = readSource('src/main/prompt/deck-system.ts')
-    const generationUser = readSource('src/main/prompt/generation-user.ts')
+const deckSystem = readSource('src/main/agent-runtime/prompt/composers/deck-system.ts')
+const generationUser = readSource('src/main/agent-runtime/prompt/composers/generation-user.ts')
 
     // The deck path runs through buildDeckAgentSystemPrompt (called in agent.ts).
     // Wire the rule where it actually ships.
@@ -76,23 +76,28 @@ describe('content expansion rules — always-on, not source-gated', () => {
   })
 
   it('the dead deck helper is gone (deck runs through buildDeckAgentSystemPrompt, not a never-called helper)', () => {
-    const generationUser = readSource('src/main/prompt/generation-user.ts')
+    const generationUser = readSource('src/main/agent-runtime/prompt/composers/generation-user.ts')
     expect(generationUser).not.toContain('buildDeckGenerationPrompt')
     expect(generationUser).not.toContain('buildOutlinePageList')
   })
 
   it('deck agent wires it into the always-on system prompt (after the source-document block)', () => {
-    const deckSystem = readSource('src/main/prompt/deck-system.ts')
-    const deckFn = deckSystem.slice(deckSystem.indexOf('export function buildDeckAgentSystemPrompt'))
+    const promptWithoutSources = buildDeckAgentSystemPrompt('test-style', baseContext)
+    const promptWithSources = buildDeckAgentSystemPrompt('test-style', {
+      ...baseContext,
+      sourceDocumentPaths: ['/docs/source.md']
+    })
 
-    // It sits in the main return array, after the source-document block spread,
-    // so it applies whether or not source documents are present.
-    const afterSourceBlock = deckFn.slice(deckFn.indexOf('...sourceDocumentInstructions'))
-    expect(afterSourceBlock).toContain('buildCanvasScenarioExpansionRules(context.slideSize)')
+    const expansionMarker = '## 内容丰富与优化规则（演示页）'
+    expect(promptWithoutSources).toContain(expansionMarker)
+    expect(promptWithSources).toContain(expansionMarker)
+    expect(promptWithSources.indexOf('## Source documents')).toBeLessThan(
+      promptWithSources.indexOf(expansionMarker)
+    )
   })
 
   it('single-page generation wires it into the always-on return, not the source-gated block', () => {
-    const generationUser = readSource('src/main/prompt/generation-user.ts')
+    const generationUser = readSource('src/main/agent-runtime/prompt/composers/generation-user.ts')
     const singlePageSource = generationUser.slice(
       generationUser.indexOf('export function buildSinglePageGenerationPrompt')
     )
@@ -183,9 +188,9 @@ describe('content expansion rules — always-on, not source-gated', () => {
   })
 
   it('scenario content rules own the form guidance while scenario expansion owns enrichment', () => {
-    const scenario = readSource('src/main/prompt/canvas-scenario.ts')
-    const deckSystem = readSource('src/main/prompt/deck-system.ts')
-    const generationUser = readSource('src/main/prompt/generation-user.ts')
+    const scenario = readSource('src/main/agent-runtime/prompt/composers/canvas-scenario.ts')
+    const deckSystem = readSource('src/main/agent-runtime/prompt/composers/deck-system.ts')
+    const generationUser = readSource('src/main/agent-runtime/prompt/composers/generation-user.ts')
 
     expect(scenario).toContain('export function buildCanvasScenarioContentRules')
     expect(scenario).toContain('3 秒主旨')
@@ -204,7 +209,7 @@ describe('content expansion rules — always-on, not source-gated', () => {
     // and container edits must NOT carry whole-page signals —
     // that would violate their narrow scope. Slice each edit function's body and
     // assert the boundary precisely so a future mis-wire is caught.
-    const editSystem = readSource('src/main/prompt/edit-system.ts')
+const editSystem = readSource('src/main/agent-runtime/prompt/composers/edit-system.ts')
     const containerEdit = editSystem.slice(
       editSystem.indexOf('function buildContainerEditPrompt('),
       editSystem.indexOf('function buildSelectorEditPrompt(')

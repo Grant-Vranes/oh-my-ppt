@@ -10,7 +10,7 @@ import {
   FREEZE_PAGE_FOR_PPTX_SCRIPT,
   HAS_DECLARED_PPTX_ANIMATION_SCRIPT,
   HIDE_FOR_PPTX_BACKGROUND_SCRIPT
-} from '../../../src/main/utils/html-pptx/browser-scripts'
+} from '../../../src/main/io/html-pptx/browser-scripts'
 
 const rect = (left: number, top: number, width: number, height: number) => ({
   x: left,
@@ -43,7 +43,7 @@ describe('PPTX animation browser scripts', () => {
     expect(FREEZE_PAGE_FOR_PPTX_SCRIPT).not.toContain('data-pptx-native-anim')
     expect(HIDE_FOR_PPTX_BACKGROUND_SCRIPT).not.toContain('[data-pptx-native-anim]')
     const rendererSource = fs.readFileSync(
-      path.resolve('src/main/utils/html-pptx/renderer.ts'),
+      path.resolve('src/main/io/html-pptx/renderer.ts'),
       'utf8'
     )
     expect(rendererSource).toContain("animationMode = 'slide-transition'")

@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   readStyleSwitchFileSnapshot,
   restoreStyleSwitchFileSnapshot
-} from '../../../src/main/ipc/edit-jobs/style-switch-job-files'
+} from '../../../src/main/edit-jobs/style-switch-job-files'
 
 const tempDirs: string[] = []
 

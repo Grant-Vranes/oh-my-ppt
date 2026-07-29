@@ -2,7 +2,7 @@ import {
   enqueueHtmlThumbnails,
   getFreshHtmlThumbnailPaths,
   type HtmlThumbnailRequest
-} from '../utils/html-thumbnail-service'
+} from '../io/thumbnails/html-thumbnail-service'
 
 const SESSION_THUMBNAIL_VARIANT = 'first-page'
 

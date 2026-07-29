@@ -6,7 +6,7 @@ import {
   importHtmlEditorMedia,
   isSupportedHtmlEditorMediaFile,
   listHtmlEditorMedia
-} from '../../../src/main/ipc/html-editor/html-editor-media'
+} from '../../../src/main/html-editor/html-editor-media'
 
 const roots: string[] = []
 

@@ -20,14 +20,14 @@ describe('single-page edit plan contract', () => {
     expect(normalizeSessionPageEditPlan({ intent: 'layout', target: '第 2 页' })).toBeUndefined()
 
     const serviceSource = fs.readFileSync(
-      path.resolve('src/main/ipc/edit-jobs/page-edit-job-service.ts'),
+      path.resolve('src/main/edit-jobs/page-edit-job-service.ts'),
       'utf8'
     )
     expect(serviceSource).toContain("ipcMain.handle('page-edit:assess'")
     expect(serviceSource).toContain("ipcMain.handle('page-edit:start'")
     expect(serviceSource).toContain('!input.approvedPlan && !input.autoApply')
     const editFlowSource = fs.readFileSync(
-      path.resolve('src/main/ipc/generation/edit-flow.ts'),
+      path.resolve('src/main/generation/edit-flow.ts'),
       'utf8'
     )
     expect(editFlowSource).toContain('record_session_page_edit_assessment')

@@ -21,18 +21,18 @@ const state = vi.hoisted(() => {
 
 vi.mock('electron', () => ({ ipcMain: state.ipcMain }))
 vi.mock('electron-log/main.js', () => ({ default: { info: vi.fn() } }))
-vi.mock('../../../src/main/utils/style-skills', () => ({
+vi.mock('../../../src/main/styles/catalog', () => ({
   getStylePackageDirectory: state.getStylePackageDirectory,
   saveGeneratedStylePreview: state.saveGeneratedStylePreview
 }))
-vi.mock('../../../src/main/utils/style-preview-generator', () => ({
+vi.mock('../../../src/main/styles/preview/generator', () => ({
   generateStylePreviewHtml: state.generateStylePreviewHtml
 }))
-vi.mock('../../../src/main/utils/html-thumbnail-service', () => ({
+vi.mock('../../../src/main/io/thumbnails/html-thumbnail-service', () => ({
   enqueueHtmlThumbnail: state.enqueueHtmlThumbnail,
   waitForHtmlThumbnailTask: state.waitForHtmlThumbnailTask
 }))
-vi.mock('../../../src/main/ipc/config/model-config-utils', () => ({
+vi.mock('../../../src/main/config/model-config-utils', () => ({
   resolveGlobalModelTimeouts: state.resolveGlobalModelTimeouts,
   resolveModelConfigForTask: state.resolveModelConfigForTask
 }))
@@ -81,7 +81,7 @@ describe('registerStylePreviewHandlers', () => {
     })
 
     const { registerStylePreviewHandlers } =
-      await import('../../../src/main/ipc/config/style-preview-handlers')
+      await import('../../../src/main/styles/preview/handlers')
     registerStylePreviewHandlers({ db: {}, decryptApiKey: vi.fn() } as never)
 
     const handler = state.handlers.get('styles:generatePreview')

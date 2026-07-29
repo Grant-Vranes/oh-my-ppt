@@ -2,6 +2,7 @@ import { LRUCache } from 'lru-cache'
 import log from 'electron-log/main.js'
 import { createMiddleware } from 'langchain'
 import { resolveModel } from '../agent'
+import type { ModelRuntimeConfig } from '../agent'
 import { FilesystemBackend, createDeepAgent } from 'deepagents'
 import { extractModelText } from '../ipc/utils'
 import { resolveModelTimeoutMs } from '@shared/model-timeout'
@@ -426,6 +427,7 @@ function getOrCreateRuntime(
     model: string
     baseUrl: string
     maxTokens?: number
+    modelRuntime?: ModelRuntimeConfig
     systemPrompt: string
     currentStage: ThinkingStage
     hasSources: boolean
@@ -440,7 +442,8 @@ function getOrCreateRuntime(
     args.model,
     args.baseUrl,
     0.3,
-    args.maxTokens
+    args.maxTokens,
+    args.modelRuntime
   )
   const workflowTools = createThinkingWorkflowTools({
     thinkingDir,
@@ -509,6 +512,7 @@ export interface RunThinkingChatArgs extends ThinkingContextArgs {
   model: string
   baseUrl: string
   maxTokens?: number
+  modelRuntime?: ModelRuntimeConfig
   modelTimeoutMs: number
   onThinkingEvent?: (event: { type: 'tool_call' | 'tool_result'; toolName: string; summary: string }) => void
 }
@@ -528,6 +532,7 @@ export async function runThinkingChat(args: RunThinkingChatArgs): Promise<Thinki
     model,
     baseUrl,
     maxTokens,
+    modelRuntime,
     modelTimeoutMs,
     onThinkingEvent
   } = args
@@ -564,6 +569,7 @@ export async function runThinkingChat(args: RunThinkingChatArgs): Promise<Thinki
     model,
     baseUrl,
     maxTokens,
+    modelRuntime,
     systemPrompt,
     currentStage: inputStage,
     hasSources

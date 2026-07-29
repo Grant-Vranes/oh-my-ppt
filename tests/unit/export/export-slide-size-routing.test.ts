@@ -3,7 +3,7 @@ import path from 'path'
 import { describe, expect, it } from 'vitest'
 
 const exportHandlersSource = (): string =>
-  fs.readFileSync(path.resolve('src/main/ipc/io/export-handlers.ts'), 'utf8')
+  fs.readFileSync(path.resolve('src/main/io/export-handlers.ts'), 'utf8')
 
 const handlerSource = (source: string, channel: string, nextChannel: string): string =>
   source.slice(

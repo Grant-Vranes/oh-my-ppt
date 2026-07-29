@@ -238,10 +238,12 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
       selectedScopePages.length > 0
         ? `${t('sessionDetail.mainPageScopeMessagePrefix', { pages: selectedScopePages.join('、') })}\n${content}`
         : content
+    const clientMessageId = crypto.randomUUID()
     const generatePayload: GenerateStartPayload = {
       sessionId,
       modelConfigId,
       userMessage: scopedMessageContent,
+      clientMessageId,
       type: pages.length > 0 ? 'page' : 'deck',
       chatType: context.chatType,
       selectPageIds: context.chatType === 'main' ? effectiveSelectPageIds : undefined,
@@ -269,6 +271,22 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
           toastWarning(t('sessionDetail.pageEditPlanRequiresSavedEdits'))
           return false
         }
+        addMessage({
+          id: clientMessageId,
+          session_id: sessionId,
+          chat_scope: 'page',
+          page_id: context.messagePageId,
+          selector: context.selector,
+          image_paths: imagePaths,
+          video_paths: videoPaths,
+          role: 'user',
+          content: scopedMessageContent,
+          type: 'text',
+          tool_name: null,
+          tool_call_id: null,
+          token_count: null,
+          created_at: Math.floor(Date.now() / 1000)
+        })
         assessmentId = crypto.randomUUID()
         generateState.startPageEditPlanning(sessionId, targetPageId, assessmentId)
         const assessment = await ipc.assessPageEdit(generatePayload)
@@ -293,22 +311,6 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
           latestGenerateState.startPageEdit(sessionId, {
             pageId: targetPageId,
             pageNumber: targetPage?.pageNumber
-          })
-          addMessage({
-            id: crypto.randomUUID(),
-            session_id: sessionId,
-            chat_scope: 'page',
-            page_id: context.messagePageId,
-            selector: context.selector,
-            image_paths: imagePaths,
-            video_paths: videoPaths,
-            role: 'user',
-            content: scopedMessageContent,
-            type: 'text',
-            tool_name: null,
-            tool_call_id: null,
-            token_count: null,
-            created_at: Math.floor(Date.now() / 1000)
           })
           detailState.setInput('')
           detailState.clearPendingAssets()
@@ -443,22 +445,6 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
       generateState.startPageEdit(sessionId, {
         pageId: pendingPlan.targetPageId,
         pageNumber: pendingPlan.targetPageNumber
-      })
-      addMessage({
-        id: crypto.randomUUID(),
-        session_id: sessionId,
-        chat_scope: 'page',
-        page_id: pendingPlan.payload.chatPageId || pendingPlan.targetPageId,
-        selector: pendingPlan.payload.selector || null,
-        image_paths: pendingPlan.payload.imagePaths || [],
-        video_paths: pendingPlan.payload.videoPaths || [],
-        role: 'user',
-        content: pendingPlan.payload.userMessage,
-        type: 'text',
-        tool_name: null,
-        tool_call_id: null,
-        token_count: null,
-        created_at: Math.floor(Date.now() / 1000)
       })
       useGenerateStore.getState().clearPendingPageEditPlan(sessionId)
       const result = await ipc.startPageEdit({

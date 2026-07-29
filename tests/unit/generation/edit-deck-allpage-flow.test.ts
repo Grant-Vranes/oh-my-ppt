@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolveRemainingFailedPageInfo } from '../../../src/main/ipc/generation/edit-deck-failure-state'
+import { resolveRemainingFailedPageInfo } from '../../../src/main/generation/edit-deck-failure-state'
 
 describe('resolveRemainingFailedPageInfo', () => {
   it('keeps previous failures, adds new failures, and removes pages completed by this run', () => {

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   revealGenerationWindow,
   shouldRevealGenerationWindow
-} from '../../../src/main/ipc/generation/generation-window-policy'
+} from '../../../src/main/generation/generation-window-policy'
 import type { GenerateChunkEvent } from '../../../src/shared/generation'
 
 const terminalEvent = (

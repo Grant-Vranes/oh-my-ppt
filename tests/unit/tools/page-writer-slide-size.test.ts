@@ -20,8 +20,11 @@ import {
   buildBasePageStyleTag,
   buildFitScript,
   preprocessPageHtml
-} from '../../../src/main/tools/page-writer'
-import { buildPageScaffoldHtml, buildProjectIndexHtml } from '../../../src/main/ipc/engine/template'
+} from '../../../src/main/presentation/html/page-writer-core'
+import {
+  buildPageScaffoldHtml,
+  buildProjectIndexHtml
+} from '../../../src/main/session/template-builder'
 import { SLIDE_SIZE_PRESETS, requireSlideSizePreset } from '../../../src/shared/slide-size'
 
 describe('page writer slide size', () => {

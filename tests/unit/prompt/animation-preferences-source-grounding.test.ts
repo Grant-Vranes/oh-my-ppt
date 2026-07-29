@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildDesignContractUserPrompt,
   buildPlanningUserPrompt
-} from '../../../src/main/prompt/runtime-user'
+} from '../../../src/main/agent-runtime/prompt'
 
 // Markers that only ever come from formatAnimationPreferencesForPageWriting.
 // Their absence in upstream prompts proves animation preferences never leak

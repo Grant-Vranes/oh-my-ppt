@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs'
 import path from 'path'
 import { describe, expect, it } from 'vitest'
-import { buildCanvasConstraints } from '../../../src/main/prompt/shared'
+import { buildCanvasConstraints } from '../../../src/main/agent-runtime/prompt'
 import { resolveSlideSize } from '../../../src/shared/slide-size'
 
 const projectRoot = process.cwd()
@@ -71,10 +71,10 @@ describe('layout prompt budget guardrails', () => {
   })
 
   it('delivery guard blocks top-heavy half-screen layouts across rewrite-capable paths', () => {
-    const scenarioPrompt = readProjectFile('src/main/prompt/canvas-scenario.ts')
-    const deckSystem = readProjectFile('src/main/prompt/deck-system.ts')
-    const generationUser = readProjectFile('src/main/prompt/generation-user.ts')
-    const editSystem = readProjectFile('src/main/prompt/edit-system.ts')
+const scenarioPrompt = readProjectFile('src/main/agent-runtime/prompt/composers/canvas-scenario.ts')
+const deckSystem = readProjectFile('src/main/agent-runtime/prompt/composers/deck-system.ts')
+const generationUser = readProjectFile('src/main/agent-runtime/prompt/composers/generation-user.ts')
+const editSystem = readProjectFile('src/main/agent-runtime/prompt/composers/edit-system.ts')
 
     expect(scenarioPrompt).toContain('buildCanvasScenarioDeliveryGuard')
     expect(scenarioPrompt).toContain('形服务于魂')
@@ -109,8 +109,8 @@ describe('layout prompt budget guardrails', () => {
   })
 
   it('keeps layout guidance density-driven and requires a pre-write size self-check', () => {
-    const sharedPrompt = readProjectFile('src/main/prompt/shared.ts')
-    const scenarioPrompt = readProjectFile('src/main/prompt/canvas-scenario.ts')
+    const sharedPrompt = readProjectFile('src/main/agent-runtime/prompt/composers/shared.ts')
+    const scenarioPrompt = readProjectFile('src/main/agent-runtime/prompt/composers/canvas-scenario.ts')
     const layoutSkill = readProjectFile('resources/skills/oh-my-ppt-layout/SKILL.md')
     const chartSkill = readProjectFile('resources/skills/oh-my-ppt-chart/SKILL.md')
     const chartReference = readProjectFile('resources/skills/oh-my-ppt-chart/references/chart.md')
@@ -191,7 +191,7 @@ describe('layout prompt budget guardrails', () => {
   })
 
   it('keeps body and heading font floors semantic while exempting auxiliary text', () => {
-    const sharedPrompt = readProjectFile('src/main/prompt/shared.ts')
+    const sharedPrompt = readProjectFile('src/main/agent-runtime/prompt/composers/shared.ts')
     const layoutSkill = readProjectFile('resources/skills/oh-my-ppt-layout/SKILL.md')
     const checklist = readProjectFile('resources/skills/oh-my-ppt-layout/references/checklist.md')
     const combined = [sharedPrompt, layoutSkill, checklist].join('\n')

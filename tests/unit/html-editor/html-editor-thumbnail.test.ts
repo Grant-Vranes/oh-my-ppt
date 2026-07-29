@@ -6,7 +6,7 @@ const state = vi.hoisted(() => ({
   getFreshHtmlThumbnailPaths: vi.fn()
 }))
 
-vi.mock('../../../src/main/utils/html-thumbnail-service', () => ({
+vi.mock('../../../src/main/io/thumbnails/html-thumbnail-service', () => ({
   enqueueHtmlThumbnail: state.enqueueHtmlThumbnail,
   enqueueHtmlThumbnails: state.enqueueHtmlThumbnails,
   getFreshHtmlThumbnailPaths: state.getFreshHtmlThumbnailPaths
@@ -20,7 +20,7 @@ describe('HTML editor cover thumbnails', () => {
     state.enqueueHtmlThumbnails.mockResolvedValue([])
 
     const { warmHtmlEditorCoverThumbnails } =
-      await import('../../../src/main/ipc/html-editor/html-editor-thumbnail')
+      await import('../../../src/main/html-editor/html-editor-thumbnail')
     const result = await warmHtmlEditorCoverThumbnails([
       { id: 'doc-1', htmlPath: '/tmp/doc-1.html', designWidth: 1280 },
       { id: 'doc-2', htmlPath: '/tmp/doc-2.html', designWidth: 1440 },
@@ -68,7 +68,7 @@ describe('HTML editor cover thumbnails', () => {
     state.enqueueHtmlThumbnail.mockResolvedValue({ status: 'queued' })
 
     const { refreshHtmlEditorCoverThumbnail } =
-      await import('../../../src/main/ipc/html-editor/html-editor-thumbnail')
+      await import('../../../src/main/html-editor/html-editor-thumbnail')
     refreshHtmlEditorCoverThumbnail({
       id: 'doc-1',
       htmlPath: '/tmp/doc-1.html',

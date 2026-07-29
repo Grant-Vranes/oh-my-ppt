@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { PRODUCT_SKILLS_ROUTE } from '../../../src/main/skills/skill-contract'
+import { PRODUCT_SKILLS_ROUTE } from '../../../src/main/product-skills/contract'
 
 const logMock = vi.hoisted(() => ({
   info: vi.fn(),

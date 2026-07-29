@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 vi.mock('electron', () => ({ app: { getPath: () => '/tmp' }, session: { defaultSession: {} } }))
 vi.mock('@electron-toolkit/utils', () => ({ is: { dev: false, main: true } }))
 
-import { replacePageContentFragment } from '../../../src/main/tools/page-writer'
+import { replacePageContentFragment } from '../../../src/main/presentation/html/page-writer-core'
 
 const SHELL_HTML = `<!doctype html>
 <html lang="zh-CN">

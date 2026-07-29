@@ -4,7 +4,7 @@ import {
   enqueueHtmlThumbnails,
   type HtmlThumbnailRequest,
   type HtmlThumbnailTask
-} from '../utils/html-thumbnail-service'
+} from '../io/thumbnails/html-thumbnail-service'
 
 export async function warmStyleThumbnails(
   installedRootPath: string,

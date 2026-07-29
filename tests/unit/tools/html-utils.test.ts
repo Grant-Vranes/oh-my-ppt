@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { validateHtmlContent, validatePersistedPageHtml } from '../../../src/main/tools/html-utils'
+import { validateHtmlContent, validatePersistedPageHtml } from '../../../src/main/presentation/html/html-utils'
 import {
   DATA_ANIM_SKILL_NAME,
   formatSkillUsageRequirement,
-} from '../../../src/main/skills/skill-contract'
+} from '../../../src/main/product-skills/contract'
 
 describe('validateHtmlContent animation validation', () => {
   it('allows declarative data-anim stagger delay', () => {

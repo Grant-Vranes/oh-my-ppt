@@ -1,6 +1,6 @@
 import type { createClient } from '@libsql/client'
-import type { DesignContract } from '../../tools/types'
-import { createDefaultDesignContract } from '../../utils/design-contract'
+import type { DesignContract } from '@shared/generation'
+import { createDefaultDesignContract } from '../../presentation/design-contract'
 
 type LibSqlClient = ReturnType<typeof createClient>
 

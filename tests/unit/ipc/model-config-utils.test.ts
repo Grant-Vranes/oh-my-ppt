@@ -4,12 +4,12 @@ const modelRuntimeState = vi.hoisted(() => ({
   bindCurrentModelTemperatureControl: vi.fn()
 }))
 
-vi.mock('../../../src/main/ipc/config/locale-utils', () => ({
+vi.mock('../../../src/main/config/locale-utils', () => ({
   readAppLocale: vi.fn(async () => 'zh'),
   uiText: vi.fn((_locale: string, zh: string) => zh)
 }))
 
-vi.mock('../../../src/main/model-runtime', () => ({
+vi.mock('../../../src/main/agent-runtime/model', () => ({
   bindCurrentModelTemperatureControl: modelRuntimeState.bindCurrentModelTemperatureControl
 }))
 
@@ -22,7 +22,7 @@ describe('resolveModelConfigForTask temperature control', () => {
   it('binds the selected model temperature setting to the current async task', async () => {
     modelRuntimeState.bindCurrentModelTemperatureControl.mockClear()
     const { resolveModelConfigForTask } =
-      await import('../../../src/main/ipc/config/model-config-utils')
+      await import('../../../src/main/config/model-config-utils')
     const ctx = {
       db: {
         getModelConfig: vi.fn(async () => ({

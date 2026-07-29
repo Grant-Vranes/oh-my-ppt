@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { normalizeCreativePageFragment } from '../../../src/main/tools/page-fragment-normalizer'
+import { normalizeCreativePageFragment } from '../../../src/main/presentation/html/page-fragment-normalizer'
 
 describe('normalizeCreativePageFragment block ids', () => {
   it('adds stable block ids to nested inline text runs', () => {

@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { seedreamAdapter } from '../../../src/main/image-generation/providers/seedream'
-import type { ResolvedImageModelConfig } from '../../../src/main/image-generation/types'
+import {
+  resolveImageGenerationProvider,
+  type ResolvedImageModelConfig
+} from '../../../src/main/agent-runtime/provider/image'
+
+const seedreamAdapter = resolveImageGenerationProvider('seedream')
 
 const pngBase64 =
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lK3G1wAAAABJRU5ErkJggg=='

@@ -5,10 +5,14 @@ import crypto from 'crypto'
 import { unzipSync } from 'fflate'
 import log from 'electron-log/main.js'
 import type { IpcContext } from '../ipc/context'
-import { buildProjectIndexHtml, extractPagesDataFromIndex, type DeckPageFile } from '../ipc/engine/template'
+import {
+  buildProjectIndexHtml,
+  extractPagesDataFromIndex,
+  type DeckPageFile
+} from '../session/template-builder'
 import { recordHistoryOperationStrict } from '../history/git-history-service'
-import { createDefaultDesignContract } from '../utils/design-contract'
-import { resolveUsableStyleId } from '../utils/style-skills'
+import { createDefaultDesignContract } from '../presentation/design-contract'
+import { resolveUsableStyleId } from '../styles/catalog'
 import { findSlidePackResourceZipInsideZip } from './slide-pack-archive'
 import {
   requireSlideSizeFromHtml,

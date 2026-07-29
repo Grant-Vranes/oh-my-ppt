@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { EditContext } from '../../../src/main/ipc/generation/types'
-import type { EditedPageDescriptor } from '../../../src/main/ipc/generation/generation-utils'
-import { buildLocalSuccessfulEditSummary } from '../../../src/main/ipc/generation/edit-summary-core'
-import { emitSuccessfulEditSummary } from '../../../src/main/ipc/generation/edit-summary'
+import type { EditContext } from '../../../src/main/generation/types'
+import type { EditedPageDescriptor } from '../../../src/main/generation/generation-utils'
+import { buildLocalSuccessfulEditSummary } from '../../../src/main/generation/edit-summary-core'
+import { emitSuccessfulEditSummary } from '../../../src/main/generation/edit-summary'
 
 const changedPage = {
   pageNumber: 1

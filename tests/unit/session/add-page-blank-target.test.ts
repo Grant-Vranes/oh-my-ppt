@@ -9,8 +9,8 @@ describe('generated page addition', () => {
     const dialogSource = readSource(
       'src/renderer/src/components/session-detail/modal/AddPageDialog.tsx'
     )
-    const addPageFlowSource = readSource('src/main/ipc/generation/add-page-flow.ts')
-    const blankPageServiceSource = readSource('src/main/ipc/session/page-management-service.ts')
+    const addPageFlowSource = readSource('src/main/generation/add-page-flow.ts')
+    const blankPageServiceSource = readSource('src/main/session/page-management-service.ts')
 
     const createBlankPageIndex = dialogSource.indexOf(
       'ipc.createBlankSessionPage({ sessionId, sourcePageId })'
@@ -32,7 +32,7 @@ describe('generated page addition', () => {
   })
 
   it('hands generated page insertion and single-page retry to persistent jobs', () => {
-    const handlerSource = readSource('src/main/ipc/engine/generation-handlers.ts')
+    const handlerSource = readSource('src/main/generation/handlers.ts')
     const addPageHandler = handlerSource.slice(
       handlerSource.indexOf("ipcMain.handle('generate:addPage'"),
       handlerSource.indexOf("ipcMain.handle('generate:retrySinglePage'")
@@ -41,7 +41,7 @@ describe('generated page addition', () => {
       handlerSource.indexOf("ipcMain.handle('generate:retrySinglePage'"),
       handlerSource.indexOf("ipcMain.handle('generate:cancel'")
     )
-    const jobManagerSource = readSource('src/main/ipc/generation/job-manager.ts')
+    const jobManagerSource = readSource('src/main/generation/job-manager.ts')
 
     expect(addPageHandler).toContain('jobManager.enqueue({')
     expect(addPageHandler).toContain("kind: 'add-page'")
@@ -56,8 +56,8 @@ describe('generated page addition', () => {
   })
 
   it('keeps placeholder state recoverable when a generated-page job fails to start or finish', () => {
-    const handlerSource = readSource('src/main/ipc/engine/generation-handlers.ts')
-    const finalizationSource = readSource('src/main/ipc/generation/finalization.ts')
+    const handlerSource = readSource('src/main/generation/handlers.ts')
+    const finalizationSource = readSource('src/main/generation/finalization.ts')
     const dialogSource = readSource(
       'src/renderer/src/components/session-detail/modal/AddPageDialog.tsx'
     )

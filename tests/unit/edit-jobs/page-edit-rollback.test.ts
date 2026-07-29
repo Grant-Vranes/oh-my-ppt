@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { restorePageEditSnapshots } from '../../../src/main/ipc/edit-jobs/page-edit-rollback'
+import { restorePageEditSnapshots } from '../../../src/main/edit-jobs/page-edit-rollback'
 
 describe('restorePageEditSnapshots', () => {
   const roots: string[] = []

@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
-import { resolveSourceDocuments } from '../../../src/main/ipc/generation/source-documents'
+import { resolveSourceDocuments } from '../../../src/main/generation/source-documents'
 
 describe('resolveSourceDocuments', () => {
   it('keeps the session reference document across edit-like modes', async () => {
@@ -11,7 +11,7 @@ describe('resolveSourceDocuments', () => {
     await writeFile(path.join(projectDir, 'docs', 'reference.md'), '# Reference\n', 'utf8')
 
     const result = await resolveSourceDocuments(
-      { assertPathInAllowedRoots: vi.fn() } as any,
+      { localFiles: { assertPathInAllowedRoots: vi.fn() } } as any,
       {
         sessionId: 's1',
         projectDir,
@@ -34,7 +34,7 @@ describe('resolveSourceDocuments', () => {
     const assertPathInAllowedRoots = vi.fn(async () => uploadedPath)
 
     const result = await resolveSourceDocuments(
-      { assertPathInAllowedRoots } as any,
+      { localFiles: { assertPathInAllowedRoots } } as any,
       {
         sessionId: 's1',
         projectDir,
@@ -55,7 +55,7 @@ describe('resolveSourceDocuments', () => {
     await writeFile(absoluteReferencePath, '# Legacy\n', 'utf8')
 
     const result = await resolveSourceDocuments(
-      { assertPathInAllowedRoots: vi.fn() } as any,
+      { localFiles: { assertPathInAllowedRoots: vi.fn() } } as any,
       {
         sessionId: 's1',
         projectDir,

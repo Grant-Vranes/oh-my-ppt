@@ -3,7 +3,7 @@ import path from 'path'
 import fs from 'fs'
 import log from 'electron-log/main.js'
 import type { IpcContext } from '../context'
-import { resolveGlobalModelTimeouts, resolveModelConfigForTask } from '../config/model-config-utils'
+import { resolveGlobalModelTimeouts, resolveModelConfigForTask } from '../../config/model-config-utils'
 import {
   createWorkspace,
   deleteWorkspace,
@@ -319,6 +319,7 @@ export function registerThinkingHandlers(ctx: IpcContext): void {
         model: activeModel.model,
         baseUrl: activeModel.baseUrl,
         maxTokens: activeModel.maxTokens,
+        modelRuntime: ctx.modelRuntime,
         modelTimeoutMs: modelTimeouts.document
       })
 
@@ -368,6 +369,7 @@ export function registerThinkingHandlers(ctx: IpcContext): void {
         model: activeModel.model,
         baseUrl: activeModel.baseUrl,
         maxTokens: activeModel.maxTokens,
+        modelRuntime: ctx.modelRuntime,
         modelTimeoutMs: modelTimeouts.agent,
         onThinkingEvent: emitThinkingEvent
       })

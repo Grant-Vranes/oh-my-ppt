@@ -7,6 +7,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { useChatPanelController } from '../../../src/renderer/src/components/session-detail/hooks/useChatPanelController'
 import { useGenerateStore } from '../../../src/renderer/src/store/generateStore'
 import { useSessionDetailUiStore } from '../../../src/renderer/src/store/sessionDetailStore'
+import { useSessionStore } from '../../../src/renderer/src/store/sessionStore'
 import { useToastStore } from '../../../src/renderer/src/store/toastStore'
 import type { ChatPanelController } from '../../../src/renderer/src/types/session-detail'
 
@@ -139,6 +140,7 @@ describe('useChatPanelController page edit scope', () => {
       selectedPageId: 'page-record-1',
       chatType: 'page'
     })
+    useSessionStore.setState({ currentMessages: [] })
   })
 
   afterEach(() => {
@@ -283,6 +285,53 @@ describe('useChatPanelController page edit scope', () => {
       expect(startPageEditMock).not.toHaveBeenCalled()
       expect(useSessionDetailUiStore.getState().input).toBe('Make this title concise')
       expect(toastWarningMock).toHaveBeenCalledWith('sessionDetail.pageEditPlanWaitForJob')
+    } finally {
+      await cleanup(root, container)
+    }
+  })
+
+  it('shows the current-page user message while its edit intent is being assessed', async () => {
+    const { root, container } = await renderHarness()
+    let resolveAssessment: ((value: Record<string, unknown>) => void) | undefined
+    assessPageEditMock.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveAssessment = resolve
+        })
+    )
+
+    try {
+      useSessionDetailUiStore.setState({ input: 'Make this title concise' })
+      const sendPromise = latest?.send('model-1')
+
+      await act(async () => {
+        await Promise.resolve()
+      })
+
+      expect(useSessionStore.getState().currentMessages).toMatchObject([
+        {
+          session_id: 'session-1',
+          chat_scope: 'page',
+          page_id: 'page-record-1',
+          role: 'user',
+          content: 'Make this title concise'
+        }
+      ])
+
+      resolveAssessment?.({
+        requiresConfirmation: true,
+        plan: {
+          intent: 'content',
+          target: 'Title',
+          summary: 'Shorten the title',
+          changes: ['Shorten title copy'],
+          confirmationQuestion: 'Apply this edit?'
+        },
+        reply: 'Ready',
+        targetPageId: 'page-1',
+        targetPageNumber: 1
+      })
+      await expect(sendPromise).resolves.toBe(true)
     } finally {
       await cleanup(root, container)
     }

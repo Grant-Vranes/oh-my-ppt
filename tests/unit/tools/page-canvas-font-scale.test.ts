@@ -11,7 +11,7 @@ vi.mock('electron', () => ({
 
 vi.mock('@electron-toolkit/utils', () => ({ is: { dev: false } }))
 
-import { buildBasePageStyleTag, buildFitScript } from '../../../src/main/tools/page-writer'
+import { buildBasePageStyleTag, buildFitScript } from '../../../src/main/presentation/html/page-writer-core'
 import { requireSlideSizePreset, resolveSlideSize } from '../../../src/shared/slide-size'
 
 describe('canvas-aware font floors', () => {

@@ -4,7 +4,7 @@ import {
   getFreshHtmlThumbnailPaths,
   waitForHtmlThumbnailTask,
   type HtmlThumbnailRequest
-} from '../utils/html-thumbnail-service'
+} from '../io/thumbnails/html-thumbnail-service'
 import { TEMPLATE_THUMBNAIL_RESOURCE_TYPE } from '@shared/thumbnail'
 
 const TEMPLATE_COVER_VARIANT = 'cover'

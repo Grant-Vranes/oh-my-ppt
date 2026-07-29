@@ -2078,9 +2078,10 @@ export class PPTDatabase {
       image_paths?: string[] | null
       video_paths?: string[] | null
       run_model?: string | null
+      id?: string
     }
   ): Promise<string> {
-    const id = crypto.randomUUID()
+    const id = message.id || crypto.randomUUID()
     const now = Math.floor(Date.now() / 1000)
     const chatScope = message.chat_scope === 'page' ? 'page' : 'main'
     const pageId =

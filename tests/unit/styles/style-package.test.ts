@@ -14,7 +14,7 @@ vi.mock('@electron-toolkit/utils', () => ({
   is: { dev: true }
 }))
 
-vi.mock('../../../src/main/ipc/io/assets-handlers', () => ({
+vi.mock('../../../src/main/io/assets-handlers', () => ({
   allowLocalAssetRoot: vi.fn()
 }))
 import {
@@ -36,7 +36,7 @@ import {
   saveGeneratedStylePreview,
   setStyleDb,
   updateStyleSkill
-} from '../../../src/main/utils/style-skills'
+} from '../../../src/main/styles/catalog'
 
 async function makeStyle(
   root: string,

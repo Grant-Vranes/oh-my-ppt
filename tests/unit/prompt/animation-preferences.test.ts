@@ -3,8 +3,8 @@ import {
   buildDeckAgentSystemPrompt,
   buildSinglePageGenerationPrompt,
   formatAnimationPreferencesForPageWriting
-} from '../../../src/main/prompt'
-import type { SessionDeckGenerationContext } from '../../../src/main/tools/types'
+} from '../../../src/main/agent-runtime/prompt'
+import type { SessionDeckGenerationContext } from '../../../src/main/agent-runtime/agent'
 import { resolveSlideSize } from '../../../src/shared/slide-size'
 
 const baseContext: SessionDeckGenerationContext = {

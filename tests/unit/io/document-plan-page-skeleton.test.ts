@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { scanDocumentOutline } from '../../../src/main/ipc/io/document-outline-scan'
+import { scanDocumentOutline } from '../../../src/main/io/document-outline-scan'
 import {
   buildDocumentPlanPageSkeleton,
   sanitizeDocumentPlanPageSkeletonContent
-} from '../../../src/main/ipc/io/document-plan-page-skeleton'
+} from '../../../src/main/io/document-plan-page-skeleton'
 
 describe('document plan page skeleton', () => {
   it('derives an authoritative skeleton only when source candidates match the plan count', () => {

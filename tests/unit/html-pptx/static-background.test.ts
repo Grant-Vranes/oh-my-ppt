@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isPptxStaticBackgroundShape } from '../../../src/main/utils/html-pptx/static-background'
+import { isPptxStaticBackgroundShape } from '../../../src/main/io/html-pptx/static-background'
 
 describe('PPTX static background shape classification', () => {
   it('keeps full-page and full-height column fills in the screenshot base', () => {

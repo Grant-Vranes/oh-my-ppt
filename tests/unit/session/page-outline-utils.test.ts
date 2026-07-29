@@ -3,7 +3,7 @@ import {
   migrateLegacyPageOutlinesToSourceSkeletons,
   resolveOutlinesForPages,
   resolvePageContentOutline
-} from '../../../src/main/ipc/session/page-outline-utils'
+} from '../../../src/main/session/page-outline-utils'
 import type {
   GenerationPageRecord,
   PPTDatabase,

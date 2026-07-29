@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildDuplicatePageHtmlFromSource } from '../../../../src/main/ipc/session/page-html-builders'
+import { buildDuplicatePageHtmlFromSource } from '../../../../src/main/session/page-html-builders'
 
 const SOURCE_HTML = `<!DOCTYPE html>
 <html>

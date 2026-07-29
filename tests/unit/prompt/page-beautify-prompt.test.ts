@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { buildPageBeautifySystemPrompt } from '../../../src/main/ipc/edit-jobs/page-beautify-prompt'
-import { resolveLayoutSkillName } from '../../../src/main/skills/skill-contract'
+import { buildPageBeautifySystemPrompt } from '../../../src/main/edit-jobs/page-beautify-prompt'
+import { resolveLayoutSkillName } from '../../../src/main/product-skills/contract'
 
 const baseArgs = {
   provider: 'provider',

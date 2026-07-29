@@ -1,3 +1,27 @@
+import type { LayoutIntent } from './layout-intent'
+
+/** A generated slide's semantic plan, shared by planning, generation, and page tools. */
+export interface OutlineItem {
+  title: string
+  contentOutline: string
+  layoutIntent?: LayoutIntent
+}
+
+/** Deck-level visual rules persisted with a session and applied to every generated page. */
+export interface DesignContract {
+  theme: string
+  background: string
+  palette: string[]
+  titleStyle: string
+  layoutMotif: string
+  chartStyle: string
+  shapeLanguage: string
+  titleFont: string
+  bodyFont: string
+}
+
+export type DeckEditScope = 'page' | 'deck' | 'presentation-container'
+
 export interface UploadedAsset {
   id: string
   fileName: string
@@ -169,6 +193,8 @@ export interface GenerateStartPayload {
   chatType?: 'main' | 'page'
   resetVisualStyle?: boolean
   persistUserMessage?: boolean
+  /** Renderer-generated ID so an optimistic chat message is reconciled with its DB record. */
+  clientMessageId?: string
   chatPageId?: string
   selectPageIds?: string[]
   selectedPageId?: string

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   extractImpliedPageCount,
   normalizeGeneratedPlan
-} from '../../../src/main/ipc/io/document-plan-normalizer'
+} from '../../../src/main/io/document-plan-normalizer'
 
 describe('document parse plan page count normalization', () => {
   it('uses English per-page entries when the model collapses pageCount to one', () => {

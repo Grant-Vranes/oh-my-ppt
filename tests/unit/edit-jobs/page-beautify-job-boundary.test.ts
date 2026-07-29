@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 describe('page beautify job boundary', () => {
   it('uses dedicated IPC and restricts persistence to the selected page', () => {
     const serviceSource = fs.readFileSync(
-      path.resolve('src/main/ipc/edit-jobs/page-beautify-job-service.ts'),
+      path.resolve('src/main/edit-jobs/page-beautify-job-service.ts'),
       'utf8'
     )
 
@@ -18,6 +18,8 @@ describe('page beautify job boundary', () => {
     expect(serviceSource).toContain('layoutAudit')
     expect(serviceSource).toContain('extractPageBeautifyContent')
     expect(serviceSource).toContain('replacePageContentFragment')
+    expect(serviceSource).toContain("from '../presentation/html/page-writer-core'")
+    expect(serviceSource).not.toContain("from '../tools/page-writer'")
     expect(serviceSource).toContain('recordHistoryOperationStrict')
     expect(serviceSource).not.toContain('runDeepAgentEdit')
     expect(serviceSource).not.toContain('resolveCommonContext')
@@ -28,7 +30,7 @@ describe('page beautify job boundary', () => {
     expect(serviceSource).not.toContain("from './style-switch-job-service'")
 
     const agentSource = fs.readFileSync(
-      path.resolve('src/main/ipc/edit-jobs/page-beautify-agent.ts'),
+      path.resolve('src/main/edit-jobs/page-beautify-agent.ts'),
       'utf8'
     )
     // Beautify uses the same DeepAgents + product-skills machinery as the deck/edit
@@ -46,7 +48,7 @@ describe('page beautify job boundary', () => {
     expect(agentSource).not.toContain('read_current_page_content')
 
     const promptSource = fs.readFileSync(
-      path.resolve('src/main/ipc/edit-jobs/page-beautify-prompt.ts'),
+      path.resolve('src/main/edit-jobs/page-beautify-prompt.ts'),
       'utf8'
     )
     expect(promptSource).toContain('ppt-page-root')

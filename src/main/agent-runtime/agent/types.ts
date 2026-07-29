@@ -2,7 +2,8 @@ import type {
   AnimationPreferencesPayload,
   DeckEditScope,
   DesignContract,
-  OutlineItem
+  OutlineItem,
+  SelectedElementRuntimeContext
 } from '@shared/generation'
 import type { SlideSizePreset } from '@shared/slide-size'
 
@@ -46,5 +47,6 @@ export interface SessionDeckGenerationContext {
   selectedSelector?: string
   elementTag?: string
   elementText?: string
+  selectedElementContext?: SelectedElementRuntimeContext
   existingPageIds?: string[]
 }

@@ -22,6 +22,7 @@ import {
 } from './shared'
 import { buildCanvasScenarioBrief, resolveCanvasScenario } from './canvas-scenario'
 import { createPromptCatalog } from '../catalog'
+import { formatSelectedElementRuntimeContext } from '../selected-element-context'
 
 import containerTemplate from '../templates/edit-system/container.md?raw'
 import deckTemplate from '../templates/edit-system/deck.md?raw'
@@ -65,6 +66,7 @@ type EditSystemTemplateVars = {
     targetFileLine: string
     selectorInfo: string
     elementInfo: string
+    elementRuntimeContextInfo: string
     existingInfo: string
     pageList: string
   }
@@ -237,6 +239,9 @@ function buildSelectorEditPrompt(
     elementInfo: context.elementTag
       ? `Target element: <${context.elementTag}>${context.elementText ? `"${context.elementText}"` : ''}`
       : '',
+    elementRuntimeContextInfo: formatSelectedElementRuntimeContext(
+      context.selectedElementContext
+    ),
     existingInfo: context.existingPageIds?.length
       ? `Existing page IDs: ${context.existingPageIds.join(', ')}`
       : '',

@@ -3,12 +3,14 @@ import path from 'path'
 import type {
   FontSelection,
   GenerateStartPayload,
+  SelectedElementRuntimeContext,
   SessionPageEditPlan,
   SourceDocumentPlan
 } from '@shared/generation'
 import {
   MAX_SELECTED_PAGES,
   MAX_STYLE_SWITCH_PAGES,
+  SELECTED_ELEMENT_CONTEXT_COMPUTED_STYLE_PROPERTIES,
   normalizeAnimationPreferences,
   normalizeFontSelection,
   normalizeSessionPageEditPlan,
@@ -227,12 +229,126 @@ export type NormalizedGenerateInput = {
   selector?: string
   elementTag?: string
   elementText?: string
+  selectedElementContext?: SelectedElementRuntimeContext
   chatType: GenerateChatType
   chatPageId?: string
   animationPreferences: AnimationPreferencesPayload | null
   autoApply: boolean
   approvedPlan?: SessionPageEditPlan
   failedRunId?: string
+}
+
+const MAX_SELECTED_ELEMENT_CONTEXT_ENTRIES = 40
+const MAX_SELECTED_ELEMENT_CONTEXT_CLASSES = 24
+const MAX_SELECTED_ELEMENT_CONTEXT_VALUE_LENGTH = 480
+const PROMPT_SAFE_COMPUTED_STYLE_PROPERTIES = new Set<string>(
+  SELECTED_ELEMENT_CONTEXT_COMPUTED_STYLE_PROPERTIES
+)
+
+const normalizeSelectedElementContextValue = (value: unknown, maxLength = MAX_SELECTED_ELEMENT_CONTEXT_VALUE_LENGTH): string =>
+  String(value ?? '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, maxLength)
+
+const isSelectedElementContextAttributeName = (value: string): boolean => {
+  const name = value.toLowerCase()
+  return (
+    Boolean(name) &&
+    !name.startsWith('on') &&
+    name !== 'style' &&
+    name !== 'srcdoc' &&
+    !name.startsWith('data-arcsin1-presentation-editor-')
+  )
+}
+
+export function normalizeSelectedElementRuntimeContext(
+  value: unknown
+): SelectedElementRuntimeContext | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined
+  const input = value as Record<string, unknown>
+  const attributes: Record<string, string> = {}
+  if (input.attributes && typeof input.attributes === 'object' && !Array.isArray(input.attributes)) {
+    for (const [key, rawValue] of Object.entries(input.attributes)) {
+      if (Object.keys(attributes).length >= MAX_SELECTED_ELEMENT_CONTEXT_ENTRIES) break
+      const name = normalizeSelectedElementContextValue(key, 100).toLowerCase()
+      if (!isSelectedElementContextAttributeName(name)) continue
+      attributes[name] = normalizeSelectedElementContextValue(rawValue)
+    }
+  }
+
+  const inlineStyle: NonNullable<SelectedElementRuntimeContext['inlineStyle']> = {}
+  if (input.inlineStyle && typeof input.inlineStyle === 'object' && !Array.isArray(input.inlineStyle)) {
+    for (const [key, rawDeclaration] of Object.entries(input.inlineStyle)) {
+      if (Object.keys(inlineStyle).length >= MAX_SELECTED_ELEMENT_CONTEXT_ENTRIES) break
+      const property = normalizeSelectedElementContextValue(key, 100).toLowerCase()
+      if (!/^(?:--)?[a-z][a-z0-9-]*$/i.test(property)) continue
+      const declaration =
+        rawDeclaration && typeof rawDeclaration === 'object' && !Array.isArray(rawDeclaration)
+          ? (rawDeclaration as Record<string, unknown>)
+          : null
+      if (!declaration) continue
+      inlineStyle[property] = {
+        value: normalizeSelectedElementContextValue(declaration.value),
+        priority: declaration.priority === 'important' ? 'important' : ''
+      }
+    }
+  }
+
+  const computedStyle: Record<string, string> = {}
+  if (input.computedStyle && typeof input.computedStyle === 'object' && !Array.isArray(input.computedStyle)) {
+    for (const [key, rawValue] of Object.entries(input.computedStyle)) {
+      const property = normalizeSelectedElementContextValue(key, 100).toLowerCase()
+      if (!PROMPT_SAFE_COMPUTED_STYLE_PROPERTIES.has(property)) continue
+      const normalizedValue = normalizeSelectedElementContextValue(rawValue)
+      if (normalizedValue) computedStyle[property] = normalizedValue
+    }
+  }
+
+  const classList = Array.isArray(input.classList)
+    ? input.classList
+        .map((item) => normalizeSelectedElementContextValue(item, 100))
+        .filter(
+          (item) =>
+            Boolean(item) &&
+            !item.startsWith('arcsin1-presentation-editor-') &&
+            !item.startsWith('ppt-inspector-')
+        )
+        .slice(0, MAX_SELECTED_ELEMENT_CONTEXT_CLASSES)
+    : []
+  const boundsInput =
+    input.bounds && typeof input.bounds === 'object' && !Array.isArray(input.bounds)
+      ? (input.bounds as Record<string, unknown>)
+      : null
+  const boundsValues = boundsInput
+    ? [boundsInput.x, boundsInput.y, boundsInput.width, boundsInput.height].map(Number)
+    : []
+  const bounds =
+    boundsValues.length === 4 && boundsValues.every(Number.isFinite)
+      ? {
+          x: Math.round(Math.max(-100_000, Math.min(100_000, boundsValues[0])) * 100) / 100,
+          y: Math.round(Math.max(-100_000, Math.min(100_000, boundsValues[1])) * 100) / 100,
+          width: Math.round(Math.max(0, Math.min(100_000, boundsValues[2])) * 100) / 100,
+          height: Math.round(Math.max(0, Math.min(100_000, boundsValues[3])) * 100) / 100
+        }
+      : undefined
+
+  if (
+    classList.length === 0 &&
+    Object.keys(attributes).length === 0 &&
+    Object.keys(inlineStyle).length === 0 &&
+    Object.keys(computedStyle).length === 0 &&
+    !bounds
+  ) {
+    return undefined
+  }
+  return {
+    ...(classList.length > 0 ? { classList } : {}),
+    ...(Object.keys(attributes).length > 0 ? { attributes } : {}),
+    ...(Object.keys(inlineStyle).length > 0 ? { inlineStyle } : {}),
+    ...(Object.keys(computedStyle).length > 0 ? { computedStyle } : {}),
+    ...(bounds ? { bounds } : {})
+  }
 }
 
 export function normalizeGeneratePayload(payload: unknown): NormalizedGenerateInput {
@@ -294,6 +410,9 @@ export function normalizeGeneratePayload(payload: unknown): NormalizedGenerateIn
     typeof input?.elementText === 'string' && input.elementText.trim().length > 0
       ? input.elementText.trim()
       : undefined
+  const selectedElementContext = selector
+    ? normalizeSelectedElementRuntimeContext(input?.selectedElementContext)
+    : undefined
   const chatType: GenerateChatType = input?.chatType === 'page' ? 'page' : 'main'
   const chatPageId =
     chatType === 'page' && typeof input?.chatPageId === 'string' && input.chatPageId.trim().length > 0
@@ -325,6 +444,7 @@ export function normalizeGeneratePayload(payload: unknown): NormalizedGenerateIn
     selector,
     elementTag,
     elementText,
+    selectedElementContext,
     chatType,
     chatPageId,
     animationPreferences,

@@ -1,15 +1,14 @@
 import { useCallback, useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react'
 import { nanoid } from 'nanoid'
 import {
-  buildInspectorCleanupScript,
-  buildInspectorInjectScript,
-  INSPECTOR_CONSOLE_PREFIX
-} from './inspector-script'
-import {
   buildEditModeCleanupScript,
   buildEditModeInjectScript,
   buildEditModeSetPreviewScaleScript,
+  buildInspectorCleanupScript,
+  buildInspectorInjectScript,
+  buildPresentationEditorRuntimeInjectScript,
   EDIT_MODE_CONSOLE_PREFIX,
+  INSPECTOR_CONSOLE_PREFIX,
   type EditableElementSnapshot,
   type EditModeMovePayload,
   type EditSnapPoints,
@@ -21,7 +20,9 @@ import {
   type PresentationElementSnapshot
 } from '@arcsin1/presentation-editor-runtime'
 import { ipc } from '@renderer/lib/ipc'
+import { buildSelectedElementRuntimeContext } from '@renderer/lib/presentation-element-context'
 import type { InteractionMode } from '@renderer/store'
+import type { SelectedElementRuntimeContext } from '@shared/generation'
 import { requireSlideSize, type SlideSizePreset } from '@shared/slide-size'
 import type { InsertChartSeries } from '../session-detail/workspace/insert-charts'
 
@@ -229,6 +230,20 @@ export interface PreviewIframeHandle {
   readPageLayoutAudit: () => Promise<string | null>
 }
 
+export function isCurrentInspectorSelectionRequest(args: {
+  requestId: number
+  latestRequestId: number
+  isInspectorActive: boolean
+  selectionInteractionMode: InteractionMode
+  currentInteractionMode: InteractionMode
+}): boolean {
+  return (
+    args.isInspectorActive &&
+    args.requestId === args.latestRequestId &&
+    args.selectionInteractionMode === args.currentInteractionMode
+  )
+}
+
 export const PreviewIframe = forwardRef<
   PreviewIframeHandle,
   {
@@ -247,7 +262,8 @@ export const PreviewIframe = forwardRef<
       selector: string,
       label: string,
       elementTag?: string,
-      elementText?: string
+      elementText?: string,
+      selectedElementContext?: SelectedElementRuntimeContext | null
     ) => void
     onElementMoved?: (payload: EditModeMovePayload) => void
     onElementSelected?: (payload: EditSelectionPayload) => void
@@ -282,6 +298,8 @@ export const PreviewIframe = forwardRef<
   const webviewReadyRef = useRef(false)
   const inspectorInjectedRef = useRef(false)
   const editModeInjectedRef = useRef(false)
+  const inspectorSelectionRequestRef = useRef(0)
+  const inspectorActiveRef = useRef(inspecting)
   const previewScaleRef = useRef(1)
   const [webviewElement, setWebviewElement] = useState<Electron.WebviewTag | null>(null)
   const [webviewReady, setWebviewReady] = useState(false)
@@ -344,6 +362,9 @@ export const PreviewIframe = forwardRef<
       : undefined
   const currentInteractionMode: InteractionMode =
     interactionMode || (editMode ? 'edit' : inspecting ? 'ai-inspect' : 'preview')
+  const inspectorInteractionModeRef = useRef(currentInteractionMode)
+  inspectorActiveRef.current = inspecting
+  inspectorInteractionModeRef.current = currentInteractionMode
   const pointerEnabled = inspectable
 
   const ensureAnchoredAnchor = async (args: {
@@ -408,6 +429,7 @@ export const PreviewIframe = forwardRef<
   }
 
   const handleWebviewRef = useCallback((node: Electron.WebviewTag | null): void => {
+    inspectorSelectionRequestRef.current += 1
     webviewReadyRef.current = false
     inspectorInjectedRef.current = false
     editModeInjectedRef.current = false
@@ -418,6 +440,26 @@ export const PreviewIframe = forwardRef<
 
   const canExecuteJavaScript = (webview: Electron.WebviewTag): boolean => {
     return webview.isConnected && webviewRef.current === webview && webviewReadyRef.current
+  }
+
+  const inspectPresentationElement = async (
+    webview: Electron.WebviewTag,
+    selector: string
+  ): Promise<PresentationElementSnapshot | null> => {
+    if (!canExecuteJavaScript(webview)) return null
+    try {
+      const result = await webview.executeJavaScript(
+        `(function(){` +
+          `var __el = document.querySelector(${JSON.stringify(selector)});` +
+          `if (!__el) return null;` +
+          `if (window.__pptEditModeInspectElement) return window.__pptEditModeInspectElement(${JSON.stringify(selector)});` +
+          `return window.__pptPresentationEditorRuntime ? window.__pptPresentationEditorRuntime.inspect(__el) : null;` +
+        `})()`
+      )
+      return (result as PresentationElementSnapshot | null) || null
+    } catch {
+      return null
+    }
   }
 
   const wrapSafeVoidScript = (label: string, script: string): string => `
@@ -854,16 +896,7 @@ export const PreviewIframe = forwardRef<
       },
       async inspectElement(selector: string): Promise<PresentationElementSnapshot | null> {
         const wv = webviewRef.current
-        if (!wv || !canExecuteJavaScript(wv)) return null
-        try {
-          return (
-            (await wv.executeJavaScript(
-              `window.__pptEditModeInspectElement ? window.__pptEditModeInspectElement(${JSON.stringify(selector)}) : null`
-            )) || null
-          )
-        } catch {
-          return null
-        }
+        return wv ? inspectPresentationElement(wv, selector) : null
       },
       async applyElementOperations(
         selector: string,
@@ -981,6 +1014,7 @@ export const PreviewIframe = forwardRef<
     }
     const handleStartLoading = (): void => {
       if (webviewRef.current === webview) {
+        inspectorSelectionRequestRef.current += 1
         webviewReadyRef.current = false
         setWebviewReady(false)
       }
@@ -1008,6 +1042,14 @@ export const PreviewIframe = forwardRef<
       if (inspecting) {
         safeExecuteHostScript(
           webview,
+          'presentation-editor-runtime-inject',
+          buildPresentationEditorRuntimeInjectScript({
+            rootSelector: '[data-ppt-guard-root="1"], .ppt-page-root',
+            interaction: false
+          })
+        )
+        safeExecuteHostScript(
+          webview,
           'inspector-inject',
           buildInspectorInjectScript({ mode: currentInteractionMode === 'animation-select' ? 'animation-select' : 'inspect' })
         )
@@ -1022,6 +1064,7 @@ export const PreviewIframe = forwardRef<
     runInspectorLifecycle()
 
     return () => {
+      inspectorSelectionRequestRef.current += 1
       if (!inspectorInjectedRef.current) return
       safeExecuteHostScript(webview, 'inspector-cleanup', buildInspectorCleanupScript())
       inspectorInjectedRef.current = false
@@ -1155,16 +1198,30 @@ export const PreviewIframe = forwardRef<
 
         // Inspector / animation-select: element selected
         if (isInspectorMessage && parsed.type === 'selected' && parsed.selector) {
+          const selectedSelector = parsed.selector
+          const requestId = ++inspectorSelectionRequestRef.current
+          const selectionInteractionMode = inspectorInteractionModeRef.current
           if (parsed.mode === 'animation-select' && parsed.formula) {
             void (async () => {
               const anchor = await ensureAnchoredAnchor({
-                selector: parsed.selector || '',
+                selector: selectedSelector,
                 elementTag: parsed.elementTag,
                 elementText: parsed.elementText,
                 reason: 'inspect',
                 formula: parsed.formula
               })
-              if (webviewRef.current !== webview) return
+              if (
+                webviewRef.current !== webview ||
+                !isCurrentInspectorSelectionRequest({
+                  requestId,
+                  latestRequestId: inspectorSelectionRequestRef.current,
+                  isInspectorActive: inspectorActiveRef.current,
+                  selectionInteractionMode,
+                  currentInteractionMode: inspectorInteractionModeRef.current
+                })
+              ) {
+                return
+              }
               onSelectorSelectedRef.current?.(
                 anchor.selector,
                 anchor.selector,
@@ -1174,13 +1231,28 @@ export const PreviewIframe = forwardRef<
             })().catch(() => {})
             return
           }
-          if (webviewRef.current !== webview) return
-          onSelectorSelectedRef.current?.(
-            parsed.selector,
-            parsed.label || parsed.selector,
-            parsed.elementTag,
-            parsed.elementText
-          )
+          void (async () => {
+            const snapshot = await inspectPresentationElement(webview, selectedSelector)
+            if (
+              webviewRef.current !== webview ||
+              !isCurrentInspectorSelectionRequest({
+                requestId,
+                latestRequestId: inspectorSelectionRequestRef.current,
+                isInspectorActive: inspectorActiveRef.current,
+                selectionInteractionMode,
+                currentInteractionMode: inspectorInteractionModeRef.current
+              })
+            ) {
+              return
+            }
+            onSelectorSelectedRef.current?.(
+              selectedSelector,
+              parsed.label || selectedSelector,
+              parsed.elementTag,
+              parsed.elementText,
+              snapshot ? buildSelectedElementRuntimeContext(snapshot) : null
+            )
+          })().catch(() => {})
           return
         }
 

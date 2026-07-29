@@ -842,6 +842,7 @@ Business presentations, product introductions, project summaries — formal but 
     activityStatusFailed: 'Failed',
     selectorBadge: 'SELECTOR',
     clearSelector: 'Clear selector',
+    selectorPropertiesReady: '{count} properties read',
     mainDeckHint: 'Main session edits one or more pages from your instruction.',
     mainPageScopeAll: 'All pages',
     mainPageScopeCount: '{count} pages',

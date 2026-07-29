@@ -3,6 +3,7 @@ import type {
   AnimationPreferencesPayload,
   DesignContract,
   FontSelection,
+  SelectedElementRuntimeContext,
   SourceDocumentPlan
 } from '@shared/generation'
 import type { CommonGenerationContext, GenerationDbPort } from './context'
@@ -40,6 +41,7 @@ export type GenerationRunContext = {
   selector?: string
   elementTag?: string
   elementText?: string
+  selectedElementContext?: SelectedElementRuntimeContext
   sourceRunId?: string
   session: Awaited<ReturnType<GenerationDbPort['getSession']>>
   sessionRecord: Record<string, unknown>

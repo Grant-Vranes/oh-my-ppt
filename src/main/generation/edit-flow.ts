@@ -20,12 +20,14 @@ import fs from 'fs'
 import { nanoid } from 'nanoid'
 import { normalizeLayoutIntent } from '@shared/layout-intent'
 import { runDeepAgentEdit } from './agent-runner'
+import { formatSelectedElementRuntimeContext } from '../agent-runtime/prompt/selected-element-context'
 import {
   type DesignContract,
   SESSION_PAGE_EDIT_INTENTS,
   type GeneratedPagePayload,
   type SessionPageEditAssessment,
-  type SessionPageEditPlan
+  type SessionPageEditPlan,
+  type SelectedElementRuntimeContext
 } from '@shared/generation'
 import { resolveModel } from '../agent-runtime/model'
 import { resolveModelTimeoutMs } from '@shared/model-timeout'
@@ -82,11 +84,13 @@ const buildPageEditAssessmentSystemPrompt = (locale: 'zh' | 'en', args: {
   selector?: string
   elementTag?: string
   elementText?: string
+  selectedElementContext?: SelectedElementRuntimeContext
 }): string => {
   const target = `/${args.targetPageId}.html${args.targetPageNumber ? ` (slide ${args.targetPageNumber})` : ''}`
   const selectorContext = [
     args.selector ? `CSS selector: ${args.selector}` : '',
-    args.elementTag ? `Element: <${args.elementTag}>${args.elementText ? ` ${args.elementText}` : ''}` : ''
+    args.elementTag ? `Element: <${args.elementTag}>${args.elementText ? ` ${args.elementText}` : ''}` : '',
+    formatSelectedElementRuntimeContext(args.selectedElementContext)
   ]
     .filter(Boolean)
     .join('\n')
@@ -117,6 +121,7 @@ const buildPageEditAssessmentUserPrompt = (args: {
   selector?: string
   elementTag?: string
   elementText?: string
+  selectedElementContext?: SelectedElementRuntimeContext
 }): string =>
   [
     'Assess the edit intent and whether explicit confirmation is required. Do not perform the edit.',
@@ -127,7 +132,8 @@ const buildPageEditAssessmentUserPrompt = (args: {
     '',
     `Target page: ${args.targetPageId}${args.targetPageNumber ? ` (slide ${args.targetPageNumber})` : ''}`,
     args.selector ? `Target selector: ${args.selector}` : '',
-    args.elementTag ? `Target element: <${args.elementTag}>${args.elementText ? ` ${args.elementText}` : ''}` : ''
+    args.elementTag ? `Target element: <${args.elementTag}>${args.elementText ? ` ${args.elementText}` : ''}` : '',
+    formatSelectedElementRuntimeContext(args.selectedElementContext)
   ]
     .filter(Boolean)
     .join('\n')
@@ -225,7 +231,8 @@ export async function assessPageEdit(
       targetPageNumber: page.page_number,
       selector: input.selector,
       elementTag: input.elementTag,
-      elementText: input.elementText
+      elementText: input.elementText,
+      selectedElementContext: input.selectedElementContext
     })
   })
   const imagePrompt = ctx.localFiles.formatImagePathsForPrompt(input.rawImagePaths, input.rawVideoPaths)
@@ -241,7 +248,8 @@ export async function assessPageEdit(
             targetPageNumber: page.page_number,
             selector: input.selector,
             elementTag: input.elementTag,
-            elementText: input.elementText
+            elementText: input.elementText,
+            selectedElementContext: input.selectedElementContext
           })
         }
       ]
@@ -338,6 +346,7 @@ export async function resolveEditContext(
     selector: input.selector,
     elementTag: input.elementTag,
     elementText: input.elementText,
+    selectedElementContext: input.selectedElementContext,
     session: common.session,
     sessionRecord: common.sessionRecord,
     previousSessionStatus: common.previousSessionStatus,
@@ -568,6 +577,7 @@ export async function executeEditGeneration(
     selectedSelector,
     elementTag: context.elementTag,
     elementText: context.elementText,
+    selectedElementContext: context.selectedElementContext,
     existingPageIds: existingPageIdsBeforeRun,
     agentManager,
     emit: (chunk) => emitEditChunk(chunk),

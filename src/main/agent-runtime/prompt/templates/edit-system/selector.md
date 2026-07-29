@@ -54,6 +54,7 @@ Deck title: {{deckTitle}}
 {{targetFileLine}}
 {{selectorInfo}}
 {{elementInfo}}
+{{elementRuntimeContextInfo}}
 {{existingInfo}}
 Full page outline:
 {{pageList}}

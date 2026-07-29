@@ -255,6 +255,9 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
       selector: context.selector || undefined,
       elementTag: context.hasSelector ? detailState.elementTag || undefined : undefined,
       elementText: context.hasSelector ? detailState.elementText || undefined : undefined,
+      selectedElementContext: context.hasSelector
+        ? detailState.selectedElementContext || undefined
+        : undefined,
       imagePaths,
       videoPaths
     }

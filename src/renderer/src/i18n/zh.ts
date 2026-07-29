@@ -803,6 +803,7 @@ export const zh = {
     activityStatusFailed: '失败',
     selectorBadge: '选择器',
     clearSelector: '清除 selector',
+    selectorPropertiesReady: '已读取 {count} 项属性',
     mainDeckHint: '主会话会按你的指令修改一个或多个页面。',
     mainPageScopeAll: '全部页面',
     mainPageScopeCount: '{count} 页',

@@ -35,7 +35,7 @@
   },
   "dependencies": {
     "@arcsin1/html2pptx": "^0.0.5",
-    "@arcsin1/presentation-editor-runtime": "0.0.1",
+    "@arcsin1/presentation-editor-runtime": "0.0.3",
     "@arcsin1/pptx-ooxml-geometry": "^0.0.2",
     "@arcsin1/pptx2json": "^0.1.9",
     "@chenglou/pretext": "^0.0.6",

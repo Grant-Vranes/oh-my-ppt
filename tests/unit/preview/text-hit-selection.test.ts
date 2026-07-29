@@ -4,12 +4,10 @@ import { Window } from 'happy-dom'
 import { describe, expect, it } from 'vitest'
 import {
   EDIT_MODE_CONSOLE_PREFIX,
-  buildEditModeInjectScript
-} from '@arcsin1/presentation-editor-runtime'
-import {
+  buildEditModeInjectScript,
   INSPECTOR_CONSOLE_PREFIX,
   buildInspectorInjectScript
-} from '../../../src/renderer/src/components/preview/inspector-script'
+} from '@arcsin1/presentation-editor-runtime'
 
 type Rect = Pick<DOMRect, 'left' | 'top' | 'right' | 'bottom' | 'width' | 'height'>
 

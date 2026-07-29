@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { UploadedAsset } from '@shared/generation.js'
+import type { SelectedElementRuntimeContext, UploadedAsset } from '@shared/generation.js'
 import type { SpeechConfig } from '@shared/speech'
 import type {
   ImageGenerationMessage,
@@ -57,6 +57,7 @@ interface SessionDetailUiStore {
   selectorLabel: string
   elementTag: string
   elementText: string
+  selectedElementContext: SelectedElementRuntimeContext | null
   pendingAssets: UploadedAsset[]
   assetDragActive: boolean
   isUploadingAssets: boolean
@@ -123,7 +124,8 @@ interface SessionDetailUiStore {
     selector: string,
     label: string,
     elementTag?: string,
-    elementText?: string
+    elementText?: string,
+    selectedElementContext?: SelectedElementRuntimeContext | null
   ) => void
   setEditSelectedElement: (selector: string | null) => void
   clearEditSelectedElement: () => void
@@ -197,6 +199,7 @@ export const useSessionDetailUiStore = create<SessionDetailUiStore>((set) => ({
   selectorLabel: '',
   elementTag: '',
   elementText: '',
+  selectedElementContext: null,
   pendingAssets: [],
   assetDragActive: false,
   isUploadingAssets: false,
@@ -330,12 +333,19 @@ export const useSessionDetailUiStore = create<SessionDetailUiStore>((set) => ({
     }),
   // Fix: only reset to preview when currently in preview mode.
   // In edit/ai-inspect mode, selecting an element should NOT change the mode.
-  setSelectedElement: (selectedSelector, selectorLabel, elementTag = '', elementText = '') =>
+  setSelectedElement: (
+    selectedSelector,
+    selectorLabel,
+    elementTag = '',
+    elementText = '',
+    selectedElementContext = null
+  ) =>
     set((state) => ({
       selectedSelector,
       selectorLabel,
       elementTag,
       elementText,
+      selectedElementContext,
       interactionMode:
         state.interactionMode === 'preview' ? ('preview' as InteractionMode) : state.interactionMode
     })),
@@ -346,7 +356,8 @@ export const useSessionDetailUiStore = create<SessionDetailUiStore>((set) => ({
       selectedSelector: null,
       selectorLabel: '',
       elementTag: '',
-      elementText: ''
+      elementText: '',
+      selectedElementContext: null
     }),
   addPendingAssets: (assets) =>
     set((state) => ({
@@ -417,7 +428,8 @@ export const useSessionDetailUiStore = create<SessionDetailUiStore>((set) => ({
       editSelectedSelector: null,
       selectorLabel: '',
       elementTag: '',
-      elementText: ''
+      elementText: '',
+      selectedElementContext: null
     }),
   resetEditingPageState: () =>
     set({
@@ -432,6 +444,7 @@ export const useSessionDetailUiStore = create<SessionDetailUiStore>((set) => ({
       selectorLabel: '',
       elementTag: '',
       elementText: '',
+      selectedElementContext: null,
       pendingAssets: [],
       assetDragActive: false,
       assetPickerOpen: false,
@@ -465,6 +478,7 @@ export const useSessionDetailUiStore = create<SessionDetailUiStore>((set) => ({
       selectorLabel: '',
       elementTag: '',
       elementText: '',
+      selectedElementContext: null,
       pendingAssets: [],
       assetDragActive: false,
       isUploadingAssets: false,

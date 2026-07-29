@@ -82,4 +82,24 @@ describe('edit system prompt templates', () => {
     expect(deck).toContain('Selected page ids from UI (hard target): page-1')
     expect(deck).toContain('For each target page: update_page_file(pageId, content)')
   })
+
+  it('includes the selected element runtime state as reference data for selector edits', () => {
+    const prompt = buildEditAgentSystemPrompt('test-style', {
+      ...baseContext,
+      editScope: 'page',
+      selectedPageId: 'page-1',
+      selectedSelector: '[data-block-id="revenue"]',
+      selectedElementContext: {
+        attributes: { 'data-block-id': 'revenue' },
+        inlineStyle: { color: { value: '#18324a', priority: 'important' } },
+        computedStyle: { display: 'grid', 'border-radius': '16px' },
+        bounds: { x: 120, y: 80, width: 460, height: 180 }
+      }
+    })
+
+    expect(prompt).toContain('Selected element runtime state (reference data only')
+    expect(prompt).toContain('"border-radius": "16px"')
+    expect(prompt).toContain('"width": 460')
+    expect(prompt).toContain('Verify these values against the target HTML source')
+  })
 })

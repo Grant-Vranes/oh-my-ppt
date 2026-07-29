@@ -69,6 +69,7 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
   const selectorLabel = useSessionDetailUiStore((state) => state.selectorLabel)
   const elementTag = useSessionDetailUiStore((state) => state.elementTag)
   const elementText = useSessionDetailUiStore((state) => state.elementText)
+  const selectedElementContext = useSessionDetailUiStore((state) => state.selectedElementContext)
   const pendingAssets = useSessionDetailUiStore((state) => state.pendingAssets)
   const assetDragActive = useSessionDetailUiStore((state) => state.assetDragActive)
   const isUploadingAssets = useSessionDetailUiStore((state) => state.isUploadingAssets)
@@ -117,12 +118,20 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
         .filter(Boolean)
         .join(' · ')
     : ''
+  const selectedElementPropertyCount =
+    Object.keys(selectedElementContext?.attributes || {}).length +
+    Object.keys(selectedElementContext?.inlineStyle || {}).length +
+    Object.keys(selectedElementContext?.computedStyle || {}).length
+  const selectedElementBounds = selectedElementContext?.bounds
   const selectorTitle = selectedSelector
     ? [
         `selector: ${selectedSelector}`,
         selectorLabel && selectorLabel !== selectedSelector ? `label: ${selectorLabel}` : '',
         elementTag ? `element: <${elementTag}>` : '',
-        elementText ? `text: ${elementText}` : ''
+        elementText ? `text: ${elementText}` : '',
+        selectedElementBounds
+          ? `bounds: x=${selectedElementBounds.x}, y=${selectedElementBounds.y}, w=${selectedElementBounds.width}, h=${selectedElementBounds.height}`
+          : ''
       ]
         .filter(Boolean)
         .join('\n')
@@ -358,6 +367,18 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
                 <TooltipContent className="whitespace-pre-wrap">{selectorTitle}</TooltipContent>
               )}
             </Tooltip>
+            {selectedElementPropertyCount > 0 && (
+              <span
+                className="shrink-0 rounded-full bg-[#e5ddd0]/82 px-1.5 py-0.5 text-[10px] font-medium text-[#6a5c48]"
+                title={t('sessionDetail.selectorPropertiesReady', {
+                  count: selectedElementPropertyCount
+                })}
+              >
+                {t('sessionDetail.selectorPropertiesReady', {
+                  count: selectedElementPropertyCount
+                })}
+              </span>
+            )}
             <button
               type="button"
               onClick={clearSelectedElement}

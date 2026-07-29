@@ -3,8 +3,9 @@ import {
   SOURCE_MATERIAL_PLANNING_RULES,
   STABLE_HTML_FRAGMENT_PROTOCOL
 } from "./shared";
-import type { DeckEditScope } from '@shared/generation'
+import type { DeckEditScope, SelectedElementRuntimeContext } from '@shared/generation'
 import { INDEX_TRANSITION_TYPES } from "../../../../shared/index-transition";
+import { formatSelectedElementRuntimeContext } from '../selected-element-context'
 
 const hasSourceMaterialCue = (value: string): boolean =>
   /参考文档|源文档|参考资料|源资料|解析.*大纲|建议大纲|每页要点|必须保留|reference[-\s]?document|source[-\s]?document|source[-\s]?material|recommended outline|per-page points|facts\/metrics/i.test(
@@ -52,6 +53,7 @@ export function buildEditUserPrompt(args: {
   selectedSelector?: string;
   elementTag?: string;
   elementText?: string;
+  selectedElementContext?: SelectedElementRuntimeContext;
   existingPageIds?: string[];
 }): string {
   const isContainerScope = args.editScope === "presentation-container";
@@ -96,6 +98,7 @@ export function buildEditUserPrompt(args: {
         : "Target page: all pages",
     selector ? `Target element CSS selector: ${selector}` : "",
     elementDesc ? `Target element description: ${elementDesc}` : "",
+    formatSelectedElementRuntimeContext(args.selectedElementContext),
     selector || elementDesc
       ? "Location and edit protocol:"
       : "",

@@ -2,15 +2,13 @@ import { useCallback, useEffect, useRef, useState, forwardRef, useImperativeHand
 import { nanoid } from 'nanoid'
 import { Loader2 } from 'lucide-react'
 import {
-  buildInspectorCleanupScript,
-  buildInspectorInjectScript,
-  INSPECTOR_CONSOLE_PREFIX
-} from '../preview/inspector-script'
-import {
   buildEditModeCleanupScript,
   buildEditModeInjectScript,
   buildEditModeSetPreviewScaleScript,
+  buildInspectorCleanupScript,
+  buildInspectorInjectScript,
   EDIT_MODE_CONSOLE_PREFIX,
+  INSPECTOR_CONSOLE_PREFIX,
   type EditableElementSnapshot,
   type EditModeMovePayload,
   type EditSnapPoints,

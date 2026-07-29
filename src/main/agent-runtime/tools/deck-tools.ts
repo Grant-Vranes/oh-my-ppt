@@ -226,6 +226,7 @@ export function createSessionBoundDeckTools(context: SessionDeckGenerationContex
             selectedSelector: context.selectedSelector ?? undefined,
             elementTag: context.elementTag ?? undefined,
             elementText: context.elementText ?? undefined,
+            selectedElementContext: context.selectedElementContext ?? undefined,
             existingPageIds: scopedExistingPageIds ?? undefined,
             constraints
           },

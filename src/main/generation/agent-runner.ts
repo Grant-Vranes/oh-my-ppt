@@ -21,7 +21,8 @@ import type {
   DesignContract,
   FontSelection,
   GenerateChunkEvent,
-  OutlineItem
+  OutlineItem,
+  SelectedElementRuntimeContext
 } from '@shared/generation'
 import { isSectionAgendaOutline } from '@shared/generation'
 import { normalizeLayoutIntent, type LayoutIntent } from '@shared/layout-intent'
@@ -1522,6 +1523,7 @@ type RunDeepAgentScopedEditArgs = RunDeepAgentEditBaseArgs & {
   selectedSelector?: string
   elementTag?: string
   elementText?: string
+  selectedElementContext?: SelectedElementRuntimeContext
 }
 
 type RunDeepAgentPageEditArgs = RunDeepAgentEditBaseArgs & {
@@ -1531,6 +1533,7 @@ type RunDeepAgentPageEditArgs = RunDeepAgentEditBaseArgs & {
   selectedSelector?: string
   elementTag?: string
   elementText?: string
+  selectedElementContext?: SelectedElementRuntimeContext
 }
 
 type RunDeepAgentDeckAllPageEditArgs = RunDeepAgentEditBaseArgs
@@ -1572,6 +1575,7 @@ const runDeepAgentScopedEdit = async (args: RunDeepAgentScopedEditArgs): Promise
       selectedSelector: args.selectedSelector,
       elementTag: args.elementTag,
       elementText: args.elementText,
+      selectedElementContext: args.selectedElementContext,
       existingPageIds: args.existingPageIds,
       allowedPageIds:
         args.editScope === 'page' && args.selectedPageId
@@ -1693,6 +1697,7 @@ const runDeepAgentScopedEdit = async (args: RunDeepAgentScopedEditArgs): Promise
               selectedSelector: args.selectedSelector,
               elementTag: args.elementTag,
               elementText: args.elementText,
+              selectedElementContext: args.selectedElementContext,
               existingPageIds: args.existingPageIds
             })
           }

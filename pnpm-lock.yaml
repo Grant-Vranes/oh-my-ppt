@@ -22,8 +22,8 @@ importers:
         specifier: ^0.1.9
         version: 0.1.9
       '@arcsin1/presentation-editor-runtime':
-        specifier: 0.0.3
-        version: 0.0.3
+        specifier: ^0.0.6
+        version: 0.0.6
       '@chenglou/pretext':
         specifier: ^0.0.6
         version: 0.0.6
@@ -344,8 +344,8 @@ packages:
   '@arcsin1/pptx2json@0.1.9':
     resolution: {integrity: sha512-W6CfvNVSQr90n7my+p0PQ4JK17l2apVdxCr7rvBBENkWMUiGDGbmBCXW+owFNgqslLNC9iewvJieR+x1NW7JHw==}
 
-  '@arcsin1/presentation-editor-runtime@0.0.3':
-    resolution: {integrity: sha512-XaeYH4/PEyAe0UNh21f6JxEqU2FNxpqp/ryq+vYLfbU+7c18ANjeCgbp9MYvTqa+S0hi65XkLazCuiQOToZ4cA==}
+  '@arcsin1/presentation-editor-runtime@0.0.6':
+    resolution: {integrity: sha512-c6ZbALJ3miCHGZVfOichSqL12iHhu/xjbwGSwCwDd1Arm81NPh+8AZ4hJMJBDibgUd4bjI4vi6NNrAZvRCINmA==}
 
   '@babel/code-frame@7.29.0':
     resolution: {integrity: sha512-9NhCeYjq9+3uxgdtp20LSiJXJvN0FeCtNGpJxuMFZ1Kv3cWUNb6DOhJwUvcVCzKGR66cw4njwM6hrJLqgOwbcw==}
@@ -3998,7 +3998,6 @@ packages:
 
   libsql@0.4.7:
     resolution: {integrity: sha512-T9eIRCs6b0J1SHKYIvD8+KCJMcWZ900iZyxdnSCdqxN12Z1ijzT+jY5nrk72Jw4B0HGzms2NgpryArlJqvc3Lw==}
-    cpu: [x64, arm64, wasm32]
     os: [darwin, linux, win32]
 
   lie@3.3.0:
@@ -5667,7 +5666,7 @@ snapshots:
       fast-xml-parser: 5.10.1
       jszip: 3.10.1
 
-  '@arcsin1/presentation-editor-runtime@0.0.3': {}
+  '@arcsin1/presentation-editor-runtime@0.0.6': {}
 
   '@babel/code-frame@7.29.0':
     dependencies:

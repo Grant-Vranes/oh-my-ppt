@@ -685,6 +685,7 @@ export const useHtmlEditStore = create<EditSessionState>((set, get) => ({
       y: payload.y,
       width: payload.width ?? null,
       height: payload.height ?? null,
+      layoutIsland: payload.layoutIsland,
       childUpdates: payload.childUpdates ?? [],
       isAbsoluteMode: payload.layoutMode === 'absolute',
       zIndex: Number.isFinite(draftZIndex) ? draftZIndex : undefined
@@ -872,6 +873,7 @@ export const useHtmlEditStore = create<EditSessionState>((set, get) => ({
     for (const a of snapshot.addElements)
       void iframe.injectElement(a.parentSelector, a.htmlFragment, a.insertIndex)
     for (const d of snapshot.dragEdits) {
+      if (d.layoutIsland) iframe.applyLayoutIsland(d.layoutIsland)
       iframe.applyDragStyle(d.selector, {
         x: d.x,
         y: d.y,
@@ -950,6 +952,7 @@ export const useHtmlEditStore = create<EditSessionState>((set, get) => ({
         isAbsoluteMode: layout.isAbsoluteMode,
         width: d.width != null ? (layout.width > 0 ? layout.width : d.width) : null,
         height: d.height != null ? (layout.height > 0 ? layout.height : d.height) : null,
+        layoutIsland: layout.layoutIsland ?? d.layoutIsland,
         childUpdates: d.childUpdates ?? [],
         zIndex: d.zIndex
       })
@@ -987,6 +990,7 @@ export const useHtmlEditStore = create<EditSessionState>((set, get) => ({
             isAbsoluteMode: layout.isAbsoluteMode,
             width: resized && layout.width > 0 ? layout.width : null,
             height: resized && layout.height > 0 ? layout.height : null,
+            layoutIsland: layout.layoutIsland,
             childUpdates: [],
             zIndex: Number.isFinite(draftZIndex) ? draftZIndex : undefined
           })

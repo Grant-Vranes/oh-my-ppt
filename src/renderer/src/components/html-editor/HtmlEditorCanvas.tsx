@@ -20,6 +20,10 @@ import {
   type PresentationElementSnapshot
 } from '@arcsin1/presentation-editor-runtime'
 import { ipc } from '@renderer/lib/ipc'
+import {
+  normalizeEditModeLayoutIsland,
+  type EditModeLayoutIsland
+} from '@renderer/lib/presentation-layout-island'
 import { useT } from '@renderer/i18n'
 import { useHtmlEditorStore } from '../../store/htmlEditorStore'
 import {
@@ -102,8 +106,15 @@ export interface HtmlEditorCanvasHandle {
   showElement: (selector: string) => void
   applyDragStyle: (
     selector: string,
-    style: { x: number; y: number; width?: number; height?: number; isAbsoluteMode?: boolean }
+    style: {
+      x: number
+      y: number
+      width?: number
+      height?: number
+      isAbsoluteMode?: boolean
+    }
   ) => void
+  applyLayoutIsland: (layoutIsland: EditModeLayoutIsland) => void
   applyZIndex: (selector: string, zIndex: number) => void
   copyElement: (
     selector: string,
@@ -125,6 +136,7 @@ export interface HtmlEditorCanvasHandle {
     height: number
     visualX?: number
     visualY?: number
+    layoutIsland?: EditModeLayoutIsland
   } | null>
   applyChildUpdates: (
     selector: string,
@@ -611,7 +623,13 @@ export const HtmlEditorCanvas = forwardRef<
       },
       applyDragStyle(
         selector: string,
-        style: { x: number; y: number; width?: number; height?: number; isAbsoluteMode?: boolean }
+        style: {
+          x: number
+          y: number
+          width?: number
+          height?: number
+          isAbsoluteMode?: boolean
+        }
       ): void {
         const wv = webviewRef.current
         if (!wv) return
@@ -648,13 +666,17 @@ export const HtmlEditorCanvas = forwardRef<
             `__el.style.setProperty('--ppt-drag-x', ${JSON.stringify(style.x + 'px')});` +
             `__el.style.setProperty('--ppt-drag-y', ${JSON.stringify(style.y + 'px')});` +
             `__el.style.translate = 'var(--ppt-drag-x, 0px) var(--ppt-drag-y, 0px)';` +
-            (style.width != null
-              ? `__el.style.width = ${JSON.stringify(style.width + 'px')};`
-              : '') +
-            (style.height != null
-              ? `__el.style.height = ${JSON.stringify(style.height + 'px')};`
-              : '') +
+            (style.width != null ? `__el.style.width = ${JSON.stringify(style.width + 'px')};` : '') +
+            (style.height != null ? `__el.style.height = ${JSON.stringify(style.height + 'px')};` : '') +
             `})()`
+        )
+      },
+      applyLayoutIsland(layoutIsland: EditModeLayoutIsland): void {
+        const wv = webviewRef.current
+        if (!wv) return
+        safeExecuteJavaScript(
+          wv,
+          `if (window.__pptEditModeApplyLayoutIsland) window.__pptEditModeApplyLayoutIsland(${JSON.stringify(layoutIsland)});`
         )
       },
       applyZIndex(selector: string, zIndex: number): void {
@@ -832,15 +854,28 @@ export const HtmlEditorCanvas = forwardRef<
         height: number
         visualX?: number
         visualY?: number
+        layoutIsland?: EditModeLayoutIsland
       } | null> {
         const wv = webviewRef.current
         if (!wv || !canExecuteJavaScript(wv)) return null
         try {
-          return (
-            (await wv.executeJavaScript(
-              `window.__pptEditModeReadLayout ? window.__pptEditModeReadLayout(${JSON.stringify(selector)}) : null`
-            )) || null
-          )
+          const layout = (await wv.executeJavaScript(
+            `window.__pptEditModeReadLayout ? window.__pptEditModeReadLayout(${JSON.stringify(selector)}) : null`
+          )) as {
+            isAbsoluteMode: boolean
+            x: number
+            y: number
+            width: number
+            height: number
+            visualX?: number
+            visualY?: number
+            layoutIsland?: unknown
+          } | null
+          if (!layout) return null
+          return {
+            ...layout,
+            layoutIsland: normalizeEditModeLayoutIsland(layout.layoutIsland)
+          }
         } catch {
           return null
         }
@@ -1090,7 +1125,7 @@ export const HtmlEditorCanvas = forwardRef<
           visualY?: number
           width?: number
           height?: number
-          scale?: number
+          layoutIsland?: unknown
           childUpdates?: Array<{
             path: number[]
             width?: number
@@ -1241,7 +1276,7 @@ export const HtmlEditorCanvas = forwardRef<
                   visualY: parsed.visualY === undefined ? undefined : Number(parsed.visualY),
                   width: parsed.width === undefined ? undefined : Number(parsed.width),
                   height: parsed.height === undefined ? undefined : Number(parsed.height),
-                  scale: parsed.scale === undefined ? undefined : Number(parsed.scale),
+                  layoutIsland: normalizeEditModeLayoutIsland(parsed.layoutIsland),
                   childUpdates: Array.isArray(parsed.childUpdates)
                     ? parsed.childUpdates
                         .map((item) => ({

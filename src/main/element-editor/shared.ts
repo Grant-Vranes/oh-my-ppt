@@ -131,10 +131,31 @@ export function clampSizeValue(value: unknown): number | null {
   return Math.max(1, Math.min(3200, Math.round(parsed * 10) / 10))
 }
 
+function clampLayoutIslandCoordinate(value: unknown): number {
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed)) return 0
+  return Math.max(-3200, Math.min(3200, Math.round(parsed * 10) / 10))
+}
+
 export interface ChildStyleUpdate {
   path: number[]
   width: number | null
   height: number | null
+}
+
+export interface LayoutIslandChild {
+  index: number
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export interface LayoutIslandStyle {
+  selector: string
+  width: number
+  height: number
+  children: LayoutIslandChild[]
 }
 
 export function normalizeChildStyleUpdates(value: unknown): ChildStyleUpdate[] {
@@ -156,6 +177,54 @@ export function normalizeChildStyleUpdates(value: unknown): ChildStyleUpdate[] {
     })
     .filter((item): item is ChildStyleUpdate => item !== null)
     .slice(0, 20)
+}
+
+export function normalizeLayoutIslandStyle(value: unknown): LayoutIslandStyle | null {
+  if (!value || typeof value !== 'object') return null
+  const record = value as {
+    selector?: unknown
+    width?: unknown
+    height?: unknown
+    children?: unknown
+  }
+  const selector = typeof record.selector === 'string' ? record.selector.trim() : ''
+  const width = clampSizeValue(record.width)
+  const height = clampSizeValue(record.height)
+  if (!selector || selector.length > 1000 || width === null || height === null) return null
+  if (!Array.isArray(record.children)) return null
+  const children = record.children
+    .map((item): LayoutIslandChild | null => {
+      if (!item || typeof item !== 'object') return null
+      const child = item as {
+        index?: unknown
+        x?: unknown
+        y?: unknown
+        width?: unknown
+        height?: unknown
+      }
+      const index = Number(child.index)
+      const childWidth = clampSizeValue(child.width)
+      const childHeight = clampSizeValue(child.height)
+      if (
+        !Number.isInteger(index) ||
+        index < 0 ||
+        index > 200 ||
+        childWidth === null ||
+        childHeight === null
+      ) {
+        return null
+      }
+      return {
+        index,
+        x: clampLayoutIslandCoordinate(child.x),
+        y: clampLayoutIslandCoordinate(child.y),
+        width: childWidth,
+        height: childHeight
+      }
+    })
+    .filter((item): item is LayoutIslandChild => item !== null)
+    .slice(0, 80)
+  return children.length > 0 ? { selector, width, height, children } : null
 }
 
 export function normalizeText(value: unknown): string {
@@ -280,6 +349,50 @@ export function assertAnchorableElement(target: cheerio.Cheerio<AnyNode>): void 
 
 // ─── Patch 函数 ────────────────────────────────────────────
 
+function patchLayoutIslandStyle(
+  $: cheerio.CheerioAPI,
+  layoutIsland: LayoutIslandStyle
+): void {
+  let island: cheerio.Cheerio<AnyNode>
+  try {
+    island = $(layoutIsland.selector).first()
+  } catch {
+    return
+  }
+  if (!island.length) return
+
+  const islandStyle = parseStyle(island.attr('style') || '')
+  const position = String(islandStyle.get('position') || '')
+    .trim()
+    .toLowerCase()
+  if (!position || position === 'static') islandStyle.set('position', 'relative')
+  islandStyle.set('display', 'block')
+  islandStyle.set('box-sizing', 'border-box')
+  islandStyle.set('width', `${layoutIsland.width}px`)
+  islandStyle.set('height', `${layoutIsland.height}px`)
+  island.attr('style', serializeStyle(islandStyle))
+  island.attr('data-ppt-layout-frozen', '1')
+
+  for (const childLayout of layoutIsland.children) {
+    const child = island.children().eq(childLayout.index)
+    if (!child.length) continue
+    const childStyle = parseStyle(child.attr('style') || '')
+    childStyle.set('position', 'absolute')
+    childStyle.set('left', `${childLayout.x}px`)
+    childStyle.set('top', `${childLayout.y}px`)
+    childStyle.set('width', `${childLayout.width}px`)
+    childStyle.set('height', `${childLayout.height}px`)
+    childStyle.set('margin', '0')
+    childStyle.set('box-sizing', 'border-box')
+    childStyle.delete('--ppt-drag-x')
+    childStyle.delete('--ppt-drag-y')
+    childStyle.delete('translate')
+    childStyle.delete('will-change')
+    child.attr('style', serializeStyle(childStyle))
+    child.attr('data-ppt-layout-converted', '1')
+  }
+}
+
 export function patchDraggedElementStyle(
   html: string,
   selector: string,
@@ -290,7 +403,8 @@ export function patchDraggedElementStyle(
   childUpdates: ChildStyleUpdate[],
   isAbsoluteMode: boolean,
   zIndex?: number,
-  zIndexOnly?: boolean
+  zIndexOnly?: boolean,
+  layoutIsland?: LayoutIslandStyle | null
 ): string {
   const $ = cheerio.load(html, { scriptingEnabled: false })
   let target
@@ -300,6 +414,8 @@ export function patchDraggedElementStyle(
     return html
   }
   if (!target || target.length === 0) return html
+
+  if (layoutIsland) patchLayoutIslandStyle($, layoutIsland)
 
   const styleMap = parseStyle(target.attr('style') || '')
 

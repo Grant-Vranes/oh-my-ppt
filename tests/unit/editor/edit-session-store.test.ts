@@ -58,6 +58,7 @@ function primeStore(
     hideElement: () => {},
     injectElement: () => {},
     applyDragStyle: () => {},
+    applyLayoutIsland: () => {},
     applyZIndex: () => {},
     applyChildUpdates: () => {},
     liveUpdateElement: () => {},
@@ -189,6 +190,72 @@ describe('editSessionStore flush barrier (drag-twice-then-save)', () => {
     const drag = editHistory.getSnapshotForPage(PAGE_ID).dragEdits[0]
     expect(drag.width).toBe(333)
     expect(drag.height).toBe(222)
+  })
+
+  it('keeps flow resize geometry through the save flush', async () => {
+    primeStore(async () => ({
+      isAbsoluteMode: false,
+      x: 25,
+      y: -10,
+      width: 240,
+      height: 75
+    }))
+    useEditSessionStore.getState().handleMoved({
+      selector: SELECTOR,
+      x: 25,
+      y: -10,
+      deltaX: 25,
+      deltaY: -10,
+      layoutMode: 'translate',
+      width: 240,
+      height: 75
+    } as unknown as Parameters<typeof useEditSessionStore.getState>['handleMoved'][0])
+
+    await useEditSessionStore.getState().flushPendingDrags()
+
+    expect(useEditHistoryStore.getState().getSnapshotForPage(PAGE_ID).dragEdits[0]).toMatchObject({
+      x: 25,
+      y: -10,
+      width: 240,
+      height: 75
+    })
+  })
+
+  it('keeps a frozen layout island through the save flush', async () => {
+    const layoutIsland = {
+      selector: 'body[data-page-id="page-1"] #layout-island',
+      width: 640,
+      height: 360,
+      children: [
+        { index: 0, x: 20, y: 30, width: 240, height: 120 },
+        { index: 1, x: 300, y: 30, width: 300, height: 180 }
+      ]
+    }
+    primeStore(async () => ({
+      isAbsoluteMode: true,
+      x: 20,
+      y: 30,
+      width: 260,
+      height: 120,
+      layoutIsland
+    }))
+    useEditSessionStore.getState().handleMoved({
+      selector: SELECTOR,
+      x: 20,
+      y: 30,
+      deltaX: 0,
+      deltaY: 0,
+      layoutMode: 'absolute',
+      width: 260,
+      height: 120,
+      layoutIsland
+    } as unknown as Parameters<typeof useEditSessionStore.getState>['handleMoved'][0])
+
+    await useEditSessionStore.getState().flushPendingDrags()
+
+    expect(useEditHistoryStore.getState().getSnapshotForPage(PAGE_ID).dragEdits[0]).toMatchObject({
+      layoutIsland
+    })
   })
 
   it('flushPendingDrags keeps existing size when read-back returns zero', async () => {
@@ -371,6 +438,28 @@ describe('editSessionStore flush captures an in-flight first drag (P1: drag-once
       y: 0,
       width: 150,
       height: 120
+    })
+  })
+
+  it('captures actual geometry for an in-flight flow resize', async () => {
+    primeStore(async () => ({
+      isAbsoluteMode: false,
+      x: 30,
+      y: -10,
+      width: 150,
+      height: 75,
+      visualX: 30,
+      visualY: -10
+    }))
+    useEditSessionStore.setState({ selection: makeSelection({ x: 0, y: 0 }) })
+
+    await useEditSessionStore.getState().flushPendingDrags()
+
+    expect(useEditHistoryStore.getState().getSnapshotForPage(PAGE_ID).dragEdits[0]).toMatchObject({
+      x: 30,
+      y: -10,
+      width: 150,
+      height: 75
     })
   })
 

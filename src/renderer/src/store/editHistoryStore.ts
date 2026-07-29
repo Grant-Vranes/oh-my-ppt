@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { InsertChartSeries } from '../components/session-detail/workspace/insert-charts'
+import type { EditModeLayoutIsland } from '../lib/presentation-layout-island'
 
 // ─── Types ────────────────────────────────────────────
 
@@ -11,6 +12,7 @@ export interface DragEditItem {
   y: number
   width: number | null
   height: number | null
+  layoutIsland?: EditModeLayoutIsland
   childUpdates: Array<{ path: number[]; width?: number; height?: number }>
   isAbsoluteMode: boolean
   zIndex?: number
@@ -120,6 +122,9 @@ function cloneSnapshot(s: EditSnapshot): EditSnapshot {
   return {
     dragEdits: s.dragEdits.map((e) => ({
       ...e,
+      layoutIsland: e.layoutIsland
+        ? { ...e.layoutIsland, children: e.layoutIsland.children.map((child) => ({ ...child })) }
+        : undefined,
       childUpdates: e.childUpdates.map((c) => ({ ...c }))
     })),
     textEdits: s.textEdits.map((e) => ({
@@ -370,7 +375,8 @@ export const useEditHistoryStore = create<EditHistoryState>((set, get) => ({
         const existing = state.dragEdits[idx]
         const merged: DragEditItem = {
           ...edit,
-          zIndex: edit.zIndex ?? existing.zIndex
+          zIndex: edit.zIndex ?? existing.zIndex,
+          layoutIsland: edit.layoutIsland ?? existing.layoutIsland
         }
         if (edit.zIndexOnly) {
           // Z-index-only change: keep existing position data, preserve flag
@@ -378,6 +384,7 @@ export const useEditHistoryStore = create<EditHistoryState>((set, get) => ({
           merged.y = existing.y
           merged.width = existing.width
           merged.height = existing.height
+          merged.layoutIsland = existing.layoutIsland
           merged.childUpdates = existing.childUpdates
           merged.isAbsoluteMode = existing.isAbsoluteMode
           merged.zIndexOnly = true

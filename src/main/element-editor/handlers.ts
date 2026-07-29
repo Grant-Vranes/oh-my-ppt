@@ -18,6 +18,7 @@ import {
   clampDragValue,
   clampSizeValue,
   normalizeChildStyleUpdates,
+  normalizeLayoutIslandStyle,
   normalizeText,
   patchDraggedElementStyle,
   patchElementProperties,
@@ -344,6 +345,7 @@ export function registerEditorHandlers(ctx: IpcContext): void {
           width?: unknown
           height?: unknown
           childUpdates?: unknown
+          layoutIsland?: unknown
           isAbsoluteMode?: unknown
           zIndex?: unknown
           zIndexOnly?: unknown
@@ -362,7 +364,8 @@ export function registerEditorHandlers(ctx: IpcContext): void {
           normalizeChildStyleUpdates(e.childUpdates),
           !!e.isAbsoluteMode,
           zIndex,
-          zIndexOnly
+          zIndexOnly,
+          normalizeLayoutIslandStyle(e.layoutIsland)
         )
       }
 
@@ -587,6 +590,7 @@ export function registerEditorHandlers(ctx: IpcContext): void {
       width?: unknown
       height?: unknown
       childUpdates?: unknown
+      layoutIsland?: unknown
       isAbsoluteMode?: unknown
     }
     const sessionId = normalizeSessionId(record.sessionId)
@@ -613,7 +617,10 @@ export function registerEditorHandlers(ctx: IpcContext): void {
         clampSizeValue(record.width),
         clampSizeValue(record.height),
         normalizeChildStyleUpdates(record.childUpdates),
-        !!record.isAbsoluteMode
+        !!record.isAbsoluteMode,
+        undefined,
+        undefined,
+        normalizeLayoutIslandStyle(record.layoutIsland)
       )
       await fs.promises.writeFile(safeHtmlPath, nextHtml, 'utf-8')
     })

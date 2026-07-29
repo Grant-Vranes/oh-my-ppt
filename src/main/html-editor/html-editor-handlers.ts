@@ -12,6 +12,7 @@ import {
   clampSizeValue,
   ensureElementAnchorInHtml,
   normalizeChildStyleUpdates,
+  normalizeLayoutIslandStyle,
   patchAddElement,
   patchDraggedElementStyle,
   patchElementProperties,
@@ -192,6 +193,7 @@ export function applyEditsToHtml(
       width?: unknown
       height?: unknown
       childUpdates?: unknown
+      layoutIsland?: unknown
       isAbsoluteMode?: unknown
       zIndex?: unknown
       zIndexOnly?: unknown
@@ -210,7 +212,8 @@ export function applyEditsToHtml(
       normalizeChildStyleUpdates(e.childUpdates),
       !!e.isAbsoluteMode,
       zIndex,
-      zIndexOnly
+      zIndexOnly,
+      normalizeLayoutIslandStyle(e.layoutIsland)
     )
   }
 

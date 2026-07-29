@@ -111,6 +111,37 @@ describe('patchDraggedElementStyle chart sizing', () => {
   })
 })
 
+describe('patchDraggedElementStyle flow layout resizing', () => {
+  const selector = 'body[data-page-id="page"] [data-block-id="flow"]'
+
+  it('persists translate and actual dimensions after layout isolation', () => {
+    const html = `
+      <html><body data-page-id="page">
+        <div data-block-id="flow" style="width: 240px; height: 100px">
+          <span data-block-id="child" style="width: 80px">Content</span>
+        </div>
+      </body></html>
+    `
+
+    const result = patchDraggedElementStyle(
+      html,
+      selector,
+      36,
+      -12,
+      360,
+      75,
+      [{ path: [0], width: 120, height: null }],
+      false
+    )
+
+    expect(result).toContain('--ppt-drag-x: 36px')
+    expect(result).toContain('--ppt-drag-y: -12px')
+    expect(result).toContain('width: 360px')
+    expect(result).toContain('height: 75px')
+    expect(result).toContain('width: 120px')
+  })
+})
+
 describe('patchGenericElementProperties rich text', () => {
   it('updates inline rich text without flattening spans', () => {
     const html = `

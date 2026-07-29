@@ -4,7 +4,7 @@ import { useHtmlElementInsertion } from '../../../src/renderer/src/components/ht
 import { ART_TEXT_TEMPLATES } from '../../../src/renderer/src/lib/artTextTemplates'
 import { useHtmlEditHistoryStore } from '../../../src/renderer/src/store/htmlEditHistoryStore'
 import { useHtmlEditStore } from '../../../src/renderer/src/store/htmlEditStore'
-import type { EditableElementSnapshot } from '@arcsin1/presentation-editor-runtime'
+import type { EditableElementSnapshot, EditSelectionPayload } from '@arcsin1/presentation-editor-runtime'
 
 const PAGE_CONTEXT = {
   pageId: 'page-1',
@@ -125,5 +125,75 @@ describe('useHtmlElementInsertion', () => {
 
     await expect(insertion.addImage('https://cdn.example.com/photo.webp')).resolves.toBe(false)
     expect(useHtmlEditHistoryStore.getState().addElements).toHaveLength(0)
+  })
+})
+
+describe('useHtmlEditStore in-flight flow resize', () => {
+  beforeEach(() => {
+    useHtmlEditHistoryStore.getState().clear()
+    useHtmlEditStore.getState().reset()
+  })
+
+  it('retains geometry from the canvas before the moved event reaches history', async () => {
+    const selector = 'body[data-page-id="page-1"] [data-block-id="flow"]'
+    const iframe = {
+      readElementLayout: vi.fn(async () => ({
+        isAbsoluteMode: false,
+        x: 24,
+        y: -12,
+        width: 150,
+        height: 75,
+        visualX: 24,
+        visualY: -12
+      }))
+    } as unknown as HtmlEditorCanvasHandle
+    useHtmlEditStore.getState().attach({
+      t: () => 'New text',
+      requestRefresh: vi.fn(),
+      bumpThumbnail: vi.fn(),
+      getPageContext: () => PAGE_CONTEXT
+    })
+    useHtmlEditStore.getState().setIframeHandle(iframe)
+    useHtmlEditStore.setState({
+      selection: {
+        selector,
+        label: selector,
+        elementTag: 'div',
+        elementText: '',
+        isText: false,
+        style: {},
+        translateX: 0,
+        translateY: 0,
+        snapshot: {
+          selector,
+          label: selector,
+          elementTag: 'div',
+          elementText: '',
+          kind: 'container',
+          capabilities: ['layout'],
+          metrics: {
+            viewport: { x: 0, y: 0, width: 100, height: 100 },
+            page: { x: 0, y: 0, width: 100, height: 100 },
+            translateX: 0,
+            translateY: 0
+          },
+          computed: {},
+          inline: {},
+          attrs: {}
+        }
+      } as EditSelectionPayload
+    })
+
+    await useHtmlEditStore.getState().flushPendingDrags()
+
+    expect(useHtmlEditHistoryStore.getState().getSnapshotForPage(PAGE_CONTEXT.pageId).dragEdits).toEqual([
+      expect.objectContaining({
+        selector,
+        x: 24,
+        y: -12,
+        width: 150,
+        height: 75
+      })
+    ])
   })
 })

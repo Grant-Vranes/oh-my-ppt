@@ -21,6 +21,10 @@ import {
 } from '@arcsin1/presentation-editor-runtime'
 import { ipc } from '@renderer/lib/ipc'
 import { buildSelectedElementRuntimeContext } from '@renderer/lib/presentation-element-context'
+import {
+  normalizeEditModeLayoutIsland,
+  type EditModeLayoutIsland
+} from '@renderer/lib/presentation-layout-island'
 import type { InteractionMode } from '@renderer/store'
 import type { SelectedElementRuntimeContext } from '@shared/generation'
 import { requireSlideSize, type SlideSizePreset } from '@shared/slide-size'
@@ -190,8 +194,15 @@ export interface PreviewIframeHandle {
   showElement: (selector: string) => void
   applyDragStyle: (
     selector: string,
-    style: { x: number; y: number; width?: number; height?: number; isAbsoluteMode?: boolean }
+    style: {
+      x: number
+      y: number
+      width?: number
+      height?: number
+      isAbsoluteMode?: boolean
+    }
   ) => void
+  applyLayoutIsland: (layoutIsland: EditModeLayoutIsland) => void
   applyZIndex: (selector: string, zIndex: number) => void
   copyElement: (
     selector: string,
@@ -214,6 +225,7 @@ export interface PreviewIframeHandle {
     height: number
     visualX?: number
     visualY?: number
+    layoutIsland?: EditModeLayoutIsland
   } | null>
   applyChildUpdates: (
     selector: string,
@@ -738,7 +750,13 @@ export const PreviewIframe = forwardRef<
       },
       applyDragStyle(
         selector: string,
-        style: { x: number; y: number; width?: number; height?: number; isAbsoluteMode?: boolean }
+        style: {
+          x: number
+          y: number
+          width?: number
+          height?: number
+          isAbsoluteMode?: boolean
+        }
       ): void {
         const wv = webviewRef.current
         if (!wv) return
@@ -774,6 +792,14 @@ export const PreviewIframe = forwardRef<
             (style.width != null ? `__el.style.width = ${JSON.stringify(style.width + 'px')};` : '') +
             (style.height != null ? `__el.style.height = ${JSON.stringify(style.height + 'px')};` : '') +
           `})()`
+        )
+      },
+      applyLayoutIsland(layoutIsland: EditModeLayoutIsland): void {
+        const wv = webviewRef.current
+        if (!wv) return
+        safeExecuteJavaScript(
+          wv,
+          `if (window.__pptEditModeApplyLayoutIsland) window.__pptEditModeApplyLayoutIsland(${JSON.stringify(layoutIsland)});`
         )
       },
       applyZIndex(selector: string, zIndex: number): void {
@@ -923,15 +949,28 @@ export const PreviewIframe = forwardRef<
         height: number
         visualX?: number
         visualY?: number
+        layoutIsland?: EditModeLayoutIsland
       } | null> {
         const wv = webviewRef.current
         if (!wv || !canExecuteJavaScript(wv)) return null
         try {
-          return (
-            (await wv.executeJavaScript(
-              `window.__pptEditModeReadLayout ? window.__pptEditModeReadLayout(${JSON.stringify(selector)}) : null`
-            )) || null
-          )
+          const layout = (await wv.executeJavaScript(
+            `window.__pptEditModeReadLayout ? window.__pptEditModeReadLayout(${JSON.stringify(selector)}) : null`
+          )) as {
+            isAbsoluteMode: boolean
+            x: number
+            y: number
+            width: number
+            height: number
+            visualX?: number
+            visualY?: number
+            layoutIsland?: unknown
+          } | null
+          if (!layout) return null
+          return {
+            ...layout,
+            layoutIsland: normalizeEditModeLayoutIsland(layout.layoutIsland)
+          }
         } catch {
           return null
         }
@@ -1179,7 +1218,7 @@ export const PreviewIframe = forwardRef<
           visualY?: number
           width?: number
           height?: number
-          scale?: number
+          layoutIsland?: unknown
           childUpdates?: Array<{
             path: number[]
             width?: number
@@ -1359,7 +1398,7 @@ export const PreviewIframe = forwardRef<
                   visualY: parsed.visualY === undefined ? undefined : Number(parsed.visualY),
                   width: parsed.width === undefined ? undefined : Number(parsed.width),
                   height: parsed.height === undefined ? undefined : Number(parsed.height),
-                  scale: parsed.scale === undefined ? undefined : Number(parsed.scale),
+                  layoutIsland: normalizeEditModeLayoutIsland(parsed.layoutIsland),
                   childUpdates: Array.isArray(parsed.childUpdates)
                     ? parsed.childUpdates
                         .map((item) => ({

@@ -13,11 +13,14 @@ importers:
   .:
     dependencies:
       '@arcsin1/html2pptx':
-        specifier: ^0.0.4
-        version: 0.0.4
+        specifier: ^0.0.5
+        version: 0.0.5
+      '@arcsin1/pptx-ooxml-geometry':
+        specifier: ^0.0.2
+        version: 0.0.2
       '@arcsin1/pptx2json':
-        specifier: ^0.1.8
-        version: 0.1.8
+        specifier: ^0.1.9
+        version: 0.1.9
       '@chenglou/pretext':
         specifier: ^0.0.6
         version: 0.0.6
@@ -329,11 +332,14 @@ packages:
       zod:
         optional: true
 
-  '@arcsin1/html2pptx@0.0.4':
-    resolution: {integrity: sha512-2Ea7zOiPI41V/MXnEjGMU5gmFEc+R3PiZybdi7SZ2R0tDOlUlIZgGvVgOH2UuyxnI6kGfAfBjYNDqriTsrr2yw==}
+  '@arcsin1/html2pptx@0.0.5':
+    resolution: {integrity: sha512-Tm9tFCom88FwcwSiAoOTyvL5FSqbRVTfO9vCUo4b8VLSZCRkRaSGVPf7lCU8P05MQj7+HwiDYs0ac4qP8M4l/Q==}
 
-  '@arcsin1/pptx2json@0.1.8':
-    resolution: {integrity: sha512-SFPMqh+24VSrGFR1rAxO5xSFvT/ZpNz9tYa+nZ42VsC3fkbeozAY3Zx/3fGH0B4uPEq18ueORkbPbv3fgvjeEQ==}
+  '@arcsin1/pptx-ooxml-geometry@0.0.2':
+    resolution: {integrity: sha512-KOqbDTY6hFgxHyhW2Euist7t0HmrUZlw0HaHfWMNobXQu5hD6iDu4yfwqy9kuYVR4E7SVbH64pdwyt+AuiDT/w==}
+
+  '@arcsin1/pptx2json@0.1.9':
+    resolution: {integrity: sha512-W6CfvNVSQr90n7my+p0PQ4JK17l2apVdxCr7rvBBENkWMUiGDGbmBCXW+owFNgqslLNC9iewvJieR+x1NW7JHw==}
 
   '@babel/code-frame@7.29.0':
     resolution: {integrity: sha512-9NhCeYjq9+3uxgdtp20LSiJXJvN0FeCtNGpJxuMFZ1Kv3cWUNb6DOhJwUvcVCzKGR66cw4njwM6hrJLqgOwbcw==}
@@ -5642,12 +5648,14 @@ snapshots:
     optionalDependencies:
       zod: 3.25.76
 
-  '@arcsin1/html2pptx@0.0.4':
+  '@arcsin1/html2pptx@0.0.5':
     dependencies:
       '@chenglou/pretext': 0.0.6
       fflate: 0.8.3
 
-  '@arcsin1/pptx2json@0.1.8':
+  '@arcsin1/pptx-ooxml-geometry@0.0.2': {}
+
+  '@arcsin1/pptx2json@0.1.9':
     dependencies:
       fast-xml-parser: 5.10.1
       jszip: 3.10.1

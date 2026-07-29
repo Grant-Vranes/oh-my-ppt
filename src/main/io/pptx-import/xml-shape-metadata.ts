@@ -1,15 +1,15 @@
 import { unzipSync } from 'fflate'
 import {
-  parsePptxOoxmlCustomGeometry,
-  type PptxOoxmlCustomGeometry
-} from './ooxml-path-renderer'
+  parseOoxmlCustomGeometryXml,
+  type OoxmlCustomGeometry
+} from '@arcsin1/pptx-ooxml-geometry'
 
 export type PptxXmlShapeMetadata = {
   id: string
   name: string
   preset: string
   isCustomGeometry?: boolean
-  customGeometry?: PptxOoxmlCustomGeometry
+  customGeometry?: OoxmlCustomGeometry
   fillColor?: string
   lineColor?: string
   lineWidth?: number
@@ -246,7 +246,7 @@ export const parsePptxXmlDeckMetadata = (buffer: Buffer): PptxXmlDeckMetadata =>
       const preset = shapeXml.match(/<a:prstGeom\b[^>]*\bprst=["']([^"']+)["']/)?.[1] || ''
       const customGeometryXml = shapeXml.match(/<a:custGeom\b[\s\S]*?<\/a:custGeom>/)?.[0] || ''
       const customGeometry = customGeometryXml
-        ? parsePptxOoxmlCustomGeometry(customGeometryXml)
+        ? parseOoxmlCustomGeometryXml(customGeometryXml)
         : undefined
       const isCustomGeometry = Boolean(customGeometryXml)
       const prstGeomXml = shapeXml.match(/<a:prstGeom\b[\s\S]*?<\/a:prstGeom>/)?.[0] || ''

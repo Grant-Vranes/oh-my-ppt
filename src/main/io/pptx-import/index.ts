@@ -29,11 +29,11 @@ import {
 import { type PptxXmlShapeMetadata } from './xml-shape-metadata'
 import {
   getSvgPathBounds,
-  getSvgShapeViewBox,
-  renderXmlPresetShapePath,
+  renderOoxmlCustomGeometryPath,
+  renderOoxmlPresetShapePath,
   type SvgPathBounds
-} from './svg-shape-geometry'
-import { renderPptxOoxmlCustomGeometryPath } from './ooxml-path-renderer'
+} from '@arcsin1/pptx-ooxml-geometry'
+import { getSvgShapeViewBox } from './shape-view-box'
 import { DEFAULT_IMPORTED_TEXT_FONT, PAGE_HEIGHT, PAGE_WIDTH, PPTX_IMPORT_SLIDE_SIZE } from './constants'
 import {
   buildChartBlock,
@@ -1258,7 +1258,7 @@ const buildShapeBlock = async (args: {
   const rawContent = typeof element.content === 'string' ? element.content : ''
   const hasTextContent = stripHtml(rawContent).length > 0
   const customGeometryPath = args.xmlShape?.customGeometry
-    ? renderPptxOoxmlCustomGeometryPath(
+    ? renderOoxmlCustomGeometryPath(
         args.xmlShape.customGeometry,
         clampNumber(element.width),
         clampNumber(element.height)
@@ -1266,7 +1266,7 @@ const buildShapeBlock = async (args: {
     : ''
   const presetGeometryPath =
     !customGeometryPath && args.xmlShape?.preset
-      ? renderXmlPresetShapePath(
+      ? renderOoxmlPresetShapePath(
           args.xmlShape.preset,
           clampNumber(element.width),
           clampNumber(element.height),

@@ -1,4 +1,4 @@
-import { buildElementPickerCoreScript } from './element-picker-core'
+import { buildElementPickerCoreScript } from '@arcsin1/presentation-editor-runtime'
 
 export const INSPECTOR_CONSOLE_PREFIX = '__PPT_INSPECTOR__:'
 
@@ -436,7 +436,7 @@ export function buildInspectorInjectScript(options?: {
     return formula;
   };
 
-  // Keep this formula hit-test block in sync with edit-mode-script.ts.
+  // Keep this formula hit-test block in sync with the presentation editor runtime.
   const getFormulaHitElement = (formula) => {
     if (!(formula instanceof Element)) return null;
     const htmlLayer = formula.querySelector(".katex-html");

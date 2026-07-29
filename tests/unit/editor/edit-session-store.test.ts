@@ -36,7 +36,7 @@ vi.mock('../../../src/renderer/src/lib/ipc', () => ({
 import { ipc } from '../../../src/renderer/src/lib/ipc'
 import { useEditSessionStore } from '../../../src/renderer/src/store/editSessionStore'
 import { useEditHistoryStore } from '../../../src/renderer/src/store/editHistoryStore'
-import type { EditSelectionPayload } from '../../../src/renderer/src/components/preview/edit-mode-script'
+import type { EditSelectionPayload } from '@arcsin1/presentation-editor-runtime'
 import type { PreviewIframeHandle } from '../../../src/renderer/src/components/preview/PreviewIframe'
 
 const PAGE_ID = 'page-1'

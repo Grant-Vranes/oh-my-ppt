@@ -1,10 +1,7 @@
 import { create } from 'zustand'
 import { ipc } from '@renderer/lib/ipc'
 import type { I18nKey, TranslationParams } from '../i18n'
-import type {
-  EditModeMovePayload,
-  EditSelectionPayload
-} from '../components/preview/edit-mode-script'
+import type { EditModeMovePayload, EditSelectionPayload } from '@arcsin1/presentation-editor-runtime'
 import type { PreviewIframeHandle } from '../components/preview/PreviewIframe'
 import {
   EMPTY_ELEMENT_DRAFT,

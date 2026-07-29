@@ -570,7 +570,10 @@ function stripUnsafeFormulaHtml(
     const className = String(attrs.class || '')
       .split(/\s+/)
       .filter(
-        (item) => item && !item.startsWith('ppt-edit-mode-') && !item.startsWith('ppt-inspector-')
+        (item) =>
+          item &&
+          !item.startsWith('arcsin1-presentation-editor-') &&
+          !item.startsWith('ppt-inspector-')
       )
       .join(' ')
     if (className) el.attr('class', className)
@@ -580,6 +583,7 @@ function stripUnsafeFormulaHtml(
       const value = String(attrs[name] || '')
       if (
         lowerName.startsWith('on') ||
+        lowerName.startsWith('data-arcsin1-presentation-editor-') ||
         lowerName === 'srcdoc' ||
         ((lowerName === 'href' || lowerName === 'src') && !/^(#|data:font\/|$)/i.test(value)) ||
         (lowerName === 'style' && /(?:url\s*\(|expression\s*\()/i.test(value))

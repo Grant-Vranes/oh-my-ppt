@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   EDIT_MODE_CONSOLE_PREFIX,
   buildEditModeInjectScript
-} from '../../../src/renderer/src/components/preview/edit-mode-script'
+} from '@arcsin1/presentation-editor-runtime'
 
 type Rect = Pick<DOMRect, 'left' | 'top' | 'right' | 'bottom' | 'width' | 'height'>
 
@@ -107,10 +107,10 @@ describe('preview edit mode reference lines', () => {
     dragFromTo(110, 306)
 
     expect(drag.style.getPropertyValue('--ppt-drag-x')).toBe('200.0px')
-    expect(drag.classList.contains('ppt-edit-mode-selected')).toBe(false)
-    expect(document.querySelector('[data-ppt-edit-guide="vertical"]')).not.toBeNull()
+    expect(drag.classList.contains('arcsin1-presentation-editor-selected')).toBe(false)
+    expect(document.querySelector('[data-arcsin1-presentation-editor-guide="vertical"]')).not.toBeNull()
     expect(
-      (document.querySelector('[data-ppt-edit-guide="vertical"]') as HTMLElement).style.display
+      (document.querySelector('[data-arcsin1-presentation-editor-guide="vertical"]') as HTMLElement).style.display
     ).toBe('none')
 
     const movedLog = logs.findLast((item) =>

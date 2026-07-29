@@ -309,7 +309,7 @@ describe('patchGenericElementProperties formula', () => {
       {
         formula: {
           latex: 'x^2',
-          html: '<span class="katex ppt-edit-mode-selected ppt-inspector-highlight"><span class="katex-html">x2</span></span>',
+          html: '<span class="katex arcsin1-presentation-editor-selected ppt-inspector-highlight"><span class="katex-html">x2</span></span>',
           displayMode: false,
           originalLatex: ''
         }
@@ -317,7 +317,7 @@ describe('patchGenericElementProperties formula', () => {
     )
 
     expect(result).toContain('class="katex"')
-    expect(result).not.toContain('ppt-edit-mode-selected')
+    expect(result).not.toContain('arcsin1-presentation-editor-selected')
     expect(result).not.toContain('ppt-inspector-highlight')
   })
 })

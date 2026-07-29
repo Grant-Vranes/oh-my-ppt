@@ -177,7 +177,7 @@ export function rewriteRelativeAssetsToSource(input: { html: string; sourceDir: 
 
 /**
  * 归一化导入的 HTML：
- *  - 确保有 `main.ppt-page-root[data-ppt-guard-root]` + `.ppt-page-fit-scope`（edit-mode-script 依赖）；
+ *  - 确保有 `main.ppt-page-root[data-ppt-guard-root]` + `.ppt-page-fit-scope`（presentation editor runtime 依赖）；
  *  - 只设 `data-ppt-width`（designWidth），不设高度——document/滚动模式；
  *  - 确保 `body[data-page-id=docId]`；补齐图表运行时；保留原 `<head>`；
  *  - 相对资源改写为 `file://`。

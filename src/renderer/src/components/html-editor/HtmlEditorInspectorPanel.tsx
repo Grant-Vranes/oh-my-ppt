@@ -16,7 +16,7 @@ import {
   hasCapability,
   isArtTextSelection
 } from '../session-detail/element-inspector/types'
-import type { EditSelectionPayload } from '../preview/edit-mode-script'
+import type { EditSelectionPayload } from '@arcsin1/presentation-editor-runtime'
 import { useT } from '@renderer/i18n'
 
 const TEXT_ALIGN_OPTIONS = [

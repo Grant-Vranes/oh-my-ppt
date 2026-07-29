@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ipc } from '@renderer/lib/ipc'
-import type { EditableElementSnapshot } from '../components/preview/edit-mode-script'
+import type { EditableElementSnapshot } from '@arcsin1/presentation-editor-runtime'
 import type { PreviewIframeHandle } from '../components/preview/PreviewIframe'
 import { TooltipProvider } from '../components/ui/Tooltip'
 import { PageSidebar } from '../components/session-detail/sidebar'

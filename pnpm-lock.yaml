@@ -21,6 +21,9 @@ importers:
       '@arcsin1/pptx2json':
         specifier: ^0.1.9
         version: 0.1.9
+      '@arcsin1/presentation-editor-runtime':
+        specifier: 0.0.1
+        version: 0.0.1
       '@chenglou/pretext':
         specifier: ^0.0.6
         version: 0.0.6
@@ -340,6 +343,9 @@ packages:
 
   '@arcsin1/pptx2json@0.1.9':
     resolution: {integrity: sha512-W6CfvNVSQr90n7my+p0PQ4JK17l2apVdxCr7rvBBENkWMUiGDGbmBCXW+owFNgqslLNC9iewvJieR+x1NW7JHw==}
+
+  '@arcsin1/presentation-editor-runtime@0.0.1':
+    resolution: {integrity: sha512-EUGN1gaLbS806It/WxAE1H51oAZ41Q7ZMVXciTrJeFuZTzE+3Pz/kjTE4NQ6+vOrTa4EZydnIVErAwyNO1TO3w==}
 
   '@babel/code-frame@7.29.0':
     resolution: {integrity: sha512-9NhCeYjq9+3uxgdtp20LSiJXJvN0FeCtNGpJxuMFZ1Kv3cWUNb6DOhJwUvcVCzKGR66cw4njwM6hrJLqgOwbcw==}
@@ -5659,6 +5665,8 @@ snapshots:
     dependencies:
       fast-xml-parser: 5.10.1
       jszip: 3.10.1
+
+  '@arcsin1/presentation-editor-runtime@0.0.1': {}
 
   '@babel/code-frame@7.29.0':
     dependencies:

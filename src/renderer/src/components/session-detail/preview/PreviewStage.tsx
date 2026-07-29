@@ -7,7 +7,7 @@ import {
   useSessionStore
 } from '@renderer/store'
 import { PreviewIframe, type PreviewIframeHandle } from '../../preview/PreviewIframe'
-import type { EditModeMovePayload, EditSelectionPayload } from '../../preview/edit-mode-script'
+import type { EditModeMovePayload, EditSelectionPayload } from '@arcsin1/presentation-editor-runtime'
 import type { SessionPreviewPage } from '../shared/types'
 import { useT } from '@renderer/i18n'
 import { EDITOR_INSET, EditorGuidesOverlay } from './EditorGuidesOverlay'

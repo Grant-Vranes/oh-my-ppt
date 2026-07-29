@@ -4,7 +4,7 @@ import { useHtmlElementInsertion } from '../../../src/renderer/src/components/ht
 import { ART_TEXT_TEMPLATES } from '../../../src/renderer/src/lib/artTextTemplates'
 import { useHtmlEditHistoryStore } from '../../../src/renderer/src/store/htmlEditHistoryStore'
 import { useHtmlEditStore } from '../../../src/renderer/src/store/htmlEditStore'
-import type { EditableElementSnapshot } from '../../../src/renderer/src/components/preview/edit-mode-script'
+import type { EditableElementSnapshot } from '@arcsin1/presentation-editor-runtime'
 
 const PAGE_CONTEXT = {
   pageId: 'page-1',

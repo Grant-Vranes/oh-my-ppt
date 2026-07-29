@@ -15,8 +15,11 @@ import {
   type EditSnapPoints,
   type EditSnapSettings,
   type EditTextTarget,
-  type EditSelectionPayload
-} from './edit-mode-script'
+  type EditSelectionPayload,
+  type PresentationEditorOperation,
+  type PresentationEditorOperationResult,
+  type PresentationElementSnapshot
+} from '@arcsin1/presentation-editor-runtime'
 import { ipc } from '@renderer/lib/ipc'
 import type { InteractionMode } from '@renderer/store'
 import { requireSlideSize, type SlideSizePreset } from '@shared/slide-size'
@@ -195,6 +198,11 @@ export interface PreviewIframeHandle {
   ) => Promise<{ selector: string; htmlFragment: string } | null>
   readElementHtml: (selector: string) => Promise<string>
   readElementSnapshot: (selector: string) => Promise<EditableElementSnapshot | null>
+  inspectElement: (selector: string) => Promise<PresentationElementSnapshot | null>
+  applyElementOperations: (
+    selector: string,
+    operations: PresentationEditorOperation[]
+  ) => Promise<PresentationEditorOperationResult[]>
   readElementLayout: (
     selector: string
   ) => Promise<{
@@ -767,7 +775,9 @@ export const PreviewIframe = forwardRef<
             `var __styleHtml = "";` +
             `__clone.setAttribute("data-block-id", ${JSON.stringify(newBlockId)});` +
             `__clone.querySelectorAll("[data-block-id]").forEach(function(c,i){if(__childIds[i])c.setAttribute("data-block-id",__childIds[i]);});` +
-            `__clone.classList.remove("ppt-edit-mode-selected","ppt-edit-mode-hover");` +
+            `__clone.classList.remove("arcsin1-presentation-editor-selected","arcsin1-presentation-editor-hover");` +
+            `__clone.removeAttribute("data-arcsin1-presentation-editor-selected");` +
+            `__clone.removeAttribute("data-arcsin1-presentation-editor-hover");` +
             `if (__src.hasAttribute("data-ppt-art-text") && __oldBlockId) {` +
             `  var __style = Array.from(document.querySelectorAll("style[data-ppt-art-text-style]")).find(function(s){ return s.getAttribute("data-ppt-art-text-style") === __oldBlockId; });` +
             `  if (__style) {` +
@@ -840,6 +850,34 @@ export const PreviewIframe = forwardRef<
           )
         } catch {
           return null
+        }
+      },
+      async inspectElement(selector: string): Promise<PresentationElementSnapshot | null> {
+        const wv = webviewRef.current
+        if (!wv || !canExecuteJavaScript(wv)) return null
+        try {
+          return (
+            (await wv.executeJavaScript(
+              `window.__pptEditModeInspectElement ? window.__pptEditModeInspectElement(${JSON.stringify(selector)}) : null`
+            )) || null
+          )
+        } catch {
+          return null
+        }
+      },
+      async applyElementOperations(
+        selector: string,
+        operations: PresentationEditorOperation[]
+      ): Promise<PresentationEditorOperationResult[]> {
+        const wv = webviewRef.current
+        if (!wv || !canExecuteJavaScript(wv) || operations.length === 0) return []
+        try {
+          const result = await wv.executeJavaScript(
+            `window.__pptEditModeApplyOperations ? window.__pptEditModeApplyOperations(${JSON.stringify(selector)}, ${JSON.stringify(operations)}) : []`
+          )
+          return Array.isArray(result) ? (result as PresentationEditorOperationResult[]) : []
+        } catch {
+          return []
         }
       },
       async readElementLayout(

@@ -1,4 +1,4 @@
-import type { EditableCapability, EditSelectionPayload } from '../../preview/edit-mode-script'
+import type { EditableCapability, EditSelectionPayload } from '@arcsin1/presentation-editor-runtime'
 
 export interface ElementEditDraft {
   html: string

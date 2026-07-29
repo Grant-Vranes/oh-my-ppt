@@ -1,7 +1,7 @@
 import type {
   EditableElementSnapshot,
   EditSelectionPayload
-} from '@renderer/components/preview/edit-mode-script'
+} from '@arcsin1/presentation-editor-runtime'
 import type { ElementEditDraft } from './types'
 
 export const EMPTY_ELEMENT_DRAFT: ElementEditDraft = {

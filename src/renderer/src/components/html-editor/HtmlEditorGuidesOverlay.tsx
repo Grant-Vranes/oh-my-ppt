@@ -8,7 +8,7 @@ import {
   type RefObject
 } from 'react'
 import { useHtmlEditorUiStore } from '../../store/htmlEditorUiStore'
-import type { EditSnapPoints, EditSnapSettings } from '../preview/edit-mode-script'
+import type { EditSnapPoints, EditSnapSettings } from '@arcsin1/presentation-editor-runtime'
 
 export interface GuidesSnapBridge {
   setEditSnapSettings: (settings: EditSnapSettings) => Promise<boolean>
@@ -36,7 +36,7 @@ interface Metrics {
  * 独立 HTML 编辑器的标尺 + 辅助线 + 网格 overlay（document 模式专用，重写）。
  * - 标尺条固定在画布左上 margin（始终可见），刻度随滚动更新（左标尺）。
  * - 网格随内容滚动；辅助线可从标尺拖出、拖动、双击删除。
- * - 通过 snapBridge 把 guides/grid/snap 同步给 edit-mode-script，元素可吸附。
+ * - 通过 snapBridge 把 guides/grid/snap 同步给 presentation editor runtime，元素可吸附。
  */
 export function HtmlEditorGuidesOverlay({
   rootRef,
@@ -113,7 +113,7 @@ export function HtmlEditorGuidesOverlay({
     return () => ro.disconnect()
   }, [hostRef, rootRef, measure])
 
-  // 同步 snap 设置（guides/grid/enable）给 edit-mode-script
+  // 同步 snap 设置（guides/grid/enable）给 presentation editor runtime
   useEffect(() => {
     void previewIframeRef.current?.setEditSnapSettings({
       enabled: editorSnapEnabled,

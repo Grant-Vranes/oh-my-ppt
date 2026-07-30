@@ -1,11 +1,42 @@
-export const PPTX_SLIDE_WIDTH_IN = 13.333
-export const PPTX_SLIDE_HEIGHT_IN = 7.5
+import type { SlideSizePreset } from '@shared/slide-size'
+
+export interface PptxExportLayout {
+  captureWidthPx: number
+  captureHeightPx: number
+  slideWidthIn: number
+  slideHeightIn: number
+}
+
+export const PPTX_WIDE_LAYOUT: Omit<PptxExportLayout, 'captureWidthPx' | 'captureHeightPx'> = {
+  slideWidthIn: 13.333,
+  slideHeightIn: 7.5
+}
+
+export const PPTX_STANDARD_LAYOUT: Omit<PptxExportLayout, 'captureWidthPx' | 'captureHeightPx'> = {
+  slideWidthIn: 10,
+  slideHeightIn: 7.5
+}
+
+export const resolvePptxExportLayout = (slideSize: SlideSizePreset): PptxExportLayout => {
+  const physicalSize =
+    slideSize.id === 'wide-16-9'
+      ? PPTX_WIDE_LAYOUT
+      : slideSize.id === 'standard-4-3'
+        ? PPTX_STANDARD_LAYOUT
+        : null
+  if (!physicalSize) {
+    throw new Error(`Unsupported PPTX slide size: ${slideSize.id}`)
+  }
+
+  return {
+    captureWidthPx: slideSize.width,
+    captureHeightPx: slideSize.height,
+    ...physicalSize
+  }
+}
 
 const STATIC_BACKGROUND_MIN_AREA_RATIO = 0.2
-const PPTX_CAPTURE_WIDTH_PX = 1600
 const STATIC_BACKGROUND_EDGE_TOLERANCE_PX = 2
-export const PPTX_STATIC_BACKGROUND_EDGE_TOLERANCE_IN =
-  (PPTX_SLIDE_WIDTH_IN / PPTX_CAPTURE_WIDTH_PX) * STATIC_BACKGROUND_EDGE_TOLERANCE_PX
 
 type PptxShapeBox = {
   x: number
@@ -16,21 +47,33 @@ type PptxShapeBox = {
 
 // Large edge-anchored fills are structural slide backgrounds. Keeping them in
 // the raster base avoids both z-order coverage and accidental animation matches.
-export const isPptxStaticBackgroundShape = (shape: PptxShapeBox): boolean => {
+export const isPptxStaticBackgroundShape = (
+  shape: PptxShapeBox,
+  layout: PptxExportLayout = {
+    captureWidthPx: 1600,
+    captureHeightPx: 900,
+    ...PPTX_WIDE_LAYOUT
+  }
+): boolean => {
+  const horizontalToleranceIn =
+    (layout.slideWidthIn / layout.captureWidthPx) * STATIC_BACKGROUND_EDGE_TOLERANCE_PX
+  const verticalToleranceIn =
+    (layout.slideHeightIn / layout.captureHeightPx) * STATIC_BACKGROUND_EDGE_TOLERANCE_PX
   const area = Math.max(0, shape.w) * Math.max(0, shape.h)
-  const slideArea = PPTX_SLIDE_WIDTH_IN * PPTX_SLIDE_HEIGHT_IN
+  const slideArea = layout.slideWidthIn * layout.slideHeightIn
   if (area < slideArea * STATIC_BACKGROUND_MIN_AREA_RATIO) return false
 
-  const spansWidth = shape.w >= PPTX_SLIDE_WIDTH_IN - PPTX_STATIC_BACKGROUND_EDGE_TOLERANCE_IN
-  const spansHeight = shape.h >= PPTX_SLIDE_HEIGHT_IN - PPTX_STATIC_BACKGROUND_EDGE_TOLERANCE_IN
-  if (!spansWidth && !spansHeight) return false
+  const spansHeight = shape.h >= layout.slideHeightIn - verticalToleranceIn
+  // Only full-height columns and full-page fills belong in the raster base.
+  // Full-width header or footer bands should remain editable shapes.
+  if (!spansHeight) return false
 
   const touchesHorizontalEdge =
-    shape.x <= PPTX_STATIC_BACKGROUND_EDGE_TOLERANCE_IN ||
-    shape.x + shape.w >= PPTX_SLIDE_WIDTH_IN - PPTX_STATIC_BACKGROUND_EDGE_TOLERANCE_IN
+    shape.x <= horizontalToleranceIn ||
+    shape.x + shape.w >= layout.slideWidthIn - horizontalToleranceIn
   const touchesVerticalEdge =
-    shape.y <= PPTX_STATIC_BACKGROUND_EDGE_TOLERANCE_IN ||
-    shape.y + shape.h >= PPTX_SLIDE_HEIGHT_IN - PPTX_STATIC_BACKGROUND_EDGE_TOLERANCE_IN
+    shape.y <= verticalToleranceIn ||
+    shape.y + shape.h >= layout.slideHeightIn - verticalToleranceIn
 
   return touchesHorizontalEdge && touchesVerticalEdge
 }

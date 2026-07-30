@@ -21,6 +21,7 @@ import {
   captureHtmlPageToPptxImageSlide,
   extractHtmlPageToPptxSlide
 } from './html-pptx/renderer'
+import { resolvePptxExportLayout } from './html-pptx/static-background'
 import {
   exportHtmlPagesToVideo,
   normalizeVideoExportFps,
@@ -640,6 +641,7 @@ export function registerExportHandlers(ctx: IpcContext): void {
     const { session, pages: allPages, projectDir } = await resolveSessionPageFiles(sessionId)
     const slideSize = requireSessionSlideSize(session)
     assertPptxExportSupported(slideSize)
+    const pptxLayout = resolvePptxExportLayout(slideSize)
     const pages = requestedPageId
       ? allPages.filter((page) => page.id === requestedPageId)
       : allPages
@@ -700,12 +702,14 @@ export function registerExportHandlers(ctx: IpcContext): void {
           return imageOnly
             ? captureHtmlPageToPptxImageSlide({
                 page,
+                slideSize,
                 timeoutMs: EXPORT_PAGE_READY_TIMEOUT_MS,
                 settleMs: EXPORT_CAPTURE_SETTLE_MS,
                 waitForPrintReadySignal
               })
             : extractHtmlPageToPptxSlide({
                 page,
+                slideSize,
                 timeoutMs: EXPORT_PAGE_READY_TIMEOUT_MS,
                 settleMs: EXPORT_CAPTURE_SETTLE_MS,
                 animationMode: 'slide-transition',
@@ -767,6 +771,10 @@ export function registerExportHandlers(ctx: IpcContext): void {
           title: sessionTitle,
           author: 'OhMyPPT',
           slides,
+          slideSize: {
+            widthIn: pptxLayout.slideWidthIn,
+            heightIn: pptxLayout.slideHeightIn
+          },
           embeddedFonts: embeddedFonts.length > 0 ? embeddedFonts : undefined
         })
       } catch (error) {
@@ -780,7 +788,11 @@ export function registerExportHandlers(ctx: IpcContext): void {
         await writeHtmlToPptx(saveResult.filePath, {
           title: sessionTitle,
           author: 'OhMyPPT',
-          slides
+          slides,
+          slideSize: {
+            widthIn: pptxLayout.slideWidthIn,
+            heightIn: pptxLayout.slideHeightIn
+          }
         })
       }
       const project = await db.getProject(sessionId)

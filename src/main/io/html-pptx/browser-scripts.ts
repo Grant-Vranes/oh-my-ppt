@@ -1,9 +1,3 @@
-import {
-  PPTX_SLIDE_HEIGHT_IN,
-  PPTX_SLIDE_WIDTH_IN,
-  PPTX_STATIC_BACKGROUND_EDGE_TOLERANCE_IN
-} from './static-background'
-
 export const FREEZE_PAGE_FOR_EXPORT_SCRIPT = `
 (async () => {
   const root =
@@ -321,7 +315,8 @@ export const HIDE_TEXT_FOR_PPTX_BACKGROUND_SCRIPT = `
 `
 
 export const buildMarkPptxExtractedTextForBackgroundScript = (
-  texts: Array<{ x: number; y: number; w: number; h: number }>
+  texts: Array<{ x: number; y: number; w: number; h: number }>,
+  slideSize: { widthIn: number; heightIn: number } = { widthIn: 13.333, heightIn: 7.5 }
 ): string => {
   const boxes = texts
     .filter(
@@ -350,8 +345,8 @@ export const buildMarkPptxExtractedTextForBackgroundScript = (
   if (!textBoxes.length) return 0;
   const rootRect = root.getBoundingClientRect();
   if (!rootRect.width || !rootRect.height) return 0;
-  const slideWidth = 13.333;
-  const slideHeight = 7.5;
+  const slideWidth = ${JSON.stringify(slideSize.widthIn)};
+  const slideHeight = ${JSON.stringify(slideSize.heightIn)};
   const toClientBox = (box) => ({
     left: rootRect.left + (box.x / slideWidth) * rootRect.width,
     top: rootRect.top + (box.y / slideHeight) * rootRect.height,
@@ -461,8 +456,8 @@ export const HIDE_FOR_PPTX_BACKGROUND_SCRIPT = `
     const rootRect = root.getBoundingClientRect();
     const pageArea = rootRect.width * rootRect.height;
     if (!pageArea || rect.width * rect.height < pageArea * 0.2) return;
-    const horizontalTolerance = rootRect.width * ${PPTX_STATIC_BACKGROUND_EDGE_TOLERANCE_IN / PPTX_SLIDE_WIDTH_IN};
-    const verticalTolerance = rootRect.height * ${PPTX_STATIC_BACKGROUND_EDGE_TOLERANCE_IN / PPTX_SLIDE_HEIGHT_IN};
+    const horizontalTolerance = 2;
+    const verticalTolerance = 2;
     const spansWidth = rect.width >= rootRect.width - horizontalTolerance;
     const spansHeight = rect.height >= rootRect.height - verticalTolerance;
     if (!spansWidth && !spansHeight) return;

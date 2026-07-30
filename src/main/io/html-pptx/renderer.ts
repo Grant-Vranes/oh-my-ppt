@@ -7,6 +7,7 @@ import {
   type HtmlToPptxSlide,
   type HtmlToPptxTextBox
 } from '@arcsin1/html2pptx'
+import type { SlideSizePreset } from '@shared/slide-size'
 import {
   FREEZE_PAGE_FOR_PPTX_SCRIPT,
   HIDE_FOR_PPTX_BACKGROUND_SCRIPT,
@@ -19,8 +20,8 @@ import {
 } from './browser-scripts'
 import {
   isPptxStaticBackgroundShape,
-  PPTX_SLIDE_HEIGHT_IN,
-  PPTX_SLIDE_WIDTH_IN
+  resolvePptxExportLayout,
+  type PptxExportLayout
 } from './static-background'
 import { buildExtractionReportWarning } from './extraction-report'
 
@@ -32,6 +33,7 @@ export interface HtmlPageForPptx {
 
 export interface HtmlPageToPptxSlideOptions {
   page: HtmlPageForPptx
+  slideSize: SlideSizePreset
   timeoutMs: number
   settleMs: number
   animationMode?: 'static' | 'slide-transition'
@@ -47,8 +49,6 @@ export interface HtmlPageToPptxSlideResult {
   warning?: string
 }
 
-const PPTX_CAPTURE_WIDTH = 1600
-const PPTX_CAPTURE_HEIGHT = 900
 const PPTX_BACKGROUND_CAPTURE_ATTEMPTS = 3
 const TEXT_RESIDUE_MAX_BOXES = 24
 const TEXT_RESIDUE_GRID_COLUMNS = 18
@@ -97,7 +97,8 @@ const pixelMatchesTextColor = (
 
 const hasTextResidueInCapture = (
   image: NativeImage,
-  texts: HtmlToPptxTextBox[]
+  texts: HtmlToPptxTextBox[],
+  layout: PptxExportLayout
 ): { suspicious: boolean; checkedBoxes: number; maxRatio: number } => {
   if (texts.length === 0) return { suspicious: false, checkedBoxes: 0, maxRatio: 0 }
   const size = image.getSize()
@@ -105,8 +106,8 @@ const hasTextResidueInCapture = (
   if (!size.width || !size.height || bitmap.length < size.width * size.height * 4) {
     return { suspicious: false, checkedBoxes: 0, maxRatio: 0 }
   }
-  const pxPerInX = size.width / PPTX_SLIDE_WIDTH_IN
-  const pxPerInY = size.height / PPTX_SLIDE_HEIGHT_IN
+  const pxPerInX = size.width / layout.slideWidthIn
+  const pxPerInY = size.height / layout.slideHeightIn
   const candidates = texts
     .filter((text) => {
       const color = parseHexColor(text.color)
@@ -165,6 +166,7 @@ const capturePptxBackgroundWithRetry = async (
   win: BrowserWindow,
   pageId: string,
   texts: HtmlToPptxTextBox[],
+  layout: PptxExportLayout,
   hideScript?: string,
   textMaskScript?: string
 ): Promise<{ image: NativeImage; warning?: string }> => {
@@ -184,10 +186,10 @@ const capturePptxBackgroundWithRetry = async (
     const image = await win.webContents.capturePage({
       x: 0,
       y: 0,
-      width: PPTX_CAPTURE_WIDTH,
-      height: PPTX_CAPTURE_HEIGHT
+      width: layout.captureWidthPx,
+      height: layout.captureHeightPx
     })
-    const check = hasTextResidueInCapture(image, texts)
+    const check = hasTextResidueInCapture(image, texts, layout)
     lastImage = image
     lastCheck = check
     if (!check.suspicious) {
@@ -221,11 +223,11 @@ const capturePptxBackgroundWithRetry = async (
   }
 }
 
-const createPptxBrowserWindow = (): BrowserWindow => {
+const createPptxBrowserWindow = (layout: PptxExportLayout): BrowserWindow => {
   const win = new BrowserWindow({
     show: false,
-    width: PPTX_CAPTURE_WIDTH,
-    height: PPTX_CAPTURE_HEIGHT,
+    width: layout.captureWidthPx,
+    height: layout.captureHeightPx,
     backgroundColor: '#ffffff',
     webPreferences: {
       contextIsolation: true,
@@ -236,7 +238,7 @@ const createPptxBrowserWindow = (): BrowserWindow => {
     }
   })
   win.webContents.setZoomFactor(1)
-  win.setContentSize(PPTX_CAPTURE_WIDTH, PPTX_CAPTURE_HEIGHT)
+  win.setContentSize(layout.captureWidthPx, layout.captureHeightPx)
   return win
 }
 
@@ -281,25 +283,30 @@ const loadAndFreezePptxPage = async (
   return readyResult
 }
 
-const captureFullPage = async (win: BrowserWindow): Promise<NativeImage> => {
+const captureFullPage = async (
+  win: BrowserWindow,
+  layout: PptxExportLayout
+): Promise<NativeImage> => {
   await win.webContents.executeJavaScript(WAIT_FOR_PPTX_CAPTURE_FRAME_SCRIPT, true)
   await sleep(process.platform === 'win32' ? 180 : 80)
   await win.webContents.executeJavaScript(WAIT_FOR_PPTX_CAPTURE_FRAME_SCRIPT, true)
   return win.webContents.capturePage({
     x: 0,
     y: 0,
-    width: PPTX_CAPTURE_WIDTH,
-    height: PPTX_CAPTURE_HEIGHT
+    width: layout.captureWidthPx,
+    height: layout.captureHeightPx
   })
 }
 
 export const captureHtmlPageToPptxImageSlide = async ({
   page,
+  slideSize,
   timeoutMs,
   settleMs,
   waitForPrintReadySignal
 }: HtmlPageToPptxSlideOptions): Promise<HtmlPageToPptxSlideResult> => {
-  const win = createPptxBrowserWindow()
+  const layout = resolvePptxExportLayout(slideSize)
+  const win = createPptxBrowserWindow(layout)
 
   try {
     const readyResult = await loadAndFreezePptxPage(
@@ -313,7 +320,7 @@ export const captureHtmlPageToPptxImageSlide = async ({
     // Reset page fit scale for full-resolution capture
     await win.webContents.executeJavaScript(RESET_SCALE_FOR_PPTX_CAPTURE_SCRIPT, true)
 
-    const image = await captureFullPage(win)
+    const image = await captureFullPage(win, layout)
     const png = image.toPNG()
 
     const slide: HtmlToPptxSlide = {
@@ -327,8 +334,8 @@ export const captureHtmlPageToPptxImageSlide = async ({
         mimeType: 'image/png',
         x: 0,
         y: 0,
-        w: PPTX_SLIDE_WIDTH_IN,
-        h: PPTX_SLIDE_HEIGHT_IN,
+        w: layout.slideWidthIn,
+        h: layout.slideHeightIn,
         alt: page.title
       }
     }
@@ -348,12 +355,14 @@ export const captureHtmlPageToPptxImageSlide = async ({
 
 export const extractHtmlPageToPptxSlide = async ({
   page,
+  slideSize,
   timeoutMs,
   settleMs,
   animationMode = 'slide-transition',
   waitForPrintReadySignal
 }: HtmlPageToPptxSlideOptions): Promise<HtmlPageToPptxSlideResult> => {
-  const win = createPptxBrowserWindow()
+  const layout = resolvePptxExportLayout(slideSize)
+  const win = createPptxBrowserWindow(layout)
 
   try {
     const readyResult = await loadAndFreezePptxPage(
@@ -369,8 +378,10 @@ export const extractHtmlPageToPptxSlide = async ({
 
     const extracted = await win.webContents.executeJavaScript(
       buildHtmlToPptxExtractScript({
-        pageWidthPx: PPTX_CAPTURE_WIDTH,
-        pageHeightPx: PPTX_CAPTURE_HEIGHT,
+        pageWidthPx: layout.captureWidthPx,
+        pageHeightPx: layout.captureHeightPx,
+        slideWidthIn: layout.slideWidthIn,
+        slideHeightIn: layout.slideHeightIn,
         maxTextBoxes: 360,
         maxShapes: 400,
         maxImages: 80,
@@ -379,13 +390,16 @@ export const extractHtmlPageToPptxSlide = async ({
       true
     )
 
-    const slide = normalizeExtractedHtmlToPptxSlide(extracted, page.title)
+    const slide = normalizeExtractedHtmlToPptxSlide(extracted, page.title, {
+      widthIn: layout.slideWidthIn,
+      heightIn: layout.slideHeightIn
+    })
 
     // Keep large edge-anchored fills in the screenshot base. They are visual
     // structure, not useful editable objects, and their size causes overlap-
     // based animation matching to capture unrelated animated text.
     if (slide.shapes?.length) {
-      slide.shapes = slide.shapes.filter((shape) => !isPptxStaticBackgroundShape(shape))
+      slide.shapes = slide.shapes.filter((shape) => !isPptxStaticBackgroundShape(shape, layout))
     }
 
     if (animationMode === 'slide-transition') {
@@ -411,8 +425,8 @@ export const extractHtmlPageToPptxSlide = async ({
       const captureRect = {
         x: Math.max(0, rect.x - pad),
         y: Math.max(0, rect.y - pad),
-        width: Math.min(PPTX_CAPTURE_WIDTH, rect.w + pad * 2),
-        height: Math.min(PPTX_CAPTURE_HEIGHT, rect.h + pad * 2)
+        width: Math.min(layout.captureWidthPx, rect.w + pad * 2),
+        height: Math.min(layout.captureHeightPx, rect.h + pad * 2)
       }
       const img = await win.webContents.capturePage(captureRect)
       const png = img.toPNG()
@@ -421,10 +435,10 @@ export const extractHtmlPageToPptxSlide = async ({
       slide.overlayImages.push({
         dataUri,
         mimeType: 'image/png',
-        x: (captureRect.x / PPTX_CAPTURE_WIDTH) * PPTX_SLIDE_WIDTH_IN,
-        y: (captureRect.y / PPTX_CAPTURE_HEIGHT) * PPTX_SLIDE_HEIGHT_IN,
-        w: (captureRect.width / PPTX_CAPTURE_WIDTH) * PPTX_SLIDE_WIDTH_IN,
-        h: (captureRect.height / PPTX_CAPTURE_HEIGHT) * PPTX_SLIDE_HEIGHT_IN,
+        x: (captureRect.x / layout.captureWidthPx) * layout.slideWidthIn,
+        y: (captureRect.y / layout.captureHeightPx) * layout.slideHeightIn,
+        w: (captureRect.width / layout.captureWidthPx) * layout.slideWidthIn,
+        h: (captureRect.height / layout.captureHeightPx) * layout.slideHeightIn,
         alt: 'formula'
       })
     }
@@ -435,8 +449,12 @@ export const extractHtmlPageToPptxSlide = async ({
       win,
       page.pageId,
       slide.texts,
+      layout,
       HIDE_FOR_PPTX_BACKGROUND_SCRIPT,
-      buildMarkPptxExtractedTextForBackgroundScript(slide.texts)
+      buildMarkPptxExtractedTextForBackgroundScript(slide.texts, {
+        widthIn: layout.slideWidthIn,
+        heightIn: layout.slideHeightIn
+      })
     )
     const backgroundPng = backgroundCapture.image.toPNG()
     slide.backgroundImage = {
@@ -444,8 +462,8 @@ export const extractHtmlPageToPptxSlide = async ({
       mimeType: 'image/png',
       x: 0,
       y: 0,
-      w: PPTX_SLIDE_WIDTH_IN,
-      h: PPTX_SLIDE_HEIGHT_IN,
+      w: layout.slideWidthIn,
+      h: layout.slideHeightIn,
       alt: page.title
     }
 

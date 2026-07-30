@@ -749,7 +749,8 @@ export function registerExportHandlers(ctx: IpcContext): void {
           })
           embeddedFonts = await collectEmbeddedFonts(projectDir, slides, {
             mode: fontEmbedMode,
-            maxTotalBytes: 20 * 1024 * 1024
+            maxTotalBytes: 20 * 1024 * 1024,
+            pageHtmlPaths: pages.map((page) => page.htmlPath)
           })
         } catch (error) {
           log.warn('[export:pptx] font embedding collection failed, fallback to system fonts', {

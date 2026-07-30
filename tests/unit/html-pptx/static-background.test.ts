@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   isPptxStaticBackgroundShape,
+  resolvePptxCaptureRect,
   resolvePptxExportLayout
 } from '../../../src/main/io/html-pptx/static-background'
 import { resolveSlideSize } from '../../../src/shared/slide-size'
@@ -31,5 +32,17 @@ describe('PPTX static background shape classification', () => {
     })
     expect(isPptxStaticBackgroundShape({ x: 0, y: 0, w: 10, h: 7.5 }, layout)).toBe(true)
     expect(isPptxStaticBackgroundShape({ x: 0, y: 0, w: 10, h: 2.5 }, layout)).toBe(false)
+  })
+
+  it('clips overlay captures to the remaining pixels at the right and bottom edges', () => {
+    const layout = resolvePptxExportLayout(resolveSlideSize({ id: 'wide-16-9' }))
+
+    expect(resolvePptxCaptureRect({ x: 1550, y: 860, w: 100, h: 100 }, layout, 2)).toEqual({
+      x: 1548,
+      y: 858,
+      width: 52,
+      height: 42
+    })
+    expect(resolvePptxCaptureRect({ x: 1605, y: 20, w: 30, h: 20 }, layout, 2)).toBeNull()
   })
 })

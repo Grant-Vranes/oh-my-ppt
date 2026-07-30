@@ -7,10 +7,17 @@ import { collectEmbeddedFonts } from '../../../src/main/io/html-pptx/font-collec
 
 const tempDirectories: string[] = []
 
-const readEotFamily = (data: Uint8Array): string => {
+const readEotHeaderNames = (data: Uint8Array): { family: string; style: string } => {
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength)
-  const byteLength = view.getUint16(82, true)
-  return new TextDecoder('utf-16le').decode(data.slice(84, 84 + byteLength))
+  let offset = 82
+  const readName = (): string => {
+    const byteLength = view.getUint16(offset, true)
+    offset += 2
+    const value = new TextDecoder('utf-16le').decode(data.slice(offset, offset + byteLength))
+    offset += byteLength + 2
+    return value
+  }
+  return { family: readName(), style: readName() }
 }
 
 afterEach(async () => {
@@ -62,9 +69,9 @@ describe('PPTX font embedding', () => {
       ['User Body', 'regular'],
       ['User Title', 'bold']
     ])
-    expect(embeddedFonts.map((font) => readEotFamily(font.ttfBuffer)).sort()).toEqual([
-      'User Body',
-      'User Title'
+    expect(embeddedFonts.map((font) => readEotHeaderNames(font.ttfBuffer)).sort((a, b) => a.family.localeCompare(b.family))).toEqual([
+      { family: 'User Body', style: 'Regular' },
+      { family: 'User Title', style: 'Bold' }
     ])
   })
 })

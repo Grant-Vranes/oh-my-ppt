@@ -336,9 +336,64 @@ const readEotNames = (buffer: Uint8Array): string[] | null => {
   return names
 }
 
+const encodeUtf16Le = (value: string): Uint8Array => {
+  const output = new Uint8Array(value.length * 2)
+  for (let index = 0; index < value.length; index += 1) {
+    const codeUnit = value.charCodeAt(index)
+    output[index * 2] = codeUnit & 0xff
+    output[index * 2 + 1] = codeUnit >>> 8
+  }
+  return output
+}
+
+const readEotNameRanges = (buffer: Uint8Array): Array<{ start: number; byteLength: number }> | null => {
+  if (buffer.byteLength < EOT_HEADER_SIZE) return null
+  const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength)
+  if (view.getUint32(0, true) !== buffer.byteLength || view.getUint16(34, true) !== 0x504c) return null
+  let offset = EOT_HEADER_SIZE
+  const ranges: Array<{ start: number; byteLength: number }> = []
+  for (let index = 0; index < 4; index += 1) {
+    if (offset + 4 > buffer.byteLength) return null
+    const byteLength = view.getUint16(offset, true)
+    const start = offset + 2
+    const end = start + byteLength
+    if (byteLength % 2 !== 0 || end + 2 > buffer.byteLength) return null
+    ranges.push({ start, byteLength })
+    offset = end + 2
+  }
+  return ranges
+}
+
+const replaceEotStyleName = (eotBuffer: Uint8Array, styleName: string): Uint8Array | null => {
+  const nameRanges = readEotNameRanges(eotBuffer)
+  if (!nameRanges) return null
+  const styleRange = nameRanges[1]
+  const styleBytes = encodeUtf16Le(styleName)
+  if (styleRange.byteLength === styleBytes.byteLength) {
+    const normalized = new Uint8Array(eotBuffer)
+    normalized.set(styleBytes, styleRange.start)
+    return normalized
+  }
+
+  // fonteditor-core serializes name ID 2 as fontSubFamily, but its EOT writer
+  // reads the non-existent fontStyle alias. Rebuild only that EOT field so the
+  // header's StyleName remains consistent with the embedded OpenType font.
+  const styleSizeOffset = styleRange.start - 2
+  const sourceAfterStyle = styleRange.start + styleRange.byteLength
+  const resized = new Uint8Array(eotBuffer.byteLength - styleRange.byteLength + styleBytes.byteLength)
+  resized.set(eotBuffer.slice(0, styleSizeOffset), 0)
+  const view = new DataView(resized.buffer)
+  view.setUint16(styleSizeOffset, styleBytes.byteLength, true)
+  resized.set(styleBytes, styleSizeOffset + 2)
+  resized.set(eotBuffer.slice(sourceAfterStyle), styleSizeOffset + 2 + styleBytes.byteLength)
+  view.setUint32(0, resized.byteLength, true)
+  return resized
+}
+
 const normalizeEotPayload = (
   eotBuffer: Uint8Array,
   familyName: string,
+  styleName: string,
   italic: boolean
 ): Uint8Array | null => {
   const normalized = new Uint8Array(eotBuffer)
@@ -346,21 +401,21 @@ const normalizeEotPayload = (
   const view = new DataView(normalized.buffer, normalized.byteOffset, normalized.byteLength)
   if (view.getUint16(34, true) !== 0x504c) return null
 
-  let offset = EOT_HEADER_SIZE
-  for (let index = 0; index < 4; index += 1) {
-    if (offset + 4 > normalized.byteLength) return null
-    const byteLength = view.getUint16(offset, true)
-    const textStart = offset + 2
-    const textEnd = textStart + byteLength
-    if (byteLength % 2 !== 0 || textEnd + 2 > normalized.byteLength) return null
+  const nameRanges = readEotNameRanges(normalized)
+  if (!nameRanges) return null
+  for (const { start: textStart, byteLength } of nameRanges) {
     // fonteditor-core writes EOT name strings as UTF-16BE. EOT requires
     // UTF-16LE, which Office uses when matching the font reference.
     swapUtf16ByteOrder(normalized, textStart, byteLength)
-    offset = textEnd + 2
   }
-  normalized[26] = isCjkFontFace(familyName) ? 0x86 : 0x01
-  normalized[27] = italic ? 1 : 0
-  return readEotNames(normalized) ? normalized : null
+  const withStyleName = replaceEotStyleName(normalized, styleName)
+  if (!withStyleName) return null
+  withStyleName[26] = isCjkFontFace(familyName) ? 0x86 : 0x01
+  withStyleName[27] = italic ? 1 : 0
+  const names = readEotNames(withStyleName)
+  return names && normalizeFontFace(names[0]) === normalizeFontFace(familyName) && names[1] === styleName
+    ? withStyleName
+    : null
 }
 
 const mergeTtfObjects = (
@@ -404,7 +459,7 @@ const mergeTtfObjects = (
   try {
     const ttfBuffer = new Uint8Array(writer.write(base))
     const eotBuffer = new Uint8Array(fonteditorCore.ttf2eot(uint8ToArrayBuffer(ttfBuffer)))
-    const normalizedEot = normalizeEotPayload(eotBuffer, familyName, italic)
+    const normalizedEot = normalizeEotPayload(eotBuffer, familyName, styleName, italic)
     const eotNames = normalizedEot ? readEotNames(normalizedEot) : null
     if (!normalizedEot || !eotNames || normalizeFontFace(eotNames[0]) !== normalizeFontFace(familyName)) {
       return null

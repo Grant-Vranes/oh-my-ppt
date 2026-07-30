@@ -519,6 +519,15 @@ export const HIDE_FOR_PPTX_BACKGROUND_SCRIPT = `
 })()
 `
 
+export const RESTORE_PPTX_PAGE_AFTER_BACKGROUND_CAPTURE_SCRIPT = `
+(async () => {
+  document.getElementById('ohmyppt-pptx-hide-elements')?.remove();
+  void document.body.offsetHeight;
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  return true;
+})()
+`
+
 export const HIDE_ELEMENTS_FOR_PPTX_BACKGROUND_SCRIPT = `
 (async () => {
   let existing = document.getElementById('ohmyppt-pptx-hide-elements');

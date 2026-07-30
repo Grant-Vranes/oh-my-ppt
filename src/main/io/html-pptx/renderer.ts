@@ -11,6 +11,7 @@ import type { SlideSizePreset } from '@shared/slide-size'
 import {
   FREEZE_PAGE_FOR_PPTX_SCRIPT,
   HIDE_FOR_PPTX_BACKGROUND_SCRIPT,
+  RESTORE_PPTX_PAGE_AFTER_BACKGROUND_CAPTURE_SCRIPT,
   RESET_SCALE_FOR_PPTX_CAPTURE_SCRIPT,
   WAIT_FOR_PPTX_CAPTURE_FRAME_SCRIPT,
   MARK_KATEX_BLOCKS_SCRIPT,
@@ -20,6 +21,7 @@ import {
 } from './browser-scripts'
 import {
   isPptxStaticBackgroundShape,
+  resolvePptxCaptureRect,
   resolvePptxExportLayout,
   type PptxExportLayout
 } from './static-background'
@@ -169,7 +171,7 @@ const capturePptxBackgroundWithRetry = async (
   layout: PptxExportLayout,
   hideScript?: string,
   textMaskScript?: string
-): Promise<{ image: NativeImage; warning?: string }> => {
+): Promise<{ image: NativeImage; warning?: string; hasTextResidue: boolean }> => {
   let lastImage: NativeImage | null = null
   let lastCheck: ReturnType<typeof hasTextResidueInCapture> | null = null
   const script = hideScript || HIDE_FOR_PPTX_BACKGROUND_SCRIPT
@@ -201,7 +203,7 @@ const capturePptxBackgroundWithRetry = async (
           maxRatio: Number(check.maxRatio.toFixed(3))
         })
       }
-      return { image }
+      return { image, hasTextResidue: false }
     }
 
     log.warn('[export:pptx] background capture text residue detected', {
@@ -217,6 +219,7 @@ const capturePptxBackgroundWithRetry = async (
   }
   return {
     image: lastImage,
+    hasTextResidue: true,
     warning: `页面 ${pageId} 背景截图可能仍有文字残影，已使用最后一次截图。${
       lastCheck ? `检测比率 ${Number(lastCheck.maxRatio.toFixed(3))}` : ''
     }`
@@ -298,6 +301,27 @@ const captureFullPage = async (
   })
 }
 
+const buildRasterPptxSlide = (
+  title: string | undefined,
+  image: NativeImage,
+  layout: PptxExportLayout
+): HtmlToPptxSlide => ({
+  title,
+  texts: [],
+  shapes: [],
+  images: [],
+  tables: [],
+  backgroundImage: {
+    dataUri: `data:image/png;base64,${image.toPNG().toString('base64')}`,
+    mimeType: 'image/png',
+    x: 0,
+    y: 0,
+    w: layout.slideWidthIn,
+    h: layout.slideHeightIn,
+    alt: title
+  }
+})
+
 export const captureHtmlPageToPptxImageSlide = async ({
   page,
   slideSize,
@@ -320,25 +344,7 @@ export const captureHtmlPageToPptxImageSlide = async ({
     // Reset page fit scale for full-resolution capture
     await win.webContents.executeJavaScript(RESET_SCALE_FOR_PPTX_CAPTURE_SCRIPT, true)
 
-    const image = await captureFullPage(win, layout)
-    const png = image.toPNG()
-
-    const slide: HtmlToPptxSlide = {
-      title: page.title,
-      texts: [],
-      shapes: [],
-      images: [],
-      tables: [],
-      backgroundImage: {
-        dataUri: `data:image/png;base64,${png.toString('base64')}`,
-        mimeType: 'image/png',
-        x: 0,
-        y: 0,
-        w: layout.slideWidthIn,
-        h: layout.slideHeightIn,
-        alt: page.title
-      }
-    }
+    const slide = buildRasterPptxSlide(page.title, await captureFullPage(win, layout), layout)
 
     return {
       slide,
@@ -421,13 +427,8 @@ export const extractHtmlPageToPptxSlide = async ({
     const blockRects: Array<{ x: number; y: number; w: number; h: number }> =
       await win.webContents.executeJavaScript(COLLECT_KATEX_BLOCK_RECTS_SCRIPT, true)
     for (const rect of blockRects) {
-      const pad = 2
-      const captureRect = {
-        x: Math.max(0, rect.x - pad),
-        y: Math.max(0, rect.y - pad),
-        width: Math.min(layout.captureWidthPx, rect.w + pad * 2),
-        height: Math.min(layout.captureHeightPx, rect.h + pad * 2)
-      }
+      const captureRect = resolvePptxCaptureRect(rect, layout, 2)
+      if (!captureRect) continue
       const img = await win.webContents.capturePage(captureRect)
       const png = img.toPNG()
       const dataUri = `data:image/png;base64,${png.toString('base64')}`
@@ -456,6 +457,14 @@ export const extractHtmlPageToPptxSlide = async ({
         heightIn: layout.slideHeightIn
       })
     )
+    if (backgroundCapture.hasTextResidue) {
+      await win.webContents.executeJavaScript(RESTORE_PPTX_PAGE_AFTER_BACKGROUND_CAPTURE_SCRIPT, true)
+      const rasterSlide = buildRasterPptxSlide(page.title, await captureFullPage(win, layout), layout)
+      return {
+        slide: rasterSlide,
+        warning: `页面 ${page.pageId} 的背景截图仍有文字残影，已降级为整页图片以避免文字重影`
+      }
+    }
     const backgroundPng = backgroundCapture.image.toPNG()
     slide.backgroundImage = {
       dataUri: `data:image/png;base64,${backgroundPng.toString('base64')}`,

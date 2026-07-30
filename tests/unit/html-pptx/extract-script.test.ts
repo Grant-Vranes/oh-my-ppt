@@ -97,6 +97,62 @@ describe('buildHtmlToPptxExtractScript', () => {
     expect(document.querySelector('#second')?.hasAttribute('data-pptx-extracted-text')).toBe(false)
   })
 
+  it('marks extracted inline KPI text so it is removed from the raster background', async () => {
+    document.body.innerHTML = `
+      <div class="ppt-page-root" style="display:block">
+        <div id="metrics" style="display:flex">
+          <span id="market" style="font-size:48px">528</span>
+          <span id="share" style="font-size:48px">63<span id="percent" style="font-size:30px">%</span></span>
+          <span id="cost" style="font-size:48px">$2,950</span>
+        </div>
+        <p id="fallback" data-pptx-formula-block style="display:block;font-size:20px">Fallback text</p>
+      </div>
+    `
+    assignRect('.ppt-page-root', 0, 0, 1600, 900)
+    assignRect('#metrics', 100, 180, 640, 80)
+    assignRect('#market', 100, 180, 120, 60)
+    assignRect('#share', 240, 180, 120, 60)
+    assignRect('#percent', 320, 205, 32, 36)
+    assignRect('#cost', 400, 180, 180, 60)
+    assignRect('#fallback', 100, 300, 220, 36)
+
+    const originalCreateRange = document.createRange.bind(document)
+    let selectedNode: Node | null = null
+    const rangeRect = () => {
+      const id = selectedNode?.parentElement?.id
+      if (id === 'market') return rect(100, 180, 120, 60)
+      if (id === 'share') return rect(240, 180, 80, 60)
+      if (id === 'percent') return rect(320, 205, 32, 36)
+      if (id === 'cost') return rect(400, 180, 180, 60)
+      return rect(100, 300, 220, 36)
+    }
+    document.createRange = (() => ({
+      selectNode: (node: Node) => {
+        selectedNode = node
+      },
+      selectNodeContents: (node: Node) => {
+        selectedNode = node
+      },
+      setStart: () => {},
+      setEnd: () => {},
+      getBoundingClientRect: () => rangeRect(),
+      getClientRects: () => [rangeRect()],
+      detach: () => {}
+    })) as typeof document.createRange
+
+    try {
+      await extractInDom({ unsupportedTransformStrategy: 'raster-fallback' })
+
+      expect(document.querySelector('#market')?.getAttribute('data-pptx-extracted-text')).toBe('1')
+      expect(document.querySelector('#share')?.getAttribute('data-pptx-extracted-text')).toBe('1')
+      expect(document.querySelector('#percent')?.getAttribute('data-pptx-extracted-text')).toBe('1')
+      expect(document.querySelector('#cost')?.getAttribute('data-pptx-extracted-text')).toBe('1')
+      expect(document.querySelector('#fallback')?.hasAttribute('data-pptx-extracted-text')).toBe(false)
+    } finally {
+      document.createRange = originalCreateRange
+    }
+  })
+
   it('keeps rotated shapes in the raster fallback instead of exporting a distorted rectangle', async () => {
     document.body.innerHTML = `
       <div class="ppt-page-root" style="display:block">

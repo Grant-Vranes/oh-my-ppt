@@ -7,8 +7,15 @@ export interface PptxExportLayout {
   slideHeightIn: number
 }
 
+export interface PptxCaptureRect {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
 export const PPTX_WIDE_LAYOUT: Omit<PptxExportLayout, 'captureWidthPx' | 'captureHeightPx'> = {
-  slideWidthIn: 13.333,
+  slideWidthIn: 13.333333333,
   slideHeightIn: 7.5
 }
 
@@ -33,6 +40,18 @@ export const resolvePptxExportLayout = (slideSize: SlideSizePreset): PptxExportL
     captureHeightPx: slideSize.height,
     ...physicalSize
   }
+}
+
+export const resolvePptxCaptureRect = (
+  rect: { x: number; y: number; w: number; h: number },
+  layout: Pick<PptxExportLayout, 'captureWidthPx' | 'captureHeightPx'>,
+  paddingPx = 0
+): PptxCaptureRect | null => {
+  const x = Math.min(layout.captureWidthPx, Math.max(0, rect.x - paddingPx))
+  const y = Math.min(layout.captureHeightPx, Math.max(0, rect.y - paddingPx))
+  const width = Math.max(0, Math.min(layout.captureWidthPx - x, rect.w + paddingPx * 2))
+  const height = Math.max(0, Math.min(layout.captureHeightPx - y, rect.h + paddingPx * 2))
+  return width > 0 && height > 0 ? { x, y, width, height } : null
 }
 
 const STATIC_BACKGROUND_MIN_AREA_RATIO = 0.2

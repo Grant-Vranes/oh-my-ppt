@@ -564,6 +564,12 @@ export const ipc = {
     config: SessionMasterConfig
   }): Promise<SessionMasterStatus> =>
     getIpc().invoke('session:saveMaster', payload) as Promise<SessionMasterStatus>,
+  setSessionMasterPageOverride: (payload: {
+    sessionId: string
+    pageId: string
+    disabled: boolean
+  }): Promise<{ disabled: boolean }> =>
+    getIpc().invoke('session:setMasterPageOverride', payload) as Promise<{ disabled: boolean }>,
   getSession: (sessionId: string) =>
     getIpc().invoke('session:get', sessionId) as Promise<{
       session: unknown

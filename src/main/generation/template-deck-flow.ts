@@ -133,6 +133,7 @@ export async function executeTemplateDeckGeneration(
   }))
   const fullDeckPageCount = Math.max(allPageRefs.length, pageRefs.length)
   const pageFileMap = Object.fromEntries(pageRefs.map((page) => [page.pageId, page.htmlPath]))
+  const pageNumbers = Object.fromEntries(pageRefs.map((page) => [page.pageId, page.pageNumber]))
   const indexPath = path.join(context.projectDir, 'index.html')
   const templateSystemPromptAddendum = [
     '## 模板设计系统模式',
@@ -490,6 +491,7 @@ export async function executeTemplateDeckGeneration(
     projectDir: context.projectDir,
     indexPath,
     pageFileMap,
+    pageNumbers,
     agentManager,
     emit: (chunk) => emitDeckChunk(chunk),
     onPageCompleted: persistCompletedGeneratedPage,

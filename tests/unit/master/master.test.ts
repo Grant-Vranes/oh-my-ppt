@@ -3,8 +3,11 @@ import {
   addMasterGradientStop,
   buildDefaultMasterConfig,
   buildMasterCss,
+  buildMasterElementsHtml,
   normalizeMasterConfig,
-  parseMasterCss
+  normalizeMasterElementsConfig,
+  parseMasterCss,
+  parseMasterElementsHtml
 } from '../../../src/shared/master'
 import { createDefaultMasterGradient } from '../../../src/shared/master'
 
@@ -24,7 +27,30 @@ describe('slide master config', () => {
       titleFontFamily: null,
       bodyFontFamily: null,
       titleFontSize: null,
-      bodyFontSize: null
+      bodyFontSize: null,
+      elements: {
+        logoImage: null,
+        footerText: '',
+        watermarkText: '',
+        showLogo: false,
+        showFooter: false,
+        showPageNumber: false,
+        showWatermark: false,
+        footerFontSize: 16,
+        pageNumberFontSize: 16,
+        footerColor: '#334155',
+        pageNumberColor: '#334155',
+        watermarkRotation: -24,
+        watermarkSizeAuto: true,
+        logoPosition: { x: 5, y: 5 },
+        footerPosition: { x: 5, y: 91 },
+        pageNumberPosition: { x: 90, y: 91 },
+        watermarkPosition: { x: 30, y: 42 },
+        logoSize: { width: 16, height: 10 },
+        footerSize: { width: 56, height: 5 },
+        pageNumberSize: { width: 6, height: 5 },
+        watermarkSize: { width: 40, height: 16 }
+      }
     })
     expect(css).toContain('--ppt-page-bg: #ffffff;')
     expect(css).not.toContain('--ppt-master-slide-background')
@@ -50,7 +76,30 @@ describe('slide master config', () => {
       titleFontFamily: null,
       bodyFontFamily: null,
       titleFontSize: null,
-      bodyFontSize: null
+      bodyFontSize: null,
+      elements: {
+        logoImage: null,
+        footerText: '',
+        watermarkText: '',
+        showLogo: false,
+        showFooter: false,
+        showPageNumber: false,
+        showWatermark: false,
+        footerFontSize: 16,
+        pageNumberFontSize: 16,
+        footerColor: '#334155',
+        pageNumberColor: '#334155',
+        watermarkRotation: -24,
+        watermarkSizeAuto: true,
+        logoPosition: { x: 5, y: 5 },
+        footerPosition: { x: 5, y: 91 },
+        pageNumberPosition: { x: 90, y: 91 },
+        watermarkPosition: { x: 30, y: 42 },
+        logoSize: { width: 16, height: 10 },
+        footerSize: { width: 56, height: 5 },
+        pageNumberSize: { width: 6, height: 5 },
+        watermarkSize: { width: 40, height: 16 }
+      }
     }
 
     expect(parseMasterCss(buildMasterCss(config))).toEqual({
@@ -71,7 +120,30 @@ describe('slide master config', () => {
       titleFontFamily: null,
       bodyFontFamily: null,
       titleFontSize: null,
-      bodyFontSize: null
+      bodyFontSize: null,
+      elements: {
+        logoImage: null,
+        footerText: '',
+        watermarkText: '',
+        showLogo: false,
+        showFooter: false,
+        showPageNumber: false,
+        showWatermark: false,
+        footerFontSize: 16,
+        pageNumberFontSize: 16,
+        footerColor: '#334155',
+        pageNumberColor: '#334155',
+        watermarkRotation: -24,
+        watermarkSizeAuto: true,
+        logoPosition: { x: 5, y: 5 },
+        footerPosition: { x: 5, y: 91 },
+        pageNumberPosition: { x: 90, y: 91 },
+        watermarkPosition: { x: 30, y: 42 },
+        logoSize: { width: 16, height: 10 },
+        footerSize: { width: 56, height: 5 },
+        pageNumberSize: { width: 6, height: 5 },
+        watermarkSize: { width: 40, height: 16 }
+      }
     })
   })
 
@@ -87,6 +159,81 @@ describe('slide master config', () => {
       })
     ).toEqual(buildDefaultMasterConfig())
     expect(parseMasterCss('body { color: red; }')).toEqual(buildDefaultMasterConfig())
+  })
+
+  it('migrates legacy global-element anchors and keeps elements inside the canvas', () => {
+    expect(
+      normalizeMasterElementsConfig({
+        logoImage: null,
+        footerText: 'Acme',
+        watermarkText: '',
+        showPageNumber: true,
+        logoPosition: { x: 130.789, y: -3 }
+      })
+    ).toMatchObject({
+      showLogo: false,
+      showFooter: true,
+      showPageNumber: true,
+      showWatermark: false,
+      logoPosition: { x: 84, y: 0 },
+      footerPosition: { x: 5, y: 91 },
+      pageNumberPosition: { x: 90, y: 91 },
+      watermarkPosition: { x: 30, y: 42 },
+      logoSize: { width: 16, height: 10 },
+      footerSize: { width: 56, height: 5 },
+      pageNumberSize: { width: 6, height: 5 },
+      watermarkSize: { width: 40, height: 16 }
+    })
+  })
+
+  it('defaults every global element to hidden and bounds persisted element dimensions', () => {
+    expect(normalizeMasterElementsConfig({})).toMatchObject({
+      showLogo: false,
+      showFooter: false,
+      showPageNumber: false,
+      showWatermark: false
+    })
+    expect(
+      normalizeMasterElementsConfig({
+        showPageNumber: true,
+        logoSize: { width: 130, height: -3 },
+        logoPosition: { x: 99, y: 99 }
+      })
+    ).toMatchObject({
+      logoSize: { width: 100, height: 1 },
+      logoPosition: { x: 0, y: 99 }
+    })
+  })
+
+  it('always builds the fixed global-elements layer after legacy visibility settings are normalized', () => {
+    const html = buildMasterElementsHtml({
+      enabled: false,
+      logoImage: null,
+      footerText: '',
+      watermarkText: '',
+      showPageNumber: true
+    })
+
+    expect(html).toContain('data-ppt-master-elements-layer="1"')
+    expect(html).toContain('z-index:2147483647 !important')
+    expect(parseMasterElementsHtml(html)).not.toHaveProperty('enabled')
+  })
+
+  it('does not generate hidden global-element nodes', () => {
+    const html = buildMasterElementsHtml({
+      logoImage: './images/brand.png',
+      footerText: 'Acme',
+      watermarkText: 'INTERNAL',
+      showLogo: false,
+      showFooter: false,
+      showPageNumber: false,
+      showWatermark: false
+    })
+
+    expect(html).not.toMatch(/<img\b[^>]*data-ppt-master-logo-image/)
+    expect(html).not.toMatch(/<div\b[^>]*data-ppt-master-footer/)
+    expect(html).not.toMatch(/<div\b[^>]*data-ppt-master-page-number/)
+    expect(html).not.toMatch(/<div\b[^>]*data-ppt-master-watermark/)
   })
 
   it('overrides the generated page content root and the existing page font variables', () => {
@@ -242,10 +389,69 @@ describe('slide master config', () => {
     })
   })
 
-  it('migrates a non-default legacy page background into an overriding master', () => {
+  it('parses a non-default page background as an overriding master', () => {
     expect(parseMasterCss(':root { --ppt-page-bg: #f1efea; }')).toMatchObject({
       backgroundColor: '#f1efea',
       backgroundMode: 'override'
+    })
+  })
+
+  it('builds an inert, structured global-elements fragment without accepting raw HTML', () => {
+    const html = buildMasterElementsHtml({
+      logoImage: './images/brand.png',
+      footerText: '<b>Acme</b> 2026',
+      watermarkText: 'INTERNAL',
+      showLogo: true,
+      showFooter: true,
+      showPageNumber: true,
+      showWatermark: true,
+      footerFontSize: 18,
+      pageNumberFontSize: 14,
+      footerColor: '#0f766e',
+      pageNumberColor: '#7c2d12',
+      watermarkRotation: 28,
+      watermarkSizeAuto: true,
+      logoPosition: { x: 12.5, y: 9 },
+      footerPosition: { x: 8, y: 89 },
+      pageNumberPosition: { x: 90, y: 89 },
+      watermarkPosition: { x: 30, y: 42 },
+      logoSize: { width: 20, height: 12 },
+      footerSize: { width: 56, height: 5 },
+      pageNumberSize: { width: 6, height: 5 },
+      watermarkSize: { width: 40, height: 16 }
+    })
+
+    expect(html).toContain('data-ppt-master-elements="1"')
+    expect(html).toContain('data-ppt-master-elements-layer="1"')
+    expect(html).toContain('data-ppt-master-page-number="1"')
+    expect(html).toContain('style="left:12.5%;top:9%;width:20%;height:12%;"')
+    expect(html).toContain('font-size:18px;color:#0f766e;')
+    expect(html).toContain('font-size:14px;color:#7c2d12;')
+    expect(html).toContain('data-ppt-master-watermark-height="16"')
+    expect(html).toContain('transform:rotate(28deg);')
+    expect(html).toContain('&lt;b&gt;Acme&lt;/b&gt; 2026')
+    expect(parseMasterElementsHtml(html)).toEqual({
+      logoImage: './images/brand.png',
+      footerText: '<b>Acme</b> 2026',
+      watermarkText: 'INTERNAL',
+      showLogo: true,
+      showFooter: true,
+      showPageNumber: true,
+      showWatermark: true,
+      footerFontSize: 18,
+      pageNumberFontSize: 14,
+      footerColor: '#0f766e',
+      pageNumberColor: '#7c2d12',
+      watermarkRotation: 28,
+      watermarkSizeAuto: true,
+      logoPosition: { x: 12.5, y: 9 },
+      footerPosition: { x: 8, y: 89 },
+      pageNumberPosition: { x: 90, y: 89 },
+      watermarkPosition: { x: 30, y: 42 },
+      logoSize: { width: 20, height: 12 },
+      footerSize: { width: 56, height: 5 },
+      pageNumberSize: { width: 6, height: 5 },
+      watermarkSize: { width: 40, height: 16 }
     })
   })
 })

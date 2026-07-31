@@ -409,7 +409,11 @@ async function captureThumbnail(
     }
     pageUrl.searchParams.set(
       '_pptMasterExpected',
-      fs.existsSync(path.join(path.dirname(request.sourcePath), 'master.css')) ? '1' : '0'
+      fs.existsSync(path.join(path.dirname(request.sourcePath), 'master', 'master.css')) ? '1' : '0'
+    )
+    pageUrl.searchParams.set(
+      '_pptMasterElementsExpected',
+      fs.existsSync(path.join(path.dirname(request.sourcePath), 'master', 'master.html')) ? '1' : '0'
     )
 
     const readyWaitPromise = waitForPrintReady(
@@ -430,7 +434,12 @@ async function captureThumbnail(
       query: {
         ...request.query,
         _pptMasterExpected: fs.existsSync(
-          path.join(path.dirname(request.sourcePath), 'master.css')
+          path.join(path.dirname(request.sourcePath), 'master', 'master.css')
+        )
+          ? '1'
+          : '0',
+        _pptMasterElementsExpected: fs.existsSync(
+          path.join(path.dirname(request.sourcePath), 'master', 'master.html')
         )
           ? '1'
           : '0'

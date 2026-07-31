@@ -262,7 +262,11 @@ const loadAndFreezePptxPage = async (
   pageUrl.searchParams.set('printTimeoutMs', String(timeoutMs))
   pageUrl.searchParams.set(
     '_pptMasterExpected',
-    fs.existsSync(path.join(path.dirname(page.htmlPath), 'master.css')) ? '1' : '0'
+    fs.existsSync(path.join(path.dirname(page.htmlPath), 'master', 'master.css')) ? '1' : '0'
+  )
+  pageUrl.searchParams.set(
+    '_pptMasterElementsExpected',
+    fs.existsSync(path.join(path.dirname(page.htmlPath), 'master', 'master.html')) ? '1' : '0'
   )
   pageUrl.searchParams.set('_ts', String(Date.now()))
 

@@ -102,7 +102,13 @@ const isControlledFile = (relativePath: string): boolean => {
   if (!rel || rel.includes('..') || rel.startsWith('.git/')) return false
   if (rel.startsWith('speech/')) return false
   if (rel === '.gitignore') return true
-  if (rel === 'index.html' || rel === 'master.css') return true
+  if (
+    rel === 'index.html' ||
+    rel === 'master/master.css' ||
+    rel === 'master/master.html'
+  ) {
+    return true
+  }
   if (/^[^/]+\.html?$/i.test(rel) && rel.toLowerCase() !== 'index.html') return true
   if (rel.startsWith('assets/') && !rel.endsWith('/')) return true
   if (rel.startsWith('images/') && !rel.endsWith('/')) return true

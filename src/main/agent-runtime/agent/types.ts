@@ -21,6 +21,7 @@ export interface SessionDeckGenerationContext {
   projectDir: string
   indexPath: string
   pageFileMap: Record<string, string>
+  pageNumbers?: Record<string, number>
   selectPageIds?: string[]
   allowedPageIds?: string[]
   topic: string

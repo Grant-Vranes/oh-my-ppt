@@ -502,6 +502,7 @@ export async function executeEditGeneration(
     layoutIntent: layoutIntentByPageId.get(ref.pageId)
   }))
   const pageFileMap = Object.fromEntries(pageRefs.map((p) => [p.pageId, p.htmlPath]))
+  const pageNumbers = Object.fromEntries(pageRefs.map((p) => [p.pageId, p.pageNumber]))
   const beforeMap = new Map<string, string>()
   const existingPageIdsBeforeRun: string[] = []
   const beforeReads = await Promise.all(
@@ -570,6 +571,7 @@ export async function executeEditGeneration(
     projectDir: context.projectDir,
     indexPath,
     pageFileMap,
+    pageNumbers,
     designContract: savedDesignContract,
     editScope: 'page',
     selectedPageId: resolvedSelectedPageId,

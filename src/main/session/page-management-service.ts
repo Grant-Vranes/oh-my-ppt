@@ -11,6 +11,7 @@ import {
   buildBlankPageHtmlFromSource,
   buildDuplicatePageHtmlFromSource
 } from './page-html-builders'
+import { setMasterPageNumber } from '../presentation/html/master-link'
 import type { SessionPageStatus } from '../db/schema'
 import { resolveOutlinesForPages } from './page-outline-utils'
 import { requireSessionSlideSize } from '@shared/slide-size'
@@ -99,7 +100,19 @@ export async function persistManagedPages(
   await ensureSessionRuntimeCompatible(ctx, args.projectDir)
   // Keep caller order (drag result / filtered order), only rewrite contiguous page numbers.
   const renumbered = args.pages.map((p, i) => ({ ...p, pageNumber: i + 1 }))
-
+  const pageUpdates = await Promise.all(
+    renumbered.map(async (page) => {
+      const source = await fs.promises.readFile(page.htmlPath, 'utf-8')
+      return { path: page.htmlPath, source, updated: setMasterPageNumber(source, page.pageNumber) }
+    })
+  )
+  const changedPageUpdates = pageUpdates.filter((page) => page.updated !== page.source)
+  const restorePageSnapshots = async (): Promise<void> => {
+    await Promise.all(
+      changedPageUpdates.map((page) => fs.promises.writeFile(page.path, page.source, 'utf-8'))
+    )
+  }
+  const currentSession = await db.getSession(args.sessionId)
   const deckPages = renumbered.map((p) => ({
     id: p.id,
     pageNumber: p.pageNumber,
@@ -110,7 +123,7 @@ export async function persistManagedPages(
   const rebuiltIndexHtml = buildProjectIndexHtml(
     args.deckTitle,
     deckPages,
-    requireSessionSlideSize(await db.getSession(args.sessionId))
+    requireSessionSlideSize(currentSession)
   )
   const indexHtml = fs.existsSync(args.indexPath)
     ? carryIndexTransitionConfig(
@@ -118,36 +131,38 @@ export async function persistManagedPages(
         rebuiltIndexHtml
       )
     : rebuiltIndexHtml
-  await fs.promises.writeFile(`${args.indexPath}.tmp`, indexHtml, 'utf-8')
+  let currentMetadata: Record<string, unknown> = {}
   try {
-    if (args.deletedPageIds?.length) {
-      await db.softDeleteSessionPages(args.sessionId, args.deletedPageIds)
-    }
-    await db.replaceSessionPageOrder(
-      args.sessionId,
-      renumbered.map((p) => ({ id: p.id, pageNumber: p.pageNumber }))
+    currentMetadata = JSON.parse((currentSession?.metadata as string | null) || '{}')
+  } catch {
+    currentMetadata = {}
+  }
+  const {
+    generatedPages: _generatedPages,
+    failedPages: _failedPages,
+    ...safeMetadata
+  } = currentMetadata as Record<string, unknown> & {
+    generatedPages?: unknown
+    failedPages?: unknown
+  }
+
+  try {
+    await Promise.all(
+      changedPageUpdates.map((page) => fs.promises.writeFile(page.path, page.updated, 'utf-8'))
     )
-    const currentSession = await db.getSession(args.sessionId)
-    let currentMetadata: Record<string, unknown> = {}
-    try {
-      currentMetadata = JSON.parse((currentSession?.metadata as string | null) || '{}')
-    } catch {
-      currentMetadata = {}
-    }
-    const {
-      generatedPages: _generatedPages,
-      failedPages: _failedPages,
-      ...safeMetadata
-    } = currentMetadata as Record<string, unknown> & {
-      generatedPages?: unknown
-      failedPages?: unknown
-    }
-    await db.updateSessionMetadata(args.sessionId, {
+    await fs.promises.writeFile(`${args.indexPath}.tmp`, indexHtml, 'utf-8')
+    await db.persistSessionPageState({
+      sessionId: args.sessionId,
+      pages: renumbered.map((page) => ({ id: page.id, pageNumber: page.pageNumber })),
+      deletedPageIds: args.deletedPageIds,
+      metadata: {
       ...safeMetadata,
       entryMode: 'multi_page',
       indexPath: args.indexPath
+      }
     })
   } catch (error) {
+    await restorePageSnapshots().catch(() => undefined)
     await fs.promises.rm(`${args.indexPath}.tmp`, { force: true })
     throw error
   }
@@ -184,6 +199,7 @@ export async function createBlankSessionPage(
     html: sourceHtml,
     oldPageId: sourcePage.pageId,
     nextPageId,
+    pageNumber: insertAfterPageNumber + 1,
     title: nextTitle
   })
   const validation = validatePersistedPageHtml(nextHtml, nextPageId)
@@ -263,6 +279,7 @@ export async function duplicateSessionPage(
     html: sourceHtml,
     oldPageId: sourcePage.pageId,
     nextPageId,
+    pageNumber: sourcePage.pageNumber + 1,
     title: nextTitle
   })
   const validation = validatePersistedPageHtml(nextHtml, nextPageId)

@@ -3,37 +3,107 @@ import fs from 'fs'
 import path from 'path'
 import {
   MASTER_CSS_FILENAME,
+  MASTER_DIRECTORY,
+  MASTER_HTML_FILENAME,
   buildDefaultMasterConfig,
   buildMasterCss,
+  buildMasterElementsHtml,
   normalizeMasterConfig,
   parseMasterCss,
+  parseMasterElementsHtml,
   type SessionMasterConfig
 } from '@shared/master'
 
 export type SessionMasterReadResult = {
   css: string
+  html: string
   config: SessionMasterConfig
   exists: boolean
 }
 
-export const getSessionMasterPath = (projectDir: string): string =>
-  path.join(path.resolve(projectDir), MASTER_CSS_FILENAME)
+const rebaseMasterAssetUrls = (css: string): string =>
+  css
+    .replace(/url\(\s*(["'])\.\/assets\//gi, 'url($1../assets/')
+    .replace(/url\(\s*(["'])\.\/images\//gi, 'url($1../images/')
 
-const toResult = (css: string, exists: boolean): SessionMasterReadResult => ({
-  css,
-  config: parseMasterCss(css),
-  exists
-})
+const unbaseMasterAssetUrls = (css: string): string =>
+  css
+    .replace(/url\(\s*(["'])\.\.\/assets\//gi, 'url($1./assets/')
+    .replace(/url\(\s*(["'])\.\.\/images\//gi, 'url($1./images/')
+
+const writeAtomically = async (filePath: string, content: string): Promise<void> => {
+  const tempPath = `${filePath}.${crypto.randomUUID()}.tmp`
+  await fs.promises.mkdir(path.dirname(filePath), { recursive: true })
+  try {
+    await fs.promises.writeFile(tempPath, content, 'utf-8')
+    await fs.promises.rename(tempPath, filePath)
+  } finally {
+    await fs.promises.rm(tempPath, { force: true }).catch(() => undefined)
+  }
+}
+
+const readFileIfExists = async (filePath: string): Promise<string | null> => {
+  try {
+    return await fs.promises.readFile(filePath, 'utf-8')
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null
+    throw error
+  }
+}
+
+export const getSessionMasterDirectory = (projectDir: string): string =>
+  path.join(path.resolve(projectDir), MASTER_DIRECTORY)
+
+export const getSessionMasterPath = (projectDir: string): string =>
+  path.join(getSessionMasterDirectory(projectDir), MASTER_CSS_FILENAME)
+
+export const getSessionMasterHtmlPath = (projectDir: string): string =>
+  path.join(getSessionMasterDirectory(projectDir), MASTER_HTML_FILENAME)
+
+const toResult = (css: string, html: string, exists: boolean): SessionMasterReadResult => {
+  const cssConfig = parseMasterCss(unbaseMasterAssetUrls(css))
+  return {
+    css,
+    html,
+    config: normalizeMasterConfig({
+      ...cssConfig,
+      elements: parseMasterElementsHtml(html)
+    }),
+    exists
+  }
+}
 
 export async function readSessionMaster(projectDir: string): Promise<SessionMasterReadResult> {
-  const masterPath = getSessionMasterPath(projectDir)
-  try {
-    return toResult(await fs.promises.readFile(masterPath, 'utf-8'), true)
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+  const [canonicalCss, masterHtml] = await Promise.all([
+    readFileIfExists(getSessionMasterPath(projectDir)),
+    readFileIfExists(getSessionMasterHtmlPath(projectDir))
+  ])
+  if (canonicalCss === null) {
     const config = buildDefaultMasterConfig()
-    return { css: buildMasterCss(config), config, exists: false }
+    return {
+      css: buildMasterCss(config),
+      html: masterHtml || buildMasterElementsHtml(config.elements),
+      config: normalizeMasterConfig({ ...config, elements: parseMasterElementsHtml(masterHtml || '') }),
+      exists: false
+    }
   }
+  const cssConfig = parseMasterCss(unbaseMasterAssetUrls(canonicalCss))
+  return toResult(canonicalCss, masterHtml || buildMasterElementsHtml(cssConfig.elements), true)
+}
+
+async function writeSessionMasterFiles(
+  projectDir: string,
+  value: unknown,
+  fontFaceCss = ''
+): Promise<SessionMasterReadResult> {
+  const config = normalizeMasterConfig(value)
+  const css = rebaseMasterAssetUrls(buildMasterCss(config, fontFaceCss))
+  const html = buildMasterElementsHtml(config.elements)
+  await Promise.all([
+    writeAtomically(getSessionMasterPath(projectDir), css),
+    writeAtomically(getSessionMasterHtmlPath(projectDir), html)
+  ])
+  return { css, html, config, exists: true }
 }
 
 export async function writeSessionMaster(
@@ -41,21 +111,32 @@ export async function writeSessionMaster(
   value: unknown,
   fontFaceCss = ''
 ): Promise<SessionMasterReadResult> {
-  const config = normalizeMasterConfig(value)
-  const css = buildMasterCss(config, fontFaceCss)
-  const masterPath = getSessionMasterPath(projectDir)
-  const tempPath = `${masterPath}.${crypto.randomUUID()}.tmp`
-  await fs.promises.mkdir(path.dirname(masterPath), { recursive: true })
-  try {
-    await fs.promises.writeFile(tempPath, css, 'utf-8')
-    await fs.promises.rename(tempPath, masterPath)
-  } finally {
-    await fs.promises.rm(tempPath, { force: true }).catch(() => undefined)
-  }
-  return { css, config, exists: true }
+  return writeSessionMasterFiles(projectDir, value, fontFaceCss)
 }
 
+/**
+ * This is only called while creating a fresh session copy, before its first
+ * history baseline. Runtime refresh and ordinary reads deliberately do not
+ * create master files.
+ */
 export async function createSessionMasterIfMissing(projectDir: string): Promise<SessionMasterReadResult> {
-  const current = await readSessionMaster(projectDir)
-  return current.exists ? current : writeSessionMaster(projectDir, current.config)
+  const canonicalCssPath = getSessionMasterPath(projectDir)
+  const canonicalHtmlPath = getSessionMasterHtmlPath(projectDir)
+  const [canonicalCss, canonicalHtml] = await Promise.all([
+    readFileIfExists(canonicalCssPath),
+    readFileIfExists(canonicalHtmlPath)
+  ])
+
+  if (canonicalCss !== null && canonicalHtml !== null) {
+    return toResult(canonicalCss, canonicalHtml, true)
+  }
+
+  if (canonicalCss !== null) {
+    const config = parseMasterCss(unbaseMasterAssetUrls(canonicalCss))
+    const html = canonicalHtml || buildMasterElementsHtml(config.elements)
+    if (canonicalHtml === null) await writeAtomically(canonicalHtmlPath, html)
+    return toResult(canonicalCss, html, true)
+  }
+
+  return writeSessionMasterFiles(projectDir, buildDefaultMasterConfig())
 }

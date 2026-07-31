@@ -85,7 +85,30 @@ describe('slide master mutation transaction', () => {
       titleFontFamily: null,
       bodyFontFamily: null,
       titleFontSize: null,
-      bodyFontSize: null
+      bodyFontSize: null,
+      elements: {
+        logoImage: null,
+        footerText: '',
+        watermarkText: '',
+        showLogo: false,
+        showFooter: false,
+        showPageNumber: true,
+        showWatermark: false,
+        footerFontSize: 16,
+        pageNumberFontSize: 16,
+        footerColor: '#334155',
+        pageNumberColor: '#334155',
+        watermarkRotation: -24,
+        watermarkSizeAuto: true,
+        logoPosition: { x: 5, y: 5 },
+        footerPosition: { x: 5, y: 91 },
+        pageNumberPosition: { x: 90, y: 91 },
+        watermarkPosition: { x: 30, y: 42 },
+        logoSize: { width: 16, height: 10 },
+        footerSize: { width: 56, height: 5 },
+        pageNumberSize: { width: 6, height: 5 },
+        watermarkSize: { width: 40, height: 16 }
+      }
     })
 
     expect(result).toMatchObject({
@@ -106,15 +129,38 @@ describe('slide master mutation transaction', () => {
       titleFontFamily: null,
       bodyFontFamily: null,
       titleFontSize: null,
-      bodyFontSize: null
+      bodyFontSize: null,
+      elements: {
+        logoImage: null,
+        footerText: '',
+        watermarkText: '',
+        showLogo: false,
+        showFooter: false,
+        showPageNumber: true,
+        showWatermark: false,
+        footerFontSize: 16,
+        pageNumberFontSize: 16,
+        footerColor: '#334155',
+        pageNumberColor: '#334155',
+        watermarkRotation: -24,
+        watermarkSizeAuto: true,
+        logoPosition: { x: 5, y: 5 },
+        footerPosition: { x: 5, y: 91 },
+        pageNumberPosition: { x: 90, y: 91 },
+        watermarkPosition: { x: 30, y: 42 },
+        logoSize: { width: 16, height: 10 },
+        footerSize: { width: 56, height: 5 },
+        pageNumberSize: { width: 6, height: 5 },
+        watermarkSize: { width: 40, height: 16 }
+      }
     })
-    expect(await readFile(path.join(projectDir, 'master.css'), 'utf8')).toContain(
+    expect(await readFile(path.join(projectDir, 'master', 'master.css'), 'utf8')).toContain(
       '--ppt-master-slide-background: #f1efea'
     )
-    expect(await readFile(path.join(projectDir, 'master.css'), 'utf8')).toContain(
+    expect(await readFile(path.join(projectDir, 'master', 'master.css'), 'utf8')).toContain(
       '--ppt-title-font:'
     )
-    expect(await readFile(path.join(projectDir, 'master.css'), 'utf8')).toContain(
+    expect(await readFile(path.join(projectDir, 'master', 'master.css'), 'utf8')).toContain(
       '--ppt-body-font:'
     )
     expect(await readFile(htmlPath, 'utf8')).toContain('data-ppt-master="1"')
@@ -122,7 +168,7 @@ describe('slide master mutation transaction', () => {
       expect.objectContaining({
         prompt: '修改并应用演示母版',
         metadata: { feature: 'slide-master', action: 'save-and-apply' },
-        allowedPaths: ['master.css', 'page-1.html']
+        allowedPaths: ['master/master.css', 'master/master.html', 'page-1.html']
       })
     )
   })
@@ -149,7 +195,7 @@ describe('slide master mutation transaction', () => {
         bodyFontSize: null
       })
     ).rejects.toThrow('存在缺失或不安全的页面文件')
-    await expect(readFile(path.join(projectDir, 'master.css'), 'utf8')).rejects.toMatchObject({
+    await expect(readFile(path.join(projectDir, 'master', 'master.css'), 'utf8')).rejects.toMatchObject({
       code: 'ENOENT'
     })
     expect(state.recordOperation).not.toHaveBeenCalled()
@@ -161,7 +207,7 @@ describe('slide master mutation transaction', () => {
     const htmlPath = path.join(projectDir, 'page-1.html')
     await writeFile(
       htmlPath,
-      '<html><head><link rel="stylesheet" href="./master.css" data-ppt-master="1"></head><body>Page</body></html>'
+      '<html><head><link rel="stylesheet" href="./master/master.css" data-ppt-master="1"></head><body>Page</body></html>'
     )
     const ctx = createContext(projectDir, [pageRecord(htmlPath)])
     const { getSessionMasterStatus } =
@@ -183,7 +229,8 @@ describe('slide master mutation transaction', () => {
     const originalHtml = '<html><head></head><body>Page</body></html>'
     const originalMaster = '/* user managed baseline */\n:root { --ppt-page-bg: #aabbcc; }\n'
     await writeFile(htmlPath, originalHtml)
-    await writeFile(path.join(projectDir, 'master.css'), originalMaster)
+    await mkdir(path.join(projectDir, 'master'), { recursive: true })
+    await writeFile(path.join(projectDir, 'master', 'master.css'), originalMaster)
     state.recordOperation.mockRejectedValueOnce(new Error('history unavailable'))
     const ctx = createContext(projectDir, [pageRecord(htmlPath)])
     const { saveSessionMaster } = await import('../../../src/main/session/master-mutation-service')
@@ -204,7 +251,7 @@ describe('slide master mutation transaction', () => {
       })
     ).rejects.toThrow('history unavailable')
     expect(await readFile(htmlPath, 'utf8')).toBe(originalHtml)
-    expect(await readFile(path.join(projectDir, 'master.css'), 'utf8')).toBe(originalMaster)
+    expect(await readFile(path.join(projectDir, 'master', 'master.css'), 'utf8')).toBe(originalMaster)
   })
 
   it('records the selected session background image in the master history operation', async () => {
@@ -232,12 +279,17 @@ describe('slide master mutation transaction', () => {
       bodyFontSize: null
     })
 
-    expect(await readFile(path.join(projectDir, 'master.css'), 'utf8')).toContain(
-      'url("./images/master-background.png") center center / cover no-repeat'
+    expect(await readFile(path.join(projectDir, 'master', 'master.css'), 'utf8')).toContain(
+      'url("../images/master-background.png") center center / cover no-repeat'
     )
     expect(state.recordOperation).toHaveBeenCalledWith(
       expect.objectContaining({
-        allowedPaths: ['master.css', 'page-1.html', 'images/master-background.png']
+        allowedPaths: [
+          'master/master.css',
+          'master/master.html',
+          'page-1.html',
+          'images/master-background.png'
+        ]
       })
     )
   })
@@ -280,13 +332,14 @@ describe('slide master mutation transaction', () => {
     expect(state.copyProjectFontResources).toHaveBeenCalledWith(
       expect.objectContaining({ assets: [expect.objectContaining({ targetPath })] })
     )
-    expect(await readFile(path.join(projectDir, 'master.css'), 'utf8')).toContain(
+    expect(await readFile(path.join(projectDir, 'master', 'master.css'), 'utf8')).toContain(
       '@font-face{font-family:"Noto Sans SC";'
     )
     expect(state.recordOperation).toHaveBeenCalledWith(
       expect.objectContaining({
         allowedPaths: [
-          'master.css',
+          'master/master.css',
+          'master/master.html',
           'page-1.html',
           'assets/fonts/google-fonts/NotoSansSC/noto-sans-sc.woff2'
         ]

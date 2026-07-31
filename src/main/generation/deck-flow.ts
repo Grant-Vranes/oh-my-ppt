@@ -168,6 +168,7 @@ export async function executeDeckGeneration(
     return { id, pageNumber, title: fallbackTitle, pageId, htmlPath }
   })
   const pageFileMap = Object.fromEntries(pageRefs.map((page) => [page.pageId, page.htmlPath]))
+  const pageNumbers = Object.fromEntries(pageRefs.map((page) => [page.pageId, page.pageNumber]))
   const indexPath = path.join(context.projectDir, 'index.html')
   await db.createGenerationRun({
     id: context.runId,
@@ -517,6 +518,7 @@ export async function executeDeckGeneration(
     projectDir: context.projectDir,
     indexPath,
     pageFileMap,
+    pageNumbers,
     agentManager,
     emit: (chunk) => emitDeckChunk(chunk),
     onPageCompleted: persistCompletedGeneratedPage,

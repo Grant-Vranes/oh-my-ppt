@@ -163,6 +163,7 @@ export async function executeDeckAllPageEditGeneration(
     layoutIntent: layoutIntentByPageId.get(ref.pageId)
   }))
   const pageFileMap = Object.fromEntries(pageRefs.map((p) => [p.pageId, p.htmlPath]))
+  const pageNumbers = Object.fromEntries(pageRefs.map((p) => [p.pageId, p.pageNumber]))
   const selectedPageIds = selectedPageRefs.map((p) => p.pageId)
   const existingPageIdsBeforeRun: string[] = []
   const beforeReads = await Promise.all(
@@ -236,6 +237,7 @@ export async function executeDeckAllPageEditGeneration(
     projectDir,
     indexPath,
     pageFileMap,
+    pageNumbers,
     designContract: savedDesignContract,
     existingPageIds: existingPageIdsBeforeRun,
     agentManager,

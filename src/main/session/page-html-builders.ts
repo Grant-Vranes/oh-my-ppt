@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio'
 import type { AnyNode } from 'domhandler'
-import { ensureMasterStyleLink } from '../presentation/html/master-link'
+import { ensureMasterStyleLink, setMasterPageNumber } from '../presentation/html/master-link'
 
 /**
  * 纯函数：把 HTML 里出现的 oldPageId（按词边界匹配）整体替换为 nextPageId，
@@ -39,6 +39,7 @@ export function buildBlankPageHtmlFromSource(args: {
   html: string
   oldPageId: string
   nextPageId: string
+  pageNumber?: number
   title: string
 }): string {
   const rewritten = replacePageIdentity(args.html, args.oldPageId, args.nextPageId)
@@ -58,7 +59,9 @@ export function buildBlankPageHtmlFromSource(args: {
     content.attr('data-blank-page', '1')
   }
 
-  return ensureMasterStyleLink($.html())
+  return typeof args.pageNumber === 'number'
+    ? setMasterPageNumber(ensureMasterStyleLink($.html()), args.pageNumber)
+    : ensureMasterStyleLink($.html())
 }
 
 /**
@@ -70,6 +73,7 @@ export function buildDuplicatePageHtmlFromSource(args: {
   html: string
   oldPageId: string
   nextPageId: string
+  pageNumber?: number
   title: string
 }): string {
   const rewritten = replacePageIdentity(args.html, args.oldPageId, args.nextPageId)
@@ -82,5 +86,7 @@ export function buildDuplicatePageHtmlFromSource(args: {
       el.attr('data-page-id', args.nextPageId)
     }
   })
-  return ensureMasterStyleLink($.html())
+  return typeof args.pageNumber === 'number'
+    ? setMasterPageNumber(ensureMasterStyleLink($.html()), args.pageNumber)
+    : ensureMasterStyleLink($.html())
 }

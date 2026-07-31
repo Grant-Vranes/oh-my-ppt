@@ -4,6 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import {
   createSessionMasterIfMissing,
+  getSessionMasterHtmlPath,
   getSessionMasterPath,
   readSessionMaster,
   writeSessionMaster
@@ -30,6 +31,23 @@ describe('session master file service', () => {
     })
   })
 
+  it('ignores an unrelated root-level master.css without modifying it', async () => {
+    const projectDir = await mkdtemp(path.join(os.tmpdir(), 'ohmyppt-master-'))
+    roots.push(projectDir)
+    const rootMasterPath = path.join(projectDir, 'master.css')
+    const rootMasterCss = ':root { --ppt-page-bg: #112233; }'
+    await writeFile(rootMasterPath, rootMasterCss, 'utf8')
+
+    const result = await readSessionMaster(projectDir)
+
+    expect(result.exists).toBe(false)
+    expect(result.config.backgroundColor).toBe('#ffffff')
+    expect(await readFile(rootMasterPath, 'utf8')).toBe(rootMasterCss)
+
+    await writeSessionMaster(projectDir, result.config)
+    expect(await readFile(rootMasterPath, 'utf8')).toBe(rootMasterCss)
+  })
+
   it('creates once and atomically replaces only structured CSS', async () => {
     const projectDir = await mkdtemp(path.join(os.tmpdir(), 'ohmyppt-master-'))
     roots.push(projectDir)
@@ -51,7 +69,13 @@ describe('session master file service', () => {
       titleFontFamily: null,
       bodyFontFamily: null,
       titleFontSize: null,
-      bodyFontSize: null
+      bodyFontSize: null,
+      elements: {
+        logoImage: null,
+        footerText: 'Confidential',
+        watermarkText: '',
+        showPageNumber: true
+      }
     })
 
     expect(saved).toMatchObject({
@@ -67,11 +91,52 @@ describe('session master file service', () => {
         titleFontFamily: null,
         bodyFontFamily: null,
         titleFontSize: null,
-        bodyFontSize: null
+        bodyFontSize: null,
+        elements: {
+          logoImage: null,
+          footerText: 'Confidential',
+          watermarkText: '',
+          showPageNumber: true
+        }
       }
     })
     const onDisk = await readFile(getSessionMasterPath(projectDir), 'utf8')
     expect(onDisk).toBe(saved.css)
     expect(onDisk).not.toContain('preserved only until save')
+    expect(await readFile(getSessionMasterHtmlPath(projectDir), 'utf8')).toContain(
+      'data-ppt-master-elements="1"'
+    )
+  })
+
+  it('keeps logo image paths relative to the page document and restores them for the UI model', async () => {
+    const projectDir = await mkdtemp(path.join(os.tmpdir(), 'ohmyppt-master-'))
+    roots.push(projectDir)
+
+    await writeSessionMaster(projectDir, {
+      backgroundColor: '#ffffff',
+      backgroundMode: 'inherit',
+      backgroundStyle: 'solid',
+      backgroundGradient: createDefaultMasterGradient(),
+      backgroundImage: null,
+      titleFontPreset: 'inherit',
+      bodyFontPreset: 'inherit',
+      titleFontFamily: null,
+      bodyFontFamily: null,
+      titleFontSize: null,
+      bodyFontSize: null,
+      elements: {
+        logoImage: './images/brand.png',
+        footerText: 'Acme',
+        watermarkText: '',
+        showPageNumber: true
+      }
+    })
+
+    expect(await readFile(getSessionMasterHtmlPath(projectDir), 'utf8')).toContain(
+      'src="./images/brand.png"'
+    )
+    expect((await readSessionMaster(projectDir)).config.elements).toMatchObject({
+      logoImage: './images/brand.png'
+    })
   })
 })

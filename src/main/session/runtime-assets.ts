@@ -3,7 +3,7 @@ import path from 'path'
 import type { IpcContext } from '../ipc/context'
 
 export const INDEX_RUNTIME_MARKER = '@ohmyppt-index-runtim:arcsin1:v2.0.19'
-export const PPT_RUNTIME_MARKER = '@ohmyppt-ppt-runtime:arcsin1:v2.0.18'
+export const PPT_RUNTIME_MARKER = '@ohmyppt-ppt-runtime:arcsin1:v2.0.21'
 
 const RUNTIME_ASSET_MARKERS = [
   { fileName: 'index-runtime.js', marker: INDEX_RUNTIME_MARKER },

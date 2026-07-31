@@ -140,6 +140,7 @@ export function createPageWriteTools(args: {
       persisted = await persistPageHtmlFromFragment({
         content,
         pageId: resolvedPageId,
+        pageNumber: context.pageNumbers?.[resolvedPageId],
         projectDir: context.projectDir,
         targetPath,
         slideSize: context.slideSize,

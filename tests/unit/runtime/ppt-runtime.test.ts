@@ -1,7 +1,7 @@
 /**
  * @vitest-environment happy-dom
  *
- * Unit tests for ppt-runtime.js v2.0.18:
+ * Unit tests for ppt-runtime.js v2.0.21:
  *   - PPT.stopAnimations() / PPT.resumeAnimations()
  *   - PPT.clicks state machine (advance returns boolean, _dispatch exact match)
  *   - PPT.scanDataAnim() / PPT.executeDataAnim() (routed through PPT.animate)
@@ -49,11 +49,16 @@ function createMockAnime() {
   return { anime, animations }
 }
 
-function setupRuntime(options?: { search?: string; parent?: { postMessage: ReturnType<typeof vi.fn> } }) {
+function setupRuntime(options?: {
+  search?: string
+  parent?: { postMessage: ReturnType<typeof vi.fn> }
+  guardedRoot?: boolean
+  slideHeight?: number
+}) {
   const { anime, animations } = createMockAnime()
 
   document.body.innerHTML = `
-    <div class="ppt-page-root">
+    <div class="ppt-page-root"${options?.guardedRoot ? ' data-ppt-guard-root="1"' : ''}${options?.slideHeight ? ` data-ppt-height="${options.slideHeight}"` : ''}>
       <div data-anim="fade-up" data-anim-duration="500" id="el1">Card 1</div>
       <div data-anim="fade-up" data-anim-delay="stagger(100)" id="el2">Card 2</div>
       <div data-anim="fade-up" data-anim-delay="stagger(100)" id="el3">Card 3</div>
@@ -128,6 +133,83 @@ afterEach(() => {
     // Some tests use real timers.
   }
   vi.useRealTimers()
+  vi.unstubAllGlobals()
+})
+
+describe('master elements runtime', () => {
+  it('injects a fixed layer even when a legacy fragment still contains enabled false', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        text: vi.fn().mockResolvedValue(`
+          <script type="application/json" data-ppt-master-elements-config="1">{"enabled":false}</script>
+          <template data-ppt-master-elements="1">
+            <div data-ppt-master-elements-layer="1">
+              <div data-ppt-master-page-number="1"></div>
+            </div>
+          </template>
+        `)
+      })
+    )
+
+    const { PPT } = setupRuntime({
+      search: '?print=1&_pptMasterElementsExpected=1',
+      guardedRoot: true
+    })
+
+    await expect((PPT.assertMasterElementsReady as Function)(50)).resolves.toBeUndefined()
+    expect(document.querySelector('[data-ppt-master-elements-layer="1"]')).not.toBeNull()
+  })
+
+  it('scales watermark text from its persisted bounding-box height', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        text: vi.fn().mockResolvedValue(`
+          <script type="application/json" data-ppt-master-elements-config="1">{}</script>
+          <template data-ppt-master-elements="1">
+            <div data-ppt-master-elements-layer="1">
+              <div data-ppt-master-watermark="1" data-ppt-master-watermark-height="32">INTERNAL</div>
+            </div>
+          </template>
+        `)
+      })
+    )
+
+    const { PPT } = setupRuntime({
+      search: '?print=1&_pptMasterElementsExpected=1',
+      guardedRoot: true,
+      slideHeight: 900
+    })
+
+    await expect((PPT.assertMasterElementsReady as Function)(50)).resolves.toBeUndefined()
+    expect(
+      (document.querySelector('[data-ppt-master-watermark="1"]') as HTMLElement).style.fontSize
+    ).toBe('130px')
+  })
+
+  it('fails print readiness when an expected master fragment cannot load', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('fragment unavailable')))
+
+    const { PPT } = setupRuntime({
+      search: '?print=1&_pptMasterElementsExpected=1',
+      guardedRoot: true
+    })
+
+    await expect((PPT.assertMasterElementsReady as Function)(50)).rejects.toThrow(
+      'fragment unavailable'
+    )
+  })
+
+  it('keeps historical pages without an expected fragment exportable', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('fragment unavailable')))
+
+    const { PPT } = setupRuntime({ search: '?print=1', guardedRoot: true })
+
+    await expect((PPT.whenReadyForPrint as Function)(50)).resolves.toBeUndefined()
+  })
 })
 
 describe('PPT.stopAnimations / PPT.resumeAnimations', () => {
@@ -1053,8 +1135,8 @@ describe('PPT.createChart tick formatters', () => {
 })
 
 describe('Version guard', () => {
-  it('runtime version is 2.0.18', () => {
+  it('runtime version is 2.0.21', () => {
     const PPT = setupRuntime().PPT
-    expect(PPT.__runtimeVersion).toBe('2.0.18')
+    expect(PPT.__runtimeVersion).toBe('2.0.21')
   })
 })

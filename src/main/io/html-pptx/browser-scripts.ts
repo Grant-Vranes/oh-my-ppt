@@ -33,6 +33,17 @@ export const FREEZE_PAGE_FOR_EXPORT_SCRIPT = `
   };
 
   await waitForMasterStylesheet();
+  if (window.PPT?.whenReadyForPrint) {
+    await window.PPT.whenReadyForPrint(5000);
+  }
+  const expectsMasterElements =
+    new URLSearchParams(window.location.search).get('_pptMasterElementsExpected') === '1';
+  if (expectsMasterElements && !window.PPT?.assertMasterElementsReady) {
+    throw new Error('母版全局元素运行时不可用');
+  }
+  if (window.PPT?.assertMasterElementsReady) {
+    await window.PPT.assertMasterElementsReady(5000);
+  }
   const root =
     document.querySelector('.ppt-page-root[data-ppt-guard-root="1"]') ||
     document.querySelector('.ppt-page-root') ||

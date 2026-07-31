@@ -208,6 +208,7 @@ export async function executeRetryFailedPages(
     retryCount: page.retry_count + 1
   }))
   const pageFileMap = Object.fromEntries(retryPages.map((page) => [page.pageId, page.htmlPath]))
+  const pageNumbers = Object.fromEntries(retryPages.map((page) => [page.pageId, page.pageNumber]))
   const existingSessionPages = await db.listSessionPages(context.sessionId, {
     includeDeleted: true
   })
@@ -440,6 +441,7 @@ export async function executeRetryFailedPages(
     projectDir: context.projectDir,
     indexPath,
     pageFileMap,
+    pageNumbers,
     agentManager,
     emit: (chunk) => emitRetryChunk(chunk),
     onPageCompleted: persistCompletedRetryPage,

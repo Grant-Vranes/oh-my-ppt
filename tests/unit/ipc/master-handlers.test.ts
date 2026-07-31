@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const state = vi.hoisted(() => ({
   handlers: new Map<string, (...args: unknown[]) => unknown>(),
   getStatus: vi.fn(),
-  save: vi.fn()
+  save: vi.fn(),
+  setPageOverride: vi.fn()
 }))
 
 vi.mock('electron', () => ({
@@ -15,7 +16,8 @@ vi.mock('electron', () => ({
 
 vi.mock('../../../src/main/session/master-mutation-service', () => ({
   getSessionMasterStatus: state.getStatus,
-  saveSessionMaster: state.save
+  saveSessionMaster: state.save,
+  setSessionMasterPageOverride: state.setPageOverride
 }))
 
 describe('registerMasterHandlers', () => {
@@ -24,6 +26,7 @@ describe('registerMasterHandlers', () => {
     state.handlers.clear()
     state.getStatus.mockReset()
     state.save.mockReset()
+    state.setPageOverride.mockReset()
   })
 
   it('registers typed handlers and rejects malformed structured config', async () => {
@@ -33,8 +36,10 @@ describe('registerMasterHandlers', () => {
 
     const get = state.handlers.get('session:getMaster')
     const save = state.handlers.get('session:saveMaster')
+    const setPageOverride = state.handlers.get('session:setMasterPageOverride')
     expect(get).toBeTypeOf('function')
     expect(save).toBeTypeOf('function')
+    expect(setPageOverride).toBeTypeOf('function')
     expect(state.handlers.has('session:applyMasterToPages')).toBe(false)
 
     await get?.({}, { sessionId: ' session-1 ' })
@@ -65,7 +70,13 @@ describe('registerMasterHandlers', () => {
           titleFontFamily: 'Noto Sans SC',
           bodyFontFamily: null,
           titleFontSize: 56,
-          bodyFontSize: null
+          bodyFontSize: null,
+          elements: {
+            logoImage: null,
+            footerText: '',
+            watermarkText: '',
+            showPageNumber: true
+          }
         }
       }
     )
@@ -97,7 +108,13 @@ describe('registerMasterHandlers', () => {
           titleFontFamily: null,
           bodyFontFamily: null,
           titleFontSize: null,
-          bodyFontSize: null
+          bodyFontSize: null,
+          elements: {
+            logoImage: './images/logo.png',
+            footerText: 'Acme',
+            watermarkText: '',
+            showPageNumber: true
+          }
         }
       }
     )
@@ -133,10 +150,58 @@ describe('registerMasterHandlers', () => {
             titleFontFamily: null,
             bodyFontFamily: null,
             titleFontSize: null,
-            bodyFontSize: null
+            bodyFontSize: null,
+            elements: {
+              logoImage: null,
+              footerText: '',
+              watermarkText: '',
+              showPageNumber: true
+            }
           }
         }
       )
     ).rejects.toThrow('母版配置无效')
+
+    await expect(
+      save?.(
+        {},
+        {
+          sessionId: 'session-1',
+          config: {
+            backgroundColor: '#ffffff',
+            backgroundMode: 'inherit',
+            backgroundStyle: 'solid',
+            backgroundGradient: {
+              type: 'linear',
+              angle: 135,
+              stops: [
+                { color: '#112233', position: 0 },
+                { color: '#ffffff', position: 100 }
+              ]
+            },
+            backgroundImage: null,
+            titleFontPreset: 'inherit',
+            bodyFontPreset: 'inherit',
+            titleFontFamily: null,
+            bodyFontFamily: null,
+            titleFontSize: null,
+            bodyFontSize: null,
+            elements: {
+              logoImage: null,
+              footerText: '',
+              watermarkText: '',
+              showPageNumber: true,
+              logoPosition: { x: 101, y: 8 }
+            }
+          }
+        }
+      )
+    ).rejects.toThrow('母版配置无效')
+
+    await setPageOverride?.({}, { sessionId: 'session-1', pageId: 'page-row-1', disabled: true })
+    expect(state.setPageOverride).toHaveBeenCalledWith(ctx, 'session-1', 'page-row-1', true)
+    await expect(
+      setPageOverride?.({}, { sessionId: 'session-1', pageId: '', disabled: true })
+    ).rejects.toThrow('页面母版设置无效')
   })
 })

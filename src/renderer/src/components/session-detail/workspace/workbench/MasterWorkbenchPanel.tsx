@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Loader2, Palette } from 'lucide-react'
+import { ChevronDown, Layers3, Loader2, Palette, X } from 'lucide-react'
 import { useT } from '@renderer/i18n'
 import { ipc, type FontListItem } from '@renderer/lib/ipc'
 import {
@@ -13,6 +13,8 @@ import {
 } from '@renderer/store'
 import {
   buildDefaultMasterConfig,
+  buildDefaultMasterElementsConfig,
+  normalizeMasterConfig,
   type SessionMasterConfig,
   type SessionMasterStatus
 } from '@shared/master'
@@ -29,6 +31,13 @@ import { Checkbox } from '../../../ui/Checkbox'
 import { Input } from '../../../ui/Input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/Select'
 import { MasterGradientEditor } from '../../../gradient-editor/MasterGradientEditor'
+import { MasterElementsEditor } from '../../../master-elements/MasterElementsEditor'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '../../../ui/DropdownMenu'
 
 const fontPresetKeys = ['inherit', 'sans', 'serif', 'mono'] as const
 
@@ -60,7 +69,8 @@ const getFontFamily = (value: unknown): string | null => {
 
 export function MasterWorkbenchPanel(): React.JSX.Element | null {
   const t = useT()
-  const [open, setOpen] = useState(false)
+  const [styleOpen, setStyleOpen] = useState(false)
+  const [elementsOpen, setElementsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -86,6 +96,7 @@ export function MasterWorkbenchPanel(): React.JSX.Element | null {
     )
   )
   const currentPages = useSessionStore((state) => state.currentGeneratedPages)
+  const selectedPageId = useSessionDetailUiStore((state) => state.selectedPageId)
   const bumpThumbnailVersion = useSessionDetailUiStore((state) => state.bumpThumbnailVersion)
   const reloadCurrentPreviewIgnoringCache = useSessionDetailRuntimeStore(
     (state) => state.reloadCurrentPreviewIgnoringCache
@@ -93,6 +104,7 @@ export function MasterWorkbenchPanel(): React.JSX.Element | null {
   const toastError = useToastStore((state) => state.error)
   const toastSuccess = useToastStore((state) => state.success)
   const busy = saving || isSavingEdits || isApplyingSyncElement || mutationBusy
+  const open = styleOpen || elementsOpen
 
   const refreshPreview = (): void => {
     reloadCurrentPreviewIgnoringCache()
@@ -115,7 +127,7 @@ export function MasterWorkbenchPanel(): React.JSX.Element | null {
       ])
       if (!isCurrentRequest()) return
       setStatus(next)
-      setConfig(next.config)
+      setConfig(normalizeMasterConfig(next.config))
       setFontOptions([...fonts.userFonts, ...fonts.googleFonts])
     } catch (loadError) {
       if (!isCurrentRequest()) return
@@ -182,10 +194,11 @@ export function MasterWorkbenchPanel(): React.JSX.Element | null {
     try {
       const next = await ipc.saveSessionMaster({ sessionId, config })
       setStatus(next)
-      setConfig(next.config)
+      setConfig(normalizeMasterConfig(next.config))
       refreshPreview()
       toastSuccess(t('sessionDetail.masterSaved'))
-      setOpen(false)
+      setStyleOpen(false)
+      setElementsOpen(false)
     } catch (saveError) {
       const message =
         saveError instanceof Error ? saveError.message : t('sessionDetail.masterSaveFailed')
@@ -196,29 +209,81 @@ export function MasterWorkbenchPanel(): React.JSX.Element | null {
     }
   }
 
+  const toggleCurrentPageElements = async (disabled: boolean): Promise<void> => {
+    if (!selectedPageId || busy) return
+    setSaving(true)
+    setError('')
+    try {
+      await ipc.setSessionMasterPageOverride({ sessionId, pageId: selectedPageId, disabled })
+      const next = await ipc.getSessionMaster({ sessionId })
+      setStatus(next)
+      refreshPreview()
+    } catch (overrideError) {
+      const message =
+        overrideError instanceof Error ? overrideError.message : t('sessionDetail.masterPageOverrideFailed')
+      setError(message)
+      toastError(message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const currentPageElementsDisabled = Boolean(
+    selectedPageId && status?.disabledPageIds.includes(selectedPageId)
+  )
+
+  const closeElementsDialog = (): void => {
+    if (saving) return
+    if (status) setConfig(normalizeMasterConfig(status.config))
+    setError('')
+    setElementsOpen(false)
+  }
+
+  const closeStyleDialog = (): void => {
+    if (saving) return
+    if (status) setConfig(normalizeMasterConfig(status.config))
+    setError('')
+    setStyleOpen(false)
+  }
+
   return (
     <>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        className="h-6 min-w-[56px] shrink-0 gap-1 rounded-full border-0 bg-transparent px-2 text-[10px] font-bold text-[#4f5f40] shadow-none hover:bg-[#fffaf1]/54 hover:text-[#314028]"
-        onClick={() => setOpen(true)}
-        disabled={busy}
-      >
-        <Palette className="h-3 w-3" />
-        {t('sessionDetail.master')}
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-6 min-w-[56px] shrink-0 gap-1 rounded-full border-0 bg-transparent px-2 text-[10px] font-bold text-[#4f5f40] shadow-none hover:bg-[#fffaf1]/54 hover:text-[#314028]"
+            disabled={busy}
+          >
+            <Palette className="h-3 w-3" />
+            {t('sessionDetail.master')}
+            <ChevronDown className="h-3 w-3" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-40">
+          <DropdownMenuItem onSelect={() => setStyleOpen(true)}>
+            <Palette className="h-3.5 w-3.5 text-[#637552]" />
+            {t('sessionDetail.masterStyle')}
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setElementsOpen(true)}>
+            <Layers3 className="h-3.5 w-3.5 text-[#637552]" />
+            {t('sessionDetail.masterGlobalElements')}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <Dialog
-        open={open}
+        open={styleOpen}
         onOpenChange={(nextOpen) => {
-          if (!saving) setOpen(nextOpen)
+          if (!nextOpen) closeStyleDialog()
+          else if (!saving) setStyleOpen(true)
         }}
       >
         <DialogContent showClose={!saving} className="!max-w-[600px] gap-5 p-6">
           <DialogHeader>
-            <DialogTitle>{t('sessionDetail.masterTitle')}</DialogTitle>
+            <DialogTitle>{t('sessionDetail.masterStyleTitle')}</DialogTitle>
             <DialogDescription>{t('sessionDetail.masterDescription')}</DialogDescription>
           </DialogHeader>
 
@@ -349,6 +414,94 @@ export function MasterWorkbenchPanel(): React.JSX.Element | null {
               onClick={() => setConfig(buildDefaultMasterConfig())}
             >
               {t('sessionDetail.masterReset')}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              disabled={busy || loading}
+              onClick={() => void saveMaster()}
+            >
+              {saving ? t('common.saving') : t('sessionDetail.masterSaveAndApply')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={elementsOpen}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) closeElementsDialog()
+          else setElementsOpen(true)
+        }}
+      >
+        <DialogContent
+          showClose={false}
+          className="!max-w-[960px] h-[600px] gap-4 overflow-y-auto p-5"
+        >
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="absolute right-3 top-3 h-7 w-7 p-0"
+            aria-label={t('common.cancel')}
+            disabled={saving}
+            onClick={closeElementsDialog}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+          <DialogHeader>
+            <DialogTitle>{t('sessionDetail.masterElementsTitle')}</DialogTitle>
+            <DialogDescription>{t('sessionDetail.masterElementsDescription')}</DialogDescription>
+          </DialogHeader>
+
+          {loading ? (
+            <div className="flex justify-center py-10 text-[#667257]">
+              <Loader2 className="h-5 w-5 animate-spin" />
+            </div>
+          ) : (
+            <fieldset disabled={busy} className="space-y-5">
+              <MasterElementsEditor />
+
+              {selectedPageId && (
+                <div className="flex w-fit items-center gap-2 text-sm text-[#4a563d]">
+                  <label htmlFor="master-hide-elements-on-slide" className="cursor-pointer">
+                    {t('sessionDetail.masterHideElementsOnSlide')}
+                  </label>
+                  <Checkbox
+                    id="master-hide-elements-on-slide"
+                    checked={currentPageElementsDisabled}
+                    onCheckedChange={(checked) => void toggleCurrentPageElements(checked === true)}
+                  />
+                </div>
+              )}
+
+              {status && status.unlinkedPageCount > 0 && (
+                <p className="text-xs leading-4 text-[#667257]">
+                  {t('sessionDetail.masterUnlinkedHint', { count: status.unlinkedPageCount })}
+                </p>
+              )}
+              {error && <p className="text-xs leading-4 text-[#a14f4a]">{error}</p>}
+            </fieldset>
+          )}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={saving}
+              onClick={closeElementsDialog}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={busy || loading || (status?.missingPageCount || 0) > 0}
+              onClick={() => updateConfig({ elements: buildDefaultMasterElementsConfig() })}
+            >
+              {t('sessionDetail.masterElementsReset')}
             </Button>
             <Button
               type="button"

@@ -483,13 +483,19 @@ function hasCustomPageAnimation(html: string): boolean {
 
 async function buildScaffoldDocument(args: {
   pageId: string
+  pageNumber?: number
   innerContent: string
   includeDefaultMotion: boolean
   projectDir: string
   designFonts?: { titleFont: string; bodyFont: string }
   slideSize: SlideSizePreset
 }): Promise<string> {
-  const { pageId, innerContent, includeDefaultMotion, projectDir, designFonts, slideSize } = args
+  const { pageId, pageNumber, innerContent, includeDefaultMotion, projectDir, designFonts, slideSize } =
+    args
+  const pageNumberAttribute =
+    typeof pageNumber === 'number' && Number.isFinite(pageNumber) && pageNumber > 0
+      ? ` data-ppt-page-number="${Math.floor(pageNumber)}"`
+      : ''
   const motionScript = includeDefaultMotion ? `\n    ${DEFAULT_MOTION_SCRIPT}` : ''
   const fontInjection =
     designFonts
@@ -504,8 +510,8 @@ async function buildScaffoldDocument(args: {
     ${buildBasePageStyleTag(slideSize)}
     ${buildMasterStyleLink()}
   </head>
-  <body data-page-id="${pageId}">
-    <main class="ppt-page-root" data-ppt-guard-root="1" data-ppt-slide-size-id="${slideSize.id}" data-ppt-width="${slideSize.width}" data-ppt-height="${slideSize.height}">
+  <body data-page-id="${pageId}"${pageNumberAttribute}>
+    <main class="ppt-page-root" data-ppt-guard-root="1" data-ppt-slide-size-id="${slideSize.id}" data-ppt-width="${slideSize.width}" data-ppt-height="${slideSize.height}"${pageNumberAttribute}>
       <div class="ppt-page-fit-scope">
         <div class="ppt-page-content">
           ${innerContent}
@@ -524,11 +530,13 @@ export async function normalizeAndInjectPageRuntime(
   pageId: string,
   projectDir: string,
   slideSize: SlideSizePreset,
-  designFonts?: { titleFont: string; bodyFont: string }
+  designFonts?: { titleFont: string; bodyFont: string },
+  pageNumber?: number
 ): Promise<string> {
   const fragment = normalizeCreativePageFragment(preprocessPageHtml(content))
   const document = await buildScaffoldDocument({
     pageId,
+    pageNumber,
     innerContent: fragment,
     includeDefaultMotion: hasDataAnim(content) || !hasCustomPageAnimation(content),
     projectDir,
@@ -546,6 +554,7 @@ export async function normalizeAndInjectPageRuntime(
 export async function buildPersistedPageHtmlFromFragment(args: {
   content: string
   pageId: string
+  pageNumber?: number
   projectDir: string
   slideSize: SlideSizePreset
   designFonts?: { titleFont: string; bodyFont: string }
@@ -580,7 +589,8 @@ export async function buildPersistedPageHtmlFromFragment(args: {
     args.pageId,
     args.projectDir,
     args.slideSize,
-    args.designFonts
+    args.designFonts,
+    args.pageNumber
   )
   const persistedValidation = validatePersistedPageHtml(html, args.pageId)
   if (!persistedValidation.valid) {
@@ -607,6 +617,7 @@ export async function buildPersistedPageHtmlFromFragment(args: {
 export async function persistPageHtmlFromFragment(args: {
   content: string
   pageId: string
+  pageNumber?: number
   projectDir: string
   targetPath: string
   slideSize: SlideSizePreset

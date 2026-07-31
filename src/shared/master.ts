@@ -1,5 +1,10 @@
+export const MASTER_DIRECTORY = 'master'
 export const MASTER_CSS_FILENAME = 'master.css'
-export const MASTER_CSS_HREF = './master.css'
+export const MASTER_HTML_FILENAME = 'master.html'
+export const MASTER_CSS_RELATIVE_PATH = `${MASTER_DIRECTORY}/${MASTER_CSS_FILENAME}`
+export const MASTER_HTML_RELATIVE_PATH = `${MASTER_DIRECTORY}/${MASTER_HTML_FILENAME}`
+export const MASTER_CSS_HREF = `./${MASTER_CSS_RELATIVE_PATH}`
+export const MASTER_HTML_HREF = `./${MASTER_HTML_RELATIVE_PATH}`
 export const MASTER_LINK_SELECTOR = 'link[data-ppt-master="1"]'
 
 export const MASTER_FONT_PRESETS = ['inherit', 'sans', 'serif', 'mono'] as const
@@ -29,6 +34,40 @@ export type MasterGradient = {
   stops: MasterGradientStop[]
 }
 
+export type MasterElementPosition = {
+  x: number
+  y: number
+}
+
+export type MasterElementSize = {
+  width: number
+  height: number
+}
+
+export type MasterElementsConfig = {
+  logoImage: string | null
+  footerText: string
+  watermarkText: string
+  showLogo: boolean
+  showFooter: boolean
+  showPageNumber: boolean
+  showWatermark: boolean
+  footerFontSize: number
+  pageNumberFontSize: number
+  footerColor: string
+  pageNumberColor: string
+  watermarkRotation: number
+  watermarkSizeAuto: boolean
+  logoPosition: MasterElementPosition
+  footerPosition: MasterElementPosition
+  pageNumberPosition: MasterElementPosition
+  watermarkPosition: MasterElementPosition
+  logoSize: MasterElementSize
+  footerSize: MasterElementSize
+  pageNumberSize: MasterElementSize
+  watermarkSize: MasterElementSize
+}
+
 export type SessionMasterConfig = {
   backgroundColor: string
   backgroundMode: MasterBackgroundMode
@@ -41,10 +80,12 @@ export type SessionMasterConfig = {
   bodyFontFamily: string | null
   titleFontSize: number | null
   bodyFontSize: number | null
+  elements: MasterElementsConfig
 }
 
 export type SessionMasterStatus = {
   css: string
+  html: string
   config: SessionMasterConfig
   exists: boolean
   revision: string
@@ -52,6 +93,7 @@ export type SessionMasterStatus = {
   unlinkedPageCount: number
   missingPageCount: number
   totalPageCount: number
+  disabledPageIds: string[]
 }
 
 const DEFAULT_MASTER_GRADIENT: MasterGradient = {
@@ -62,6 +104,35 @@ const DEFAULT_MASTER_GRADIENT: MasterGradient = {
     { color: '#4f46e5', position: 100 }
   ]
 }
+
+const DEFAULT_MASTER_ELEMENTS: MasterElementsConfig = {
+  logoImage: null,
+  footerText: '',
+  watermarkText: '',
+  showLogo: false,
+  showFooter: false,
+  showPageNumber: false,
+  showWatermark: false,
+  footerFontSize: 16,
+  pageNumberFontSize: 16,
+  footerColor: '#334155',
+  pageNumberColor: '#334155',
+  watermarkRotation: -24,
+  watermarkSizeAuto: true,
+  logoPosition: { x: 5, y: 5 },
+  footerPosition: { x: 5, y: 91 },
+  pageNumberPosition: { x: 90, y: 91 },
+  watermarkPosition: { x: 30, y: 42 },
+  logoSize: { width: 16, height: 10 },
+  footerSize: { width: 56, height: 5 },
+  pageNumberSize: { width: 6, height: 5 },
+  watermarkSize: { width: 40, height: 16 }
+}
+
+const MAX_MASTER_FOOTER_TEXT_LENGTH = 180
+const MAX_MASTER_WATERMARK_TEXT_LENGTH = 80
+const MIN_MASTER_ELEMENT_FONT_SIZE = 8
+const MAX_MASTER_ELEMENT_FONT_SIZE = 160
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === 'object' && !Array.isArray(value)
@@ -246,7 +317,8 @@ const DEFAULT_MASTER_CONFIG: SessionMasterConfig = {
   titleFontFamily: null,
   bodyFontFamily: null,
   titleFontSize: null,
-  bodyFontSize: null
+  bodyFontSize: null,
+  elements: { ...DEFAULT_MASTER_ELEMENTS }
 }
 
 const FONT_STACKS: Record<Exclude<MasterFontPreset, 'inherit'>, string> = {
@@ -304,8 +376,184 @@ const normalizeBackgroundImage = (value: unknown): string | null => {
     : null
 }
 
+const normalizeMasterElementText = (value: unknown, maxLength: number): string => {
+  if (typeof value !== 'string') return ''
+  return value.replace(/\s+/g, ' ').trim().slice(0, maxLength)
+}
+
+const cloneMasterElementPosition = (position: MasterElementPosition): MasterElementPosition => ({
+  ...position
+})
+
+const cloneMasterElementSize = (size: MasterElementSize): MasterElementSize => ({ ...size })
+
+const normalizeMasterElementPosition = (
+  value: unknown,
+  fallback: MasterElementPosition
+): MasterElementPosition => {
+  const record = isRecord(value) ? value : {}
+  const normalizeCoordinate = (coordinate: unknown, fallbackCoordinate: number): number =>
+    typeof coordinate === 'number' && Number.isFinite(coordinate)
+      ? Math.round(clamp(coordinate, 0, 100) * 100) / 100
+      : fallbackCoordinate
+  return {
+    x: normalizeCoordinate(record.x, fallback.x),
+    y: normalizeCoordinate(record.y, fallback.y)
+  }
+}
+
+const normalizeMasterElementSize = (value: unknown, fallback: MasterElementSize): MasterElementSize => {
+  const record = isRecord(value) ? value : {}
+  const normalizeDimension = (dimension: unknown, fallbackDimension: number): number =>
+    typeof dimension === 'number' && Number.isFinite(dimension)
+      ? Math.round(clamp(dimension, 1, 100) * 100) / 100
+      : fallbackDimension
+  return {
+    width: normalizeDimension(record.width, fallback.width),
+    height: normalizeDimension(record.height, fallback.height)
+  }
+}
+
+const normalizeMasterElementFontSize = (value: unknown, fallback: number): number =>
+  typeof value === 'number' && Number.isFinite(value)
+    ? Math.round(clamp(value, MIN_MASTER_ELEMENT_FONT_SIZE, MAX_MASTER_ELEMENT_FONT_SIZE))
+    : fallback
+
+const normalizeMasterElementRotation = (value: unknown, fallback: number): number =>
+  typeof value === 'number' && Number.isFinite(value)
+    ? Math.round(clamp(value, -180, 180))
+    : fallback
+
+const normalizeLegacyMasterElementPosition = (
+  value: unknown,
+  fallback: MasterElementPosition,
+  offset: MasterElementPosition
+): MasterElementPosition => {
+  const position = normalizeMasterElementPosition(value, fallback)
+  return {
+    x: Math.round(clamp(position.x - offset.x, 0, 100) * 100) / 100,
+    y: Math.round(clamp(position.y - offset.y, 0, 100) * 100) / 100
+  }
+}
+
+const keepMasterElementInsideCanvas = (
+  position: MasterElementPosition,
+  size: MasterElementSize
+): MasterElementPosition => ({
+  x: clamp(position.x, 0, 100 - size.width),
+  y: clamp(position.y, 0, 100 - size.height)
+})
+
+export function buildDefaultMasterElementsConfig(): MasterElementsConfig {
+  return {
+    ...DEFAULT_MASTER_ELEMENTS,
+    logoPosition: cloneMasterElementPosition(DEFAULT_MASTER_ELEMENTS.logoPosition),
+    footerPosition: cloneMasterElementPosition(DEFAULT_MASTER_ELEMENTS.footerPosition),
+    pageNumberPosition: cloneMasterElementPosition(DEFAULT_MASTER_ELEMENTS.pageNumberPosition),
+    watermarkPosition: cloneMasterElementPosition(DEFAULT_MASTER_ELEMENTS.watermarkPosition),
+    logoSize: cloneMasterElementSize(DEFAULT_MASTER_ELEMENTS.logoSize),
+    footerSize: cloneMasterElementSize(DEFAULT_MASTER_ELEMENTS.footerSize),
+    pageNumberSize: cloneMasterElementSize(DEFAULT_MASTER_ELEMENTS.pageNumberSize),
+    watermarkSize: cloneMasterElementSize(DEFAULT_MASTER_ELEMENTS.watermarkSize)
+  }
+}
+
+export function normalizeMasterElementsConfig(value: unknown): MasterElementsConfig {
+  const record = isRecord(value) ? value : {}
+  const logoImage = normalizeBackgroundImage(record.logoImage)
+  const footerText = normalizeMasterElementText(record.footerText, MAX_MASTER_FOOTER_TEXT_LENGTH)
+  const watermarkText = normalizeMasterElementText(
+    record.watermarkText,
+    MAX_MASTER_WATERMARK_TEXT_LENGTH
+  )
+  const hasLogoSize = isRecord(record.logoSize)
+  const hasFooterSize = isRecord(record.footerSize)
+  const hasPageNumberSize = isRecord(record.pageNumberSize)
+  const hasWatermarkSize = isRecord(record.watermarkSize)
+  const logoSize = normalizeMasterElementSize(record.logoSize, DEFAULT_MASTER_ELEMENTS.logoSize)
+  const footerSize = normalizeMasterElementSize(record.footerSize, DEFAULT_MASTER_ELEMENTS.footerSize)
+  const pageNumberSize = normalizeMasterElementSize(
+    record.pageNumberSize,
+    DEFAULT_MASTER_ELEMENTS.pageNumberSize
+  )
+  const watermarkSize = normalizeMasterElementSize(
+    record.watermarkSize,
+    DEFAULT_MASTER_ELEMENTS.watermarkSize
+  )
+  const logoPosition = hasLogoSize
+    ? normalizeMasterElementPosition(record.logoPosition, DEFAULT_MASTER_ELEMENTS.logoPosition)
+    : normalizeLegacyMasterElementPosition(record.logoPosition, { x: 5, y: 5 }, { x: 0, y: 0 })
+  const footerPosition = hasFooterSize
+    ? normalizeMasterElementPosition(record.footerPosition, DEFAULT_MASTER_ELEMENTS.footerPosition)
+    : normalizeLegacyMasterElementPosition(
+        record.footerPosition,
+        { x: 5, y: 96 },
+        { x: 0, y: DEFAULT_MASTER_ELEMENTS.footerSize.height }
+      )
+  const pageNumberPosition = hasPageNumberSize
+    ? normalizeMasterElementPosition(record.pageNumberPosition, DEFAULT_MASTER_ELEMENTS.pageNumberPosition)
+    : normalizeLegacyMasterElementPosition(
+        record.pageNumberPosition,
+        { x: 96, y: 96 },
+        {
+          x: DEFAULT_MASTER_ELEMENTS.pageNumberSize.width,
+          y: DEFAULT_MASTER_ELEMENTS.pageNumberSize.height
+        }
+      )
+  const watermarkPosition = hasWatermarkSize
+    ? normalizeMasterElementPosition(record.watermarkPosition, DEFAULT_MASTER_ELEMENTS.watermarkPosition)
+    : normalizeLegacyMasterElementPosition(
+        record.watermarkPosition,
+        { x: 50, y: 50 },
+        {
+          x: DEFAULT_MASTER_ELEMENTS.watermarkSize.width / 2,
+          y: DEFAULT_MASTER_ELEMENTS.watermarkSize.height / 2
+        }
+      )
+  return {
+    logoImage,
+    footerText,
+    watermarkText,
+    showLogo: typeof record.showLogo === 'boolean' ? record.showLogo : Boolean(logoImage),
+    showFooter: typeof record.showFooter === 'boolean' ? record.showFooter : Boolean(footerText),
+    showPageNumber: record.showPageNumber === true,
+    showWatermark:
+      typeof record.showWatermark === 'boolean' ? record.showWatermark : Boolean(watermarkText),
+    footerFontSize: normalizeMasterElementFontSize(
+      record.footerFontSize,
+      DEFAULT_MASTER_ELEMENTS.footerFontSize
+    ),
+    pageNumberFontSize: normalizeMasterElementFontSize(
+      record.pageNumberFontSize,
+      DEFAULT_MASTER_ELEMENTS.pageNumberFontSize
+    ),
+    footerColor: normalizeGradientColor(record.footerColor, DEFAULT_MASTER_ELEMENTS.footerColor),
+    pageNumberColor: normalizeGradientColor(
+      record.pageNumberColor,
+      DEFAULT_MASTER_ELEMENTS.pageNumberColor
+    ),
+    watermarkRotation: normalizeMasterElementRotation(
+      record.watermarkRotation,
+      DEFAULT_MASTER_ELEMENTS.watermarkRotation
+    ),
+    watermarkSizeAuto: record.watermarkSizeAuto !== false,
+    logoPosition: keepMasterElementInsideCanvas(logoPosition, logoSize),
+    footerPosition: keepMasterElementInsideCanvas(footerPosition, footerSize),
+    pageNumberPosition: keepMasterElementInsideCanvas(pageNumberPosition, pageNumberSize),
+    watermarkPosition: keepMasterElementInsideCanvas(watermarkPosition, watermarkSize),
+    logoSize,
+    footerSize,
+    pageNumberSize,
+    watermarkSize
+  }
+}
+
 export function buildDefaultMasterConfig(): SessionMasterConfig {
-  return { ...DEFAULT_MASTER_CONFIG, backgroundGradient: createDefaultMasterGradient() }
+  return {
+    ...DEFAULT_MASTER_CONFIG,
+    backgroundGradient: createDefaultMasterGradient(),
+    elements: buildDefaultMasterElementsConfig()
+  }
 }
 
 export function normalizeMasterConfig(value: unknown): SessionMasterConfig {
@@ -327,11 +575,8 @@ export function normalizeMasterConfig(value: unknown): SessionMasterConfig {
       MIN_MASTER_TITLE_FONT_SIZE,
       MAX_MASTER_TITLE_FONT_SIZE
     ),
-    bodyFontSize: normalizeFontSize(
-      record.bodyFontSize,
-      MIN_MASTER_BODY_FONT_SIZE,
-      MAX_MASTER_BODY_FONT_SIZE
-    )
+    bodyFontSize: normalizeFontSize(record.bodyFontSize, MIN_MASTER_BODY_FONT_SIZE, MAX_MASTER_BODY_FONT_SIZE),
+    elements: normalizeMasterElementsConfig(record.elements)
   }
 }
 
@@ -502,7 +747,7 @@ export function parseMasterCss(css: string): SessionMasterConfig {
   const hasLegacyOverride =
     isValidColor(pageBackground) &&
     normalizeColor(pageBackground) !== DEFAULT_MASTER_CONFIG.backgroundColor
-  return normalizeMasterConfig({
+  const parsed = normalizeMasterConfig({
     backgroundColor: hasMasterBackgroundColor
       ? masterBackgroundColor
       : parsedGradient
@@ -535,4 +780,72 @@ export function parseMasterCss(css: string): SessionMasterConfig {
       MAX_MASTER_BODY_FONT_SIZE
     )
   })
+  return { ...parsed, elements: buildDefaultMasterElementsConfig() }
+}
+
+const escapeMasterHtml = (value: string): string =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+
+const escapeMasterJson = (value: string): string =>
+  value.replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026')
+
+/**
+ * The runtime clones this inert template into the guarded page root. Keep all
+ * user-controlled fields as text or validated session image paths; it is not
+ * an arbitrary HTML authoring surface.
+ */
+export function buildMasterElementsHtml(value: unknown): string {
+  const config = normalizeMasterElementsConfig(value)
+  const json = escapeMasterJson(JSON.stringify(config))
+  const elementStyle = (position: MasterElementPosition, size: MasterElementSize): string =>
+    `left:${position.x}%;top:${position.y}%;width:${size.width}%;height:${size.height}%;`
+  const logo = config.showLogo && config.logoImage
+    ? `<img data-ppt-master-logo-image="1" src="${escapeMasterHtml(config.logoImage)}" alt="" style="${elementStyle(config.logoPosition, config.logoSize)}" />`
+    : ''
+  const footer = config.showFooter && config.footerText
+    ? `<div data-ppt-master-footer="1" style="left:${config.footerPosition.x}%;top:${config.footerPosition.y}%;width:${config.footerSize.width}%;font-size:${config.footerFontSize}px;color:${config.footerColor};">${escapeMasterHtml(config.footerText)}</div>`
+    : ''
+  const watermark = config.showWatermark && config.watermarkText
+    ? `<div data-ppt-master-watermark="1" data-ppt-master-watermark-height="${config.watermarkSize.height}" style="${elementStyle(config.watermarkPosition, config.watermarkSize)}transform:rotate(${config.watermarkRotation}deg);">${escapeMasterHtml(config.watermarkText)}</div>`
+    : ''
+  const pageNumber = config.showPageNumber
+    ? `<div data-ppt-master-page-number="1" aria-hidden="true" style="left:${config.pageNumberPosition.x}%;top:${config.pageNumberPosition.y}%;width:${config.pageNumberSize.width}%;font-size:${config.pageNumberFontSize}px;color:${config.pageNumberColor};"></div>`
+    : ''
+  const layer = `<div data-ppt-master-elements-layer="1" aria-hidden="true">
+  <style data-ppt-master-elements-style="1">
+    [data-ppt-master-elements-layer="1"] { position:absolute !important; inset:0 !important; z-index:2147483647 !important; display:block !important; pointer-events:none !important; color:inherit; font-family:inherit; }
+    [data-ppt-master-logo-image="1"] { position:absolute; display:block; object-fit:contain; object-position:left top; }
+    [data-ppt-master-footer="1"] { position:absolute; display:block; overflow:hidden; line-height:1.25; white-space:nowrap; text-overflow:ellipsis; }
+    [data-ppt-master-page-number="1"] { position:absolute; display:block; overflow:hidden; line-height:1.25; text-align:right; font-variant-numeric:tabular-nums; }
+    [data-ppt-master-watermark="1"] { position:absolute; display:flex; align-items:center; justify-content:center; overflow:hidden; color:rgba(15,23,42,.1); font-weight:700; line-height:1; white-space:nowrap; text-overflow:ellipsis; text-align:center; transform-origin:center; }
+  </style>
+  ${logo}
+  ${footer}
+  ${pageNumber}
+  ${watermark}
+</div>`
+  return `<!-- OhMyPPT Slide Master elements. Managed by the application. -->
+<script type="application/json" data-ppt-master-elements-config="1">${json}</script>
+<template data-ppt-master-elements="1">
+${layer}
+</template>
+`
+}
+
+export function parseMasterElementsHtml(html: string): MasterElementsConfig {
+  if (typeof html !== 'string') return buildDefaultMasterElementsConfig()
+  const match = html.match(
+    /<script\b[^>]*\bdata-ppt-master-elements-config=(?:"1"|'1')[^>]*>([\s\S]*?)<\/script>/i
+  )
+  if (!match?.[1]) return buildDefaultMasterElementsConfig()
+  try {
+    return normalizeMasterElementsConfig(JSON.parse(match[1]))
+  } catch {
+    return buildDefaultMasterElementsConfig()
+  }
 }

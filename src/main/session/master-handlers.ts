@@ -14,7 +14,11 @@ import {
   type SessionMasterConfig
 } from '@shared/master'
 import type { IpcContext } from '../ipc/context'
-import { getSessionMasterStatus, saveSessionMaster } from './master-mutation-service'
+import {
+  getSessionMasterStatus,
+  saveSessionMaster,
+  setSessionMasterPageOverride
+} from './master-mutation-service'
 
 const getPayload = (value: unknown): Record<string, unknown> =>
   value && typeof value === 'object' && !Array.isArray(value)
@@ -75,6 +79,84 @@ const isValidBackgroundImage = (value: unknown): boolean => {
   )
 }
 
+const isValidMasterElementText = (value: unknown, maxLength: number): boolean =>
+  value === undefined ||
+  (typeof value === 'string' && value.replace(/\s+/g, ' ').trim().length <= maxLength)
+
+const isValidMasterElementPosition = (value: unknown): boolean =>
+  value === undefined ||
+  (isRecord(value) &&
+    typeof value.x === 'number' &&
+    Number.isFinite(value.x) &&
+    value.x >= 0 &&
+    value.x <= 100 &&
+    typeof value.y === 'number' &&
+    Number.isFinite(value.y) &&
+    value.y >= 0 &&
+    value.y <= 100)
+
+const isValidMasterElementSize = (value: unknown): boolean =>
+  value === undefined ||
+  (isRecord(value) &&
+    typeof value.width === 'number' &&
+    Number.isFinite(value.width) &&
+    value.width >= 1 &&
+    value.width <= 100 &&
+    typeof value.height === 'number' &&
+    Number.isFinite(value.height) &&
+    value.height >= 1 &&
+    value.height <= 100)
+
+const isValidMasterElementVisibility = (value: unknown): boolean =>
+  value === undefined || typeof value === 'boolean'
+
+const isValidMasterElementFontSize = (value: unknown): boolean =>
+  value === undefined ||
+  (typeof value === 'number' &&
+    Number.isFinite(value) &&
+    Number.isInteger(value) &&
+    value >= 8 &&
+    value <= 160)
+
+const isValidMasterElementRotation = (value: unknown): boolean =>
+  value === undefined ||
+  (typeof value === 'number' &&
+    Number.isFinite(value) &&
+    Number.isInteger(value) &&
+    value >= -180 &&
+    value <= 180)
+
+const isValidMasterElementColor = (value: unknown): boolean =>
+  value === undefined || (typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value))
+
+const isValidMasterElements = (value: unknown): boolean => {
+  if (value === undefined) return true
+  if (!isRecord(value)) return false
+  return (
+    isValidBackgroundImage(value.logoImage) &&
+    isValidMasterElementText(value.footerText, 180) &&
+    isValidMasterElementText(value.watermarkText, 80) &&
+    isValidMasterElementVisibility(value.showLogo) &&
+    isValidMasterElementVisibility(value.showFooter) &&
+    isValidMasterElementVisibility(value.showPageNumber) &&
+    isValidMasterElementVisibility(value.showWatermark) &&
+    isValidMasterElementFontSize(value.footerFontSize) &&
+    isValidMasterElementFontSize(value.pageNumberFontSize) &&
+    isValidMasterElementColor(value.footerColor) &&
+    isValidMasterElementColor(value.pageNumberColor) &&
+    isValidMasterElementRotation(value.watermarkRotation) &&
+    isValidMasterElementVisibility(value.watermarkSizeAuto) &&
+    isValidMasterElementPosition(value.logoPosition) &&
+    isValidMasterElementPosition(value.footerPosition) &&
+    isValidMasterElementPosition(value.pageNumberPosition) &&
+    isValidMasterElementPosition(value.watermarkPosition) &&
+    isValidMasterElementSize(value.logoSize) &&
+    isValidMasterElementSize(value.footerSize) &&
+    isValidMasterElementSize(value.pageNumberSize) &&
+    isValidMasterElementSize(value.watermarkSize)
+  )
+}
+
 const requireMasterConfig = (value: unknown): SessionMasterConfig => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error('母版配置无效')
@@ -115,11 +197,19 @@ const requireMasterConfig = (value: unknown): SessionMasterConfig => {
     !isValidFontFamily(input.titleFontFamily) ||
     !isValidFontFamily(input.bodyFontFamily) ||
     !isValidFontSize(input.titleFontSize, MIN_MASTER_TITLE_FONT_SIZE, MAX_MASTER_TITLE_FONT_SIZE) ||
-    !isValidFontSize(input.bodyFontSize, MIN_MASTER_BODY_FONT_SIZE, MAX_MASTER_BODY_FONT_SIZE)
+    !isValidFontSize(input.bodyFontSize, MIN_MASTER_BODY_FONT_SIZE, MAX_MASTER_BODY_FONT_SIZE) ||
+    !isValidMasterElements(input.elements)
   ) {
     throw new Error('母版配置无效')
   }
   return normalizeMasterConfig(input)
+}
+
+const requirePageOverride = (value: unknown): { pageId: string; disabled: boolean } => {
+  const input = getPayload(value)
+  const pageId = typeof input.pageId === 'string' ? input.pageId.trim() : ''
+  if (!pageId || typeof input.disabled !== 'boolean') throw new Error('页面母版设置无效')
+  return { pageId, disabled: input.disabled }
 }
 
 export function registerMasterHandlers(ctx: IpcContext): void {
@@ -131,5 +221,11 @@ export function registerMasterHandlers(ctx: IpcContext): void {
   ipcMain.handle('session:saveMaster', async (_event, payload: unknown) => {
     const { sessionId, config } = getPayload(payload)
     return saveSessionMaster(ctx, requireSessionId(sessionId), requireMasterConfig(config))
+  })
+
+  ipcMain.handle('session:setMasterPageOverride', async (_event, payload: unknown) => {
+    const { sessionId } = getPayload(payload)
+    const { pageId, disabled } = requirePageOverride(payload)
+    return setSessionMasterPageOverride(ctx, requireSessionId(sessionId), pageId, disabled)
   })
 }

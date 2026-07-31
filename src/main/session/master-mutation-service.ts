@@ -3,7 +3,13 @@ import fs from 'fs'
 import path from 'path'
 import type { SessionPageRecord } from '../db/database'
 import { GitHistoryService } from '../history/git-history-service'
-import { ensureMasterStyleLink, hasUniqueMasterStyleLink } from '../presentation/html/master-link'
+import {
+  ensureMasterStyleLink,
+  hasUniqueMasterStyleLink,
+  isMasterElementsDisabled,
+  setMasterElementsDisabled,
+  setMasterPageNumber
+} from '../presentation/html/master-link'
 import {
   copyProjectFontResources,
   resolveProjectFontResources
@@ -11,12 +17,18 @@ import {
 import type { IpcContext } from '../ipc/context'
 import {
   getMasterFontFamilies,
-  MASTER_CSS_FILENAME,
+  MASTER_CSS_RELATIVE_PATH,
+  MASTER_HTML_RELATIVE_PATH,
   normalizeMasterConfig,
   type SessionMasterConfig,
   type SessionMasterStatus
 } from '@shared/master'
-import { getSessionMasterPath, readSessionMaster, writeSessionMaster } from './master-service'
+import {
+  getSessionMasterHtmlPath,
+  getSessionMasterPath,
+  readSessionMaster,
+  writeSessionMaster
+} from './master-service'
 
 type FileSnapshot = {
   path: string
@@ -148,15 +160,19 @@ const getStatus = async (
   ])
   return {
     ...master,
-    revision: getRevision(master.css),
-    ...(await summarizePages(projectDir, records, master.exists))
+    revision: getRevision(`${master.css}\n${master.html}`),
+    ...(await summarizePages(projectDir, records, master.exists)),
+    disabledPageIds: (await resolveExistingPages(projectDir, records)).pages
+      .filter((page) => isMasterElementsDisabled(page.html))
+      .map((page) => page.record.id)
   }
 }
 
 const getAllowedPaths = async (projectDir: string, pages: ExistingPage[]): Promise<string[]> => {
   const root = await fs.promises.realpath(projectDir)
   return [
-    MASTER_CSS_FILENAME,
+    MASTER_CSS_RELATIVE_PATH,
+    MASTER_HTML_RELATIVE_PATH,
     ...pages.map((page) => path.relative(root, page.htmlPath).split(path.sep).join('/'))
   ]
 }
@@ -202,9 +218,44 @@ const getBackgroundImageAllowedPaths = async (
   return [relativePath]
 }
 
+const getMasterElementImageAllowedPaths = async (
+  projectDir: string,
+  config: SessionMasterConfig
+): Promise<string[]> => {
+  const elements = normalizeMasterConfig(config).elements
+  if (!elements?.logoImage) return []
+  const projectRoot = await fs.promises.realpath(projectDir)
+  const imageRootPath = path.resolve(projectRoot, 'images')
+  const imagePath = path.resolve(projectRoot, elements.logoImage)
+  const relativePath = path.relative(projectRoot, imagePath).split(path.sep).join('/')
+  if (!relativePath.startsWith('images/') || !isInside(imagePath, imageRootPath)) {
+    throw new Error('母版 Logo 图片路径无效。')
+  }
+  const [imageRoot, imageStat] = await Promise.all([
+    fs.promises.realpath(imageRootPath).catch(() => ''),
+    fs.promises.lstat(imagePath).catch(() => null)
+  ])
+  if (
+    !imageRoot ||
+    !isInside(imageRoot, projectRoot) ||
+    !imageStat?.isFile() ||
+    imageStat.isSymbolicLink()
+  ) {
+    throw new Error('母版 Logo 图片不存在或不安全。')
+  }
+  const resolvedImagePath = await fs.promises.realpath(imagePath).catch(() => '')
+  if (!resolvedImagePath || !isInside(resolvedImagePath, imageRoot)) {
+    throw new Error('母版 Logo 图片不存在或不安全。')
+  }
+  return [relativePath]
+}
+
 const rewriteUnlinkedPages = (pages: ExistingPage[]): Array<{ path: string; html: string }> =>
   pages
-    .map((page) => ({ path: page.htmlPath, html: ensureMasterStyleLink(page.html) }))
+    .map((page) => ({
+      path: page.htmlPath,
+      html: setMasterPageNumber(ensureMasterStyleLink(page.html), page.record.page_number)
+    }))
     .filter((page, index) => page.html !== pages[index]?.html)
 
 const restoreAll = async (snapshots: FileSnapshot[]): Promise<void> => {
@@ -241,7 +292,12 @@ export async function saveSessionMaster(
       projectDir,
       normalizedConfig
     )
+    const masterElementImageAllowedPaths = await getMasterElementImageAllowedPaths(
+      projectDir,
+      normalizedConfig
+    )
     const masterSnapshot = await readSnapshot(getSessionMasterPath(projectDir))
+    const masterHtmlSnapshot = await readSnapshot(getSessionMasterHtmlPath(projectDir))
     const rewrittenPages = rewriteUnlinkedPages(pages)
     const pageSnapshots = await Promise.all(rewrittenPages.map((page) => readSnapshot(page.path)))
     const fontSnapshots = await Promise.all(
@@ -250,7 +306,8 @@ export async function saveSessionMaster(
     const allowedPaths = [
       ...(await getAllowedPaths(projectDir, pages)),
       ...(await getFontAllowedPaths(projectDir, fontResources)),
-      ...backgroundImageAllowedPaths
+      ...backgroundImageAllowedPaths,
+      ...masterElementImageAllowedPaths
     ]
     try {
       await copyProjectFontResources(fontResources)
@@ -280,7 +337,55 @@ export async function saveSessionMaster(
         throw error
       }
     } catch (error) {
-      await restoreAll([masterSnapshot, ...pageSnapshots, ...fontSnapshots]).catch(() => undefined)
+      await restoreAll([
+        masterSnapshot,
+        masterHtmlSnapshot,
+        ...pageSnapshots,
+        ...fontSnapshots
+      ]).catch(() => undefined)
+      throw error
+    }
+  })
+}
+
+export async function setSessionMasterPageOverride(
+  ctx: IpcContext,
+  sessionId: string,
+  pageId: string,
+  disabled: boolean
+): Promise<{ disabled: boolean }> {
+  return runExclusive(sessionId, async () => {
+    assertMutableSession(ctx, sessionId)
+    const projectDir = await ctx.resolveSessionProjectDir(sessionId)
+    const records = await ctx.db.listSessionPages(sessionId)
+    const { pages, missingPageCount } = await resolveExistingPages(projectDir, records)
+    if (missingPageCount > 0) throw new Error('存在缺失或不安全的页面文件，无法更新页面母版设置。')
+    const page = pages.find(
+      (item) => item.record.id === pageId || item.record.file_slug === pageId || item.record.legacy_page_id === pageId
+    )
+    if (!page) throw new Error('未找到要更新的页面。')
+    if (isMasterElementsDisabled(page.html) === disabled) return { disabled }
+
+    const history = new GitHistoryService(ctx.db)
+    await history.ensureBaseline(sessionId, projectDir)
+    const snapshot = await readSnapshot(page.htmlPath)
+    const html = setMasterElementsDisabled(page.html, disabled)
+    const root = await fs.promises.realpath(projectDir)
+    const allowedPaths = [path.relative(root, page.htmlPath).split(path.sep).join('/')]
+    try {
+      await writeAtomically(page.htmlPath, html)
+      await history.recordOperation({
+        sessionId,
+        projectDir,
+        type: 'edit',
+        scope: 'page',
+        prompt: disabled ? '隐藏本页母版全局元素' : '显示本页母版全局元素',
+        metadata: { feature: 'slide-master', action: 'set-page-elements-override', disabled },
+        allowedPaths
+      })
+      return { disabled }
+    } catch (error) {
+      await restoreSnapshot(snapshot).catch(() => undefined)
       throw error
     }
   })

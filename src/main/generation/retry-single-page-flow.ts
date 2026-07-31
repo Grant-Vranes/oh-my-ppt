@@ -220,6 +220,7 @@ export async function executeRetrySinglePageGeneration(
   })
 
   const pageFileMap: Record<string, string> = { [context.pageId]: context.htmlPath }
+  const pageNumbers: Record<string, number> = { [context.pageId]: context.pageNumber }
   const pageCallbacks = createGenerationPageCallbacks({
     db,
     runId: context.runId,
@@ -272,6 +273,7 @@ export async function executeRetrySinglePageGeneration(
       projectDir: context.projectDir,
       indexPath,
       pageFileMap,
+      pageNumbers,
       agentManager,
       emit: (chunk) => emitChunk(chunk),
       ...pageCallbacks,

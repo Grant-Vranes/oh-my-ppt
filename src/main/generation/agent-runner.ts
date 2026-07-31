@@ -855,6 +855,7 @@ export const runDeepAgentDeckGeneration = async (args: {
   projectDir: string
   indexPath: string
   pageFileMap: Record<string, string>
+  pageNumbers?: Record<string, number>
   agentManager: GenerationAgentManager
   emit?: (chunk: GenerateChunkEvent) => void
   onPageCompleted?: (page: {
@@ -1137,6 +1138,7 @@ export const runDeepAgentDeckGeneration = async (args: {
         sourceDocumentPaths: pageSourceDocumentPaths,
         mode: args.generationMode ?? 'generate',
         pageFileMap: { [page.pageId]: currentPagePath },
+        pageNumbers: { [page.pageId]: page.pageNumber },
         selectedPageId: page.pageId,
         selectedPageNumber: page.pageNumber,
         existingPageIds: [page.pageId],
@@ -1507,6 +1509,7 @@ type RunDeepAgentEditBaseArgs = {
   projectDir: string
   indexPath: string
   pageFileMap: Record<string, string>
+  pageNumbers?: Record<string, number>
   selectPageIds?: string[]
   designContract?: DesignContract
   existingPageIds?: string[]
@@ -1569,6 +1572,7 @@ const runDeepAgentScopedEdit = async (args: RunDeepAgentScopedEditArgs): Promise
       outlineItems: args.outlineItems,
       sourceDocumentPaths: args.sourceDocumentPaths,
       pageFileMap: args.pageFileMap,
+      pageNumbers: args.pageNumbers,
       selectPageIds: args.selectPageIds,
       selectedPageId: args.selectedPageId,
       selectedPageNumber: args.selectedPageNumber,

@@ -55,6 +55,17 @@ const WAIT_FOR_VIDEO_CAPTURE_FRAME_SCRIPT = `
       master.addEventListener('error', onError, { once: true });
     });
   }
+  if (window.PPT?.whenReadyForPrint) {
+    await window.PPT.whenReadyForPrint(5000);
+  }
+  const expectsMasterElements =
+    new URLSearchParams(window.location.search).get('_pptMasterElementsExpected') === '1';
+  if (expectsMasterElements && !window.PPT?.assertMasterElementsReady) {
+    throw new Error('母版全局元素运行时不可用');
+  }
+  if (window.PPT?.assertMasterElementsReady) {
+    await window.PPT.assertMasterElementsReady(5000);
+  }
   void document.body.offsetHeight;
   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   void document.body.offsetHeight;
@@ -612,7 +623,11 @@ const loadVideoPage = async (args: {
   pageUrl.searchParams.set('printTimeoutMs', String(args.timeoutMs))
   pageUrl.searchParams.set(
     '_pptMasterExpected',
-    fs.existsSync(path.join(path.dirname(args.page.htmlPath), 'master.css')) ? '1' : '0'
+    fs.existsSync(path.join(path.dirname(args.page.htmlPath), 'master', 'master.css')) ? '1' : '0'
+  )
+  pageUrl.searchParams.set(
+    '_pptMasterElementsExpected',
+    fs.existsSync(path.join(path.dirname(args.page.htmlPath), 'master', 'master.html')) ? '1' : '0'
   )
   pageUrl.searchParams.set('_ts', String(Date.now()))
 

@@ -299,6 +299,7 @@ export async function executeAddPageGeneration(
   })
 
   const pageFileMap: Record<string, string> = { [newPageId]: newHtmlPath }
+  const pageNumbers: Record<string, number> = { [newPageId]: newPageNumber }
   const pageCallbacks = createGenerationPageCallbacks({
     db,
     runId: context.runId,
@@ -344,6 +345,7 @@ export async function executeAddPageGeneration(
         projectDir: context.projectDir,
         indexPath,
         pageFileMap,
+        pageNumbers,
         agentManager,
         emit: (chunk) => emitChunk(chunk),
         ...pageCallbacks,

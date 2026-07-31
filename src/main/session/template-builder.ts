@@ -64,8 +64,8 @@ export const buildPageScaffoldHtml = (page: {
     </style>
     ${buildMasterStyleLink()}
   </head>
-  <body data-page-id="${page.pageId}">
-    <main class="ppt-page-root" data-ppt-guard-root="1" data-ppt-slide-size-id="${slideSize.id}" data-ppt-width="${slideSize.width}" data-ppt-height="${slideSize.height}">
+  <body data-page-id="${page.pageId}" data-ppt-page-number="${page.pageNumber}">
+    <main class="ppt-page-root" data-ppt-guard-root="1" data-ppt-slide-size-id="${slideSize.id}" data-ppt-width="${slideSize.width}" data-ppt-height="${slideSize.height}" data-ppt-page-number="${page.pageNumber}">
       <div class="ppt-page-fit-scope">
         <div class="ppt-page-content">
           <section class="scaffold-card" data-page-scaffold="1" data-placeholder-page="1">

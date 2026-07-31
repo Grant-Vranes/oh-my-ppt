@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio'
 import type { AnyNode } from 'domhandler'
+import { ensureMasterStyleLink } from '../presentation/html/master-link'
 
 /**
  * 纯函数：把 HTML 里出现的 oldPageId（按词边界匹配）整体替换为 nextPageId，
@@ -57,7 +58,7 @@ export function buildBlankPageHtmlFromSource(args: {
     content.attr('data-blank-page', '1')
   }
 
-  return $.html()
+  return ensureMasterStyleLink($.html())
 }
 
 /**
@@ -81,5 +82,5 @@ export function buildDuplicatePageHtmlFromSource(args: {
       el.attr('data-page-id', args.nextPageId)
     }
   })
-  return $.html()
+  return ensureMasterStyleLink($.html())
 }

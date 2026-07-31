@@ -7,6 +7,7 @@ import {
   SESSION_ASSET_FILE_NAMES,
   type DeckPageFile
 } from '../../session/template-builder'
+import { createSessionMasterIfMissing } from '../../session/master-service'
 
 export type SessionScaffold = {
   resolveSessionAssetSourcePath(fileName: string): string
@@ -69,6 +70,7 @@ export function createSessionScaffold(): SessionScaffold {
     slideSize: import('@shared/slide-size').SlideSizePreset
   }): Promise<void> => {
     const { deckTitle, indexPath, pages, slideSize } = args
+    await createSessionMasterIfMissing(path.dirname(indexPath))
     await Promise.all(
       pages.map((page) =>
         fs.promises.writeFile(

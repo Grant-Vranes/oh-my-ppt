@@ -17,6 +17,9 @@ interface SessionDetailRuntimeStore {
   refreshCurrentPreviewHandler: (() => void) | null
   setRefreshCurrentPreviewHandler: (handler: (() => void) | null) => void
   refreshCurrentPreview: () => void
+  reloadCurrentPreviewIgnoringCacheHandler: (() => void) | null
+  setReloadCurrentPreviewIgnoringCacheHandler: (handler: (() => void) | null) => void
+  reloadCurrentPreviewIgnoringCache: () => void
   workspaceRibbonActions: WorkspaceRibbonRegisteredActions | null
   setWorkspaceRibbonActions: (actions: WorkspaceRibbonRegisteredActions | null) => void
 }
@@ -33,6 +36,13 @@ export const useSessionDetailRuntimeStore = create<SessionDetailRuntimeStore>((s
     set({ refreshCurrentPreviewHandler }),
   refreshCurrentPreview: () => {
     const handler = get().refreshCurrentPreviewHandler
+    handler?.()
+  },
+  reloadCurrentPreviewIgnoringCacheHandler: null,
+  setReloadCurrentPreviewIgnoringCacheHandler: (reloadCurrentPreviewIgnoringCacheHandler) =>
+    set({ reloadCurrentPreviewIgnoringCacheHandler }),
+  reloadCurrentPreviewIgnoringCache: () => {
+    const handler = get().reloadCurrentPreviewIgnoringCacheHandler
     handler?.()
   },
   workspaceRibbonActions: null,

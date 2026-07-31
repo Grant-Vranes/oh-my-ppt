@@ -4,6 +4,7 @@ import * as cheerio from 'cheerio'
 import { buildBasePageStyleTag, buildFitScript } from '../presentation/html/page-writer-core'
 import { requireSlideSize, type SlideSizePreset } from '@shared/slide-size'
 import { buildSessionAssetHeadTags } from './page-assets'
+import { buildMasterStyleLink } from '../presentation/html/master-link'
 import {
   DEFAULT_INDEX_TRANSITION_CONFIG,
   buildIndexTransitionConfigScript
@@ -61,6 +62,7 @@ export const buildPageScaffoldHtml = (page: {
         color: #94a3b8;
       }
     </style>
+    ${buildMasterStyleLink()}
   </head>
   <body data-page-id="${page.pageId}">
     <main class="ppt-page-root" data-ppt-guard-root="1" data-ppt-slide-size-id="${slideSize.id}" data-ppt-width="${slideSize.width}" data-ppt-height="${slideSize.height}">

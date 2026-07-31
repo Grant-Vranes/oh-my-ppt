@@ -39,6 +39,7 @@ import { registerDeckEditJobHandlers } from '../edit-jobs/deck-edit-job-service'
 import { registerPageEditJobHandlers } from '../edit-jobs/page-edit-job-service'
 import { registerPageBeautifyJobHandlers } from '../edit-jobs/page-beautify-job-service'
 import { registerStyleSwitchJobHandlers } from '../edit-jobs/style-switch-job-service'
+import { registerMasterHandlers } from '../session/master-handlers'
 
 export { registerLocalAssetProtocol }
 
@@ -77,6 +78,7 @@ export function setupIPC(
   registerSessionHandlers(context)
   registerSessionSaveAsNewHandler(context)
   registerSessionImportHandlers(context)
+  registerMasterHandlers(context)
   registerPageManagementHandlers(context)
   registerPageMergeHandlers(context)
   registerAssetHandlers(context)

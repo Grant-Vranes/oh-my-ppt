@@ -7,6 +7,7 @@ import { requireSessionSlideSize } from '@shared/slide-size'
 import type { IpcContext } from '../ipc/context'
 import { readAppLocale, uiText } from '../config/locale-utils'
 import { ensureHistoryBaselineSafe } from '../history/git-history-service'
+import { createSessionMasterIfMissing } from './master-service'
 
 const copyDirectoryForNewSession = async (sourceDir: string, targetDir: string): Promise<void> => {
   await fs.promises.mkdir(targetDir, { recursive: true })
@@ -247,6 +248,7 @@ export function registerSessionSaveAsNewHandler(ctx: IpcContext): void {
       await copyDirectoryForNewSession(sourceProjectDir, targetProjectDir)
       await replaceSessionIdInClonedTextFiles(targetProjectDir, sourceSessionId, newSessionId)
       await ensureSessionAssets(targetProjectDir)
+      await createSessionMasterIfMissing(targetProjectDir)
       const referenceDocumentPath = resolveClonedSessionDocumentPath(
         sourceProjectDir,
         targetProjectDir,

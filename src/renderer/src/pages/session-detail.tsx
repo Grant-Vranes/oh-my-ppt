@@ -149,6 +149,9 @@ export function SessionDetailPage(): React.JSX.Element {
   const setRefreshCurrentPreviewHandler = useSessionDetailRuntimeStore(
     (state) => state.setRefreshCurrentPreviewHandler
   )
+  const setReloadCurrentPreviewIgnoringCacheHandler = useSessionDetailRuntimeStore(
+    (state) => state.setReloadCurrentPreviewIgnoringCacheHandler
+  )
   const invokeAddElement = useCallback<AddSessionElementHandler>(
     async (relativePath, fileName, options) => {
       const handler = addElementHandlerRef.current
@@ -207,6 +210,13 @@ export function SessionDetailPage(): React.JSX.Element {
     })
     return () => setRefreshCurrentPreviewHandler(null)
   }, [setRefreshCurrentPreviewHandler])
+
+  useEffect(() => {
+    setReloadCurrentPreviewIgnoringCacheHandler(() => {
+      previewIframeRef.current?.reloadIgnoringCache()
+    })
+    return () => setReloadCurrentPreviewIgnoringCacheHandler(null)
+  }, [setReloadCurrentPreviewIgnoringCacheHandler])
 
   const handlePreviewIframe = useCallback((handle: PreviewIframeHandle | null): void => {
     previewIframeRef.current = handle

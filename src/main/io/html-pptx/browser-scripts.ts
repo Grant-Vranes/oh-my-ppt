@@ -1,5 +1,38 @@
 export const FREEZE_PAGE_FOR_EXPORT_SCRIPT = `
 (async () => {
+  const waitForMasterStylesheet = async () => {
+    const master = document.querySelector('link[data-ppt-master="1"]');
+    const expectsMaster = new URLSearchParams(window.location.search).get('_pptMasterExpected') === '1';
+    if (!master || !expectsMaster) return;
+    if (master.dataset.pptMasterExportReady === '1' && master.sheet) return;
+    const masterUrl = new URL(master.href, window.location.href);
+    masterUrl.searchParams.set('_pptMasterExport', String(Date.now()));
+    master.href = masterUrl.toString();
+    await new Promise((resolve, reject) => {
+      let settled = false;
+      const finish = (callback) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeout);
+        master.removeEventListener('load', onLoad);
+        master.removeEventListener('error', onError);
+        callback();
+      };
+      const onLoad = () => finish(() => {
+        master.dataset.pptMasterExportReady = '1';
+        resolve(true);
+      });
+      const onError = () => finish(() => reject(new Error('母版样式表加载失败')));
+      const timeout = setTimeout(
+        () => finish(() => reject(new Error('母版样式表加载超时'))),
+        5000
+      );
+      master.addEventListener('load', onLoad, { once: true });
+      master.addEventListener('error', onError, { once: true });
+    });
+  };
+
+  await waitForMasterStylesheet();
   const root =
     document.querySelector('.ppt-page-root[data-ppt-guard-root="1"]') ||
     document.querySelector('.ppt-page-root') ||

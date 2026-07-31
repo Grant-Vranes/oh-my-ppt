@@ -15,6 +15,7 @@ import { customAlphabet } from 'nanoid'
 import { recordHistoryOperationStrict } from '../../history/git-history-service'
 import { createDefaultDesignContract } from '../../presentation/design-contract'
 import { requireSlideSizePreset } from '@shared/slide-size'
+import { createSessionMasterIfMissing } from '../../session/master-service'
 
 const nanoidLower = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 12)
 
@@ -79,6 +80,7 @@ export function registerPptxImportHandlers(ctx: IpcContext): void {
     try {
       await fs.promises.mkdir(projectDir, { recursive: true })
       await ensureSessionAssets(projectDir)
+      await createSessionMasterIfMissing(projectDir)
       let chartRewrite: ReturnType<typeof createPptxChartRewriteHandler> | undefined
       try {
         const activeModel = await resolveModelConfigForTask(ctx, {

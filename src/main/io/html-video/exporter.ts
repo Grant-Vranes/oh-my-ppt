@@ -26,6 +26,35 @@ const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout
 
 const WAIT_FOR_VIDEO_CAPTURE_FRAME_SCRIPT = `
 (async () => {
+  const master = document.querySelector('link[data-ppt-master="1"]');
+  const expectsMaster = new URLSearchParams(window.location.search).get('_pptMasterExpected') === '1';
+  if (master && expectsMaster && !(master.dataset.pptMasterExportReady === '1' && master.sheet)) {
+    const masterUrl = new URL(master.href, window.location.href);
+    masterUrl.searchParams.set('_pptMasterExport', String(Date.now()));
+    master.href = masterUrl.toString();
+    await new Promise((resolve, reject) => {
+      let settled = false;
+      const finish = (callback) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeout);
+        master.removeEventListener('load', onLoad);
+        master.removeEventListener('error', onError);
+        callback();
+      };
+      const onLoad = () => finish(() => {
+        master.dataset.pptMasterExportReady = '1';
+        resolve(true);
+      });
+      const onError = () => finish(() => reject(new Error('母版样式表加载失败')));
+      const timeout = setTimeout(
+        () => finish(() => reject(new Error('母版样式表加载超时'))),
+        5000
+      );
+      master.addEventListener('load', onLoad, { once: true });
+      master.addEventListener('error', onError, { once: true });
+    });
+  }
   void document.body.offsetHeight;
   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   void document.body.offsetHeight;
@@ -581,6 +610,10 @@ const loadVideoPage = async (args: {
   pageUrl.searchParams.set('video', '1')
   pageUrl.searchParams.set('pageId', args.page.pageId)
   pageUrl.searchParams.set('printTimeoutMs', String(args.timeoutMs))
+  pageUrl.searchParams.set(
+    '_pptMasterExpected',
+    fs.existsSync(path.join(path.dirname(args.page.htmlPath), 'master.css')) ? '1' : '0'
+  )
   pageUrl.searchParams.set('_ts', String(Date.now()))
 
   const readyWaitPromise = args.waitForPrintReadySignal({

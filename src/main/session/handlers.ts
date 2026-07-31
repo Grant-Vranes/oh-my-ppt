@@ -22,6 +22,7 @@ import {
   validateIndexShellHtml
 } from './index-transition'
 import { warmSessionFirstPageThumbnails } from './session-thumbnail'
+import { createSessionMasterIfMissing } from './master-service'
 
 const THINKING_ID_RE = /^[a-zA-Z0-9_-]{6,32}$/
 const THINKING_IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp'])
@@ -419,6 +420,7 @@ export function registerSessionHandlers(ctx: IpcContext): void {
       fs.mkdirSync(projectDir, { recursive: true })
     }
     await ensureSessionAssets(projectDir)
+    await createSessionMasterIfMissing(projectDir)
     let isThinkingSource = false
     const copyReferenceDocumentToSession = async (): Promise<string | null> => {
       if (!validatedReferenceSourcePath) return null

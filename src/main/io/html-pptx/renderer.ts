@@ -1,5 +1,7 @@
 import { BrowserWindow, type NativeImage } from 'electron'
 import log from 'electron-log/main.js'
+import fs from 'fs'
+import path from 'path'
 import { pathToFileURL } from 'url'
 import {
   buildHtmlToPptxExtractScript,
@@ -258,6 +260,10 @@ const loadAndFreezePptxPage = async (
   pageUrl.searchParams.set('export', '1')
   pageUrl.searchParams.set('pageId', page.pageId)
   pageUrl.searchParams.set('printTimeoutMs', String(timeoutMs))
+  pageUrl.searchParams.set(
+    '_pptMasterExpected',
+    fs.existsSync(path.join(path.dirname(page.htmlPath), 'master.css')) ? '1' : '0'
+  )
   pageUrl.searchParams.set('_ts', String(Date.now()))
 
   const readyWaitPromise = waitForPrintReadySignal({

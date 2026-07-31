@@ -5,6 +5,7 @@ export const buildBasePageStyleTag = (input: SlideSizePreset): string => {
   return `<style id="ppt-page-guard-style">
   :root {
     --ppt-page-bg: #ffffff;
+    --ppt-system-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
     --ppt-slide-width: ${slideSize.width}px;
     --ppt-slide-height: ${slideSize.height}px;
   }
@@ -13,7 +14,7 @@ export const buildBasePageStyleTag = (input: SlideSizePreset): string => {
     width: var(--ppt-slide-width);
     height: var(--ppt-slide-height);
     overflow: hidden;
-    font-family: "SF Pro Text", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+    font-family: var(--ppt-master-body-font, var(--ppt-body-font, var(--ppt-system-sans)));
     background: var(--ppt-page-bg);
     color: #0f172a;
   }
@@ -56,7 +57,7 @@ export const buildBasePageStyleTag = (input: SlideSizePreset): string => {
     align-items: stretch;
     overflow: hidden;
     font-size: 16px;
-    font-family: var(--ppt-body-font);
+    font-family: var(--ppt-master-body-font, var(--ppt-body-font, var(--ppt-system-sans)));
   }
   .ppt-page-content [data-ppt-readable-fonts="1"] {
     font-size: 18px;
@@ -69,7 +70,7 @@ export const buildBasePageStyleTag = (input: SlideSizePreset): string => {
   .ppt-page-content h6,
   .ppt-page-content [data-role="title"],
   .ppt-page-content [data-block-id="title"] {
-    font-family: var(--ppt-title-font);
+    font-family: var(--ppt-master-title-font, var(--ppt-title-font, var(--ppt-body-font, var(--ppt-system-sans))));
   }
   .ppt-page-content > [data-page-scaffold="1"] {
     width: 100%;
@@ -225,7 +226,7 @@ export const buildFitScript = (input: SlideSizePreset): string => {
         if (entry.minimum <= 0) return;
         if (Number.isFinite(entry.size) && entry.size < entry.minimum) {
           entry.size = entry.minimum;
-          entry.node.style.fontSize = entry.minimum + "px";
+          entry.node.style.setProperty("font-size", entry.minimum + "px", "important");
         }
       });
     }
@@ -240,7 +241,7 @@ export const buildFitScript = (input: SlideSizePreset): string => {
       textEntries.forEach((entry) => {
         if (Number.isFinite(entry.size) && entry.size > entry.minimum) {
           entry.size = Math.max(entry.minimum, Math.floor(entry.size * 0.94));
-          entry.node.style.fontSize = entry.size + "px";
+          entry.node.style.setProperty("font-size", entry.size + "px", "important");
           changed = true;
         }
       });

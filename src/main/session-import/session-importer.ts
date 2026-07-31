@@ -11,6 +11,7 @@ import {
   type DeckPageFile
 } from '../session/template-builder'
 import { recordHistoryOperationStrict } from '../history/git-history-service'
+import { createSessionMasterIfMissing } from '../session/master-service'
 import { createDefaultDesignContract } from '../presentation/design-contract'
 import { resolveUsableStyleId } from '../styles/catalog'
 import { findSlidePackResourceZipInsideZip } from './slide-pack-archive'
@@ -553,6 +554,7 @@ export async function importSessionFile(
 
     await copyDirectory(prepared.sessionRoot, projectDir)
     await ctx.ensureSessionAssets(projectDir)
+    await createSessionMasterIfMissing(projectDir)
     await fs.promises.rm(path.join(projectDir, '.git'), { recursive: true, force: true })
     log.info('[session-import] project files ready', {
       sessionId,

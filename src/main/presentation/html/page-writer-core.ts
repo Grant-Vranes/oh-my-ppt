@@ -23,6 +23,7 @@ import {
   DEFAULT_MOTION_SCRIPT,
   VIDEO_INTERACTION_SCRIPT
 } from './page-shell'
+import { buildMasterStyleLink } from './master-link'
 
 export {
   buildBasePageStyleTag,
@@ -501,6 +502,7 @@ async function buildScaffoldDocument(args: {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     ${buildSessionAssetHeadTags()}${fontInjection}
     ${buildBasePageStyleTag(slideSize)}
+    ${buildMasterStyleLink()}
   </head>
   <body data-page-id="${pageId}">
     <main class="ppt-page-root" data-ppt-guard-root="1" data-ppt-slide-size-id="${slideSize.id}" data-ppt-width="${slideSize.width}" data-ppt-height="${slideSize.height}">

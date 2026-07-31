@@ -50,6 +50,7 @@ import type { PageMergeDisabledReason } from '@shared/page-merge'
 import type { ModelUsagePeriod, ModelUsageStats } from '@shared/model-usage'
 import type { SlideSizePresetId } from '@shared/slide-size'
 import type { ParsedChartDataResult } from '@shared/chart-data'
+import type { SessionMasterConfig, SessionMasterStatus } from '@shared/master'
 
 type IpcRendererLike = Window['electron']['ipcRenderer']
 
@@ -556,6 +557,13 @@ export const ipc = {
     }>,
   saveSessionAsNew: (payload: SaveSessionAsNewPayload): Promise<SaveSessionAsNewResult> =>
     getIpc().invoke('session:saveAsNew', payload) as Promise<SaveSessionAsNewResult>,
+  getSessionMaster: (payload: { sessionId: string }): Promise<SessionMasterStatus> =>
+    getIpc().invoke('session:getMaster', payload) as Promise<SessionMasterStatus>,
+  saveSessionMaster: (payload: {
+    sessionId: string
+    config: SessionMasterConfig
+  }): Promise<SessionMasterStatus> =>
+    getIpc().invoke('session:saveMaster', payload) as Promise<SessionMasterStatus>,
   getSession: (sessionId: string) =>
     getIpc().invoke('session:get', sessionId) as Promise<{
       session: unknown

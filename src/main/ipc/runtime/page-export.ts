@@ -1,4 +1,6 @@
 import { BrowserWindow } from 'electron'
+import fs from 'fs'
+import path from 'path'
 import { pathToFileURL } from 'url'
 import log from 'electron-log/main.js'
 import type { PPTDatabase } from '../../db/database'
@@ -185,6 +187,10 @@ export function createPageExport(args: {
       pageUrl.searchParams.set('export', '1')
       pageUrl.searchParams.set('pageId', page.pageId)
       pageUrl.searchParams.set('printTimeoutMs', String(timeoutMs))
+      pageUrl.searchParams.set(
+        '_pptMasterExpected',
+        fs.existsSync(path.join(path.dirname(page.htmlPath), 'master.css')) ? '1' : '0'
+      )
       pageUrl.searchParams.set('_ts', String(Date.now()))
 
       const readyWaitPromise = waitForPrintReadySignal({ win, pageId: page.pageId, timeoutMs })

@@ -17,6 +17,8 @@ import { createPptxChartRewriteHandler } from '../io/pptx-import/chart-rewrite-a
 import { extractStyleFromExistingHtml } from '../styles/import/pptx'
 import { createStyleSkill, resolveUsableStyleId } from '../styles/catalog'
 import { recordHistoryOperationStrict } from '../history/git-history-service'
+import { ensureMasterStyleLink } from '../presentation/html/master-link'
+import { createSessionMasterIfMissing } from '../session/master-service'
 import {
   captureTemplateCoverThumbnail,
   warmTemplateCoverThumbnails
@@ -293,7 +295,9 @@ async function prepareTemplatePagesForSession(args: {
     const html = await fs.promises.readFile(sourcePath, 'utf-8')
     await fs.promises.writeFile(
       targetPath,
-      rewriteTemplatePageIdentities(html, sourceIdToFirstTargetId, sourcePage.pageId, pageId),
+      ensureMasterStyleLink(
+        rewriteTemplatePageIdentities(html, sourceIdToFirstTargetId, sourcePage.pageId, pageId)
+      ),
       'utf-8'
     )
     usedTargetPaths.add(path.relative(args.projectDir, targetPath).replace(/\\/g, '/'))
@@ -689,6 +693,7 @@ export async function createSessionFromTemplate(
   await fs.promises.mkdir(projectDir, { recursive: true })
   await copyDirExcluding(templateDir, projectDir, { exclude: ['manifest.json'] })
   await ctx.ensureSessionAssets(projectDir)
+  await createSessionMasterIfMissing(projectDir)
   const preparedPages = await prepareTemplatePagesForSession({
     manifest,
     projectDir,
@@ -803,6 +808,7 @@ export async function createEditableSessionFromTemplate(
   await fs.promises.mkdir(projectDir, { recursive: true })
   await copyDirExcluding(templateDir, projectDir, { exclude: ['manifest.json'] })
   await ctx.ensureSessionAssets(projectDir)
+  await createSessionMasterIfMissing(projectDir)
   const preparedPages = await prepareTemplatePagesForSession({
     manifest,
     projectDir,

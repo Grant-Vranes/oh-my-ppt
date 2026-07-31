@@ -43,6 +43,16 @@ export interface AvailableFont {
   files?: FontFileEntry[]
 }
 
+export type ProjectFontResource = {
+  sourcePath: string
+  targetPath: string
+}
+
+export type ProjectFontResources = {
+  css: string
+  assets: ProjectFontResource[]
+}
+
 export interface FontRegistryFile {
   version: 1
   fonts: FontRegistryEntry[]
@@ -422,6 +432,74 @@ async function buildGoogleFontFaceTags(family: string, _projectDir: string): Pro
     )
     return `<style data-ppt-fonts="google">@font-face{${rewritten}}</style>`
   })
+}
+
+export async function resolveProjectFontResources(
+  fontFamilies: string[],
+  projectDir: string
+): Promise<ProjectFontResources> {
+  const families = Array.from(new Set(fontFamilies.map(normalizeFamily).filter(Boolean)))
+  const userRegistry = await readUserFontRegistry()
+  const css: string[] = []
+  const assets: ProjectFontResource[] = []
+
+  for (const family of families) {
+    await assertFontFamilyAvailable(family, '母版字体')
+    const google = GOOGLE_FONTS[family]
+    if (google) {
+      const sourceDir = path.join(getBundledFontsRoot(), familyDirName(family))
+      const targetDir = path.join(
+        projectDir,
+        'assets',
+        'fonts',
+        'google-fonts',
+        familyDirName(family)
+      )
+      const files = (await fs.promises.readdir(sourceDir)).filter((file) => file.endsWith('.woff2'))
+      if (files.length === 0) throw new Error(`内置字体目录为空：${family}`)
+      assets.push(
+        ...files.map((file) => ({ sourcePath: path.join(sourceDir, file), targetPath: path.join(targetDir, file) }))
+      )
+      const facesCssPath = path.join(sourceDir, 'faces.css')
+      const facesCss = await fs.promises.readFile(facesCssPath, 'utf-8')
+      css.push(
+        ...facesCss
+          .split(/@font-face\s*\{/)
+          .slice(1)
+          .map((block) => {
+            const body = block.slice(0, block.indexOf('}')).trim()
+            const relPrefix = `./assets/fonts/google-fonts/${familyDirName(family)}/`
+            const rewritten = body.replace(
+              /url\(\s*"\.\/([^"]+)"\s*\)/g,
+              (_, fileName) => `url("${relPrefix}${fileName}")`
+            )
+            return `@font-face{${rewritten}}`
+          })
+      )
+      continue
+    }
+
+    const uploaded = userRegistry.fonts.find((entry) => entry.family === family)
+    if (!uploaded) throw new Error(`字体不在可用字体列表中：${family}`)
+    for (const file of uploaded.files) {
+      assets.push({
+        sourcePath: path.join(getUserFontFilesRoot(), uploaded.id, file.file),
+        targetPath: path.join(projectDir, 'assets', 'fonts', 'user-fonts', uploaded.id, file.file)
+      })
+      css.push(
+        `@font-face{font-family:"${cssEscapeString(uploaded.family)}";src:url("./assets/fonts/user-fonts/${uploaded.id}/${cssEscapeString(file.file)}") format("woff2");font-weight:${file.weight};font-style:${file.style};font-display:swap}`
+      )
+    }
+  }
+
+  return { css: css.join('\n'), assets }
+}
+
+export async function copyProjectFontResources(resources: ProjectFontResources): Promise<void> {
+  for (const asset of resources.assets) {
+    await fs.promises.mkdir(path.dirname(asset.targetPath), { recursive: true })
+    await fs.promises.copyFile(asset.sourcePath, asset.targetPath)
+  }
 }
 
 /**

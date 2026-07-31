@@ -407,6 +407,10 @@ async function captureThumbnail(
     for (const [key, value] of Object.entries(request.query)) {
       pageUrl.searchParams.set(key, value)
     }
+    pageUrl.searchParams.set(
+      '_pptMasterExpected',
+      fs.existsSync(path.join(path.dirname(request.sourcePath), 'master.css')) ? '1' : '0'
+    )
 
     const readyWaitPromise = waitForPrintReady(
       window.webContents,
@@ -422,7 +426,16 @@ async function captureThumbnail(
     await window.webContents.executeJavaScript(FREEZE_PAGE_FOR_EXPORT_SCRIPT, true)
     await sleep(PRINT_READY_PASS_THREE_DELAY_MS)
   } else {
-    await window.loadFile(request.sourcePath, { query: request.query })
+    await window.loadFile(request.sourcePath, {
+      query: {
+        ...request.query,
+        _pptMasterExpected: fs.existsSync(
+          path.join(path.dirname(request.sourcePath), 'master.css')
+        )
+          ? '1'
+          : '0'
+      }
+    })
     await window.webContents.executeJavaScript(FREEZE_PAGE_FOR_EXPORT_SCRIPT, true)
     await window.webContents.executeJavaScript(
       `new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))`

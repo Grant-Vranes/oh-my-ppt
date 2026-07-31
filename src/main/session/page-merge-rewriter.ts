@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import * as cheerio from 'cheerio'
+import { ensureMasterStyleLink } from '../presentation/html/master-link'
 
 export const isMergePathInside = (candidate: string, root: string): boolean => {
   const relative = path.relative(path.resolve(root), path.resolve(candidate))
@@ -274,7 +275,7 @@ export function rewriteMergedPageHtml(args: {
     element.text(replacePageIdentityBoundary(element.html() || '', args.oldPageId, args.nextPageId))
   })
   $('head').append(`\n${args.targetFontProfile.headTags.join('\n')}\n`)
-  return $.html()
+  return ensureMasterStyleLink($.html())
 }
 
 export function collectMergedPageResourceKeys(html: string): string[] {

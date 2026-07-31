@@ -123,6 +123,7 @@ const PAGE_LAYOUT_AUDIT_SCRIPT = `
 `
 
 export interface PreviewIframeHandle {
+  reloadIgnoringCache: () => void
   patchPageContent: (pageId: string, newHtml: string) => void
   liveUpdateElement: (
     selector: string,
@@ -510,6 +511,15 @@ export const PreviewIframe = forwardRef<
   useImperativeHandle(
     ref,
     () => ({
+      reloadIgnoringCache(): void {
+        const wv = webviewRef.current
+        if (!wv) return
+        try {
+          wv.reloadIgnoringCache()
+        } catch {
+          // The webview can be detached while the session route changes.
+        }
+      },
       patchPageContent(targetPageId: string, newHtml: string): void {
         const wv = webviewRef.current
         if (!wv) return

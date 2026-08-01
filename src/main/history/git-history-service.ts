@@ -105,7 +105,8 @@ const isControlledFile = (relativePath: string): boolean => {
   if (
     rel === 'index.html' ||
     rel === 'master/master.css' ||
-    rel === 'master/master.html'
+    rel === 'master/master.html' ||
+    rel === 'master/layouts.json'
   ) {
     return true
   }

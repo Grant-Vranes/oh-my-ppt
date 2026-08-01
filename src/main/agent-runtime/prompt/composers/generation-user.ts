@@ -29,6 +29,8 @@ export function buildSinglePageGenerationPrompt(args: {
   pageOutline: string
   slideSize: import('@shared/slide-size').SlideSizePreset
   layoutIntent?: SessionDeckGenerationContext['outlineItems'][number]['layoutIntent']
+  layoutId?: SessionDeckGenerationContext['outlineItems'][number]['layoutId']
+  layoutPrompt?: SessionDeckGenerationContext['outlineItems'][number]['layoutPrompt']
   sourceDocumentPaths?: string[]
   referenceDocumentSnippets?: string
   isRetryMode?: boolean
@@ -140,6 +142,7 @@ export function buildSinglePageGenerationPrompt(args: {
     `Slide title: ${args.pageTitle}`,
     `Content points: ${args.pageOutline || 'Expand from the topic with moderate information density.'}`,
     args.layoutIntent ? formatLayoutIntentPrompt(args.layoutIntent) : '',
+    args.layoutId && args.layoutPrompt ? args.layoutPrompt : '',
     ...sectionAgendaInstructions,
     ...sourceDocumentInstructions,
     ...sourceRangeInstructions,

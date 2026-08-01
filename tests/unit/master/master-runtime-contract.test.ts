@@ -15,6 +15,7 @@ describe('slide master runtime contract', () => {
 
     expect(historySource).toContain("rel === 'master/master.css'")
     expect(historySource).toContain("rel === 'master/master.html'")
+    expect(historySource).toContain("rel === 'master/layouts.json'")
     expect(exportScript).toContain('link[data-ppt-master="1"]')
     expect(exportScript).toContain('母版样式表加载失败')
     expect(exportScript).toContain('_pptMasterExport')

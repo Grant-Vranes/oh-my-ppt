@@ -13,9 +13,12 @@ import {
   normalizeMasterConfig,
   type SessionMasterConfig
 } from '@shared/master'
+import { isValidSessionLayoutLibrary, type SessionLayoutLibrary } from '@shared/layout-master'
 import type { IpcContext } from '../ipc/context'
 import {
   getSessionMasterStatus,
+  getSessionLayoutLibraryStatus,
+  saveSessionLayoutLibrary,
   saveSessionMaster,
   setSessionMasterPageOverride
 } from './master-mutation-service'
@@ -212,6 +215,11 @@ const requirePageOverride = (value: unknown): { pageId: string; disabled: boolea
   return { pageId, disabled: input.disabled }
 }
 
+const requireSessionLayoutLibrary = (value: unknown): SessionLayoutLibrary => {
+  if (!isValidSessionLayoutLibrary(value)) throw new Error('版式母版配置无效')
+  return value
+}
+
 export function registerMasterHandlers(ctx: IpcContext): void {
   ipcMain.handle('session:getMaster', async (_event, payload: unknown) => {
     const { sessionId } = getPayload(payload)
@@ -227,5 +235,19 @@ export function registerMasterHandlers(ctx: IpcContext): void {
     const { sessionId } = getPayload(payload)
     const { pageId, disabled } = requirePageOverride(payload)
     return setSessionMasterPageOverride(ctx, requireSessionId(sessionId), pageId, disabled)
+  })
+
+  ipcMain.handle('session:getLayoutLibrary', async (_event, payload: unknown) => {
+    const { sessionId } = getPayload(payload)
+    return getSessionLayoutLibraryStatus(ctx, requireSessionId(sessionId))
+  })
+
+  ipcMain.handle('session:saveLayoutLibrary', async (_event, payload: unknown) => {
+    const { sessionId, library } = getPayload(payload)
+    return saveSessionLayoutLibrary(
+      ctx,
+      requireSessionId(sessionId),
+      requireSessionLayoutLibrary(library)
+    )
   })
 }

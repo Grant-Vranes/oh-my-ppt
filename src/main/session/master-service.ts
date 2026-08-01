@@ -13,11 +13,22 @@ import {
   parseMasterElementsHtml,
   type SessionMasterConfig
 } from '@shared/master'
+import {
+  MASTER_LAYOUTS_FILENAME,
+  buildDefaultSessionLayoutLibrary,
+  normalizeSessionLayoutLibrary,
+  type SessionLayoutLibrary
+} from '@shared/layout-master'
 
 export type SessionMasterReadResult = {
   css: string
   html: string
   config: SessionMasterConfig
+  exists: boolean
+}
+
+export type SessionLayoutLibraryReadResult = {
+  library: SessionLayoutLibrary
   exists: boolean
 }
 
@@ -60,6 +71,9 @@ export const getSessionMasterPath = (projectDir: string): string =>
 export const getSessionMasterHtmlPath = (projectDir: string): string =>
   path.join(getSessionMasterDirectory(projectDir), MASTER_HTML_FILENAME)
 
+export const getSessionMasterLayoutsPath = (projectDir: string): string =>
+  path.join(getSessionMasterDirectory(projectDir), MASTER_LAYOUTS_FILENAME)
+
 const toResult = (css: string, html: string, exists: boolean): SessionMasterReadResult => {
   const cssConfig = parseMasterCss(unbaseMasterAssetUrls(css))
   return {
@@ -89,6 +103,38 @@ export async function readSessionMaster(projectDir: string): Promise<SessionMast
   }
   const cssConfig = parseMasterCss(unbaseMasterAssetUrls(canonicalCss))
   return toResult(canonicalCss, masterHtml || buildMasterElementsHtml(cssConfig.elements), true)
+}
+
+export async function readSessionLayoutLibrary(
+  projectDir: string
+): Promise<SessionLayoutLibraryReadResult> {
+  const raw = await readFileIfExists(getSessionMasterLayoutsPath(projectDir))
+  if (raw === null) return { library: buildDefaultSessionLayoutLibrary(), exists: false }
+  try {
+    return { library: normalizeSessionLayoutLibrary(JSON.parse(raw)), exists: true }
+  } catch {
+    return { library: buildDefaultSessionLayoutLibrary(), exists: true }
+  }
+}
+
+export async function writeSessionLayoutLibrary(
+  projectDir: string,
+  value: unknown
+): Promise<SessionLayoutLibraryReadResult> {
+  const library = normalizeSessionLayoutLibrary(value)
+  await writeAtomically(
+    getSessionMasterLayoutsPath(projectDir),
+    `${JSON.stringify(library, null, 2)}\n`
+  )
+  return { library, exists: true }
+}
+
+export async function createSessionLayoutLibraryIfMissing(
+  projectDir: string
+): Promise<SessionLayoutLibraryReadResult> {
+  const existing = await readFileIfExists(getSessionMasterLayoutsPath(projectDir))
+  if (existing !== null) return readSessionLayoutLibrary(projectDir)
+  return writeSessionLayoutLibrary(projectDir, buildDefaultSessionLayoutLibrary())
 }
 
 async function writeSessionMasterFiles(
@@ -128,6 +174,7 @@ export async function createSessionMasterIfMissing(projectDir: string): Promise<
   ])
 
   if (canonicalCss !== null && canonicalHtml !== null) {
+    await createSessionLayoutLibraryIfMissing(projectDir)
     return toResult(canonicalCss, canonicalHtml, true)
   }
 
@@ -135,8 +182,11 @@ export async function createSessionMasterIfMissing(projectDir: string): Promise<
     const config = parseMasterCss(unbaseMasterAssetUrls(canonicalCss))
     const html = canonicalHtml || buildMasterElementsHtml(config.elements)
     if (canonicalHtml === null) await writeAtomically(canonicalHtmlPath, html)
+    await createSessionLayoutLibraryIfMissing(projectDir)
     return toResult(canonicalCss, html, true)
   }
 
-  return writeSessionMasterFiles(projectDir, buildDefaultMasterConfig())
+  const result = await writeSessionMasterFiles(projectDir, buildDefaultMasterConfig())
+  await createSessionLayoutLibraryIfMissing(projectDir)
+  return result
 }

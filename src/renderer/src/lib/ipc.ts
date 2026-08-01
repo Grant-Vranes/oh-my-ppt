@@ -51,6 +51,7 @@ import type { ModelUsagePeriod, ModelUsageStats } from '@shared/model-usage'
 import type { SlideSizePresetId } from '@shared/slide-size'
 import type { ParsedChartDataResult } from '@shared/chart-data'
 import type { SessionMasterConfig, SessionMasterStatus } from '@shared/master'
+import type { SessionLayoutLibrary, SessionLayoutLibraryStatus } from '@shared/layout-master'
 
 type IpcRendererLike = Window['electron']['ipcRenderer']
 
@@ -570,6 +571,13 @@ export const ipc = {
     disabled: boolean
   }): Promise<{ disabled: boolean }> =>
     getIpc().invoke('session:setMasterPageOverride', payload) as Promise<{ disabled: boolean }>,
+  getSessionLayoutLibrary: (payload: { sessionId: string }): Promise<SessionLayoutLibraryStatus> =>
+    getIpc().invoke('session:getLayoutLibrary', payload) as Promise<SessionLayoutLibraryStatus>,
+  saveSessionLayoutLibrary: (payload: {
+    sessionId: string
+    library: SessionLayoutLibrary
+  }): Promise<SessionLayoutLibraryStatus> =>
+    getIpc().invoke('session:saveLayoutLibrary', payload) as Promise<SessionLayoutLibraryStatus>,
   getSession: (sessionId: string) =>
     getIpc().invoke('session:get', sessionId) as Promise<{
       session: unknown

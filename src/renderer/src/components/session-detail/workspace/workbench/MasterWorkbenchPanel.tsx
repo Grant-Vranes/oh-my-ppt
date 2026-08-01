@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { ChevronDown, Layers3, Loader2, Palette, X } from 'lucide-react'
+import { ChevronDown, LayoutTemplate, Layers3, Loader2, Palette, X } from 'lucide-react'
 import { useT } from '@renderer/i18n'
 import { ipc, type FontListItem } from '@renderer/lib/ipc'
 import {
   useEditSessionStore,
   useGenerateStore,
+  useLayoutMasterStore,
   useMasterWorkbenchStore,
   useSessionDetailRuntimeStore,
   useSessionDetailUiStore,
@@ -32,6 +33,7 @@ import { Input } from '../../../ui/Input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../ui/Select'
 import { MasterGradientEditor } from '../../../gradient-editor/MasterGradientEditor'
 import { MasterElementsEditor } from '../../../master-elements/MasterElementsEditor'
+import { MasterLayoutLibraryDialog } from '../../../master-layouts/MasterLayoutLibraryDialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -80,6 +82,7 @@ export function MasterWorkbenchPanel(): React.JSX.Element | null {
   const config = useMasterWorkbenchStore((state) => state.config)
   const setConfig = useMasterWorkbenchStore((state) => state.setConfig)
   const updateConfig = useMasterWorkbenchStore((state) => state.updateConfig)
+  const setLayoutLibraryOpen = useLayoutMasterStore((state) => state.setOpen)
   const isSavingEdits = useEditSessionStore((state) => state.isSavingEdits)
   const isApplyingSyncElement = useEditSessionStore((state) => state.isApplyingSyncElement)
   const currentSession = useSessionStore((state) => state.currentSession)
@@ -115,7 +118,8 @@ export function MasterWorkbenchPanel(): React.JSX.Element | null {
 
   const loadMaster = async (requestId: number, requestedSessionId: string): Promise<void> => {
     const isCurrentRequest = (): boolean =>
-      masterLoadRequestRef.current === requestId && currentSessionIdRef.current === requestedSessionId
+      masterLoadRequestRef.current === requestId &&
+      currentSessionIdRef.current === requestedSessionId
     if (!isCurrentRequest()) return
     setLoading(true)
     setError('')
@@ -220,7 +224,9 @@ export function MasterWorkbenchPanel(): React.JSX.Element | null {
       refreshPreview()
     } catch (overrideError) {
       const message =
-        overrideError instanceof Error ? overrideError.message : t('sessionDetail.masterPageOverrideFailed')
+        overrideError instanceof Error
+          ? overrideError.message
+          : t('sessionDetail.masterPageOverrideFailed')
       setError(message)
       toastError(message)
     } finally {
@@ -271,8 +277,14 @@ export function MasterWorkbenchPanel(): React.JSX.Element | null {
             <Layers3 className="h-3.5 w-3.5 text-[#637552]" />
             {t('sessionDetail.masterGlobalElements')}
           </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setLayoutLibraryOpen(true)}>
+            <LayoutTemplate className="h-3.5 w-3.5 text-[#637552]" />
+            {t('sessionDetail.masterLayoutLibrary')}
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <MasterLayoutLibraryDialog />
 
       <Dialog
         open={styleOpen}

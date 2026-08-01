@@ -24,9 +24,18 @@ import {
   type SessionMasterStatus
 } from '@shared/master'
 import {
+  MASTER_LAYOUTS_RELATIVE_PATH,
+  normalizeSessionLayoutLibrary,
+  type SessionLayoutLibrary,
+  type SessionLayoutLibraryStatus
+} from '@shared/layout-master'
+import {
   getSessionMasterHtmlPath,
+  getSessionMasterLayoutsPath,
   getSessionMasterPath,
+  readSessionLayoutLibrary,
   readSessionMaster,
+  writeSessionLayoutLibrary,
   writeSessionMaster
 } from './master-service'
 
@@ -268,6 +277,67 @@ export async function getSessionMasterStatus(
 ): Promise<SessionMasterStatus> {
   const projectDir = await ctx.resolveSessionProjectDir(sessionId)
   return getStatus(ctx, sessionId, projectDir)
+}
+
+export async function getSessionLayoutLibraryStatus(
+  ctx: IpcContext,
+  sessionId: string
+): Promise<SessionLayoutLibraryStatus> {
+  const projectDir = await ctx.resolveSessionProjectDir(sessionId)
+  const result = await readSessionLayoutLibrary(projectDir)
+  return {
+    ...result,
+    revision: getRevision(JSON.stringify(result.library))
+  }
+}
+
+export async function saveSessionLayoutLibrary(
+  ctx: IpcContext,
+  sessionId: string,
+  library: SessionLayoutLibrary
+): Promise<SessionLayoutLibraryStatus> {
+  return runExclusive(sessionId, async () => {
+    assertMutableSession(ctx, sessionId)
+    const projectDir = await ctx.resolveSessionProjectDir(sessionId)
+    const history = new GitHistoryService(ctx.db)
+    await history.ensureBaseline(sessionId, projectDir)
+    const snapshot = await readSnapshot(getSessionMasterLayoutsPath(projectDir))
+    try {
+      const result = await writeSessionLayoutLibrary(
+        projectDir,
+        normalizeSessionLayoutLibrary(library)
+      )
+      const operation = await history.recordOperation({
+        sessionId,
+        projectDir,
+        type: 'edit',
+        scope: 'session',
+        prompt: '更新演示版式母版',
+        metadata: { feature: 'layout-master', action: 'save-layout-mappings' },
+        allowedPaths: [MASTER_LAYOUTS_RELATIVE_PATH]
+      })
+      try {
+        return {
+          ...result,
+          revision: getRevision(JSON.stringify(result.library))
+        }
+      } catch (error) {
+        if (operation) {
+          await history.rollbackCommittedOperation({
+            sessionId,
+            projectDir,
+            operation,
+            allowedPaths: [MASTER_LAYOUTS_RELATIVE_PATH],
+            reason: error instanceof Error ? error.message : String(error)
+          })
+        }
+        throw error
+      }
+    } catch (error) {
+      await restoreSnapshot(snapshot).catch(() => undefined)
+      throw error
+    }
+  })
 }
 
 export async function saveSessionMaster(

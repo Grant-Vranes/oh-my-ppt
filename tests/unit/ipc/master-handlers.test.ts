@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const state = vi.hoisted(() => ({
   handlers: new Map<string, (...args: unknown[]) => unknown>(),
   getStatus: vi.fn(),
+  getLayoutLibraryStatus: vi.fn(),
+  saveLayoutLibrary: vi.fn(),
   save: vi.fn(),
   setPageOverride: vi.fn()
 }))
@@ -16,6 +18,8 @@ vi.mock('electron', () => ({
 
 vi.mock('../../../src/main/session/master-mutation-service', () => ({
   getSessionMasterStatus: state.getStatus,
+  getSessionLayoutLibraryStatus: state.getLayoutLibraryStatus,
+  saveSessionLayoutLibrary: state.saveLayoutLibrary,
   saveSessionMaster: state.save,
   setSessionMasterPageOverride: state.setPageOverride
 }))
@@ -25,6 +29,8 @@ describe('registerMasterHandlers', () => {
     vi.resetModules()
     state.handlers.clear()
     state.getStatus.mockReset()
+    state.getLayoutLibraryStatus.mockReset()
+    state.saveLayoutLibrary.mockReset()
     state.save.mockReset()
     state.setPageOverride.mockReset()
   })
@@ -37,9 +43,13 @@ describe('registerMasterHandlers', () => {
     const get = state.handlers.get('session:getMaster')
     const save = state.handlers.get('session:saveMaster')
     const setPageOverride = state.handlers.get('session:setMasterPageOverride')
+    const getLayoutLibrary = state.handlers.get('session:getLayoutLibrary')
+    const saveLayoutLibrary = state.handlers.get('session:saveLayoutLibrary')
     expect(get).toBeTypeOf('function')
     expect(save).toBeTypeOf('function')
     expect(setPageOverride).toBeTypeOf('function')
+    expect(getLayoutLibrary).toBeTypeOf('function')
+    expect(saveLayoutLibrary).toBeTypeOf('function')
     expect(state.handlers.has('session:applyMasterToPages')).toBe(false)
 
     await get?.({}, { sessionId: ' session-1 ' })
@@ -203,5 +213,36 @@ describe('registerMasterHandlers', () => {
     await expect(
       setPageOverride?.({}, { sessionId: 'session-1', pageId: '', disabled: true })
     ).rejects.toThrow('页面母版设置无效')
+
+    await getLayoutLibrary?.({}, { sessionId: ' session-1 ' })
+    expect(state.getLayoutLibraryStatus).toHaveBeenCalledWith(ctx, 'session-1')
+    await expect(
+      saveLayoutLibrary?.({}, { sessionId: 'session-1', library: { version: 1, mappings: {} } })
+    ).rejects.toThrow('版式母版配置无效')
+    await saveLayoutLibrary?.(
+      {},
+      {
+        sessionId: 'session-1',
+        library: {
+          version: 1,
+          mappings: {
+            cover: 'cover-split',
+            'data-focus': 'data-metrics',
+            comparison: 'comparison-versus',
+            timeline: 'timeline-progress',
+            concept: 'content-editorial',
+            process: 'process-flow',
+            summary: 'summary-takeaway',
+            quote: 'quote-focus',
+            'image-focus': 'image-spotlight'
+          }
+        }
+      }
+    )
+    expect(state.saveLayoutLibrary).toHaveBeenCalledWith(
+      ctx,
+      'session-1',
+      expect.objectContaining({ mappings: expect.objectContaining({ cover: 'cover-split' }) })
+    )
   })
 })

@@ -26,6 +26,7 @@ import type {
 } from '@shared/generation'
 import { isSectionAgendaOutline } from '@shared/generation'
 import { normalizeLayoutIntent, type LayoutIntent } from '@shared/layout-intent'
+import { formatLayoutMasterPrompt, resolveLayoutMasterTemplate } from '@shared/layout-master'
 import { resolveModelTimeoutMs, type ModelTimeoutProfile } from '@shared/model-timeout'
 import { progressLabel, progressText } from '@shared/progress'
 import type { SlideSizePreset } from '@shared/slide-size'
@@ -43,11 +44,28 @@ import {
 import { logAgentToolEvents } from '../utils/agent-tool-logger'
 import { normalizeKeyPoints, normalizeOutlineText } from './outline-normalizer'
 import { buildLocalCompletedGenerationPageSummary } from './generation-summary'
+import { readSessionLayoutLibrary } from '../session/master-service'
 
 type AppLocale = 'zh' | 'en'
 
 const uiText = (locale: AppLocale | undefined, zh: string, en: string): string =>
   locale === 'en' ? en : zh
+
+const resolveLayoutMasterOutlineItems = async (
+  projectDir: string,
+  outlineItems: OutlineItem[]
+): Promise<OutlineItem[]> => {
+  const layoutLibrary = (await readSessionLayoutLibrary(projectDir)).library
+  return outlineItems.map((item) => {
+    if (!item.layoutIntent) return item
+    const template = resolveLayoutMasterTemplate(layoutLibrary, item.layoutIntent)
+    return {
+      ...item,
+      layoutId: template.id,
+      layoutPrompt: formatLayoutMasterPrompt(template)
+    }
+  })
+}
 
 async function readPageHtmlIfExists(filePath: string): Promise<string> {
   try {
@@ -881,34 +899,51 @@ export const runDeepAgentDeckGeneration = async (args: {
   summary: string
   failedPages: Array<{ pageId: string; title: string; reason: string }>
 }> => {
+  const layoutLibrary = (await readSessionLayoutLibrary(args.projectDir)).library
   type PageRef = {
     pageNumber: number
     pageId: string
     title: string
     outline: string
     layoutIntent?: OutlineItem['layoutIntent']
+    layoutId: string
+    layoutPrompt: string
+  }
+  const resolvePageRef = (page: {
+    pageNumber: number
+    pageId: string
+    title: string
+    contentOutline?: string | null
+    layoutIntent?: OutlineItem['layoutIntent']
+  }): PageRef => {
+    const layoutTemplate = resolveLayoutMasterTemplate(layoutLibrary, page.layoutIntent)
+    return {
+      pageNumber: page.pageNumber,
+      pageId: page.pageId,
+      title: page.title,
+      outline: page.contentOutline || '',
+      layoutIntent: page.layoutIntent,
+      layoutId: layoutTemplate.id,
+      layoutPrompt: formatLayoutMasterPrompt(layoutTemplate)
+    }
   }
   const pageRefs: PageRef[] =
     args.pageTasks && args.pageTasks.length > 0
-      ? args.pageTasks.map((page) => ({
-          pageNumber: page.pageNumber,
-          pageId: page.pageId,
-          title: page.title,
-          outline: page.contentOutline || '',
-          layoutIntent: page.layoutIntent
-        }))
+      ? args.pageTasks.map(resolvePageRef)
       : (() => {
           const pageIds = Object.keys(args.pageFileMap || {})
           if (pageIds.length === 0) {
             throw new Error('pageFileMap 为空，无法建立页面任务。')
           }
-          return args.outlineTitles.map((title, index) => ({
-            pageNumber: index + 1,
-            pageId: pageIds[index] || pageIds[Math.min(index, pageIds.length - 1)],
-            title,
-            outline: args.outlineItems[index]?.contentOutline || '',
-            layoutIntent: args.outlineItems[index]?.layoutIntent
-          }))
+          return args.outlineTitles.map((title, index) =>
+            resolvePageRef({
+              pageNumber: index + 1,
+              pageId: pageIds[index] || pageIds[Math.min(index, pageIds.length - 1)],
+              title,
+              contentOutline: args.outlineItems[index]?.contentOutline || '',
+              layoutIntent: args.outlineItems[index]?.layoutIntent
+            })
+          )
         })()
   const totalPages = pageRefs.length
   const clampProgress = (value: number): number => Math.max(0, Math.min(100, Math.round(value)))
@@ -1133,7 +1168,13 @@ export const runDeepAgentDeckGeneration = async (args: {
         userMessage: args.userMessage,
         outlineTitles: [page.title],
         outlineItems: [
-          { title: page.title, contentOutline: page.outline, layoutIntent: page.layoutIntent }
+          {
+            title: page.title,
+            contentOutline: page.outline,
+            layoutIntent: page.layoutIntent,
+            layoutId: page.layoutId,
+            layoutPrompt: page.layoutPrompt
+          }
         ],
         sourceDocumentPaths: pageSourceDocumentPaths,
         mode: args.generationMode ?? 'generate',
@@ -1176,6 +1217,8 @@ export const runDeepAgentDeckGeneration = async (args: {
                   pageOutline: page.outline,
                   slideSize: args.slideSize,
                   layoutIntent: page.layoutIntent,
+                  layoutId: page.layoutId,
+                  layoutPrompt: page.layoutPrompt,
                   sourceDocumentPaths: pageSourceDocumentPaths,
                   referenceDocumentSnippets,
                   isRetryMode: args.generationMode === 'retry',
@@ -1306,12 +1349,7 @@ export const runDeepAgentDeckGeneration = async (args: {
   const MAX_PAGE_RETRIES = 3
   const RETRY_DELAY_BASE_MS = 1_000
   const generateSinglePageWithRetry = async (
-    page: {
-      pageNumber: number
-      pageId: string
-      title: string
-      outline: string
-    },
+    page: PageRef,
     workerLabel: string
   ): Promise<string> => {
     let lastError: unknown = null
@@ -1542,6 +1580,11 @@ type RunDeepAgentPageEditArgs = RunDeepAgentEditBaseArgs & {
 type RunDeepAgentDeckAllPageEditArgs = RunDeepAgentEditBaseArgs
 
 const runDeepAgentScopedEdit = async (args: RunDeepAgentScopedEditArgs): Promise<void> => {
+  const appliesLayoutMaster =
+    args.editScope === 'deck' || (args.editScope === 'page' && !args.selectedSelector)
+  const outlineItems = appliesLayoutMaster
+    ? await resolveLayoutMasterOutlineItems(args.projectDir, args.outlineItems)
+    : args.outlineItems
   const editAgent = createSessionEditAgent({
     provider: args.provider,
     apiKey: args.apiKey,
@@ -1569,7 +1612,7 @@ const runDeepAgentScopedEdit = async (args: RunDeepAgentScopedEditArgs): Promise
       designContract: args.designContract,
       userMessage: args.userMessage,
       outlineTitles: args.outlineTitles,
-      outlineItems: args.outlineItems,
+      outlineItems,
       sourceDocumentPaths: args.sourceDocumentPaths,
       pageFileMap: args.pageFileMap,
       pageNumbers: args.pageNumbers,

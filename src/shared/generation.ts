@@ -5,6 +5,9 @@ export interface OutlineItem {
   title: string
   contentOutline: string
   layoutIntent?: LayoutIntent
+  /** M3a resolves a session layout master into a flexible generation constraint. */
+  layoutId?: string
+  layoutPrompt?: string
 }
 
 /** Deck-level visual rules persisted with a session and applied to every generated page. */

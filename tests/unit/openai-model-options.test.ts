@@ -3,7 +3,7 @@ import {
   buildOpenAIModelOptions,
   normalizeOpenAIBaseUrl,
   resolveOpenAIThinkingModelKwargs
-} from '../../src/main/openai-model-options'
+} from '../../src/main/agent-runtime/model'
 
 describe('buildOpenAIModelOptions', () => {
   it.each(['', 'https://api.openai.com', 'https://api.openai.com/v1', 'https://API.OPENAI.COM/v1/'])(

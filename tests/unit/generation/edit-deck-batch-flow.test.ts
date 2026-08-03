@@ -17,7 +17,7 @@ import {
   buildDeckEditPageUserMessage,
   executeDeckEditBatchFlow,
   type DeckEditBatchPageRef
-} from '../../../src/main/ipc/generation/edit-deck-batch-flow'
+} from '../../../src/main/generation/edit-deck-batch-flow'
 
 const tempDirs: string[] = []
 

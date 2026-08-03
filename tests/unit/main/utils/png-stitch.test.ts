@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { PNG } from 'pngjs'
-import { stitchPngBuffersVertical } from '../../../../src/main/utils/png-stitch'
+import { stitchPngBuffersVertical } from '../../../../src/main/io/thumbnails/png-stitch'
 
 type Rgba = [number, number, number, number]
 

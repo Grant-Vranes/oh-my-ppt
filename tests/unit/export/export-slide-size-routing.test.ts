@@ -3,7 +3,7 @@ import path from 'path'
 import { describe, expect, it } from 'vitest'
 
 const exportHandlersSource = (): string =>
-  fs.readFileSync(path.resolve('src/main/ipc/io/export-handlers.ts'), 'utf8')
+  fs.readFileSync(path.resolve('src/main/io/export-handlers.ts'), 'utf8')
 
 const handlerSource = (source: string, channel: string, nextChannel: string): string =>
   source.slice(
@@ -12,12 +12,15 @@ const handlerSource = (source: string, channel: string, nextChannel: string): st
   )
 
 describe('export slide-size routing', () => {
-  it('guards PPTX export behind the default 16:9 slide size', () => {
+  it('routes a supported 16:9 or 4:3 slide size through PPTX export', () => {
     const source = exportHandlersSource()
     const pptxHandler = handlerSource(source, 'export:pptx', 'export:video')
 
     expect(pptxHandler).toContain('const slideSize = requireSessionSlideSize(session)')
     expect(pptxHandler).toContain('assertPptxExportSupported(slideSize)')
+    expect(pptxHandler).toContain('const pptxLayout = resolvePptxExportLayout(slideSize)')
+    expect(pptxHandler).toContain('widthIn: pptxLayout.slideWidthIn')
+    expect(pptxHandler).toContain('heightIn: pptxLayout.slideHeightIn')
   })
 
   it('uses a standard video frame while passing slide size for centered page fitting', () => {

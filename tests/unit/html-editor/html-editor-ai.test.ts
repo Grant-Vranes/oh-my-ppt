@@ -57,7 +57,10 @@ const state = vi.hoisted(() => {
 
 vi.mock('electron', () => ({ ipcMain: state.ipcMain }))
 vi.mock('electron-log/main.js', () => ({ default: state.log }))
-vi.mock('../../../src/main/agent', () => ({ resolveModel: state.resolveModel }))
+vi.mock('../../../src/main/agent-runtime/model', () => ({
+  resolveModel: state.resolveModel,
+  extractModelText: state.extractModelText
+}))
 vi.mock('deepagents', () => ({
   createDeepAgent: state.createDeepAgent,
   FilesystemBackend: class {
@@ -66,17 +69,14 @@ vi.mock('deepagents', () => ({
     }
   }
 }))
-vi.mock('../../../src/main/ipc/config/model-config-utils', () => ({
+vi.mock('../../../src/main/config/model-config-utils', () => ({
   resolveGlobalModelTimeouts: state.resolveGlobalModelTimeouts,
   resolveModelConfigForTask: state.resolveModelConfigForTask
 }))
-vi.mock('../../../src/main/ipc/config/locale-utils', () => ({
+vi.mock('../../../src/main/config/locale-utils', () => ({
   readAppLocale: state.readAppLocale
 }))
-vi.mock('../../../src/main/ipc/utils', () => ({
-  extractModelText: state.extractModelText
-}))
-vi.mock('../../../src/main/ipc/html-editor/html-editor-handlers', () => ({
+vi.mock('../../../src/main/html-editor/html-editor-handlers', () => ({
   applyHtmlEditsForDocument: state.applyHtmlEditsForDocument,
   resolveHtmlEditorDocumentWorkspace: state.resolveHtmlEditorDocumentWorkspace
 }))
@@ -112,7 +112,7 @@ describe('html-editor AI IPC', () => {
       buildHtmlEditorAiSystemPrompt,
       isExplicitHtmlEditorEditRequest,
       registerHtmlEditorAiHandlers
-    } = await import('../../../src/main/ipc/html-editor/html-editor-ai-handlers')
+    } = await import('../../../src/main/html-editor/html-editor-ai-handlers')
     registerHtmlEditorAiHandlers({ db: state.db } as never)
 
     const handler = state.handlers.get('html-editor:aiChat')
@@ -215,7 +215,15 @@ describe('html-editor AI IPC', () => {
       modelConfigId: undefined,
       purpose: 'html-editor:aiChat'
     })
-    expect(state.resolveModel).toHaveBeenCalledWith('openai', 'key', 'test-model', '', 0.35, 1024)
+    expect(state.resolveModel).toHaveBeenCalledWith(
+      'openai',
+      'key',
+      'test-model',
+      '',
+      0.35,
+      1024,
+      undefined
+    )
     expect(state.createDeepAgent).toHaveBeenCalledWith(
       expect.objectContaining({
         systemPrompt: expect.stringContaining('record_html_editor_plan'),
@@ -255,7 +263,7 @@ describe('html-editor AI IPC', () => {
 
   it('asks for confirmation for a vague redesign request', async () => {
     const { registerHtmlEditorAiHandlers } =
-      await import('../../../src/main/ipc/html-editor/html-editor-ai-handlers')
+      await import('../../../src/main/html-editor/html-editor-ai-handlers')
     registerHtmlEditorAiHandlers({ db: state.db } as never)
     const handler = state.handlers.get('html-editor:aiChat')
     const plan = {
@@ -308,7 +316,7 @@ describe('html-editor AI IPC', () => {
 
   it('requires a selected element before accepting a modification request', async () => {
     const { registerHtmlEditorAiHandlers } =
-      await import('../../../src/main/ipc/html-editor/html-editor-ai-handlers')
+      await import('../../../src/main/html-editor/html-editor-ai-handlers')
     registerHtmlEditorAiHandlers({ db: state.db } as never)
     const handler = state.handlers.get('html-editor:aiChat')
 
@@ -334,7 +342,7 @@ describe('html-editor AI IPC', () => {
 
   it('gives whole-page analysis a read-only document workspace', async () => {
     const { registerHtmlEditorAiHandlers } =
-      await import('../../../src/main/ipc/html-editor/html-editor-ai-handlers')
+      await import('../../../src/main/html-editor/html-editor-ai-handlers')
     registerHtmlEditorAiHandlers({ db: state.db } as never)
     const handler = state.handlers.get('html-editor:aiChat')
 
@@ -368,7 +376,7 @@ describe('html-editor AI IPC', () => {
 
   it('applies the pending plan after an explicit confirmation', async () => {
     const { registerHtmlEditorAiHandlers } =
-      await import('../../../src/main/ipc/html-editor/html-editor-ai-handlers')
+      await import('../../../src/main/html-editor/html-editor-ai-handlers')
     registerHtmlEditorAiHandlers({ db: state.db } as never)
     const handler = state.handlers.get('html-editor:aiChat')
     const pendingPlan = {
@@ -424,7 +432,7 @@ describe('html-editor AI IPC', () => {
 
   it('does not report an AI version when the requested edit makes no HTML change', async () => {
     const { registerHtmlEditorAiHandlers } =
-      await import('../../../src/main/ipc/html-editor/html-editor-ai-handlers')
+      await import('../../../src/main/html-editor/html-editor-ai-handlers')
     registerHtmlEditorAiHandlers({ db: state.db } as never)
     const handler = state.handlers.get('html-editor:aiChat')
     const plan = {

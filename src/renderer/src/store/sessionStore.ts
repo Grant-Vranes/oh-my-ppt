@@ -20,6 +20,7 @@ export interface Session {
   created_at: number
   updated_at: number
   metadata: string | null
+  designContract?: string | null
   generation_duration_sec?: number | null
   generated_count?: number | null
   failed_count?: number | null

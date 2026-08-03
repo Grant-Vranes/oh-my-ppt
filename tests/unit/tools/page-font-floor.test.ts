@@ -17,7 +17,7 @@ vi.mock('@electron-toolkit/utils', () => ({
   }
 }))
 
-import { buildBasePageStyleTag, buildFitScript } from '../../../src/main/tools/page-writer'
+import { buildBasePageStyleTag, buildFitScript } from '../../../src/main/presentation/html/page-writer-core'
 import { requireSlideSizePreset } from '../../../src/shared/slide-size'
 
 describe('generated page font floors', () => {

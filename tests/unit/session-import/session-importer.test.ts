@@ -24,7 +24,7 @@ vi.mock('../../../src/main/history/git-history-service', () => ({
   recordHistoryOperationStrict: mocks.recordHistoryOperationStrict
 }))
 
-vi.mock('../../../src/main/ipc/engine/template', () => ({
+vi.mock('../../../src/main/session/template-builder', () => ({
   buildProjectIndexHtml: (
     title: string,
     pages: Array<{ pageNumber: number; pageId: string; title: string; htmlPath: string }>,
@@ -65,7 +65,7 @@ vi.mock('../../../src/main/ipc/engine/template', () => ({
   }
 }))
 
-vi.mock('../../../src/main/utils/style-skills', () => ({
+vi.mock('../../../src/main/styles/catalog', () => ({
   resolveUsableStyleId: () => 'minimal-white'
 }))
 

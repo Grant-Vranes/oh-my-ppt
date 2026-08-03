@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   assertPptxExportSupported,
+  isPptxExportSupported,
   requireSessionSlideSize,
   requireSlideSize,
   requireSlideSizeFromHtml,
@@ -70,10 +71,14 @@ describe('slide size presets', () => {
     ).toMatchObject({ id: 'vertical-9-16', width: 900, height: 1600 })
   })
 
-  it('allows PPTX only for the default 16:9 canvas', () => {
+  it('allows PPTX for 16:9 and 4:3 canvases only', () => {
     expect(() => assertPptxExportSupported(resolveSlideSize())).not.toThrow()
     expect(() =>
+      assertPptxExportSupported(resolveSlideSize({ id: 'standard-4-3' }))
+    ).not.toThrow()
+    expect(isPptxExportSupported(resolveSlideSize({ id: 'standard-4-3' }))).toBe(true)
+    expect(() =>
       assertPptxExportSupported(resolveSlideSize({ id: 'vertical-9-16' }))
-    ).toThrow('当前 PPTX 导出仅支持 16:9')
+    ).toThrow('当前 PPTX 导出仅支持 16:9 和 4:3')
   })
 })

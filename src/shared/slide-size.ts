@@ -138,9 +138,19 @@ export const isDefaultSlideSize = (slideSize: SlideSizePreset): boolean =>
   slideSize.width === 1600 &&
   slideSize.height === 900
 
+export type PptxExportSlideSizeId = Extract<
+  SlideSizePresetId,
+  'wide-16-9' | 'standard-4-3'
+>
+
+export const isPptxExportSupported = (
+  slideSize: SlideSizePreset
+): slideSize is SlideSizePreset & { id: PptxExportSlideSizeId } =>
+  slideSize.id === 'wide-16-9' || slideSize.id === 'standard-4-3'
+
 export const PPTX_SLIDE_SIZE_ERROR =
-  '当前 PPTX 导出仅支持 16:9。请使用 16:9 演示，或导出 PNG/PDF/视频。'
+  '当前 PPTX 导出仅支持 16:9 和 4:3。请使用这两种演示尺寸，或导出 PNG/PDF/视频。'
 
 export function assertPptxExportSupported(slideSize: SlideSizePreset): void {
-  if (!isDefaultSlideSize(slideSize)) throw new Error(PPTX_SLIDE_SIZE_ERROR)
+  if (!isPptxExportSupported(slideSize)) throw new Error(PPTX_SLIDE_SIZE_ERROR)
 }

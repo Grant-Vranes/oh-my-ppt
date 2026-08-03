@@ -1,5 +1,5 @@
 import { X } from 'lucide-react'
-import type { EditSelectionPayload } from '../../preview/edit-mode-script'
+import type { EditSelectionPayload } from '@arcsin1/presentation-editor-runtime'
 import { AppearanceInspector } from './AppearanceInspector'
 import { ArtTextInspector } from './ArtTextInspector'
 import { ChartInspector } from './ChartInspector'

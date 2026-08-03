@@ -50,6 +50,8 @@ import type { PageMergeDisabledReason } from '@shared/page-merge'
 import type { ModelUsagePeriod, ModelUsageStats } from '@shared/model-usage'
 import type { SlideSizePresetId } from '@shared/slide-size'
 import type { ParsedChartDataResult } from '@shared/chart-data'
+import type { SessionMasterConfig, SessionMasterStatus } from '@shared/master'
+import type { SessionLayoutLibrary, SessionLayoutLibraryStatus } from '@shared/layout-master'
 
 type IpcRendererLike = Window['electron']['ipcRenderer']
 
@@ -556,6 +558,26 @@ export const ipc = {
     }>,
   saveSessionAsNew: (payload: SaveSessionAsNewPayload): Promise<SaveSessionAsNewResult> =>
     getIpc().invoke('session:saveAsNew', payload) as Promise<SaveSessionAsNewResult>,
+  getSessionMaster: (payload: { sessionId: string }): Promise<SessionMasterStatus> =>
+    getIpc().invoke('session:getMaster', payload) as Promise<SessionMasterStatus>,
+  saveSessionMaster: (payload: {
+    sessionId: string
+    config: SessionMasterConfig
+  }): Promise<SessionMasterStatus> =>
+    getIpc().invoke('session:saveMaster', payload) as Promise<SessionMasterStatus>,
+  setSessionMasterPageOverride: (payload: {
+    sessionId: string
+    pageId: string
+    disabled: boolean
+  }): Promise<{ disabled: boolean }> =>
+    getIpc().invoke('session:setMasterPageOverride', payload) as Promise<{ disabled: boolean }>,
+  getSessionLayoutLibrary: (payload: { sessionId: string }): Promise<SessionLayoutLibraryStatus> =>
+    getIpc().invoke('session:getLayoutLibrary', payload) as Promise<SessionLayoutLibraryStatus>,
+  saveSessionLayoutLibrary: (payload: {
+    sessionId: string
+    library: SessionLayoutLibrary
+  }): Promise<SessionLayoutLibraryStatus> =>
+    getIpc().invoke('session:saveLayoutLibrary', payload) as Promise<SessionLayoutLibraryStatus>,
   getSession: (sessionId: string) =>
     getIpc().invoke('session:get', sessionId) as Promise<{
       session: unknown

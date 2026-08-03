@@ -4,7 +4,7 @@ import {
   ensureElementAnchorInHtml,
   patchDraggedElementStyle,
   patchGenericElementProperties
-} from '../../../src/main/ipc/editor/shared'
+} from '../../../src/main/element-editor/shared'
 
 describe('ensureElementAnchorInHtml', () => {
   it('keeps an existing block id only when it is unique', () => {
@@ -108,6 +108,37 @@ describe('patchDraggedElementStyle chart sizing', () => {
     expect(result).toContain('width: 500px; height: 320px')
     expect(result).toContain('<canvas id="chart-canvas" class="h-full w-full"></canvas>')
     expect(result).not.toContain('height: 300px')
+  })
+})
+
+describe('patchDraggedElementStyle flow layout resizing', () => {
+  const selector = 'body[data-page-id="page"] [data-block-id="flow"]'
+
+  it('persists translate and actual dimensions after layout isolation', () => {
+    const html = `
+      <html><body data-page-id="page">
+        <div data-block-id="flow" style="width: 240px; height: 100px">
+          <span data-block-id="child" style="width: 80px">Content</span>
+        </div>
+      </body></html>
+    `
+
+    const result = patchDraggedElementStyle(
+      html,
+      selector,
+      36,
+      -12,
+      360,
+      75,
+      [{ path: [0], width: 120, height: null }],
+      false
+    )
+
+    expect(result).toContain('--ppt-drag-x: 36px')
+    expect(result).toContain('--ppt-drag-y: -12px')
+    expect(result).toContain('width: 360px')
+    expect(result).toContain('height: 75px')
+    expect(result).toContain('width: 120px')
   })
 })
 
@@ -309,7 +340,7 @@ describe('patchGenericElementProperties formula', () => {
       {
         formula: {
           latex: 'x^2',
-          html: '<span class="katex ppt-edit-mode-selected ppt-inspector-highlight"><span class="katex-html">x2</span></span>',
+          html: '<span class="katex arcsin1-presentation-editor-selected ppt-inspector-highlight"><span class="katex-html">x2</span></span>',
           displayMode: false,
           originalLatex: ''
         }
@@ -317,7 +348,7 @@ describe('patchGenericElementProperties formula', () => {
     )
 
     expect(result).toContain('class="katex"')
-    expect(result).not.toContain('ppt-edit-mode-selected')
+    expect(result).not.toContain('arcsin1-presentation-editor-selected')
     expect(result).not.toContain('ppt-inspector-highlight')
   })
 })

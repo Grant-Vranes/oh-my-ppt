@@ -1,3 +1,30 @@
+import type { LayoutIntent } from './layout-intent'
+
+/** A generated slide's semantic plan, shared by planning, generation, and page tools. */
+export interface OutlineItem {
+  title: string
+  contentOutline: string
+  layoutIntent?: LayoutIntent
+  /** M3a resolves a session layout master into a flexible generation constraint. */
+  layoutId?: string
+  layoutPrompt?: string
+}
+
+/** Deck-level visual rules persisted with a session and applied to every generated page. */
+export interface DesignContract {
+  theme: string
+  background: string
+  palette: string[]
+  titleStyle: string
+  layoutMotif: string
+  chartStyle: string
+  shapeLanguage: string
+  titleFont: string
+  bodyFont: string
+}
+
+export type DeckEditScope = 'page' | 'deck' | 'presentation-container'
+
 export interface UploadedAsset {
   id: string
   fileName: string
@@ -161,6 +188,71 @@ export const normalizeFontSelection = (value: unknown): FontSelection => {
   }
 }
 
+/**
+ * A bounded, read-only snapshot of the element that initiated a selector-scoped AI edit.
+ *
+ * The renderer reads this from the live preview; the main process normalizes it again before
+ * it reaches an agent prompt. It deliberately excludes HTML, event handlers, and editor-only
+ * markers so it remains context rather than an alternate document-editing channel.
+ */
+export interface SelectedElementRuntimeContext {
+  classList?: string[]
+  attributes?: Record<string, string>
+  inlineStyle?: Record<string, { value: string; priority?: '' | 'important' }>
+  computedStyle?: Record<string, string>
+  bounds?: { x: number; y: number; width: number; height: number }
+}
+
+/**
+ * The renderer samples only these computed properties and the main process accepts only these
+ * keys from IPC. Keep the list shared so the two trust-boundary checks cannot drift.
+ */
+export const SELECTED_ELEMENT_CONTEXT_COMPUTED_STYLE_PROPERTIES = [
+  'display',
+  'position',
+  'box-sizing',
+  'left',
+  'top',
+  'right',
+  'bottom',
+  'width',
+  'height',
+  'min-width',
+  'min-height',
+  'max-width',
+  'max-height',
+  'margin',
+  'padding',
+  'gap',
+  'z-index',
+  'opacity',
+  'visibility',
+  'overflow',
+  'transform',
+  'transform-origin',
+  'color',
+  'background-color',
+  'background-image',
+  'border',
+  'border-radius',
+  'box-shadow',
+  'font-family',
+  'font-size',
+  'font-weight',
+  'line-height',
+  'letter-spacing',
+  'text-align',
+  'white-space',
+  'flex',
+  'flex-direction',
+  'align-items',
+  'justify-content',
+  'grid-template-columns',
+  'grid-template-rows',
+  'object-fit',
+  'object-position'
+] as const
+
 export interface GenerateStartPayload {
   sessionId: string
   modelConfigId?: string
@@ -169,6 +261,8 @@ export interface GenerateStartPayload {
   chatType?: 'main' | 'page'
   resetVisualStyle?: boolean
   persistUserMessage?: boolean
+  /** Renderer-generated ID so an optimistic chat message is reconciled with its DB record. */
+  clientMessageId?: string
   chatPageId?: string
   selectPageIds?: string[]
   selectedPageId?: string
@@ -176,6 +270,7 @@ export interface GenerateStartPayload {
   selector?: string
   elementTag?: string
   elementText?: string
+  selectedElementContext?: SelectedElementRuntimeContext
   imagePaths?: string[]
   videoPaths?: string[]
   docPaths?: string[]

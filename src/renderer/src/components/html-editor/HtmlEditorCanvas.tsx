@@ -2,23 +2,28 @@ import { useCallback, useEffect, useRef, useState, forwardRef, useImperativeHand
 import { nanoid } from 'nanoid'
 import { Loader2 } from 'lucide-react'
 import {
-  buildInspectorCleanupScript,
-  buildInspectorInjectScript,
-  INSPECTOR_CONSOLE_PREFIX
-} from '../preview/inspector-script'
-import {
   buildEditModeCleanupScript,
   buildEditModeInjectScript,
   buildEditModeSetPreviewScaleScript,
+  buildInspectorCleanupScript,
+  buildInspectorInjectScript,
   EDIT_MODE_CONSOLE_PREFIX,
+  INSPECTOR_CONSOLE_PREFIX,
   type EditableElementSnapshot,
   type EditModeMovePayload,
   type EditSnapPoints,
   type EditSnapSettings,
   type EditTextTarget,
-  type EditSelectionPayload
-} from '../preview/edit-mode-script'
+  type EditSelectionPayload,
+  type PresentationEditorOperation,
+  type PresentationEditorOperationResult,
+  type PresentationElementSnapshot
+} from '@arcsin1/presentation-editor-runtime'
 import { ipc } from '@renderer/lib/ipc'
+import {
+  normalizeEditModeLayoutIsland,
+  type EditModeLayoutIsland
+} from '@renderer/lib/presentation-layout-island'
 import { useT } from '@renderer/i18n'
 import { useHtmlEditorStore } from '../../store/htmlEditorStore'
 import {
@@ -101,8 +106,15 @@ export interface HtmlEditorCanvasHandle {
   showElement: (selector: string) => void
   applyDragStyle: (
     selector: string,
-    style: { x: number; y: number; width?: number; height?: number; isAbsoluteMode?: boolean }
+    style: {
+      x: number
+      y: number
+      width?: number
+      height?: number
+      isAbsoluteMode?: boolean
+    }
   ) => void
+  applyLayoutIsland: (layoutIsland: EditModeLayoutIsland) => void
   applyZIndex: (selector: string, zIndex: number) => void
   copyElement: (
     selector: string,
@@ -111,6 +123,11 @@ export interface HtmlEditorCanvasHandle {
   ensureChartJs: () => Promise<boolean>
   readElementHtml: (selector: string) => Promise<string>
   readElementSnapshot: (selector: string) => Promise<EditableElementSnapshot | null>
+  inspectElement: (selector: string) => Promise<PresentationElementSnapshot | null>
+  applyElementOperations: (
+    selector: string,
+    operations: PresentationEditorOperation[]
+  ) => Promise<PresentationEditorOperationResult[]>
   readElementLayout: (selector: string) => Promise<{
     isAbsoluteMode: boolean
     x: number
@@ -119,6 +136,7 @@ export interface HtmlEditorCanvasHandle {
     height: number
     visualX?: number
     visualY?: number
+    layoutIsland?: EditModeLayoutIsland
   } | null>
   applyChildUpdates: (
     selector: string,
@@ -605,7 +623,13 @@ export const HtmlEditorCanvas = forwardRef<
       },
       applyDragStyle(
         selector: string,
-        style: { x: number; y: number; width?: number; height?: number; isAbsoluteMode?: boolean }
+        style: {
+          x: number
+          y: number
+          width?: number
+          height?: number
+          isAbsoluteMode?: boolean
+        }
       ): void {
         const wv = webviewRef.current
         if (!wv) return
@@ -642,13 +666,17 @@ export const HtmlEditorCanvas = forwardRef<
             `__el.style.setProperty('--ppt-drag-x', ${JSON.stringify(style.x + 'px')});` +
             `__el.style.setProperty('--ppt-drag-y', ${JSON.stringify(style.y + 'px')});` +
             `__el.style.translate = 'var(--ppt-drag-x, 0px) var(--ppt-drag-y, 0px)';` +
-            (style.width != null
-              ? `__el.style.width = ${JSON.stringify(style.width + 'px')};`
-              : '') +
-            (style.height != null
-              ? `__el.style.height = ${JSON.stringify(style.height + 'px')};`
-              : '') +
+            (style.width != null ? `__el.style.width = ${JSON.stringify(style.width + 'px')};` : '') +
+            (style.height != null ? `__el.style.height = ${JSON.stringify(style.height + 'px')};` : '') +
             `})()`
+        )
+      },
+      applyLayoutIsland(layoutIsland: EditModeLayoutIsland): void {
+        const wv = webviewRef.current
+        if (!wv) return
+        safeExecuteJavaScript(
+          wv,
+          `if (window.__pptEditModeApplyLayoutIsland) window.__pptEditModeApplyLayoutIsland(${JSON.stringify(layoutIsland)});`
         )
       },
       applyZIndex(selector: string, zIndex: number): void {
@@ -692,7 +720,9 @@ export const HtmlEditorCanvas = forwardRef<
               `var __styleHtml = "";` +
               `__clone.setAttribute("data-block-id", ${JSON.stringify(newBlockId)});` +
               `__clone.querySelectorAll("[data-block-id]").forEach(function(c,i){if(__childIds[i])c.setAttribute("data-block-id",__childIds[i]);});` +
-              `__clone.classList.remove("ppt-edit-mode-selected","ppt-edit-mode-hover");` +
+              `__clone.classList.remove("arcsin1-presentation-editor-selected","arcsin1-presentation-editor-hover");` +
+              `__clone.removeAttribute("data-arcsin1-presentation-editor-selected");` +
+              `__clone.removeAttribute("data-arcsin1-presentation-editor-hover");` +
               `if (__src.hasAttribute("data-ppt-art-text") && __oldBlockId) {` +
               `  var __style = Array.from(document.querySelectorAll("style[data-ppt-art-text-style]")).find(function(s){ return s.getAttribute("data-ppt-art-text-style") === __oldBlockId; });` +
               `  if (__style) {` +
@@ -788,6 +818,34 @@ export const HtmlEditorCanvas = forwardRef<
           return null
         }
       },
+      async inspectElement(selector: string): Promise<PresentationElementSnapshot | null> {
+        const wv = webviewRef.current
+        if (!wv || !canExecuteJavaScript(wv)) return null
+        try {
+          return (
+            (await wv.executeJavaScript(
+              `window.__pptEditModeInspectElement ? window.__pptEditModeInspectElement(${JSON.stringify(selector)}) : null`
+            )) || null
+          )
+        } catch {
+          return null
+        }
+      },
+      async applyElementOperations(
+        selector: string,
+        operations: PresentationEditorOperation[]
+      ): Promise<PresentationEditorOperationResult[]> {
+        const wv = webviewRef.current
+        if (!wv || !canExecuteJavaScript(wv) || operations.length === 0) return []
+        try {
+          const result = await wv.executeJavaScript(
+            `window.__pptEditModeApplyOperations ? window.__pptEditModeApplyOperations(${JSON.stringify(selector)}, ${JSON.stringify(operations)}) : []`
+          )
+          return Array.isArray(result) ? (result as PresentationEditorOperationResult[]) : []
+        } catch {
+          return []
+        }
+      },
       async readElementLayout(selector: string): Promise<{
         isAbsoluteMode: boolean
         x: number
@@ -796,15 +854,28 @@ export const HtmlEditorCanvas = forwardRef<
         height: number
         visualX?: number
         visualY?: number
+        layoutIsland?: EditModeLayoutIsland
       } | null> {
         const wv = webviewRef.current
         if (!wv || !canExecuteJavaScript(wv)) return null
         try {
-          return (
-            (await wv.executeJavaScript(
-              `window.__pptEditModeReadLayout ? window.__pptEditModeReadLayout(${JSON.stringify(selector)}) : null`
-            )) || null
-          )
+          const layout = (await wv.executeJavaScript(
+            `window.__pptEditModeReadLayout ? window.__pptEditModeReadLayout(${JSON.stringify(selector)}) : null`
+          )) as {
+            isAbsoluteMode: boolean
+            x: number
+            y: number
+            width: number
+            height: number
+            visualX?: number
+            visualY?: number
+            layoutIsland?: unknown
+          } | null
+          if (!layout) return null
+          return {
+            ...layout,
+            layoutIsland: normalizeEditModeLayoutIsland(layout.layoutIsland)
+          }
         } catch {
           return null
         }
@@ -1054,7 +1125,7 @@ export const HtmlEditorCanvas = forwardRef<
           visualY?: number
           width?: number
           height?: number
-          scale?: number
+          layoutIsland?: unknown
           childUpdates?: Array<{
             path: number[]
             width?: number
@@ -1205,7 +1276,7 @@ export const HtmlEditorCanvas = forwardRef<
                   visualY: parsed.visualY === undefined ? undefined : Number(parsed.visualY),
                   width: parsed.width === undefined ? undefined : Number(parsed.width),
                   height: parsed.height === undefined ? undefined : Number(parsed.height),
-                  scale: parsed.scale === undefined ? undefined : Number(parsed.scale),
+                  layoutIsland: normalizeEditModeLayoutIsland(parsed.layoutIsland),
                   childUpdates: Array.isArray(parsed.childUpdates)
                     ? parsed.childUpdates
                         .map((item) => ({

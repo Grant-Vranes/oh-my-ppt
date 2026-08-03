@@ -8,7 +8,7 @@ import {
   hasSlideScaffold,
   normalizeImportedHtml,
   rewriteRelativeAssetsToSource
-} from '../../../src/main/ipc/html-editor/html-editor-import'
+} from '../../../src/main/html-editor/html-editor-import'
 
 const SOURCE_DIR = path.join(os.tmpdir(), 'html-editor-src-test')
 const fileUrl = (rel: string): string => pathToFileURL(path.resolve(SOURCE_DIR, rel)).href

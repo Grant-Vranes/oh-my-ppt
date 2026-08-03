@@ -4,12 +4,10 @@ import { Window } from 'happy-dom'
 import { describe, expect, it } from 'vitest'
 import {
   EDIT_MODE_CONSOLE_PREFIX,
-  buildEditModeInjectScript
-} from '../../../src/renderer/src/components/preview/edit-mode-script'
-import {
+  buildEditModeInjectScript,
   INSPECTOR_CONSOLE_PREFIX,
   buildInspectorInjectScript
-} from '../../../src/renderer/src/components/preview/inspector-script'
+} from '@arcsin1/presentation-editor-runtime'
 
 type Rect = Pick<DOMRect, 'left' | 'top' | 'right' | 'bottom' | 'width' | 'height'>
 
@@ -1049,7 +1047,7 @@ describe('preview text hit selection', () => {
     expect(payload.kind).toBe('formula')
     expect(payload.capabilities).toContain('formula')
     expect(payload.snapshot?.formula?.html).toContain('class="katex"')
-    expect(payload.snapshot?.formula?.html).not.toContain('ppt-edit-mode-selected')
+    expect(payload.snapshot?.formula?.html).not.toContain('arcsin1-presentation-editor-selected')
   })
 
   it('edit mode selects the formula when hit testing returns the formula host', () => {
@@ -1080,7 +1078,7 @@ describe('preview text hit selection', () => {
     expect(payload.selector).not.toContain('formula-card')
     expect(window.document.querySelector(payload.selector || '')).toBe(formula)
     expect(payload.kind).toBe('formula')
-    const overlay = window.document.getElementById('ppt-edit-mode-resize-overlay') as HTMLElement
+    const overlay = window.document.getElementById('arcsin1-presentation-editor-resize-overlay') as HTMLElement
     expect(overlay.style.left).toBe('280px')
     expect(overlay.style.top).toBe('140px')
     expect(overlay.style.width).toBe('260px')
@@ -1282,7 +1280,7 @@ describe('preview text hit selection', () => {
       })
     )
 
-    const overlay = window.document.getElementById('ppt-edit-mode-resize-overlay') as HTMLElement
+    const overlay = window.document.getElementById('arcsin1-presentation-editor-resize-overlay') as HTMLElement
     expect(overlay).toBeTruthy()
     expect(overlay.style.left).toBe('210px')
     expect(overlay.style.top).toBe('145px')
@@ -1348,7 +1346,7 @@ describe('preview text hit selection', () => {
       viewportBounds?: { width?: number; height?: number }
     }
     expect(payload.viewportBounds).toMatchObject({ width: 100, height: 40 })
-    const overlay = window.document.getElementById('ppt-edit-mode-resize-overlay') as HTMLElement
+    const overlay = window.document.getElementById('arcsin1-presentation-editor-resize-overlay') as HTMLElement
     expect(overlay).toBeTruthy()
     expect(overlay.style.left).toBe('180px')
     expect(overlay.style.top).toBe('120px')

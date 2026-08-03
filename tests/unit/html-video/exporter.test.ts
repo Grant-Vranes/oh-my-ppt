@@ -26,7 +26,7 @@ import {
   normalizeVideoExportFps,
   normalizeVideoExportSecondsPerPage,
   resolveVideoExportFrameLayout
-} from '../../../src/main/utils/html-video/exporter'
+} from '../../../src/main/io/html-video/exporter'
 
 describe('html video exporter', () => {
   it('normalizes captured frames back to the export canvas size', () => {

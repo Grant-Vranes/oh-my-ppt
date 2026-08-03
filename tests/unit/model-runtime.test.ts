@@ -8,7 +8,7 @@ import {
   resolveCurrentModelTemperature,
   resolveCurrentModelTemperatureOptions,
   runWithModelTemperatureControl
-} from '../../src/main/model-runtime'
+} from '../../src/main/agent-runtime/model'
 
 describe('model temperature runtime', () => {
   it('keeps temperature enabled when no model control is bound', () => {

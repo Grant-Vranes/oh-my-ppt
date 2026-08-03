@@ -5,16 +5,16 @@ import {
   buildCanvasConstraints,
   buildLayoutCollisionRules,
   buildPageSemanticStructure
-} from '../../../src/main/prompt/shared'
+} from '../../../src/main/agent-runtime/prompt'
 import {
   buildDeckAgentSystemPrompt,
   buildSinglePageGenerationPrompt,
   buildCanvasScenarioContentRules,
   buildCanvasScenarioDeliveryGuard,
   resolveCanvasScenario
-} from '../../../src/main/prompt'
-import { buildEditAgentSystemPrompt } from '../../../src/main/prompt/edit-system'
-import type { SessionDeckGenerationContext } from '../../../src/main/tools/types'
+} from '../../../src/main/agent-runtime/prompt'
+import { buildEditAgentSystemPrompt } from '../../../src/main/agent-runtime/prompt'
+import type { SessionDeckGenerationContext } from '../../../src/main/agent-runtime/agent'
 import { resolveSlideSize } from '../../../src/shared/slide-size'
 import {
   CHART_SKILL_NAME,
@@ -28,7 +28,7 @@ import {
   VERTICAL_9_16_LAYOUT_SKILL_NAME,
   getRequiredProductSkillNamesForSlideSize,
   resolveLayoutSkillName
-} from '../../../src/main/skills/skill-contract'
+} from '../../../src/main/product-skills/contract'
 
 const readSource = (relativePath: string): string =>
   fs.readFileSync(path.join(process.cwd(), relativePath), 'utf-8')
@@ -142,7 +142,7 @@ describe('slide size prompt', () => {
       expect(resolveCanvasScenario(resolveSlideSize({ id })).id).toBe(scenarioId)
     }
 
-    const source = readSource('src/main/prompt/canvas-scenario.ts')
+    const source = readSource('src/main/agent-runtime/prompt/composers/canvas-scenario.ts')
     expect(source).not.toContain('adaptive-canvas')
     expect(source).not.toContain('fallback')
     expect(source).toContain('No canvas scenario prompt configured')

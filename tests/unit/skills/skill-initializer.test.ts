@@ -3,9 +3,8 @@ import os from 'node:os'
 import path from 'node:path'
 import { CompositeBackend, FilesystemBackend } from 'deepagents'
 import { describe, expect, it } from 'vitest'
-import { compareVersion, initializeSkills } from '../../../src/main/skills/skill-initializer'
-import { attachProductSkillsBackend } from '../../../src/main/skills/product-skills-backend'
-import { setSkillsRuntime } from '../../../src/main/skills/skill-runtime'
+import { attachProductSkillsBackend } from '../../../src/main/agent-runtime/skills'
+import { compareVersion, initializeSkills } from '../../../src/main/product-skills/initializer'
 import {
   CHART_SKILL_NAME,
   DATA_ANIM_SKILL_NAME,
@@ -19,7 +18,8 @@ import {
   SYSTEM_SKILLS_SOURCE_PATH,
   VERTICAL_3_4_LAYOUT_SKILL_NAME,
   VERTICAL_9_16_LAYOUT_SKILL_NAME
-} from '../../../src/main/skills/skill-contract'
+} from '../../../src/main/product-skills/contract'
+import { setSkillsRuntime } from '../../../src/main/product-skills/runtime-state'
 
 async function makeSkill(root: string, name: string, version: string, body = '# Skill\n'): Promise<void> {
   const skillPath = path.join(root, name)

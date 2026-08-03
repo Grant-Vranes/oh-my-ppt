@@ -6,8 +6,8 @@ import {
   estimateOutlinePageCount,
   scanDocumentOutline,
   type DocumentOutlineScan
-} from '../ipc/io/document-outline-scan'
-import { convertCsvTextToMarkdown } from '../ipc/io/document-csv-to-markdown'
+} from '../io/document-outline-scan'
+import { convertCsvTextToMarkdown } from '../io/document-csv-to-markdown'
 import type { ThinkingChatMessage } from '@shared/thinking'
 
 const MAX_BRIEF_ATTACHMENTS = 3

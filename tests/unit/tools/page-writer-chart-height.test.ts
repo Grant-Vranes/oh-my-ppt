@@ -15,7 +15,7 @@ vi.mock('@electron-toolkit/utils', () => ({
   },
 }))
 
-import { preprocessPageHtml } from '../../../src/main/tools/page-writer'
+import { preprocessPageHtml } from '../../../src/main/presentation/html/page-writer-core'
 
 describe('preprocessPageHtml chart height stabilization', () => {
   it('uses the dedicated chart height comment marker when adding a missing frame height', () => {

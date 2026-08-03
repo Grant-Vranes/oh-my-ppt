@@ -1,6 +1,6 @@
 import { Window } from 'happy-dom'
 import { describe, expect, it } from 'vitest'
-import { buildEditModeInjectScript } from '../../../src/renderer/src/components/preview/edit-mode-script'
+import { buildEditModeInjectScript } from '@arcsin1/presentation-editor-runtime'
 import {
   buildIconElementHtml,
   buildShapeElementHtml

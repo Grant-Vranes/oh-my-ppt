@@ -1,14 +1,14 @@
 import * as cheerio from 'cheerio'
 import { describe, expect, it, vi } from 'vitest'
 
-vi.mock('../../../src/main/ipc/html-editor/html-editor-thumbnail', () => ({
+vi.mock('../../../src/main/html-editor/html-editor-thumbnail', () => ({
   refreshHtmlEditorCoverThumbnail: vi.fn(),
   warmHtmlEditorCoverThumbnails: vi.fn(async () => new Map())
 }))
 
-import { applyEditsToHtml } from '../../../src/main/ipc/html-editor/html-editor-handlers'
-import { resolveHtmlEditorDocumentPath } from '../../../src/main/ipc/html-editor/html-editor-handlers'
-import { ensureElementAnchorInHtml } from '../../../src/main/ipc/editor/shared'
+import { applyEditsToHtml } from '../../../src/main/html-editor/html-editor-handlers'
+import { resolveHtmlEditorDocumentPath } from '../../../src/main/html-editor/html-editor-handlers'
+import { ensureElementAnchorInHtml } from '../../../src/main/element-editor/shared'
 
 const PAGE_ID = 'd1'
 
@@ -103,6 +103,74 @@ describe('applyEditsToHtml', () => {
     expect(el.attr('style')).toMatch(/top:\s*50px/)
     expect(el.attr('style')).toMatch(/width:\s*200px/)
     expect(el.attr('style')).toMatch(/height:\s*80px/)
+  })
+
+  it('persists a flow resize as translate and actual dimensions', () => {
+    const { html } = applyEditsToHtml(
+      sampleHtml('<div id="el1" style="width: 240px; height: 100px">Hello</div>'),
+      PAGE_ID,
+      {
+        dragEdits: [
+          {
+            selector: '#el1',
+            x: 20,
+            y: -8,
+            width: 360,
+            height: 75,
+            childUpdates: [],
+            isAbsoluteMode: false
+          }
+        ]
+      }
+    )
+
+    const el = load(html)('#el1')
+    expect(el.attr('style')).toMatch(/width:\s*360px/)
+    expect(el.attr('style')).toMatch(/height:\s*75px/)
+    expect(el.attr('style')).toMatch(/translate:\s*var\(--ppt-drag-x, 0px\) var\(--ppt-drag-y, 0px\)/)
+  })
+
+  it('freezes a flex layout island before persisting the resized element geometry', () => {
+    const { html } = applyEditsToHtml(
+      sampleHtml(`
+        <section id="island" style="display: flex">
+          <article id="item-a"><p style="font-size: 24px">Text</p></article>
+          <article id="item-b"><img alt="Visual"></article>
+        </section>
+      `),
+      PAGE_ID,
+      {
+        dragEdits: [
+          {
+            selector: '#item-a',
+            x: 20,
+            y: 30,
+            width: 260,
+            height: 120,
+            childUpdates: [],
+            isAbsoluteMode: true,
+            layoutIsland: {
+              selector: '#island',
+              width: 640,
+              height: 360,
+              children: [
+                { index: 0, x: 20, y: 30, width: 220, height: 120 },
+                { index: 1, x: 300, y: 30, width: 300, height: 180 }
+              ]
+            }
+          }
+        ]
+      }
+    )
+
+    const $ = load(html)
+    expect($('#island').attr('data-ppt-layout-frozen')).toBe('1')
+    expect($('#island').attr('style')).toMatch(/display:\s*block/)
+    expect($('#item-a').attr('style')).toMatch(/position:\s*absolute/)
+    expect($('#item-a').attr('style')).toMatch(/width:\s*260px/)
+    expect($('#item-b').attr('style')).toMatch(/left:\s*300px/)
+    expect($('#item-a p').attr('style')).toContain('font-size: 24px')
+    expect($('#item-a').attr('style')).not.toContain('scale:')
   })
 
   it('resolves a property edit by blockId after anchoring', () => {

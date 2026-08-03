@@ -1626,6 +1626,51 @@ export class PPTDatabase {
       .run()
   }
 
+  async persistSessionPageState(data: {
+    sessionId: string
+    pages: Array<{ id: string; pageNumber: number }>
+    deletedPageIds?: string[]
+    metadata: object
+  }): Promise<void> {
+    const now = Math.floor(Date.now() / 1000)
+    await this.db.transaction(async (tx) => {
+      if (data.deletedPageIds?.length) {
+        await tx
+          .update(schema.sessionPages)
+          .set({ deletedAt: now, updatedAt: now })
+          .where(
+            and(
+              eq(schema.sessionPages.sessionId, data.sessionId),
+              inArray(schema.sessionPages.id, data.deletedPageIds)
+            )
+          )
+          .run()
+      }
+      if (data.pages.length > 0) {
+        const pageIds = data.pages.map((page) => page.id)
+        const caseWhenFragments = data.pages.map(
+          (page) => sql`WHEN ${schema.sessionPages.id} = ${page.id} THEN ${page.pageNumber}`
+        )
+        const pageNumberExpr = sql<number>`CASE ${sql.join(caseWhenFragments, sql` `)} ELSE ${schema.sessionPages.pageNumber} END`
+        await tx
+          .update(schema.sessionPages)
+          .set({ pageNumber: pageNumberExpr, updatedAt: now })
+          .where(
+            and(
+              eq(schema.sessionPages.sessionId, data.sessionId),
+              inArray(schema.sessionPages.id, pageIds)
+            )
+          )
+          .run()
+      }
+      await tx
+        .update(schema.sessions)
+        .set({ metadata: JSON.stringify(data.metadata), updatedAt: now })
+        .where(eq(schema.sessions.id, data.sessionId))
+        .run()
+    })
+  }
+
   async softDeleteSessionPages(sessionId: string, ids: string[]): Promise<void> {
     if (!Array.isArray(ids) || ids.length === 0) return
     const now = Math.floor(Date.now() / 1000)
@@ -2078,9 +2123,10 @@ export class PPTDatabase {
       image_paths?: string[] | null
       video_paths?: string[] | null
       run_model?: string | null
+      id?: string
     }
   ): Promise<string> {
-    const id = crypto.randomUUID()
+    const id = message.id || crypto.randomUUID()
     const now = Math.floor(Date.now() / 1000)
     const chatScope = message.chat_scope === 'page' ? 'page' : 'main'
     const pageId =

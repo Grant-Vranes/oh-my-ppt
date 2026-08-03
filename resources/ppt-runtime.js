@@ -1,10 +1,10 @@
 (function initPptRuntime(global) {
   if (!global || typeof global !== "object") return;
-  // @ohmyppt-ppt-runtime:arcsin1:v2.0.18
+  // @ohmyppt-ppt-runtime:arcsin1:v2.0.21
 
   var ppt = global.PPT && typeof global.PPT === "object" ? global.PPT : (global.PPT = {});
-  if (ppt.__runtimeVersion === "2.0.18") return;
-  ppt.__runtimeVersion = "2.0.18";
+  if (ppt.__runtimeVersion === "2.0.21") return;
+  ppt.__runtimeVersion = "2.0.21";
 
   function resolveSearchParams() {
     try {
@@ -16,6 +16,7 @@
 
   var search = resolveSearchParams();
   var isPrintMode = search.get("print") === "1";
+  var expectsMasterElements = search.get("_pptMasterElementsExpected") === "1";
   var clickAnimationsEnabled = search.get("pptPlayback") === "1";
   if (!clickAnimationsEnabled) {
     global.__ohmypptPlaybackBridgeInstallToken =
@@ -25,6 +26,7 @@
   var printTimeoutMs = Math.max(1000, Number(search.get("printTimeoutMs")) || 40000);
   var printReadyEmitted = false;
   var pendingPrintTasks = [];
+  var masterElementsTask = Promise.resolve();
 
   function trackPrintTask(promise) {
     if (!promise || typeof promise.then !== "function") return promise;
@@ -1425,6 +1427,171 @@
     }
   }
 
+  function isMasterElementsDisabled(root) {
+    try {
+      return !!(
+        (global.document && document.body && document.body.getAttribute("data-ppt-master-off") === "1") ||
+        (root && root.getAttribute("data-ppt-master-off") === "1")
+      );
+    } catch (_err) {
+      return false;
+    }
+  }
+
+  function resolveMasterPageNumber(root) {
+    var raw = "";
+    try {
+      raw =
+        (root && root.getAttribute("data-ppt-page-number")) ||
+        (document.body && document.body.getAttribute("data-ppt-page-number")) ||
+        "";
+      if (!raw) {
+        var scaffold = document.querySelector("[data-page-number]");
+        raw = scaffold ? scaffold.getAttribute("data-page-number") || "" : "";
+      }
+    } catch (_err) {}
+    var pageNumber = Number(raw);
+    if (Number.isFinite(pageNumber) && pageNumber >= 1) return String(Math.floor(pageNumber));
+    try {
+      var pathname = global.location ? String(global.location.pathname || "") : "";
+      var match = pathname.match(/page-(\d+)\.html?$/i);
+      if (match && match[1]) return String(Math.max(1, Number(match[1])));
+    } catch (_err2) {}
+    return "";
+  }
+
+  function removeUnsafeMasterElementNodes(layer) {
+    if (!layer || typeof layer.querySelectorAll !== "function") return;
+    Array.prototype.slice.call(layer.querySelectorAll("script, iframe, object, embed, link")).forEach(function (node) {
+      node.remove();
+    });
+    Array.prototype.slice.call(layer.querySelectorAll("*")).forEach(function (node) {
+      Array.prototype.slice.call(node.attributes || []).forEach(function (attr) {
+        if (/^on/i.test(attr.name)) node.removeAttribute(attr.name);
+      });
+    });
+  }
+
+  function syncMasterWatermarkFontSize(root, layer) {
+    if (!root || !layer || typeof layer.querySelectorAll !== "function") return;
+    var slideHeight = Number(root.getAttribute("data-ppt-height"));
+    if (!Number.isFinite(slideHeight) || slideHeight <= 0) {
+      slideHeight = Number(root.clientHeight) || 0;
+    }
+    if (!Number.isFinite(slideHeight) || slideHeight <= 0) return;
+    Array.prototype.slice.call(layer.querySelectorAll("[data-ppt-master-watermark-height]")).forEach(function (node) {
+      var relativeHeight = Number(node.getAttribute("data-ppt-master-watermark-height"));
+      if (!Number.isFinite(relativeHeight) || relativeHeight <= 0) return;
+      var fontSize = Math.max(8, Math.min(160, Math.round(slideHeight * (relativeHeight / 100) * 0.45)));
+      node.style.fontSize = String(fontSize) + "px";
+    });
+  }
+
+  function injectMasterElements() {
+    if (!global.document || typeof global.fetch !== "function") {
+      return expectsMasterElements
+        ? Promise.reject(new Error("母版全局元素运行时不可用"))
+        : Promise.resolve();
+    }
+    var root = document.querySelector(".ppt-page-root[data-ppt-guard-root=\"1\"]");
+    if (!root) {
+      return expectsMasterElements
+        ? Promise.reject(new Error("母版全局元素缺少页面根节点"))
+        : Promise.resolve();
+    }
+    if (isMasterElementsDisabled(root)) return Promise.resolve();
+    var existing = root.querySelector(":scope > [data-ppt-master-elements-layer=\"1\"]");
+    if (existing) return Promise.resolve();
+    var masterUrl = "";
+    try {
+      masterUrl = new URL("./master/master.html", global.location.href).toString();
+    } catch (_err) {
+      return expectsMasterElements
+        ? Promise.reject(new Error("母版全局元素地址无效"))
+        : Promise.resolve();
+    }
+    return global
+      .fetch(masterUrl, { cache: "no-store" })
+      .then(function (response) {
+        if (!response || !response.ok) {
+          if (expectsMasterElements) throw new Error("母版全局元素加载失败");
+          return "";
+        }
+        return response.text();
+      })
+      .then(function (source) {
+        if (!source) {
+          if (expectsMasterElements) throw new Error("母版全局元素内容为空");
+          return;
+        }
+        var host = document.createElement("template");
+        host.innerHTML = source;
+        var configNode = host.content.querySelector("script[data-ppt-master-elements-config=\"1\"]");
+        if (configNode) {
+          try {
+            JSON.parse(configNode.textContent || "{}");
+          } catch (_err2) {
+            if (expectsMasterElements) throw new Error("母版全局元素配置无效");
+            return;
+          }
+        } else if (expectsMasterElements) {
+          throw new Error("母版全局元素配置缺失");
+        }
+        var masterTemplate = host.content.querySelector("template[data-ppt-master-elements=\"1\"]");
+        if (!masterTemplate) {
+          if (expectsMasterElements) throw new Error("母版全局元素内容无效");
+          return;
+        }
+        var sourceLayer = masterTemplate.content.querySelector("[data-ppt-master-elements-layer=\"1\"]");
+        if (!sourceLayer) {
+          if (expectsMasterElements) throw new Error("母版全局元素层缺失");
+          return;
+        }
+        var layer = sourceLayer.cloneNode(true);
+        removeUnsafeMasterElementNodes(layer);
+        var pageNumber = resolveMasterPageNumber(root);
+        Array.prototype.slice.call(layer.querySelectorAll("[data-ppt-master-page-number]")).forEach(function (node) {
+          node.textContent = pageNumber;
+        });
+        syncMasterWatermarkFontSize(root, layer);
+        root.appendChild(layer);
+      })
+      .catch(function (error) {
+        if (expectsMasterElements) {
+          throw error instanceof Error ? error : new Error("母版全局元素加载失败");
+        }
+        // Historical sessions without a fragment remain a safe no-op.
+      });
+  }
+
+  function loadMasterElementsWhenReady() {
+    if (!global.document) return;
+    masterElementsTask = new Promise(function (resolve, reject) {
+      function run() {
+        Promise.resolve(injectMasterElements()).then(resolve, reject);
+      }
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", run, { once: true });
+      } else {
+        run();
+      }
+    });
+    trackPrintTask(masterElementsTask);
+  }
+
+  ppt.assertMasterElementsReady = function (timeoutMs) {
+    if (!expectsMasterElements) return Promise.resolve();
+    var timeout = Math.max(1000, Number(timeoutMs) || 5000);
+    return Promise.race([
+      masterElementsTask,
+      new Promise(function (_resolve, reject) {
+        setTimeout(function () {
+          reject(new Error("母版全局元素加载超时"));
+        }, timeout);
+      }),
+    ]);
+  };
+
   ppt.whenReadyForPrint = function (timeoutMs) {
     var timeout = Math.max(0, Number(timeoutMs) || 5000);
     var startAt = Date.now();
@@ -1464,6 +1631,7 @@
   };
 
   autoRenderMathWhenReady();
+  loadMasterElementsWhenReady();
 
   if (isPrintMode) {
     ppt.whenReadyForPrint(printTimeoutMs).then(function () {

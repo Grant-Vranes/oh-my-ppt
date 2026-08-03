@@ -2,19 +2,20 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('electron', () => ({ ipcMain: { handle: vi.fn() } }))
 vi.mock('electron-log/main.js', () => ({ default: { error: vi.fn(), warn: vi.fn() } }))
-vi.mock('../../../src/main/ipc/generation/edit-deck-allpage-flow', () => ({
+vi.mock('../../../src/main/generation/edit-deck-allpage-flow', () => ({
   executeDeckAllPageEditGeneration: vi.fn()
 }))
-vi.mock('../../../src/main/ipc/generation/edit-flow', () => ({ resolveEditContext: vi.fn() }))
-vi.mock('../../../src/main/ipc/generation/generation-utils', () => ({
+vi.mock('../../../src/main/generation/edit-flow', () => ({ resolveEditContext: vi.fn() }))
+vi.mock('../../../src/main/generation/generation-utils', () => ({
   createEmitAssistantMessage: vi.fn()
 }))
-vi.mock('../../../src/main/ipc/edit-jobs/edit-job-finalization', () => ({
-  settleEditJobFailure: vi.fn()
+vi.mock('../../../src/main/edit-jobs/edit-job-finalization', () => ({
+  settleEditJobFailure: vi.fn(),
+  settleEditJobSuccess: vi.fn()
 }))
 
-import { DeckEditJobService } from '../../../src/main/ipc/edit-jobs/deck-edit-job-service'
-import { SessionJobCoordinator } from '../../../src/main/ipc/edit-jobs/session-job-coordinator'
+import { DeckEditJobService } from '../../../src/main/edit-jobs/deck-edit-job-service'
+import { JobCoordinator } from '../../../src/main/agent-runtime'
 
 describe('DeckEditJobService state recovery', () => {
   it('restores the retry payload and failed page count from a finished partial job', async () => {
@@ -52,10 +53,7 @@ describe('DeckEditJobService state recovery', () => {
         ])
       }
     }
-    const service = new DeckEditJobService(
-      ctx as never,
-      new SessionJobCoordinator(ctx as never)
-    )
+    const service = new DeckEditJobService(ctx as never, new JobCoordinator())
 
     await expect(service.getState(sessionId)).resolves.toMatchObject({
       sessionId,

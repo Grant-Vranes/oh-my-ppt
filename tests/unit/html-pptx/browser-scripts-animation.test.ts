@@ -10,7 +10,7 @@ import {
   FREEZE_PAGE_FOR_PPTX_SCRIPT,
   HAS_DECLARED_PPTX_ANIMATION_SCRIPT,
   HIDE_FOR_PPTX_BACKGROUND_SCRIPT
-} from '../../../src/main/utils/html-pptx/browser-scripts'
+} from '../../../src/main/io/html-pptx/browser-scripts'
 
 const rect = (left: number, top: number, width: number, height: number) => ({
   x: left,
@@ -43,7 +43,7 @@ describe('PPTX animation browser scripts', () => {
     expect(FREEZE_PAGE_FOR_PPTX_SCRIPT).not.toContain('data-pptx-native-anim')
     expect(HIDE_FOR_PPTX_BACKGROUND_SCRIPT).not.toContain('[data-pptx-native-anim]')
     const rendererSource = fs.readFileSync(
-      path.resolve('src/main/utils/html-pptx/renderer.ts'),
+      path.resolve('src/main/io/html-pptx/renderer.ts'),
       'utf8'
     )
     expect(rendererSource).toContain("animationMode = 'slide-transition'")
@@ -81,10 +81,8 @@ describe('PPTX animation browser scripts', () => {
     expect(HIDE_FOR_PPTX_BACKGROUND_SCRIPT).toContain(
       "'[data-pptx-extracted-image] { opacity: 0 !important; visibility: hidden !important; }'"
     )
-    expect(HIDE_FOR_PPTX_BACKGROUND_SCRIPT).toContain(
-      'const horizontalTolerance = rootRect.width *'
-    )
-    expect(HIDE_FOR_PPTX_BACKGROUND_SCRIPT).toContain('const verticalTolerance = rootRect.height *')
+    expect(HIDE_FOR_PPTX_BACKGROUND_SCRIPT).toContain('const horizontalTolerance = 2;')
+    expect(HIDE_FOR_PPTX_BACKGROUND_SCRIPT).toContain('const verticalTolerance = 2;')
   })
 
   it('does not invent native effects for legacy opacity markers', () => {
@@ -102,6 +100,16 @@ describe('PPTX animation browser scripts', () => {
     expect(script).toContain('"x":1')
     expect(script).toContain('overlap / rectArea >= 0.85')
     expect(script).not.toContain('centerInside')
+  })
+
+  it('maps text boxes against the requested 4:3 slide size', () => {
+    const script = buildMarkPptxExtractedTextForBackgroundScript(
+      [{ x: 1, y: 2, w: 3, h: 0.5 }],
+      { widthIn: 10, heightIn: 7.5 }
+    )
+
+    expect(script).toContain('const slideWidth = 10;')
+    expect(script).toContain('const slideHeight = 7.5;')
   })
 
   it('marks a mixed text container only when every fragment has an exported PPT text box', () => {

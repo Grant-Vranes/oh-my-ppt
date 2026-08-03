@@ -5,7 +5,7 @@ const state = vi.hoisted(() => ({
   enqueueHtmlThumbnails: vi.fn()
 }))
 
-vi.mock('../../../src/main/utils/html-thumbnail-service', () => ({
+vi.mock('../../../src/main/io/thumbnails/html-thumbnail-service', () => ({
   getFreshHtmlThumbnailPaths: state.getFreshHtmlThumbnailPaths,
   enqueueHtmlThumbnails: state.enqueueHtmlThumbnails
 }))

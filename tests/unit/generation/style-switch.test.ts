@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildStyleSwitchUserMessage,
   collectFailedStyleSwitchPageIds
-} from '../../../src/main/ipc/generation/style-switch'
+} from '../../../src/main/generation/style-switch'
 
 describe('style switch generation', () => {
   it('builds a strict visual-only deck edit instruction', () => {
@@ -40,15 +40,15 @@ describe('style switch generation', () => {
 
   it('uses an independent persistent style-switch job with two workers', () => {
     const serviceSource = fs.readFileSync(
-      path.resolve('src/main/ipc/edit-jobs/style-switch-job-service.ts'),
+      path.resolve('src/main/edit-jobs/style-switch-job-service.ts'),
       'utf8'
     )
     const typesSource = fs.readFileSync(
-      path.resolve('src/main/ipc/edit-jobs/style-switch-job-types.ts'),
+      path.resolve('src/main/edit-jobs/style-switch-job-types.ts'),
       'utf8'
     )
     const flowSource = fs.readFileSync(
-      path.resolve('src/main/ipc/edit-jobs/style-switch-job-flow.ts'),
+      path.resolve('src/main/edit-jobs/style-switch-job-flow.ts'),
       'utf8'
     )
     const databaseSource = fs.readFileSync(path.resolve('src/main/db/database.ts'), 'utf8')
@@ -58,6 +58,14 @@ describe('style switch generation', () => {
     expect(serviceSource).toContain("kind: 'style-switch'")
     expect(serviceSource).toContain("mode: 'style-switch'")
     expect(serviceSource).toContain('createGenerationRunWithSessionJobAndPages')
+    expect(serviceSource).toContain('private reservedJobIds')
+    expect(serviceSource).toContain("domain: 'style'")
+    expect(serviceSource).toContain('sessionLockKey(sessionId)')
+    expect(serviceSource).toContain('{ runId: lease.jobId, abortSignal: lease.signal }')
+    expect(serviceSource).toContain('this.coordinator.cancel(job.lease.jobId)')
+    expect(serviceSource).not.toContain('SessionJobCoordinator')
+    expect(serviceSource).not.toContain('lease.controller')
+    expect(serviceSource).not.toContain('agentManager.cancelSession')
     expect(serviceSource).toContain(
       'await this.ctx.db.replaceSessionStyleSnapshot(sessionId, styleId)'
     )
@@ -66,6 +74,9 @@ describe('style switch generation', () => {
     expect(serviceSource).toContain('restoreStyleSwitchFileSnapshot(indexPath, indexSnapshot)')
     expect(serviceSource).toContain('runStyleSwitchPageFlow')
     expect(flowSource).toContain('runDeepAgentEdit')
+    expect(flowSource).toContain('projectDir: job.context.projectDir')
+    expect(flowSource).toContain('signal: job.context.abortSignal')
+    expect(flowSource).not.toContain('context.entry')
     expect(flowSource).toContain("editScope: 'page'")
     expect(flowSource).toContain('pageFileMap: { [page.pageId]: page.htmlPath }')
     expect(serviceSource).not.toContain('executeDeckAllPageEditGeneration')
@@ -80,7 +91,7 @@ describe('style switch generation', () => {
     expect(message).toContain('视觉设计必须以当前现有风格规范为准')
 
     const flowSource = fs.readFileSync(
-      path.resolve('src/main/ipc/generation/edit-deck-allpage-flow.ts'),
+      path.resolve('src/main/generation/edit-deck-allpage-flow.ts'),
       'utf8'
     )
     expect(flowSource).toContain('!context.resetVisualStyle &&')
@@ -99,21 +110,26 @@ describe('style switch generation', () => {
       path.resolve('src/renderer/src/components/session-detail/style/StyleSwitchJobBar.tsx'),
       'utf8'
     )
+    const cancelHookSource = fs.readFileSync(
+      path.resolve('src/renderer/src/components/session-detail/hooks/useCancelStyleSwitch.ts'),
+      'utf8'
+    )
 
     expect(styleViewSource).toContain('startStyleSwitch')
     expect(styleViewSource).toContain('ipc.startStyleSwitch')
     expect(styleViewSource).not.toContain('AlertDialog')
     expect(styleViewSource).not.toContain('setSwitchTarget')
-    expect(jobBarSource).toContain('ipc.cancelStyleSwitch')
-    expect(jobBarSource).toContain('if (!result.success)')
-    expect(jobBarSource).toContain('ipc.getStyleSwitchState(sessionId)')
+    expect(jobBarSource).toContain('useCancelStyleSwitch')
+    expect(cancelHookSource).toContain('ipc.cancelStyleSwitch')
+    expect(cancelHookSource).toContain('if (!result.success)')
+    expect(cancelHookSource).toContain('ipc.getStyleSwitchState(sessionId)')
     expect(jobBarSource).toContain('ipc.retryFailedStyleSwitchPages')
     expect(jobBarSource).toContain("if (!job || job.status === 'completed') return null")
   })
 
   it('retries only failed pages through the dedicated style-switch service', () => {
     const serviceSource = fs.readFileSync(
-      path.resolve('src/main/ipc/edit-jobs/style-switch-job-service.ts'),
+      path.resolve('src/main/edit-jobs/style-switch-job-service.ts'),
       'utf8'
     )
 
@@ -127,7 +143,7 @@ describe('style switch generation', () => {
 
   it('uses the session style snapshot when the global style has been disabled', () => {
     const handlerSource = fs.readFileSync(
-      path.resolve('src/main/ipc/config/style-handlers.ts'),
+      path.resolve('src/main/styles/handlers.ts'),
       'utf8'
     )
 
@@ -138,7 +154,7 @@ describe('style switch generation', () => {
 
   it('retries normal deck edits through the deck job with their original request', () => {
     const handlerSource = fs.readFileSync(
-      path.resolve('src/main/ipc/engine/generation-handlers.ts'),
+      path.resolve('src/main/generation/handlers.ts'),
       'utf8'
     )
     const retryHandler = handlerSource.slice(
@@ -147,7 +163,7 @@ describe('style switch generation', () => {
     )
 
     const deckJobSource = fs.readFileSync(
-      path.resolve('src/main/ipc/edit-jobs/deck-edit-job-service.ts'),
+      path.resolve('src/main/edit-jobs/deck-edit-job-service.ts'),
       'utf8'
     )
 
@@ -162,11 +178,11 @@ describe('style switch generation', () => {
 
   it('keeps internal style-switch prompts out of the visible chat history', () => {
     const serviceSource = fs.readFileSync(
-      path.resolve('src/main/ipc/edit-jobs/style-switch-job-service.ts'),
+      path.resolve('src/main/edit-jobs/style-switch-job-service.ts'),
       'utf8'
     )
     const editFlowSource = fs.readFileSync(
-      path.resolve('src/main/ipc/generation/edit-flow.ts'),
+      path.resolve('src/main/generation/edit-flow.ts'),
       'utf8'
     )
 
@@ -176,7 +192,7 @@ describe('style switch generation', () => {
 
   it('writes a page history commit before publishing it as editable', () => {
     const serviceSource = fs.readFileSync(
-      path.resolve('src/main/ipc/edit-jobs/style-switch-job-service.ts'),
+      path.resolve('src/main/edit-jobs/style-switch-job-service.ts'),
       'utf8'
     )
     const historySource = fs.readFileSync(
@@ -217,7 +233,7 @@ describe('style switch generation', () => {
 
   it('does not commit queued pages after cancellation or roll back a durable commit on notify failure', () => {
     const serviceSource = fs.readFileSync(
-      path.resolve('src/main/ipc/edit-jobs/style-switch-job-service.ts'),
+      path.resolve('src/main/edit-jobs/style-switch-job-service.ts'),
       'utf8'
     )
     const commitPageSource = serviceSource.slice(

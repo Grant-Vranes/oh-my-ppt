@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { patchGenericElementProperties } from '../../../src/main/ipc/editor/shared'
+import { patchGenericElementProperties } from '../../../src/main/element-editor/shared'
 import {
   buildIconElementHtml,
   buildShapeElementHtml

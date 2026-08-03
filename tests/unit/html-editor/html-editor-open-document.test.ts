@@ -31,10 +31,10 @@ vi.mock('electron', () => ({
   shell: { openPath: vi.fn(), showItemInFolder: vi.fn() }
 }))
 vi.mock('electron-log/main.js', () => ({ default: state.log }))
-vi.mock('../../../src/main/ipc/html-editor/html-editor-import', () => ({
+vi.mock('../../../src/main/html-editor/html-editor-import', () => ({
   normalizeImportedHtml: state.normalizeImportedHtml
 }))
-vi.mock('../../../src/main/ipc/html-editor/html-editor-git', () => ({
+vi.mock('../../../src/main/html-editor/html-editor-git', () => ({
   commitHtmlFile: vi.fn(),
   ensureHtmlRepo: vi.fn(),
   getHtmlRepoHead: vi.fn(),
@@ -42,11 +42,11 @@ vi.mock('../../../src/main/ipc/html-editor/html-editor-git', () => ({
   restoreHtmlFileAtCommit: vi.fn(),
   restoreHtmlRepoHead: vi.fn()
 }))
-vi.mock('../../../src/main/ipc/html-editor/html-editor-thumbnail', () => ({
+vi.mock('../../../src/main/html-editor/html-editor-thumbnail', () => ({
   refreshHtmlEditorCoverThumbnail: vi.fn(),
   warmHtmlEditorCoverThumbnails: vi.fn()
 }))
-vi.mock('../../../src/main/ipc/html-editor/html-editor-media', () => ({
+vi.mock('../../../src/main/html-editor/html-editor-media', () => ({
   getHtmlEditorMediaExtensions: vi.fn(),
   importHtmlEditorMedia: vi.fn(),
   listHtmlEditorMedia: vi.fn()
@@ -81,7 +81,7 @@ describe('html-editor:openDocument', () => {
     await fs.promises.writeFile(htmlPath, '<html><body>first</body></html>', 'utf-8')
 
     const { registerHtmlEditorHandlers } =
-      await import('../../../src/main/ipc/html-editor/html-editor-handlers')
+      await import('../../../src/main/html-editor/html-editor-handlers')
     registerHtmlEditorHandlers({
       mainWindow: null,
       db: {

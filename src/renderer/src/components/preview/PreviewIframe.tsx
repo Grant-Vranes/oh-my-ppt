@@ -1,24 +1,32 @@
 import { useCallback, useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react'
 import { nanoid } from 'nanoid'
 import {
-  buildInspectorCleanupScript,
-  buildInspectorInjectScript,
-  INSPECTOR_CONSOLE_PREFIX
-} from './inspector-script'
-import {
   buildEditModeCleanupScript,
   buildEditModeInjectScript,
   buildEditModeSetPreviewScaleScript,
+  buildInspectorCleanupScript,
+  buildInspectorInjectScript,
+  buildPresentationEditorRuntimeInjectScript,
   EDIT_MODE_CONSOLE_PREFIX,
+  INSPECTOR_CONSOLE_PREFIX,
   type EditableElementSnapshot,
   type EditModeMovePayload,
   type EditSnapPoints,
   type EditSnapSettings,
   type EditTextTarget,
-  type EditSelectionPayload
-} from './edit-mode-script'
+  type EditSelectionPayload,
+  type PresentationEditorOperation,
+  type PresentationEditorOperationResult,
+  type PresentationElementSnapshot
+} from '@arcsin1/presentation-editor-runtime'
 import { ipc } from '@renderer/lib/ipc'
+import { buildSelectedElementRuntimeContext } from '@renderer/lib/presentation-element-context'
+import {
+  normalizeEditModeLayoutIsland,
+  type EditModeLayoutIsland
+} from '@renderer/lib/presentation-layout-island'
 import type { InteractionMode } from '@renderer/store'
+import type { SelectedElementRuntimeContext } from '@shared/generation'
 import { requireSlideSize, type SlideSizePreset } from '@shared/slide-size'
 import type { InsertChartSeries } from '../session-detail/workspace/insert-charts'
 
@@ -115,6 +123,7 @@ const PAGE_LAYOUT_AUDIT_SCRIPT = `
 `
 
 export interface PreviewIframeHandle {
+  reloadIgnoringCache: () => void
   patchPageContent: (pageId: string, newHtml: string) => void
   liveUpdateElement: (
     selector: string,
@@ -186,8 +195,15 @@ export interface PreviewIframeHandle {
   showElement: (selector: string) => void
   applyDragStyle: (
     selector: string,
-    style: { x: number; y: number; width?: number; height?: number; isAbsoluteMode?: boolean }
+    style: {
+      x: number
+      y: number
+      width?: number
+      height?: number
+      isAbsoluteMode?: boolean
+    }
   ) => void
+  applyLayoutIsland: (layoutIsland: EditModeLayoutIsland) => void
   applyZIndex: (selector: string, zIndex: number) => void
   copyElement: (
     selector: string,
@@ -195,6 +211,11 @@ export interface PreviewIframeHandle {
   ) => Promise<{ selector: string; htmlFragment: string } | null>
   readElementHtml: (selector: string) => Promise<string>
   readElementSnapshot: (selector: string) => Promise<EditableElementSnapshot | null>
+  inspectElement: (selector: string) => Promise<PresentationElementSnapshot | null>
+  applyElementOperations: (
+    selector: string,
+    operations: PresentationEditorOperation[]
+  ) => Promise<PresentationEditorOperationResult[]>
   readElementLayout: (
     selector: string
   ) => Promise<{
@@ -205,6 +226,7 @@ export interface PreviewIframeHandle {
     height: number
     visualX?: number
     visualY?: number
+    layoutIsland?: EditModeLayoutIsland
   } | null>
   applyChildUpdates: (
     selector: string,
@@ -219,6 +241,20 @@ export interface PreviewIframeHandle {
   setEditSnapSettings: (settings: EditSnapSettings) => Promise<boolean>
   readEditSnapPoints: () => Promise<EditSnapPoints>
   readPageLayoutAudit: () => Promise<string | null>
+}
+
+export function isCurrentInspectorSelectionRequest(args: {
+  requestId: number
+  latestRequestId: number
+  isInspectorActive: boolean
+  selectionInteractionMode: InteractionMode
+  currentInteractionMode: InteractionMode
+}): boolean {
+  return (
+    args.isInspectorActive &&
+    args.requestId === args.latestRequestId &&
+    args.selectionInteractionMode === args.currentInteractionMode
+  )
 }
 
 export const PreviewIframe = forwardRef<
@@ -239,7 +275,8 @@ export const PreviewIframe = forwardRef<
       selector: string,
       label: string,
       elementTag?: string,
-      elementText?: string
+      elementText?: string,
+      selectedElementContext?: SelectedElementRuntimeContext | null
     ) => void
     onElementMoved?: (payload: EditModeMovePayload) => void
     onElementSelected?: (payload: EditSelectionPayload) => void
@@ -274,6 +311,8 @@ export const PreviewIframe = forwardRef<
   const webviewReadyRef = useRef(false)
   const inspectorInjectedRef = useRef(false)
   const editModeInjectedRef = useRef(false)
+  const inspectorSelectionRequestRef = useRef(0)
+  const inspectorActiveRef = useRef(inspecting)
   const previewScaleRef = useRef(1)
   const [webviewElement, setWebviewElement] = useState<Electron.WebviewTag | null>(null)
   const [webviewReady, setWebviewReady] = useState(false)
@@ -336,6 +375,9 @@ export const PreviewIframe = forwardRef<
       : undefined
   const currentInteractionMode: InteractionMode =
     interactionMode || (editMode ? 'edit' : inspecting ? 'ai-inspect' : 'preview')
+  const inspectorInteractionModeRef = useRef(currentInteractionMode)
+  inspectorActiveRef.current = inspecting
+  inspectorInteractionModeRef.current = currentInteractionMode
   const pointerEnabled = inspectable
 
   const ensureAnchoredAnchor = async (args: {
@@ -400,6 +442,7 @@ export const PreviewIframe = forwardRef<
   }
 
   const handleWebviewRef = useCallback((node: Electron.WebviewTag | null): void => {
+    inspectorSelectionRequestRef.current += 1
     webviewReadyRef.current = false
     inspectorInjectedRef.current = false
     editModeInjectedRef.current = false
@@ -410,6 +453,26 @@ export const PreviewIframe = forwardRef<
 
   const canExecuteJavaScript = (webview: Electron.WebviewTag): boolean => {
     return webview.isConnected && webviewRef.current === webview && webviewReadyRef.current
+  }
+
+  const inspectPresentationElement = async (
+    webview: Electron.WebviewTag,
+    selector: string
+  ): Promise<PresentationElementSnapshot | null> => {
+    if (!canExecuteJavaScript(webview)) return null
+    try {
+      const result = await webview.executeJavaScript(
+        `(function(){` +
+          `var __el = document.querySelector(${JSON.stringify(selector)});` +
+          `if (!__el) return null;` +
+          `if (window.__pptEditModeInspectElement) return window.__pptEditModeInspectElement(${JSON.stringify(selector)});` +
+          `return window.__pptPresentationEditorRuntime ? window.__pptPresentationEditorRuntime.inspect(__el) : null;` +
+        `})()`
+      )
+      return (result as PresentationElementSnapshot | null) || null
+    } catch {
+      return null
+    }
   }
 
   const wrapSafeVoidScript = (label: string, script: string): string => `
@@ -448,6 +511,15 @@ export const PreviewIframe = forwardRef<
   useImperativeHandle(
     ref,
     () => ({
+      reloadIgnoringCache(): void {
+        const wv = webviewRef.current
+        if (!wv) return
+        try {
+          wv.reloadIgnoringCache()
+        } catch {
+          // The webview can be detached while the session route changes.
+        }
+      },
       patchPageContent(targetPageId: string, newHtml: string): void {
         const wv = webviewRef.current
         if (!wv) return
@@ -688,7 +760,13 @@ export const PreviewIframe = forwardRef<
       },
       applyDragStyle(
         selector: string,
-        style: { x: number; y: number; width?: number; height?: number; isAbsoluteMode?: boolean }
+        style: {
+          x: number
+          y: number
+          width?: number
+          height?: number
+          isAbsoluteMode?: boolean
+        }
       ): void {
         const wv = webviewRef.current
         if (!wv) return
@@ -724,6 +802,14 @@ export const PreviewIframe = forwardRef<
             (style.width != null ? `__el.style.width = ${JSON.stringify(style.width + 'px')};` : '') +
             (style.height != null ? `__el.style.height = ${JSON.stringify(style.height + 'px')};` : '') +
           `})()`
+        )
+      },
+      applyLayoutIsland(layoutIsland: EditModeLayoutIsland): void {
+        const wv = webviewRef.current
+        if (!wv) return
+        safeExecuteJavaScript(
+          wv,
+          `if (window.__pptEditModeApplyLayoutIsland) window.__pptEditModeApplyLayoutIsland(${JSON.stringify(layoutIsland)});`
         )
       },
       applyZIndex(selector: string, zIndex: number): void {
@@ -767,7 +853,9 @@ export const PreviewIframe = forwardRef<
             `var __styleHtml = "";` +
             `__clone.setAttribute("data-block-id", ${JSON.stringify(newBlockId)});` +
             `__clone.querySelectorAll("[data-block-id]").forEach(function(c,i){if(__childIds[i])c.setAttribute("data-block-id",__childIds[i]);});` +
-            `__clone.classList.remove("ppt-edit-mode-selected","ppt-edit-mode-hover");` +
+            `__clone.classList.remove("arcsin1-presentation-editor-selected","arcsin1-presentation-editor-hover");` +
+            `__clone.removeAttribute("data-arcsin1-presentation-editor-selected");` +
+            `__clone.removeAttribute("data-arcsin1-presentation-editor-hover");` +
             `if (__src.hasAttribute("data-ppt-art-text") && __oldBlockId) {` +
             `  var __style = Array.from(document.querySelectorAll("style[data-ppt-art-text-style]")).find(function(s){ return s.getAttribute("data-ppt-art-text-style") === __oldBlockId; });` +
             `  if (__style) {` +
@@ -842,6 +930,25 @@ export const PreviewIframe = forwardRef<
           return null
         }
       },
+      async inspectElement(selector: string): Promise<PresentationElementSnapshot | null> {
+        const wv = webviewRef.current
+        return wv ? inspectPresentationElement(wv, selector) : null
+      },
+      async applyElementOperations(
+        selector: string,
+        operations: PresentationEditorOperation[]
+      ): Promise<PresentationEditorOperationResult[]> {
+        const wv = webviewRef.current
+        if (!wv || !canExecuteJavaScript(wv) || operations.length === 0) return []
+        try {
+          const result = await wv.executeJavaScript(
+            `window.__pptEditModeApplyOperations ? window.__pptEditModeApplyOperations(${JSON.stringify(selector)}, ${JSON.stringify(operations)}) : []`
+          )
+          return Array.isArray(result) ? (result as PresentationEditorOperationResult[]) : []
+        } catch {
+          return []
+        }
+      },
       async readElementLayout(
         selector: string
       ): Promise<{
@@ -852,15 +959,28 @@ export const PreviewIframe = forwardRef<
         height: number
         visualX?: number
         visualY?: number
+        layoutIsland?: EditModeLayoutIsland
       } | null> {
         const wv = webviewRef.current
         if (!wv || !canExecuteJavaScript(wv)) return null
         try {
-          return (
-            (await wv.executeJavaScript(
-              `window.__pptEditModeReadLayout ? window.__pptEditModeReadLayout(${JSON.stringify(selector)}) : null`
-            )) || null
-          )
+          const layout = (await wv.executeJavaScript(
+            `window.__pptEditModeReadLayout ? window.__pptEditModeReadLayout(${JSON.stringify(selector)}) : null`
+          )) as {
+            isAbsoluteMode: boolean
+            x: number
+            y: number
+            width: number
+            height: number
+            visualX?: number
+            visualY?: number
+            layoutIsland?: unknown
+          } | null
+          if (!layout) return null
+          return {
+            ...layout,
+            layoutIsland: normalizeEditModeLayoutIsland(layout.layoutIsland)
+          }
         } catch {
           return null
         }
@@ -943,6 +1063,7 @@ export const PreviewIframe = forwardRef<
     }
     const handleStartLoading = (): void => {
       if (webviewRef.current === webview) {
+        inspectorSelectionRequestRef.current += 1
         webviewReadyRef.current = false
         setWebviewReady(false)
       }
@@ -970,6 +1091,14 @@ export const PreviewIframe = forwardRef<
       if (inspecting) {
         safeExecuteHostScript(
           webview,
+          'presentation-editor-runtime-inject',
+          buildPresentationEditorRuntimeInjectScript({
+            rootSelector: '[data-ppt-guard-root="1"], .ppt-page-root',
+            interaction: false
+          })
+        )
+        safeExecuteHostScript(
+          webview,
           'inspector-inject',
           buildInspectorInjectScript({ mode: currentInteractionMode === 'animation-select' ? 'animation-select' : 'inspect' })
         )
@@ -984,6 +1113,7 @@ export const PreviewIframe = forwardRef<
     runInspectorLifecycle()
 
     return () => {
+      inspectorSelectionRequestRef.current += 1
       if (!inspectorInjectedRef.current) return
       safeExecuteHostScript(webview, 'inspector-cleanup', buildInspectorCleanupScript())
       inspectorInjectedRef.current = false
@@ -1098,7 +1228,7 @@ export const PreviewIframe = forwardRef<
           visualY?: number
           width?: number
           height?: number
-          scale?: number
+          layoutIsland?: unknown
           childUpdates?: Array<{
             path: number[]
             width?: number
@@ -1117,16 +1247,30 @@ export const PreviewIframe = forwardRef<
 
         // Inspector / animation-select: element selected
         if (isInspectorMessage && parsed.type === 'selected' && parsed.selector) {
+          const selectedSelector = parsed.selector
+          const requestId = ++inspectorSelectionRequestRef.current
+          const selectionInteractionMode = inspectorInteractionModeRef.current
           if (parsed.mode === 'animation-select' && parsed.formula) {
             void (async () => {
               const anchor = await ensureAnchoredAnchor({
-                selector: parsed.selector || '',
+                selector: selectedSelector,
                 elementTag: parsed.elementTag,
                 elementText: parsed.elementText,
                 reason: 'inspect',
                 formula: parsed.formula
               })
-              if (webviewRef.current !== webview) return
+              if (
+                webviewRef.current !== webview ||
+                !isCurrentInspectorSelectionRequest({
+                  requestId,
+                  latestRequestId: inspectorSelectionRequestRef.current,
+                  isInspectorActive: inspectorActiveRef.current,
+                  selectionInteractionMode,
+                  currentInteractionMode: inspectorInteractionModeRef.current
+                })
+              ) {
+                return
+              }
               onSelectorSelectedRef.current?.(
                 anchor.selector,
                 anchor.selector,
@@ -1136,13 +1280,28 @@ export const PreviewIframe = forwardRef<
             })().catch(() => {})
             return
           }
-          if (webviewRef.current !== webview) return
-          onSelectorSelectedRef.current?.(
-            parsed.selector,
-            parsed.label || parsed.selector,
-            parsed.elementTag,
-            parsed.elementText
-          )
+          void (async () => {
+            const snapshot = await inspectPresentationElement(webview, selectedSelector)
+            if (
+              webviewRef.current !== webview ||
+              !isCurrentInspectorSelectionRequest({
+                requestId,
+                latestRequestId: inspectorSelectionRequestRef.current,
+                isInspectorActive: inspectorActiveRef.current,
+                selectionInteractionMode,
+                currentInteractionMode: inspectorInteractionModeRef.current
+              })
+            ) {
+              return
+            }
+            onSelectorSelectedRef.current?.(
+              selectedSelector,
+              parsed.label || selectedSelector,
+              parsed.elementTag,
+              parsed.elementText,
+              snapshot ? buildSelectedElementRuntimeContext(snapshot) : null
+            )
+          })().catch(() => {})
           return
         }
 
@@ -1249,7 +1408,7 @@ export const PreviewIframe = forwardRef<
                   visualY: parsed.visualY === undefined ? undefined : Number(parsed.visualY),
                   width: parsed.width === undefined ? undefined : Number(parsed.width),
                   height: parsed.height === undefined ? undefined : Number(parsed.height),
-                  scale: parsed.scale === undefined ? undefined : Number(parsed.scale),
+                  layoutIsland: normalizeEditModeLayoutIsland(parsed.layoutIsland),
                   childUpdates: Array.isArray(parsed.childUpdates)
                     ? parsed.childUpdates
                         .map((item) => ({

@@ -2,7 +2,7 @@ import { app } from 'electron'
 import { is } from '@electron-toolkit/utils'
 import path from 'node:path'
 import { mkdir } from 'node:fs/promises'
-import { allowLocalAssetRoot } from '../ipc/io/assets-handlers'
+import { allowLocalAssetRoot } from '../io/local-asset-roots'
 
 export function resolveBundledStylesSourcePath(): string {
   return is.dev

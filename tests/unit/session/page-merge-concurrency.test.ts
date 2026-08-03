@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   mapPageMergeConcurrent,
   PAGE_MERGE_PREPARE_CONCURRENCY
-} from '../../../src/main/ipc/session/page-merge-concurrency'
+} from '../../../src/main/session/page-merge-concurrency'
 
 describe('page merge concurrency', () => {
   it('keeps prepare concurrency within the configured limit and preserves result order', async () => {

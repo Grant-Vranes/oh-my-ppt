@@ -1,13 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import fs from 'fs'
 import path from 'path'
+import {
+  buildDeckAgentSystemPrompt,
+  buildEditAgentSystemPrompt
+} from '../../../src/main/agent-runtime/prompt'
+import { resolveSlideSize } from '../../../src/shared/slide-size'
 
 const readSource = (relativePath: string): string =>
   fs.readFileSync(path.join(process.cwd(), relativePath), 'utf-8')
 
 describe('style fidelity prompt placement', () => {
   it('keeps style fidelity as a shared system-level rule', () => {
-    const shared = readSource('src/main/prompt/shared.ts')
+    const shared = readSource('src/main/agent-runtime/prompt/composers/shared.ts')
 
     expect(shared).toContain('export const STYLE_FIDELITY_RULES')
     expect(shared).toContain('尺寸布局与风格合成闸门')
@@ -21,7 +26,7 @@ describe('style fidelity prompt placement', () => {
   })
 
   it('prescribes content-overload priority in shared content rules', () => {
-    const shared = readSource('src/main/prompt/shared.ts')
+    const shared = readSource('src/main/agent-runtime/prompt/composers/shared.ts')
 
     // When content oversupply exceeds a canvas's capacity, the model must
     // compress/merge/drop first; it must NOT resolve overload by shrinking
@@ -32,24 +37,38 @@ describe('style fidelity prompt placement', () => {
   })
 
   it('moves the deck-generation style preset to the end of the system prompt', () => {
-    const deckSystem = readSource('src/main/prompt/deck-system.ts')
-    const deckFn = deckSystem.slice(deckSystem.indexOf('export function buildDeckAgentSystemPrompt'))
+    const deckSystem = readSource('src/main/agent-runtime/prompt/composers/deck-system.ts')
+    const prompt = buildDeckAgentSystemPrompt('test-style', {
+      sessionId: 'session-1',
+      projectDir: '/tmp/project',
+      indexPath: '/tmp/project/index.html',
+      pageFileMap: { 'page-1': '/tmp/project/page-1.html' },
+      topic: 'Quarterly report',
+      deckTitle: 'Quarterly report',
+      styleId: 'test-style',
+      styleSkillPrompt: 'Use a clean business style.',
+      userMessage: 'Create a quarterly report.',
+      outlineTitles: ['Overview'],
+      outlineItems: [{ title: 'Overview', contentOutline: 'Summarize the quarter.' }],
+      slideSize: resolveSlideSize({ id: 'wide-16-9' }),
+      appLocale: 'en'
+    })
 
-    const currentTaskIndex = deckFn.indexOf('## Current Task')
-    const finalStyleIndex = deckFn.indexOf('## 最终风格校准（写入前）')
-    const finalReminderIndex = deckFn.indexOf('⛔ FINAL REMINDER')
+    const currentTaskIndex = prompt.indexOf('## Current Task')
+    const finalStyleIndex = prompt.indexOf('## 最终风格校准（写入前）')
+    const finalReminderIndex = prompt.indexOf('⛔ FINAL REMINDER')
 
     expect(deckSystem.slice(0, deckSystem.indexOf("} from './shared'"))).toContain(
       'STYLE_FIDELITY_RULES'
     )
     expect(finalStyleIndex).toBeGreaterThan(currentTaskIndex)
     expect(finalStyleIndex).toBeLessThan(finalReminderIndex)
-    expect(deckFn.slice(currentTaskIndex)).toContain('风格预设：${presetLabel} (${presetId})')
-    expect(deckFn.slice(currentTaskIndex)).toContain('STYLE_FIDELITY_RULES')
+    expect(prompt.slice(currentTaskIndex)).toContain('风格预设：test-style (test-style)')
+    expect(prompt.slice(currentTaskIndex)).toContain('尺寸布局与风格合成闸门')
   })
 
   it('does not duplicate style fidelity into the single-page user prompt', () => {
-    const generationUser = readSource('src/main/prompt/generation-user.ts')
+    const generationUser = readSource('src/main/agent-runtime/prompt/composers/generation-user.ts')
 
     expect(generationUser).not.toContain('STYLE_FIDELITY_RULES')
     expect(generationUser).not.toContain('风格预设：')
@@ -57,34 +76,51 @@ describe('style fidelity prompt placement', () => {
   })
 
   it('applies the final style gate only to rewrite-capable edit system prompts', () => {
-    const editSystem = readSource('src/main/prompt/edit-system.ts')
-    const containerEdit = editSystem.slice(
-      editSystem.indexOf('function buildContainerEditPrompt('),
-      editSystem.indexOf('function buildSelectorEditPrompt(')
-    )
-    const selectorEdit = editSystem.slice(
-      editSystem.indexOf('function buildSelectorEditPrompt('),
-      editSystem.indexOf('function buildSinglePageEditPrompt(')
-    )
-    const singlePageEdit = editSystem.slice(
-      editSystem.indexOf('function buildSinglePageEditPrompt('),
-      editSystem.indexOf('function buildDeckEditPrompt(')
-    )
-    const deckEdit = editSystem.slice(editSystem.indexOf('function buildDeckEditPrompt('))
+    const baseContext = {
+      sessionId: 'session-1',
+      projectDir: '/tmp/project',
+      indexPath: '/tmp/project/index.html',
+      pageFileMap: { 'page-1': '/tmp/project/page-1.html' },
+      topic: 'Quarterly report',
+      deckTitle: 'Quarterly report',
+      styleId: 'test-style',
+      styleSkillPrompt: 'Use a clean business style.',
+      userMessage: 'Create a quarterly report.',
+      outlineTitles: ['Overview'],
+      outlineItems: [{ title: 'Overview', contentOutline: 'Summarize the quarter.' }],
+      slideSize: resolveSlideSize({ id: 'wide-16-9' }),
+      appLocale: 'en' as const,
+      mode: 'edit' as const,
+      selectedPageId: 'page-1',
+      selectedPageNumber: 1
+    }
+    const singlePageEdit = buildEditAgentSystemPrompt('test-style', {
+      ...baseContext,
+      editScope: 'page'
+    })
+    const deckEdit = buildEditAgentSystemPrompt('test-style', {
+      ...baseContext,
+      editScope: 'deck'
+    })
+    const selectorEdit = buildEditAgentSystemPrompt('test-style', {
+      ...baseContext,
+      editScope: 'page',
+      selectedSelector: '.metric'
+    })
+    const containerEdit = buildEditAgentSystemPrompt('test-style', {
+      ...baseContext,
+      editScope: 'presentation-container'
+    })
 
-    expect(singlePageEdit).toContain('## 最终风格校准（写入前）')
-    expect(singlePageEdit.indexOf('## 最终风格校准（写入前）')).toBeGreaterThan(
-      singlePageEdit.indexOf('## Current Task')
-    )
-    expect(singlePageEdit).toContain('STYLE_FIDELITY_RULES')
+    for (const prompt of [singlePageEdit, deckEdit]) {
+      expect(prompt).toContain('## 最终风格校准（写入前）')
+      expect(prompt.indexOf('## 最终风格校准（写入前）')).toBeGreaterThan(
+        prompt.indexOf('## Current Task')
+      )
+      expect(prompt).toContain('尺寸布局与风格合成闸门')
+    }
 
-    expect(deckEdit).toContain('## 最终风格校准（写入前）')
-    expect(deckEdit.indexOf('## 最终风格校准（写入前）')).toBeGreaterThan(
-      deckEdit.indexOf('## Current Task')
-    )
-    expect(deckEdit).toContain('STYLE_FIDELITY_RULES')
-
-    expect(selectorEdit).not.toContain('STYLE_FIDELITY_RULES')
-    expect(containerEdit).not.toContain('STYLE_FIDELITY_RULES')
+    expect(selectorEdit).not.toContain('尺寸布局与风格合成闸门')
+    expect(containerEdit).not.toContain('尺寸布局与风格合成闸门')
   })
 })

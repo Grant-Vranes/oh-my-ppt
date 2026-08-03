@@ -3,7 +3,7 @@ import {
   CompatibleChatOpenAIResponses,
   OPENAI_RESPONSES_FORMAT_ERROR_CODE,
   isOpenAIResponsesFormatError
-} from '../../src/main/openai-responses-compat'
+} from '../../src/main/agent-runtime/model'
 
 describe('CompatibleChatOpenAIResponses', () => {
   it('passes through non-stream Responses API payloads with output arrays', async () => {

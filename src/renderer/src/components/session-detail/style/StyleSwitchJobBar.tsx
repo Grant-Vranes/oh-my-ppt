@@ -2,35 +2,19 @@ import { Loader2, RotateCcw, X } from 'lucide-react'
 import { ipc } from '@renderer/lib/ipc'
 import { useModelAction } from '@renderer/hooks/useModelAction'
 import { hydrateStyleSwitchJob, useGenerateStore, useToastStore } from '@renderer/store'
+import { useCancelStyleSwitch } from '../hooks/useCancelStyleSwitch'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/Tooltip'
 
 export function StyleSwitchJobBar({ sessionId }: { sessionId: string }): React.JSX.Element | null {
   const job = useGenerateStore((state) => state.styleSwitchJobs[sessionId] || null)
   const { selectedModelConfigId, ensureModelActive } = useModelAction()
   const toastError = useToastStore((state) => state.error)
+  const cancelStyleSwitch = useCancelStyleSwitch(sessionId)
   if (!job || job.status === 'completed') return null
 
   const active =
     job.status === 'starting' || job.status === 'running' || job.status === 'cancelling'
   const failedPages = job.pages.filter((page) => page.status === 'failed')
-  const handleCancel = async (): Promise<void> => {
-    if (!active || job.status === 'cancelling') return
-    useGenerateStore.getState().updateStyleSwitchJob(sessionId, { status: 'cancelling' })
-    try {
-      const result = await ipc.cancelStyleSwitch(sessionId)
-      if (!result.success) {
-        hydrateStyleSwitchJob(sessionId, await ipc.getStyleSwitchState(sessionId))
-      }
-    } catch (error) {
-      try {
-        hydrateStyleSwitchJob(sessionId, await ipc.getStyleSwitchState(sessionId))
-      } catch {
-        useGenerateStore.getState().updateStyleSwitchJob(sessionId, { status: 'running' })
-      }
-      toastError(error instanceof Error ? error.message : '取消风格切换失败')
-    }
-  }
-
   const handleRetry = async (): Promise<void> => {
     if (active || failedPages.length === 0) return
     const modelConfigId = await ensureModelActive(selectedModelConfigId)
@@ -53,10 +37,13 @@ export function StyleSwitchJobBar({ sessionId }: { sessionId: string }): React.J
         return
       }
       if (result.runId) {
-        useGenerateStore.getState().updateStyleSwitchJob(sessionId, {
-          runId: result.runId,
-          status: 'running'
-        })
+        const currentJob = useGenerateStore.getState().styleSwitchJobs[sessionId]
+        if (currentJob) {
+          useGenerateStore.getState().updateStyleSwitchJob(sessionId, {
+            runId: result.runId,
+            status: currentJob.status === 'cancelling' ? 'cancelling' : 'running'
+          })
+        }
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : '重试风格切换失败'
@@ -86,7 +73,7 @@ export function StyleSwitchJobBar({ sessionId }: { sessionId: string }): React.J
           <TooltipTrigger asChild>
             <button
               type="button"
-              onClick={() => void handleCancel()}
+              onClick={() => void cancelStyleSwitch()}
               disabled={job.status === 'cancelling'}
               className="inline-flex h-6 w-6 items-center justify-center text-[#73514b] hover:bg-[#f3dfd8] disabled:opacity-45"
               aria-label="取消风格切换"

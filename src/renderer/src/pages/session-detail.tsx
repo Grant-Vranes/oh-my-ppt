@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ipc } from '@renderer/lib/ipc'
-import type { EditableElementSnapshot } from '../components/preview/edit-mode-script'
+import type { EditableElementSnapshot } from '@arcsin1/presentation-editor-runtime'
 import type { PreviewIframeHandle } from '../components/preview/PreviewIframe'
 import { TooltipProvider } from '../components/ui/Tooltip'
 import { PageSidebar } from '../components/session-detail/sidebar'
@@ -29,6 +29,7 @@ import {
   isDeckEditGenerationEvent,
   isPageBeautifyGenerationEvent,
   isPageEditGenerationEvent,
+  isStyleSwitchGenerationEvent,
   mergeImageMessages,
   normalizePagesForSelection,
   type ChatType
@@ -148,6 +149,9 @@ export function SessionDetailPage(): React.JSX.Element {
   const setRefreshCurrentPreviewHandler = useSessionDetailRuntimeStore(
     (state) => state.setRefreshCurrentPreviewHandler
   )
+  const setReloadCurrentPreviewIgnoringCacheHandler = useSessionDetailRuntimeStore(
+    (state) => state.setReloadCurrentPreviewIgnoringCacheHandler
+  )
   const invokeAddElement = useCallback<AddSessionElementHandler>(
     async (relativePath, fileName, options) => {
       const handler = addElementHandlerRef.current
@@ -206,6 +210,13 @@ export function SessionDetailPage(): React.JSX.Element {
     })
     return () => setRefreshCurrentPreviewHandler(null)
   }, [setRefreshCurrentPreviewHandler])
+
+  useEffect(() => {
+    setReloadCurrentPreviewIgnoringCacheHandler(() => {
+      previewIframeRef.current?.reloadIgnoringCache()
+    })
+    return () => setReloadCurrentPreviewIgnoringCacheHandler(null)
+  }, [setReloadCurrentPreviewIgnoringCacheHandler])
 
   const handlePreviewIframe = useCallback((handle: PreviewIframeHandle | null): void => {
     previewIframeRef.current = handle
@@ -569,8 +580,7 @@ export function SessionDetailPage(): React.JSX.Element {
       const isPageEdit = isPageEditGenerationEvent(payload, activePageEditJob)
       const isPageBeautify = isPageBeautifyGenerationEvent(payload, activePageBeautifyJob)
       const isDeckEdit = isDeckEditGenerationEvent(payload, activeDeckEditJob)
-      const isStyleSwitch =
-        payload.activityKind === 'style-switch' || activeStyleSwitchJob?.runId === payload.runId
+      const isStyleSwitch = isStyleSwitchGenerationEvent(payload, activeStyleSwitchJob)
       const isAddingPageRun =
         payload.activityKind === 'addPage' && useSessionDetailUiStore.getState().isAddingPage
       const isRetryingSinglePageRun =

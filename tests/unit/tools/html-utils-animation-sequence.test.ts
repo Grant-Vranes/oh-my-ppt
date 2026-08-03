@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { validateHtmlContent } from '../../../src/main/tools/html-utils'
+import { validateHtmlContent } from '../../../src/main/presentation/html/html-utils'
 
 describe('validateHtmlContent declarative animation controls', () => {
   it('allows declarative data-anim-stagger and data-anim-sequence values', () => {

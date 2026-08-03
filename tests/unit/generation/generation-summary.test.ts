@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildLocalCompletedGenerationPageSummary } from '../../../src/main/ipc/generation/generation-summary'
+import { buildLocalCompletedGenerationPageSummary } from '../../../src/main/generation/generation-summary'
 
 describe('generation summary', () => {
   it('builds a deterministic Chinese summary from the validated page title', () => {

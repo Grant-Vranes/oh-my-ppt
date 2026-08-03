@@ -32,7 +32,7 @@ vi.mock('electron', () => ({
   })
 }))
 vi.mock('@electron-toolkit/utils', () => ({ is: { dev: true } }))
-vi.mock('../../../src/main/ipc/io/assets-handlers', () => ({ allowLocalAssetRoot: vi.fn() }))
+vi.mock('../../../src/main/io/assets-handlers', () => ({ allowLocalAssetRoot: vi.fn() }))
 
 describe('html thumbnail background service', () => {
   beforeEach(() => {
@@ -52,7 +52,7 @@ describe('html thumbnail background service', () => {
     fs.writeFileSync(staleTempPath, 'partial')
     fs.writeFileSync(completedPath, 'png')
 
-    const service = await import('../../../src/main/utils/html-thumbnail-service')
+    const service = await import('../../../src/main/io/thumbnails/html-thumbnail-service')
     service.configureHtmlThumbnailService({} as never)
 
     expect(fs.existsSync(staleTempPath)).toBe(false)
@@ -73,7 +73,7 @@ describe('html thumbnail background service', () => {
       })
     }
 
-    const service = await import('../../../src/main/utils/html-thumbnail-service')
+    const service = await import('../../../src/main/io/thumbnails/html-thumbnail-service')
     service.configureHtmlThumbnailService(db as never)
     const queued = await service.enqueueHtmlThumbnail({
       resourceType: 'session',
@@ -113,7 +113,7 @@ describe('html thumbnail background service', () => {
       })
     }
 
-    const service = await import('../../../src/main/utils/html-thumbnail-service')
+    const service = await import('../../../src/main/io/thumbnails/html-thumbnail-service')
     service.configureHtmlThumbnailService(db as never)
     await service.enqueueHtmlThumbnail({
       resourceType: 'template',
@@ -172,7 +172,7 @@ describe('html thumbnail background service', () => {
       error: null
     }
     const db = { getThumbnailRecord: vi.fn(async () => record) }
-    const service = await import('../../../src/main/utils/html-thumbnail-service')
+    const service = await import('../../../src/main/io/thumbnails/html-thumbnail-service')
     service.configureHtmlThumbnailService(db as never)
 
     await expect(service.getFreshHtmlThumbnailPath(request)).resolves.toBe(thumbnailPath)
@@ -220,7 +220,7 @@ describe('html thumbnail background service', () => {
       })),
       upsertThumbnailRecord: vi.fn()
     }
-    const service = await import('../../../src/main/utils/html-thumbnail-service')
+    const service = await import('../../../src/main/io/thumbnails/html-thumbnail-service')
     service.configureHtmlThumbnailService(db as never)
 
     await expect(service.enqueueHtmlThumbnail(request)).resolves.toMatchObject({
@@ -245,7 +245,7 @@ describe('html thumbnail background service', () => {
         records.set(`${record.resourceType}:${record.resourceId}:${record.variant}`, record)
       })
     }
-    const service = await import('../../../src/main/utils/html-thumbnail-service')
+    const service = await import('../../../src/main/io/thumbnails/html-thumbnail-service')
     service.configureHtmlThumbnailService(db as never)
 
     const completed = service.waitForHtmlThumbnailTask('style', 'style-wait', 'default', 2_000)
@@ -286,7 +286,7 @@ describe('html thumbnail background service', () => {
       }
     })
 
-    const service = await import('../../../src/main/utils/html-thumbnail-service')
+    const service = await import('../../../src/main/io/thumbnails/html-thumbnail-service')
     service.configureHtmlThumbnailService(db as never)
     await service.enqueueHtmlThumbnail({
       resourceType: 'session',
@@ -335,7 +335,7 @@ describe('html thumbnail background service', () => {
       }
     })
 
-    const service = await import('../../../src/main/utils/html-thumbnail-service')
+    const service = await import('../../../src/main/io/thumbnails/html-thumbnail-service')
     service.configureHtmlThumbnailService(db as never)
     await service.enqueueHtmlThumbnails(
       sourcePaths.map((sourcePath, index) => ({
@@ -376,7 +376,7 @@ describe('html thumbnail background service', () => {
         records.set(`${record.resourceType}:${record.resourceId}:${record.variant}`, record)
       })
     }
-    const service = await import('../../../src/main/utils/html-thumbnail-service')
+    const service = await import('../../../src/main/io/thumbnails/html-thumbnail-service')
     service.configureHtmlThumbnailService(db as never)
 
     const writeSource = (name: string): string => {

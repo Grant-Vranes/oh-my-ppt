@@ -22,7 +22,7 @@ vi.mock('electron-log/main.js', () => ({
   }
 }))
 
-vi.mock('../../../src/main/ipc/session/page-management-service', () => ({
+vi.mock('../../../src/main/session/page-management-service', () => ({
   loadEditableSessionPages: mocks.loadEditableSessionPages,
   persistManagedPages: mocks.persistManagedPages
 }))
@@ -32,31 +32,31 @@ vi.mock('../../../src/main/history/git-history-service', () => ({
   recordHistoryOperationStrict: mocks.recordHistoryOperationStrict
 }))
 
-vi.mock('../../../src/main/ipc/engine/template', () => ({
+vi.mock('../../../src/main/session/template-builder', () => ({
   SESSION_ASSET_FILE_NAMES: ['ppt-runtime.js', 'index-runtime.js']
 }))
 
-vi.mock('../../../src/main/tools/html-utils', () => ({
+vi.mock('../../../src/main/presentation/html/html-utils', () => ({
   validatePersistedPageHtml: () => ({ valid: true, errors: [] })
 }))
 
-vi.mock('../../../src/main/tools/font-registry', () => ({
+vi.mock('../../../src/main/presentation/fonts/font-registry', () => ({
   buildFontHeadTags: mocks.buildFontHeadTags
 }))
 
-vi.mock('../../../src/main/ipc/templates/template-service', () => ({
+vi.mock('../../../src/main/templates/template-service', () => ({
   loadTemplateManifest: vi.fn(),
   listTemplates: vi.fn()
 }))
 
-vi.mock('../../../src/main/ipc/templates/template-paths', () => ({
+vi.mock('../../../src/main/templates/template-paths', () => ({
   resolveTemplateRelativePath: vi.fn()
 }))
 
 import {
   listMergeSourceSessions,
   mergeSessionPages
-} from '../../../src/main/ipc/session/page-merge-service'
+} from '../../../src/main/session/page-merge-service'
 
 const wideSlideSize = {
   slideSizeId: 'wide-16-9',

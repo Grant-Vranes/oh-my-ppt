@@ -9,8 +9,8 @@ import {
   isMergePathInside,
   resolveMergeFileInside,
   rewriteMergedPageHtml
-} from '../../../src/main/ipc/session/page-merge-rewriter'
-import { validatePersistedPageHtml } from '../../../src/main/tools/html-utils'
+} from '../../../src/main/session/page-merge-rewriter'
+import { validatePersistedPageHtml } from '../../../src/main/presentation/html/html-utils'
 
 const targetFontHtml = `<html><head>
   <style data-ppt-fonts="google">@font-face{font-family:"Target Title";src:url("./assets/fonts/google-fonts/Target-Title/title.woff2") format("woff2")}</style>

@@ -1,15 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { PptxChartRewriteRequest } from '../../src/main/utils/pptx-importer'
+import type { PptxChartRewriteRequest } from '../../src/main/io/pptx-import'
 
-vi.mock('../../src/main/agent', () => ({
-  resolveModel: vi.fn()
-}))
-
-vi.mock('../../src/main/skills/skill-paths', () => ({
-  resolveBuiltinSkillsSourcePath: vi.fn(() => '/tmp/resources/skills')
-}))
-
-vi.mock('../../src/main/ipc/utils', () => ({
+vi.mock('../../src/main/agent-runtime/model', () => ({
+  resolveModel: vi.fn(),
   extractJsonBlock: (raw: string) => {
     const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/i)
     return match?.[1]?.trim() || raw
@@ -20,6 +13,10 @@ vi.mock('../../src/main/ipc/utils', () => ({
       : value && typeof value === 'object' && 'content' in value
         ? String((value as { content?: unknown }).content || '')
         : ''
+}))
+
+vi.mock('../../src/main/product-skills/paths', () => ({
+  resolveBuiltinSkillsSourcePath: vi.fn(() => '/tmp/resources/skills')
 }))
 
 vi.mock('@shared/model-timeout', () => ({
@@ -37,7 +34,7 @@ import {
   buildPptxChartRewriteSystemPrompt,
   buildPptxChartRewriteUserPrompt,
   parsePptxChartRewriteAgentResponse
-} from '../../src/main/utils/pptx-chart-rewrite-agent'
+} from '../../src/main/io/pptx-import/chart-rewrite-agent'
 
 describe('pptx chart rewrite agent', () => {
   it('tells the agent to preserve importer absolute positioning', () => {

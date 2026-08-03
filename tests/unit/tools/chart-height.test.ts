@@ -8,7 +8,7 @@ import {
   extractChartHeightFromComment,
   normalizeChartHeight,
   parseChartHeightClass
-} from '../../../src/main/tools/chart-height'
+} from '../../../src/main/presentation/html/chart-height'
 
 const readSource = (relativePath: string): string =>
   fs.readFileSync(path.join(process.cwd(), relativePath), 'utf-8')
@@ -49,8 +49,8 @@ describe('chart-height shared helper — pure functions', () => {
 })
 
 describe('chart-height helpers are shared, not duplicated', () => {
-  const pageWriter = readSource('src/main/tools/page-writer.ts')
-  const htmlUtils = readSource('src/main/tools/html-utils.ts')
+  const pageWriter = readSource('src/main/presentation/html/page-writer-core.ts')
+  const htmlUtils = readSource('src/main/presentation/html/html-utils.ts')
 
   it('both tool modules import the shared helpers', () => {
     expect(pageWriter).toContain("from './chart-height'")

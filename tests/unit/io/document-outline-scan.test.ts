@@ -5,7 +5,7 @@ import {
   formatDocumentOutlineScanForPrompt,
   scanDocumentOutline,
   scanHasMultipleSlideCandidates
-} from '../../../src/main/ipc/io/document-outline-scan'
+} from '../../../src/main/io/document-outline-scan'
 
 describe('document outline scan', () => {
   it('extracts markdown heading structure and density hints', () => {

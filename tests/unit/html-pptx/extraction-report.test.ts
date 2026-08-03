@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildExtractionReportWarning } from '../../../src/main/utils/html-pptx/extraction-report'
+import { buildExtractionReportWarning } from '../../../src/main/io/html-pptx/extraction-report'
 
 describe('PPTX extraction report warning', () => {
   it('reports editable-export fallbacks without claiming that content was dropped', () => {

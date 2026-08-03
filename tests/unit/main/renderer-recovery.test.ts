@@ -3,7 +3,7 @@ import {
   isRepeatedRendererCrash,
   RENDERER_CRASH_WINDOW_MS,
   shouldRecoverRenderer
-} from '../../../src/main/renderer-recovery'
+} from '../../../src/main/app/renderer-recovery'
 
 describe('renderer recovery', () => {
   it('recovers crashes and OOM exits but ignores intentional exits', () => {

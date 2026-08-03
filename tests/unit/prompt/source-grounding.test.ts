@@ -7,8 +7,8 @@ const readSource = (relativePath: string): string =>
 
 describe('source-grounded prompt rules', () => {
   it('parse plan uses single-shot model and outline scan', () => {
-    const source = readSource('src/main/ipc/io/document-parse-handlers.ts')
-    const outlineScan = readSource('src/main/ipc/io/document-outline-scan.ts')
+    const source = readSource('src/main/io/document-parse-handlers.ts')
+    const outlineScan = readSource('src/main/io/document-outline-scan.ts')
 
     expect(source).toContain('single-shot document parsing task')
     expect(source).toContain('You have no filesystem tools in this call')
@@ -84,12 +84,12 @@ describe('source-grounded prompt rules', () => {
   })
 
   it('keeps source documents for edits and retries but excludes them from generated add-page', () => {
-    const generationContext = readSource('src/main/ipc/generation/context.ts')
-    const sourceDocuments = readSource('src/main/ipc/generation/source-documents.ts')
-    const editFlow = readSource('src/main/ipc/generation/edit-flow.ts')
-    const deckAllPageEditFlow = readSource('src/main/ipc/generation/edit-deck-allpage-flow.ts')
-    const addPageFlow = readSource('src/main/ipc/generation/add-page-flow.ts')
-    const retrySinglePageFlow = readSource('src/main/ipc/generation/retry-single-page-flow.ts')
+    const generationContext = readSource('src/main/generation/context.ts')
+    const sourceDocuments = readSource('src/main/generation/source-documents.ts')
+    const editFlow = readSource('src/main/generation/edit-flow.ts')
+    const deckAllPageEditFlow = readSource('src/main/generation/edit-deck-allpage-flow.ts')
+    const addPageFlow = readSource('src/main/generation/add-page-flow.ts')
+    const retrySinglePageFlow = readSource('src/main/generation/retry-single-page-flow.ts')
 
     expect(generationContext).toContain(
       "export { resolveSourceDocuments } from './source-documents'"
@@ -110,7 +110,7 @@ describe('source-grounded prompt rules', () => {
   })
 
   it('deck all-page edit selected page ids only match file slugs', () => {
-    const deckAllPageEditFlow = readSource('src/main/ipc/generation/edit-deck-allpage-flow.ts')
+    const deckAllPageEditFlow = readSource('src/main/generation/edit-deck-allpage-flow.ts')
 
     expect(deckAllPageEditFlow).toContain('requestedPageIdSet.has(ref.pageId)')
     expect(deckAllPageEditFlow).not.toContain('requestedPageIdSet.has(ref.id)')
@@ -118,7 +118,7 @@ describe('source-grounded prompt rules', () => {
 
   it('main-session deck edit enforces the shared selected-page limit', () => {
     const sharedGeneration = readSource('src/shared/generation.ts')
-    const deckAllPageEditFlow = readSource('src/main/ipc/generation/edit-deck-allpage-flow.ts')
+    const deckAllPageEditFlow = readSource('src/main/generation/edit-deck-allpage-flow.ts')
     const chatPanel = readSource(
       'src/renderer/src/components/session-detail/ai-panel/ChatPanel.tsx'
     )
@@ -134,7 +134,7 @@ describe('source-grounded prompt rules', () => {
   })
 
   it('deck edit batch aborts finalize the run before rethrowing', () => {
-    const deckAllPageEditFlow = readSource('src/main/ipc/generation/edit-deck-allpage-flow.ts')
+    const deckAllPageEditFlow = readSource('src/main/generation/edit-deck-allpage-flow.ts')
 
     expect(deckAllPageEditFlow).toContain('batchResults = await executeDeckEditBatchFlow')
     expect(deckAllPageEditFlow).toContain(
@@ -145,9 +145,9 @@ describe('source-grounded prompt rules', () => {
   })
 
   it('deck edit staggers three independent page agents to reduce rate-limit bursts', () => {
-    const batchFlow = readSource('src/main/ipc/generation/edit-deck-batch-flow.ts')
-    const deckAllPageEditFlow = readSource('src/main/ipc/generation/edit-deck-allpage-flow.ts')
-    const engine = readSource('src/main/ipc/engine/generate.ts')
+    const batchFlow = readSource('src/main/generation/edit-deck-batch-flow.ts')
+    const deckAllPageEditFlow = readSource('src/main/generation/edit-deck-allpage-flow.ts')
+    const engine = readSource('src/main/generation/agent-runner.ts')
 
     expect(batchFlow).toContain('export const BATCH_EDIT_LAUNCH_STAGGER_MS = 100')
     expect(batchFlow).toContain('import pLimit from')
@@ -193,9 +193,9 @@ describe('source-grounded prompt rules', () => {
   })
 
   it('keeps concurrent deck-page progress on the active page instead of resetting to understanding', () => {
-    const deckAllPageEditFlow = readSource('src/main/ipc/generation/edit-deck-allpage-flow.ts')
-    const batchFlow = readSource('src/main/ipc/generation/edit-deck-batch-flow.ts')
-    const engine = readSource('src/main/ipc/engine/generate.ts')
+    const deckAllPageEditFlow = readSource('src/main/generation/edit-deck-allpage-flow.ts')
+    const batchFlow = readSource('src/main/generation/edit-deck-batch-flow.ts')
+    const engine = readSource('src/main/generation/agent-runner.ts')
 
     expect(deckAllPageEditFlow).toContain("'正在准备批量编辑'")
     expect(engine).toContain('`正在编辑页面 ${concurrentDeckPageId}`')
@@ -204,10 +204,10 @@ describe('source-grounded prompt rules', () => {
   })
 
   it('uses operation-specific progress copy for add-page and failed-page retries', () => {
-    const engine = readSource('src/main/ipc/engine/generate.ts')
-    const addPageFlow = readSource('src/main/ipc/generation/add-page-flow.ts')
-    const retrySinglePageFlow = readSource('src/main/ipc/generation/retry-single-page-flow.ts')
-    const retryFlow = readSource('src/main/ipc/generation/retry-flow.ts')
+    const engine = readSource('src/main/generation/agent-runner.ts')
+    const addPageFlow = readSource('src/main/generation/add-page-flow.ts')
+    const retrySinglePageFlow = readSource('src/main/generation/retry-single-page-flow.ts')
+    const retryFlow = readSource('src/main/generation/retry-flow.ts')
 
     expect(engine).toContain('renderingLabel?: string')
     expect(engine).toContain(
@@ -220,12 +220,12 @@ describe('source-grounded prompt rules', () => {
   })
 
   it('uses successful edit facts for edit replies instead of raw agent/tool output', () => {
-    const deckFlow = readSource('src/main/ipc/generation/deck-flow.ts')
-    const editFlow = readSource('src/main/ipc/generation/edit-flow.ts')
-    const batchEditFlow = readSource('src/main/ipc/generation/edit-deck-allpage-flow.ts')
-    const addPageFlow = readSource('src/main/ipc/generation/add-page-flow.ts')
-    const retryFlow = readSource('src/main/ipc/generation/retry-flow.ts')
-    const retrySinglePageFlow = readSource('src/main/ipc/generation/retry-single-page-flow.ts')
+    const deckFlow = readSource('src/main/generation/deck-flow.ts')
+    const editFlow = readSource('src/main/generation/edit-flow.ts')
+    const batchEditFlow = readSource('src/main/generation/edit-deck-allpage-flow.ts')
+    const addPageFlow = readSource('src/main/generation/add-page-flow.ts')
+    const retryFlow = readSource('src/main/generation/retry-flow.ts')
+    const retrySinglePageFlow = readSource('src/main/generation/retry-single-page-flow.ts')
 
     expect(deckFlow).toContain('agentSummary.trim() || fallbackCompletionSummary')
     expect(editFlow).toContain('emitSuccessfulEditSummary(context, editSummary, emitAssistant)')
@@ -252,7 +252,7 @@ describe('source-grounded prompt rules', () => {
   it('publishes durable batch page results without stealing preview focus or duplicating summaries', () => {
     const sharedGeneration = readSource('src/shared/generation.ts')
     const sessionDetail = readSource('src/renderer/src/pages/session-detail.tsx')
-    const batchEditFlow = readSource('src/main/ipc/generation/edit-deck-allpage-flow.ts')
+    const batchEditFlow = readSource('src/main/generation/edit-deck-allpage-flow.ts')
 
     expect(sharedGeneration).toContain('focusPage?: boolean')
     expect(sessionDetail).toContain('if (payload.focusPage !== false)')
@@ -284,23 +284,33 @@ describe('source-grounded prompt rules', () => {
   })
 
   it('deck edit selected single-page scope still uses deck edit tools', () => {
-    const agent = readSource('src/main/agent.ts')
-    const editSystem = readSource('src/main/prompt/edit-system.ts')
-    const deckSystem = readSource('src/main/prompt/deck-system.ts')
-    const deckTools = readSource('src/main/tools/deck-tools.ts')
+    const agent = readSource('src/main/agent-runtime/agent/factory.ts')
+    const editSystem = readSource('src/main/agent-runtime/prompt/composers/edit-system.ts')
+    const deckSystem = readSource('src/main/agent-runtime/prompt/composers/deck-system.ts')
+    const deckTools = readSource('src/main/agent-runtime/tools/deck-tools.ts')
+    const editTemplates = [
+      'container.md',
+      'selector.md',
+      'single-page.md',
+      'deck.md'
+    ].map((fileName) =>
+      readSource(`src/main/agent-runtime/prompt/templates/edit-system/${fileName}`)
+    )
+    const templateSource = editTemplates.join('\n')
 
     expect(agent).toContain("return context.mode === 'edit'")
     expect(agent).toContain('当前编辑任务禁止使用 write_file')
-    expect(editSystem).toContain('仅允许调用 set_index_transition(type, durationMs)')
-    expect(editSystem).toContain('read_file target page + grep to locate target → edit_file')
-    expect(editSystem).toContain('update_single_page_file(pageId="${targetPageId}"')
-    expect(editSystem).toContain('For each target page: update_page_file(pageId, content)')
+    expect(editSystem).toContain('createPromptCatalog<EditSystemTemplateVars>')
+    expect(templateSource).toContain('仅允许调用 set_index_transition(type, durationMs)')
+    expect(templateSource).toContain('read_file target page + grep to locate target → edit_file')
+    expect(templateSource).toContain('update_single_page_file(pageId="{{targetPageId}}"')
+    expect(templateSource).toContain('For each target page: update_page_file(pageId, content)')
     expect(deckSystem).toContain("context.mode !== 'edit'")
     expect(deckTools).toContain('!isEditMode &&')
   })
 
   it('deck edit prompt applies UI-selected page ids only to deck scope', () => {
-    const editSystem = readSource('src/main/prompt/edit-system.ts')
+    const editSystem = readSource('src/main/agent-runtime/prompt/composers/edit-system.ts')
     const selectorPromptSource = editSystem.slice(
       editSystem.indexOf('function buildSelectorEditPrompt('),
       editSystem.indexOf('function buildSinglePageEditPrompt(')
@@ -319,7 +329,7 @@ describe('source-grounded prompt rules', () => {
   })
 
   it('edit prompt injects source document rules', () => {
-    const editSystem = readSource('src/main/prompt/edit-system.ts')
+    const editSystem = readSource('src/main/agent-runtime/prompt/composers/edit-system.ts')
 
     expect(editSystem).toContain('Source documents (content evidence)')
     expect(editSystem).toContain('SOURCE_DOCUMENT_READ_STRATEGY')
@@ -328,17 +338,20 @@ describe('source-grounded prompt rules', () => {
   })
 
   it('planNewPage includes source document context', () => {
-    const engineGenerate = readSource('src/main/ipc/engine/generate.ts')
+    const engineGenerate = readSource('src/main/generation/agent-runner.ts')
 
     expect(engineGenerate).toContain('sourceDocumentPaths?: string[]')
     expect(engineGenerate).toContain('Source document context:')
   })
 
   it('single-slide planning can preserve explicit topic lists', () => {
-    const engineGenerate = readSource('src/main/ipc/engine/generate.ts')
-    const generationUser = readSource('src/main/prompt/generation-user.ts')
-    const planningSource = readSource('src/main/prompt/planning.ts')
-    const runtimeUserSource = readSource('src/main/prompt/runtime-user.ts')
+    const engineGenerate = readSource('src/main/generation/agent-runner.ts')
+    const generationUser = readSource('src/main/agent-runtime/prompt/composers/generation-user.ts')
+    const planningComposer = readSource('src/main/agent-runtime/prompt/composers/planning.ts')
+    const planningTemplate = readSource(
+      'src/main/agent-runtime/prompt/templates/planning/system.md'
+    )
+    const runtimeUserSource = readSource('src/main/agent-runtime/prompt/composers/runtime-user.ts')
 
     expect(engineGenerate).toContain('keyPoints must contain 1-10 short phrases')
     expect(engineGenerate).toContain('preserve each listed topic as a separate key point')
@@ -347,16 +360,20 @@ describe('source-grounded prompt rules', () => {
     expect(generationUser).toContain('Do not duplicate the same source facts')
     expect(generationUser).toContain('grouping related points')
     expect(generationUser).toContain('keep them distinct only where the layout allows')
-    expect(planningSource).toContain('Provide 1-10 key points per slide')
+    expect(planningComposer).toContain('planningPromptCatalog.render')
+    expect(planningTemplate).toContain('Provide 1-10 key points per slide')
     expect(runtimeUserSource).toContain('keyPoints must contain 1-10 strings')
   })
 
   it('blocks generic filler slides during planning', () => {
-    const sharedSource = readSource('src/main/prompt/shared.ts')
-    const planningSource = readSource('src/main/prompt/planning.ts')
-    const runtimeUserSource = readSource('src/main/prompt/runtime-user.ts')
+    const sharedSource = readSource('src/main/agent-runtime/prompt/composers/shared.ts')
+    const planningComposer = readSource('src/main/agent-runtime/prompt/composers/planning.ts')
+    const planningTemplate = readSource(
+      'src/main/agent-runtime/prompt/templates/planning/system.md'
+    )
+    const runtimeUserSource = readSource('src/main/agent-runtime/prompt/composers/runtime-user.ts')
 
-    expect(planningSource).toContain('SOURCE_MATERIAL_PLANNING_RULES')
+    expect(planningComposer).toContain('SOURCE_MATERIAL_PLANNING_RULES')
     expect(sharedSource).toContain('Apply these rules only when source documents')
     expect(sharedSource).toContain('Stay source-grounded and avoid creative drift')
     expect(sharedSource).toContain('evidence, not a slide checklist')
@@ -369,8 +386,8 @@ describe('source-grounded prompt rules', () => {
     expect(sharedSource).toContain('actively enrich the slide from the material')
     expect(sharedSource).toContain('source-grounded does not mean exhaustive')
     expect(sharedSource).toContain('Do not add generic agenda')
-    expect(planningSource).toContain('For open-ended topics without source materials')
-    expect(planningSource).not.toContain('split or merge')
+    expect(planningTemplate).toContain('For open-ended topics without source materials')
+    expect(planningTemplate).not.toContain('split or merge')
     expect(runtimeUserSource).toContain('hasSourceMaterialCue')
     expect(runtimeUserSource).toContain('hasSourceMaterials?: boolean')
     expect(runtimeUserSource).toContain('args.hasSourceMaterials || hasSourceMaterialCue')
@@ -381,8 +398,8 @@ describe('source-grounded prompt rules', () => {
   })
 
   it('requires source inspection before source-backed slide generation', () => {
-    const sharedSource = readSource('src/main/prompt/shared.ts')
-    const source = readSource('src/main/prompt/generation-user.ts')
+    const sharedSource = readSource('src/main/agent-runtime/prompt/composers/shared.ts')
+    const source = readSource('src/main/agent-runtime/prompt/composers/generation-user.ts')
     const sourceReadingSkill = readSource('resources/skills/oh-my-ppt-source-reading/SKILL.md')
 
     expect(sharedSource).toContain('SOURCE_READING_SKILL_NAME')
@@ -403,10 +420,10 @@ describe('source-grounded prompt rules', () => {
     expect(source).toContain('expansion must be source-grounded')
     expect(source).toContain('SOURCE_GROUNDED_EXPANSION_RULES')
     expect(source).toContain('if inspected material is thin, enrich the slide')
-    expect(readSource('src/main/prompt/deck-system.ts')).toContain(
+    expect(readSource('src/main/agent-runtime/prompt/composers/deck-system.ts')).toContain(
       'SOURCE_GROUNDED_EXPANSION_RULES'
     )
-    expect(readSource('src/main/prompt/edit-system.ts')).toContain(
+    expect(readSource('src/main/agent-runtime/prompt/composers/edit-system.ts')).toContain(
       'SOURCE_GROUNDED_EXPANSION_RULES'
     )
     expect(source).toContain('SOURCE_DOCUMENT_FACT_RULE')

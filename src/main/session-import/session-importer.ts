@@ -5,10 +5,15 @@ import crypto from 'crypto'
 import { unzipSync } from 'fflate'
 import log from 'electron-log/main.js'
 import type { IpcContext } from '../ipc/context'
-import { buildProjectIndexHtml, extractPagesDataFromIndex, type DeckPageFile } from '../ipc/engine/template'
+import {
+  buildProjectIndexHtml,
+  extractPagesDataFromIndex,
+  type DeckPageFile
+} from '../session/template-builder'
 import { recordHistoryOperationStrict } from '../history/git-history-service'
-import { createDefaultDesignContract } from '../utils/design-contract'
-import { resolveUsableStyleId } from '../utils/style-skills'
+import { createSessionMasterIfMissing } from '../session/master-service'
+import { createDefaultDesignContract } from '../presentation/design-contract'
+import { resolveUsableStyleId } from '../styles/catalog'
 import { findSlidePackResourceZipInsideZip } from './slide-pack-archive'
 import {
   requireSlideSizeFromHtml,
@@ -549,6 +554,7 @@ export async function importSessionFile(
 
     await copyDirectory(prepared.sessionRoot, projectDir)
     await ctx.ensureSessionAssets(projectDir)
+    await createSessionMasterIfMissing(projectDir)
     await fs.promises.rm(path.join(projectDir, '.git'), { recursive: true, force: true })
     log.info('[session-import] project files ready', {
       sessionId,

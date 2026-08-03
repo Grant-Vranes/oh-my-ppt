@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { validateHtmlContent } from '../../../src/main/tools/html-utils'
+import { validateHtmlContent } from '../../../src/main/presentation/html/html-utils'
 
 describe('validateHtmlContent preview-only animation boundary', () => {
   it('rejects anime SVG motion-path helpers in normal editable content', () => {

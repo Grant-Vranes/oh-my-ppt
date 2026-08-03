@@ -13,7 +13,7 @@ import {
   DEFAULT_CHART_DATA,
   type InsertChartType
 } from '../session-detail/workspace/insert-charts'
-import type { EditableElementSnapshot } from '../preview/edit-mode-script'
+import type { EditableElementSnapshot } from '@arcsin1/presentation-editor-runtime'
 import { useT } from '../../i18n'
 import { useHtmlEditStore } from '../../store/htmlEditStore'
 import { useHtmlEditHistoryStore } from '../../store/htmlEditHistoryStore'

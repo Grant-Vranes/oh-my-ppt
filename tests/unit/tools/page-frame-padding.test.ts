@@ -3,12 +3,16 @@ import { readFileSync } from 'fs'
 import path from 'path'
 
 const projectRoot = path.resolve(__dirname, '../../..')
-const pageWriterSource = readFileSync(
-  path.join(projectRoot, 'src/main/tools/page-writer.ts'),
+const pageShellSource = readFileSync(
+  path.join(projectRoot, 'src/main/presentation/html/page-shell.ts'),
+  'utf-8'
+)
+const pageWriterCoreSource = readFileSync(
+  path.join(projectRoot, 'src/main/presentation/html/page-writer-core.ts'),
   'utf-8'
 )
 const templateSource = readFileSync(
-  path.join(projectRoot, 'src/main/ipc/engine/template.ts'),
+  path.join(projectRoot, 'src/main/session/template-builder.ts'),
   'utf-8'
 )
 const indexRuntimeSource = readFileSync(
@@ -38,11 +42,11 @@ const generationPreviewGridSource = readFileSync(
 
 describe('page runtime frame padding', () => {
   it('does not add default padding to the page root', () => {
-    expect(pageWriterSource).toContain('.ppt-page-root.p-2,')
-    expect(pageWriterSource).toContain('padding: 0;')
-    expect(pageWriterSource).not.toContain('padding: 0.5rem')
-    expect(pageWriterSource).not.toContain('padding: 2rem')
-    expect(pageWriterSource).not.toContain('padding: 3rem')
+    expect(pageShellSource).toContain('.ppt-page-root.p-2,')
+    expect(pageShellSource).toContain('padding: 0;')
+    expect(pageShellSource).not.toContain('padding: 0.5rem')
+    expect(pageShellSource).not.toContain('padding: 2rem')
+    expect(pageShellSource).not.toContain('padding: 3rem')
   })
 
   it('creates scaffold pages without padding utility classes on the root frame', () => {
@@ -50,10 +54,10 @@ describe('page runtime frame padding', () => {
       '<main class="ppt-page-root" data-ppt-guard-root="1" data-ppt-slide-size-id='
     )
     expect(templateSource).not.toContain('ppt-page-root p-2')
-    expect(pageWriterSource).toContain(
+    expect(pageWriterCoreSource).toContain(
       '<main class="ppt-page-root" data-ppt-guard-root="1" data-ppt-slide-size-id='
     )
-    expect(pageWriterSource).not.toContain('ppt-page-root p-2')
+    expect(pageWriterCoreSource).not.toContain('ppt-page-root p-2')
   })
 
   it('keeps preview scaling letterboxed to match the session canvas', () => {

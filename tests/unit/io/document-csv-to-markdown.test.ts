@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { convertCsvTextToMarkdown } from '../../../src/main/ipc/io/document-csv-to-markdown'
+import { convertCsvTextToMarkdown } from '../../../src/main/io/document-csv-to-markdown'
 import {
   deriveOutlinePageCandidates,
   scanDocumentOutline
-} from '../../../src/main/ipc/io/document-outline-scan'
+} from '../../../src/main/io/document-outline-scan'
 
 describe('document CSV to Markdown conversion', () => {
   it('converts grouped CSV files into heading-backed markdown tables', () => {

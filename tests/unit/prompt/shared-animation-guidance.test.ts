@@ -3,7 +3,7 @@ import fs from 'fs'
 import path from 'path'
 
 const sharedPromptSource = fs.readFileSync(
-  path.resolve(__dirname, '../../../src/main/prompt/shared.ts'),
+  path.resolve(__dirname, '../../../src/main/agent-runtime/prompt/composers/shared.ts'),
   'utf-8'
 )
 

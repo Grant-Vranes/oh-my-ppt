@@ -11,13 +11,17 @@ import {
 import type { GenerateStartPayload } from '@shared/generation.js'
 import type { ChatPanelController } from '@renderer/types/session-detail'
 import { normalizePagesForSelection } from '../shared/pageUtils'
-import { isChatSendBlocked, resolveChatSendContext } from './chatSendUtils'
+import { isChatSendBlocked, resolveChatSendContext, resolveMainSessionEdit } from './chatSendUtils'
+import { useCancelStyleSwitch } from './useCancelStyleSwitch'
 
 const isSupportedMediaFile = (file: File): boolean => {
   if (file.type.startsWith('image/')) return true
   if (/^video\/(mp4|webm|ogg)$/i.test(file.type)) return true
   return /\.(png|jpe?g|webp|gif|svg|mp4|webm|ogg)$/i.test(file.name)
 }
+
+const isCancellationMessage = (message: string): boolean =>
+  /^(生成已取消|Generation cancelled|Generation canceled)$/i.test(message.trim())
 
 export function useChatPanelController(sessionId: string): ChatPanelController {
   const t = useT()
@@ -36,6 +40,7 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
   const toastSuccess = useToastStore((state) => state.success)
   const toastError = useToastStore((state) => state.error)
   const toastWarning = useToastStore((state) => state.warning)
+  const cancelStyleSwitch = useCancelStyleSwitch(sessionId)
   const sendingMessageRef = useRef(false)
 
   const pages = useMemo(() => normalizePagesForSelection(currentPages), [currentPages])
@@ -206,23 +211,42 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
       return false
     }
     if (context.hasSelector && detailState.chatType !== 'page') detailState.setChatType('page')
+
+    const mainEditResolution =
+      context.chatType === 'main' && pages.length > 0
+        ? resolveMainSessionEdit(content, pages, selectedPage?.pageId, selectPageIds)
+        : { ready: true as const, selectPageIds: [] }
+    if (!mainEditResolution.ready) {
+      toastWarning(
+        t(
+          mainEditResolution.reason === 'page-structure'
+            ? 'sessionDetail.mainPageStructureUnsupported'
+            : 'sessionDetail.mainPageScopeNotFound'
+        )
+      )
+      return false
+    }
+    const effectiveSelectPageIds =
+      context.chatType === 'main' ? mainEditResolution.selectPageIds : []
     const selectedScopePages =
-      context.chatType === 'main' && selectPageIds.length > 0
+      context.chatType === 'main' && effectiveSelectPageIds.length > 0
         ? pages
-            .filter((page) => selectPageIds.includes(page.pageId))
+            .filter((page) => effectiveSelectPageIds.includes(page.pageId))
             .map((page) => `P${page.pageNumber}`)
         : []
     const scopedMessageContent =
       selectedScopePages.length > 0
         ? `${t('sessionDetail.mainPageScopeMessagePrefix', { pages: selectedScopePages.join('、') })}\n${content}`
         : content
+    const clientMessageId = crypto.randomUUID()
     const generatePayload: GenerateStartPayload = {
       sessionId,
       modelConfigId,
       userMessage: scopedMessageContent,
+      clientMessageId,
       type: pages.length > 0 ? 'page' : 'deck',
       chatType: context.chatType,
-      selectPageIds: context.chatType === 'main' ? selectPageIds : undefined,
+      selectPageIds: context.chatType === 'main' ? effectiveSelectPageIds : undefined,
       chatPageId: context.targetPageId,
       selectedPageId:
         pages.length > 0 && context.chatType === 'page' ? context.targetPageId : undefined,
@@ -231,6 +255,9 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
       selector: context.selector || undefined,
       elementTag: context.hasSelector ? detailState.elementTag || undefined : undefined,
       elementText: context.hasSelector ? detailState.elementText || undefined : undefined,
+      selectedElementContext: context.hasSelector
+        ? detailState.selectedElementContext || undefined
+        : undefined,
       imagePaths,
       videoPaths
     }
@@ -247,6 +274,22 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
           toastWarning(t('sessionDetail.pageEditPlanRequiresSavedEdits'))
           return false
         }
+        addMessage({
+          id: clientMessageId,
+          session_id: sessionId,
+          chat_scope: 'page',
+          page_id: context.messagePageId,
+          selector: context.selector,
+          image_paths: imagePaths,
+          video_paths: videoPaths,
+          role: 'user',
+          content: scopedMessageContent,
+          type: 'text',
+          tool_name: null,
+          tool_call_id: null,
+          token_count: null,
+          created_at: Math.floor(Date.now() / 1000)
+        })
         assessmentId = crypto.randomUUID()
         generateState.startPageEditPlanning(sessionId, targetPageId, assessmentId)
         const assessment = await ipc.assessPageEdit(generatePayload)
@@ -272,22 +315,6 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
             pageId: targetPageId,
             pageNumber: targetPage?.pageNumber
           })
-          addMessage({
-            id: crypto.randomUUID(),
-            session_id: sessionId,
-            chat_scope: 'page',
-            page_id: context.messagePageId,
-            selector: context.selector,
-            image_paths: imagePaths,
-            video_paths: videoPaths,
-            role: 'user',
-            content: scopedMessageContent,
-            type: 'text',
-            tool_name: null,
-            tool_call_id: null,
-            token_count: null,
-            created_at: Math.floor(Date.now() / 1000)
-          })
           detailState.setInput('')
           detailState.clearPendingAssets()
           detailState.clearSelectedElement()
@@ -296,10 +323,13 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
             useGenerateStore.getState().finishPageEdit(sessionId)
             return false
           }
-          useGenerateStore.getState().updatePageEdit(sessionId, {
-            runId: result.runId,
-            status: 'running'
-          })
+          const currentJob = useGenerateStore.getState().pageEditJobs[sessionId]
+          if (currentJob && result.runId) {
+            useGenerateStore.getState().updatePageEdit(sessionId, {
+              runId: result.runId,
+              status: currentJob.status === 'cancelling' ? 'cancelling' : 'running'
+            })
+          }
           return true
         }
         latestGenerateState.setPendingPageEditPlan(sessionId, {
@@ -314,7 +344,7 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
         return true
       } else if (isDeckEdit) {
         generateState.startDeckEdit(sessionId, {
-          totalPages: selectPageIds.length || pages.length,
+          totalPages: effectiveSelectPageIds.length || pages.length,
           payload: generatePayload
         })
       } else {
@@ -351,10 +381,24 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
         }
         return false
       }
+      if (isDeckEdit && result.runId) {
+        const currentJob = useGenerateStore.getState().deckEditJobs[sessionId]
+        if (currentJob) {
+          useGenerateStore.getState().updateDeckEdit(sessionId, {
+            runId: result.runId,
+            status: currentJob.status === 'cancelling' ? 'cancelling' : 'running'
+          })
+        }
+      }
       return true
     } catch (sendError) {
       const message = sendError instanceof Error ? sendError.message : t('generating.failed')
-      if (/^(生成已取消|Generation cancelled|Generation canceled)$/i.test(message)) {
+      if (isCancellationMessage(message)) {
+        const cancelledState = useGenerateStore.getState()
+        if (cancelledState.pageEditJobs[sessionId]) cancelledState.finishPageEdit(sessionId)
+        if (cancelledState.deckEditJobs[sessionId]) cancelledState.finishDeckEdit(sessionId)
+        if (cancelledState.isGenerating) cancelledState.cancelGeneration(message)
+        cancelledState.finishPageEditPlanning(sessionId, assessmentId)
         return false
       }
       const hadGlobalGeneration = useGenerateStore.getState().isGenerating
@@ -405,22 +449,6 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
         pageId: pendingPlan.targetPageId,
         pageNumber: pendingPlan.targetPageNumber
       })
-      addMessage({
-        id: crypto.randomUUID(),
-        session_id: sessionId,
-        chat_scope: 'page',
-        page_id: pendingPlan.payload.chatPageId || pendingPlan.targetPageId,
-        selector: pendingPlan.payload.selector || null,
-        image_paths: pendingPlan.payload.imagePaths || [],
-        video_paths: pendingPlan.payload.videoPaths || [],
-        role: 'user',
-        content: pendingPlan.payload.userMessage,
-        type: 'text',
-        tool_name: null,
-        tool_call_id: null,
-        token_count: null,
-        created_at: Math.floor(Date.now() / 1000)
-      })
       useGenerateStore.getState().clearPendingPageEditPlan(sessionId)
       const result = await ipc.startPageEdit({
         ...pendingPlan.payload,
@@ -430,14 +458,18 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
         useGenerateStore.getState().finishPageEdit(sessionId)
         return false
       }
-      useGenerateStore.getState().updatePageEdit(sessionId, {
-        runId: result.runId,
-        status: 'running'
-      })
+      const currentJob = useGenerateStore.getState().pageEditJobs[sessionId]
+      if (currentJob && result.runId) {
+        useGenerateStore.getState().updatePageEdit(sessionId, {
+          runId: result.runId,
+          status: currentJob.status === 'cancelling' ? 'cancelling' : 'running'
+        })
+      }
       return true
     } catch (sendError) {
       const message = sendError instanceof Error ? sendError.message : t('generating.failed')
       useGenerateStore.getState().finishPageEdit(sessionId)
+      if (isCancellationMessage(message)) return false
       useGenerateStore.getState().setSessionError(sessionId, message)
       toastError(message)
       return false
@@ -469,13 +501,18 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
         useGenerateStore.getState().finishDeckEdit(sessionId, retry)
         return false
       }
-      useGenerateStore
-        .getState()
-        .updateDeckEdit(sessionId, { runId: result.runId, status: 'running' })
+      const currentJob = useGenerateStore.getState().deckEditJobs[sessionId]
+      if (currentJob && result.runId) {
+        useGenerateStore.getState().updateDeckEdit(sessionId, {
+          runId: result.runId,
+          status: currentJob.status === 'cancelling' ? 'cancelling' : 'running'
+        })
+      }
       return true
     } catch (retryError) {
       const message = retryError instanceof Error ? retryError.message : t('generating.failed')
       useGenerateStore.getState().finishDeckEdit(sessionId, retry)
+      if (isCancellationMessage(message)) return false
       useGenerateStore.getState().setSessionError(sessionId, message)
       toastError(message)
       return false
@@ -484,25 +521,60 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
     }
   }
 
-  const reconcilePageEditState = async (): Promise<void> => {
+  const reconcilePageEditState = async (options?: {
+    clearOnFailure?: boolean
+    preserveCancelling?: boolean
+  }): Promise<void> => {
     try {
       const state = await ipc.getPageEditState(sessionId)
       if (!state.hasActiveRun) {
         useGenerateStore.getState().finishPageEdit(sessionId)
+        return
+      }
+      const currentJob = useGenerateStore.getState().pageEditJobs[sessionId]
+      if (currentJob) {
+        useGenerateStore.getState().updatePageEdit(sessionId, {
+          runId: state.runId || currentJob.runId,
+          status:
+            options?.preserveCancelling && currentJob.status === 'cancelling'
+              ? 'cancelling'
+              : state.status === 'queued'
+                ? 'queued'
+                : 'running',
+          progress: state.progress ?? currentJob.progress
+        })
       }
     } catch {
-      // Keep the local lock when the backend state cannot be verified.
+      if (options?.clearOnFailure) useGenerateStore.getState().finishPageEdit(sessionId)
     }
   }
 
-  const reconcileDeckEditState = async (): Promise<void> => {
+  const reconcileDeckEditState = async (options?: {
+    clearOnFailure?: boolean
+    preserveCancelling?: boolean
+  }): Promise<void> => {
     try {
       const state = await ipc.getDeckEditState(sessionId)
       if (!state.hasActiveRun) {
         useGenerateStore.getState().finishDeckEdit(sessionId)
+        return
+      }
+      const currentJob = useGenerateStore.getState().deckEditJobs[sessionId]
+      if (currentJob) {
+        useGenerateStore.getState().updateDeckEdit(sessionId, {
+          runId: state.runId || currentJob.runId,
+          status:
+            options?.preserveCancelling && currentJob.status === 'cancelling'
+              ? 'cancelling'
+              : state.status === 'queued'
+                ? 'queued'
+                : 'running',
+          progress: state.progress ?? currentJob.progress,
+          totalPages: state.totalPages || currentJob.totalPages
+        })
       }
     } catch {
-      // Keep the local lock when the backend state cannot be verified.
+      if (options?.clearOnFailure) useGenerateStore.getState().finishDeckEdit(sessionId)
     }
   }
 
@@ -524,33 +596,37 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
       }
       return
     }
+    if (isStyleSwitching) {
+      await cancelStyleSwitch()
+      return
+    }
     if (useGenerateStore.getState().pageEditJobs[sessionId]) {
       if (useGenerateStore.getState().pageEditJobs[sessionId]?.status === 'cancelling') return
+      useGenerateStore.getState().updatePageEdit(sessionId, {
+        status: 'cancelling',
+        label: t('sessionDetail.activityCancelling')
+      })
       try {
         const result = await ipc.cancelPageEdit(sessionId)
-        if (result.success) {
-          useGenerateStore.getState().updatePageEdit(sessionId, {
-            status: 'cancelling',
-            label: t('sessionDetail.activityCancelling')
-          })
-        }
-        await reconcilePageEditState()
+        await reconcilePageEditState({
+          clearOnFailure: !result.success,
+          preserveCancelling: result.success
+        })
       } catch (cancelError) {
         toastError(cancelError instanceof Error ? cancelError.message : t('generating.failed'))
-        await reconcilePageEditState()
+        await reconcilePageEditState({ clearOnFailure: true })
       }
       return
     }
     if (useGenerateStore.getState().pageBeautifyJobs[sessionId]) {
       if (useGenerateStore.getState().pageBeautifyJobs[sessionId]?.status === 'cancelling') return
+      useGenerateStore.getState().updatePageBeautify(sessionId, {
+        status: 'cancelling',
+        label: t('sessionDetail.activityCancelling')
+      })
       try {
         const result = await ipc.cancelPageBeautify(sessionId)
-        if (result.success) {
-          useGenerateStore.getState().updatePageBeautify(sessionId, {
-            status: 'cancelling',
-            label: t('sessionDetail.activityCancelling')
-          })
-        } else {
+        if (!result.success) {
           // Cancel was rejected (stale or already-finished job). No terminal chunk will ever
           // arrive, so the optimistic `pageBeautifyJobs` entry would lock the chat input
           // forever. Reconcile from the authoritative backend state; if reconciliation itself
@@ -572,28 +648,58 @@ export function useChatPanelController(sessionId: string): ChatPanelController {
         }
       } catch (cancelError) {
         toastError(cancelError instanceof Error ? cancelError.message : t('generating.failed'))
+        try {
+          const snapshot = await ipc.getPageBeautifyState(sessionId)
+          if (snapshot.hasActiveRun && snapshot.status !== 'cancelled') {
+            useGenerateStore.getState().updatePageBeautify(sessionId, {
+              runId: snapshot.runId || undefined,
+              status: snapshot.status === 'queued' ? 'queued' : 'running',
+              progress: snapshot.progress ?? 0
+            })
+          } else {
+            useGenerateStore.getState().finishPageBeautify(sessionId)
+          }
+        } catch {
+          useGenerateStore.getState().finishPageBeautify(sessionId)
+        }
       }
       return
     }
     if (useGenerateStore.getState().deckEditJobs[sessionId]) {
       if (useGenerateStore.getState().deckEditJobs[sessionId]?.status === 'cancelling') return
+      useGenerateStore.getState().updateDeckEdit(sessionId, {
+        status: 'cancelling',
+        label: t('sessionDetail.activityCancelling')
+      })
       try {
         const result = await ipc.cancelDeckEdit(sessionId)
-        if (result.success) {
-          useGenerateStore.getState().updateDeckEdit(sessionId, {
-            status: 'cancelling',
-            label: t('sessionDetail.activityCancelling')
-          })
-        }
-        await reconcileDeckEditState()
+        await reconcileDeckEditState({
+          clearOnFailure: !result.success,
+          preserveCancelling: result.success
+        })
       } catch (cancelError) {
         toastError(cancelError instanceof Error ? cancelError.message : t('generating.failed'))
-        await reconcileDeckEditState()
+        await reconcileDeckEditState({ clearOnFailure: true })
       }
       return
     }
-    await ipc.cancelGenerate(sessionId)
-    useGenerateStore.getState().cancelGeneration()
+    try {
+      const result = await ipc.cancelGenerate(sessionId)
+      if (result.success) {
+        useGenerateStore.getState().cancelGeneration()
+        return
+      }
+      const state = await ipc.getGenerateState(sessionId)
+      if (!state.hasActiveRun) useGenerateStore.getState().cancelGeneration()
+    } catch (cancelError) {
+      try {
+        const state = await ipc.getGenerateState(sessionId)
+        if (!state.hasActiveRun) useGenerateStore.getState().cancelGeneration()
+      } catch {
+        useGenerateStore.getState().cancelGeneration()
+      }
+      toastError(cancelError instanceof Error ? cancelError.message : t('generating.failed'))
+    }
   }
 
   return {

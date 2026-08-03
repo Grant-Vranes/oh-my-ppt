@@ -20,12 +20,12 @@ vi.mock('deepagents', () => ({
     constructor(public options: unknown) {}
   }
 }))
-vi.mock('../../../src/main/agent', () => ({ resolveModel: resolveModelMock }))
-vi.mock('../../../src/main/skills/product-skills-backend', () => ({
+vi.mock('../../../src/main/agent-runtime/model', () => ({ resolveModel: resolveModelMock }))
+vi.mock('../../../src/main/agent-runtime/skills', () => ({
   attachProductSkillsBackend: attachProductSkillsBackendMock
 }))
 
-import { runPageBeautifyAgent } from '../../../src/main/ipc/edit-jobs/page-beautify-agent'
+import { runPageBeautifyAgent } from '../../../src/main/edit-jobs/page-beautify-agent'
 
 describe('page beautify Agent', () => {
   const tmpRoots: string[] = []
@@ -124,7 +124,8 @@ describe('page beautify Agent', () => {
       'model',
       'https://example.com',
       0.5,
-      1000
+      1000,
+      undefined
     )
     const skillCall = attachProductSkillsBackendMock.mock.calls[0]
     expect(skillCall[1]).toBe('page-beautify')

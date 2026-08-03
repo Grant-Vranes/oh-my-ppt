@@ -1,5 +1,46 @@
 # 更新日志 / Changelog
 
+## 2026-08-03 · v2.2.0
+
+### 中文
+
+- 新增演示母版：可为整套演示统一设置背景、标题和正文字体，并按需覆盖已有页面，快速建立一致的视觉基调。
+- 新增母版全局元素管理：可统一添加和调整 Logo、页脚、页码与水印，也可针对单页隐藏这些元素。
+- 新增版式母版：可为封面、数据重点、对比、时间线、流程、总结等不同内容类型预设版式，后续新增或生成页面会更贴合预期结构。
+- 新增创建时自动配图：选择支持生图的风格并开启功能后，系统会根据页面内容自动补充插画或背景图；失败页面可单独重试，不影响整套演示继续生成。
+- 新增 AI 风格推荐：创建演示或选择风格时，可根据主题和内容获得匹配的风格建议，减少筛选成本。
+- 新增更多内置风格，并在风格选择中清晰标记支持自动配图的风格。
+- 新增帮助文档入口：可从侧边栏直接打开产品使用指南。
+- 新增更多风格： 增加额外30+风格，支持配图等。
+- 优化风格创建：官方 [style-generate-skill](https://github.com/arcsin1/style-generate-skill) 支持为风格配置配图方向，让使用该风格创作时的自动配图更贴合整体视觉。
+- 优化 AI 生图体验：可在设置中验证生图模型，生成时提供更合适的尺寸选择与页面上下文参考，配图更容易融入当前页面。
+- 优化一键美化：一键美化当前页面，在保留原有信息的同时优化页面的版式与视觉层次，效果极佳。
+- 优化编辑体验：PPT 与网页编辑器中的元素选择、拖拽、缩放和属性调整更准确，复杂页面中的手动精修更顺手。
+- 优化网页编辑：可继续编辑带有单页动画、切页或滚动效果的网页，并更好地保留当前页面状态。
+- 优化 PPTX 导入与导出：进一步改善形状、字体、背景和动画等内容的还原；支持以 4:3 比例导出可编辑 PPTX。
+- 优化 AI 修改流程：整套和指定页面的修改范围、进度反馈、取消与重试更清晰，避免无关页面受到影响。
+- 优化 Windows 顶部工具栏，窗口操作更贴合桌面使用习惯。
+- 修复主会话的进度展示与页面意图识别问题，AI 修改过程更稳定、反馈更准确。
+
+### English
+
+- Added Presentation Masters: set a shared background plus title and body fonts for an entire deck, then apply the visual direction across existing slides when needed.
+- Added Global Elements: manage shared logos, footers, page numbers, and watermarks in one place, with the option to hide them on individual slides.
+- Added Layout Masters: preset layouts for covers, data highlights, comparisons, timelines, processes, summaries, and more, so newly generated slides better match their intended structure.
+- Added automatic illustrations during creation: choose an image-enabled style and turn the feature on to add context-aware illustrations or backgrounds as slides are generated. Failed illustrations can be retried without interrupting the deck.
+- Added AI style recommendations: get matching style suggestions from your topic and content when creating a presentation or choosing a style.
+- Added more built-in styles, with clear indicators for styles that support automatic illustrations.
+- Added a Help Docs entry to the sidebar for direct access to the product guide.
+- Improved style creation: the official [style-generate-skill](https://github.com/arcsin1/style-generate-skill) can now define illustration direction for a style, making automatic visuals better match the overall design.
+- Improved AI image generation: verify image models from Settings, choose more suitable sizes, and generate with richer page context so visuals fit the current slide more naturally.
+- Improved one-click beautification: choose visual or structure-focused refinement to improve layout and hierarchy while retaining the original information.
+- Improved editing precision: selecting, dragging, resizing, and adjusting properties is more reliable in both the presentation and HTML editors, especially on complex pages.
+- Improved HTML editing: continue editing pages with slide transitions, single-page animations, or scrolling effects while preserving the current page state more reliably.
+- Improved PPTX import and export: better restoration of shapes, fonts, backgrounds, and animations, plus editable PPTX export in 4:3 format.
+- Improved AI editing workflows: scope, progress, cancellation, and retries are clearer for full-deck and selected-slide changes, helping keep unrelated slides untouched.
+- Improved the Windows title bar with desktop-friendly window controls.
+- Fixed main-session progress reporting and page-intent recognition, making AI editing feedback more reliable.
+
 ## 2026-07-24 · v2.1.0
 
 ### 中文

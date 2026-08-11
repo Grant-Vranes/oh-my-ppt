@@ -771,8 +771,11 @@ export const HtmlEditorCanvas = forwardRef<
           if (has) return true
           const loaded = await wv.executeJavaScript(
             `new Promise(function(resolve) {
+              var existing = document.querySelector('script[src*="chart.v4.js"]');
+              var src = existing ? existing.src : '';
+              if (!src) { resolve(false); return; }
               var s = document.createElement('script');
-              s.src = 'https://cdn.bootcdn.net/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';
+              s.src = src;
               s.onload = function() { resolve(true); };
               s.onerror = function() { resolve(false); };
               document.head.appendChild(s);

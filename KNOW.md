@@ -618,3 +618,58 @@ CSS/HTML 覆盖层系统（`master.ts`, 851 行），应用全册视觉规则：
 4. **数据模型** → `src/shared/` (类型定义) → `src/main/db/schema.ts` (数据库表)
 5. **编辑流程** → `edit-jobs/` 四种编辑服务 → `session/` 页面管理
 6. **导入导出** → `io/pptx-import/` → `io/html-pptx/` → `io/export-handlers.ts`
+
+## 本地运行调试
+
+### 环境要求
+- Node.js ≥ 20
+- pnpm ≥ 10 < 11
+
+### 1. 安装依赖（首次或拉取新依赖后）
+```bash
+pnpm install
+```
+
+### 2. 启动开发模式
+```bash
+pnpm dev
+```
+这会通过 `electron-vite dev` 同时启动：
+- **主进程** (`src/main/`) 和 **预加载脚本** (`src/preload/`) 的构建与热重载
+- **渲染进程** (`src/renderer/`) 的 Vite dev server，端口 **5178**
+- 自动打开 Electron 窗口
+
+修改代码会触发热重载；主进程改动会自动重启 Electron。
+
+### 3. 调试技巧
+- **渲染进程**：在 Electron 窗口里 `Cmd+Option+I` 打开 DevTools（和 Chrome 一致）
+- **主进程**：在 `src/main/` 代码里加 `console.log`，输出会在启动 `pnpm dev` 的终端里看到；也可在 VSCode 里用 `F5` attach 到 Electron 主进程
+- **断点调试主进程**：VSCode 创建 `.vscode/launch.json`，attach 到 `9229` 端口，然后 `pnpm dev` 启动后 attach
+
+### 4. 类型检查（改完代码后验证）
+```bash
+pnpm typecheck          # 全量
+pnpm typecheck:node     # 只查主进程
+pnpm typecheck:web      # 只查渲染进程
+```
+
+### 5. 跑测试
+```bash
+pnpm test                                          # 全量
+pnpm test -- tests/unit/xxx/foo.test.ts            # 单个文件
+```
+
+### 6. 预览构建产物（可选）
+```bash
+pnpm start    # electron-vite preview，跑已 build 的产物（需要先 build）
+```
+> 注意：按项目约定，**不要跑** `pnpm build` / `pnpm lint`。
+
+### 关键配置文件
+- `electron.vite.config.ts:5` — 渲染进程 dev server 端口 `5178`
+- `tsconfig.node.json` — 主进程 TS 配置
+- `tsconfig.web.json` — 渲染进程 TS 配置
+- 路径别名：`@shared/*` → `src/shared/*`，`@renderer/*` → `src/renderer/src/*`
+
+### 运行后
+应用启动后，进入「设置 → 文本模型」配置 AI 模型（provider / base_url / model / api_key）才能使用生成功能；本地 Ollama 也支持（`base_url` 填 `http://127.0.0.1:11434/v1`）。

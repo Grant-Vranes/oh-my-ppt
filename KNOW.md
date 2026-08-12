@@ -673,3 +673,94 @@ pnpm start    # electron-vite preview，跑已 build 的产物（需要先 build
 
 ### 运行后
 应用启动后，进入「设置 → 文本模型」配置 AI 模型（provider / base_url / model / api_key）才能使用生成功能；本地 Ollama 也支持（`base_url` 填 `http://127.0.0.1:11434/v1`）。
+
+## 打包构建
+
+### 通用前置步骤
+
+```bash
+pnpm install          # 安装依赖（首次或拉取新依赖后）
+```
+
+打包配置在 `electron-builder.yml`，由 `electron-builder` 驱动。所有平台的产物输出到 `dist/` 目录。
+
+### Windows
+
+| 类型 | 命令 | 产物文件名 | 说明 |
+|------|------|-----------|------|
+| 安装包 (NSIS) | `pnpm build:win` 的一部分 | `OhMyPPT-2.2.0-setup.exe` | 支持自定义安装路径、创建桌面/开始菜单快捷方式，非一键安装 |
+| 免安装版 (Portable) | `pnpm build:win` 的一部分 | `OhMyPPT-2.2.0-portable.exe` | 单文件，双击即可运行，无需安装，数据存储在 exe 同目录 |
+
+```bash
+# 同时生成安装包和免安装版（推荐）
+pnpm build:win
+
+# 仅生成免安装版
+pnpm build && npx electron-builder --win portable
+
+# 仅生成安装包
+pnpm build && npx electron-builder --win nsis
+
+# 免打包目录（用于调试打包结果，不生成安装包/portable）
+pnpm build:unpack
+```
+
+**配置详情** (`electron-builder.yml` → `win` / `nsis` / `portable`)：
+- 架构：`x64`
+- 可执行文件名：`ohmyppt`
+- 图标：`build/icons/icon.ico`
+- NSIS：非一键安装 (`oneClick: false`)，允许自定义安装路径，创建桌面 + 开始菜单快捷方式
+- Portable：artifactName 模板 `${name}-${version}-portable.${ext}`
+- Electron 下载镜像：`https://npmmirror.com/mirrors/electron/`（国内加速）
+
+### macOS
+
+| 类型 | 命令 | 产物文件名 | 说明 |
+|------|------|-----------|------|
+| DMG 安装镜像 | `pnpm build:mac` | `OhMyPPT-2.2.0-x64.dmg` / `OhMyPPT-2.2.0-arm64.dmg` | 支持 Intel 和 Apple Silicon |
+
+```bash
+pnpm build:mac
+```
+
+**配置详情** (`electron-builder.yml` → `mac` / `dmg`)：
+- 架构：`x64` + `arm64`（同时生成两个 DMG）
+- 图标：`build/icons/icon.icns`
+- 不签名 (`identity: null`)，不公证 (`notarize: false`)
+- 声明了相机、麦克风、文档、下载文件夹的使用权限描述
+
+### Linux
+
+| 类型 | 命令 | 产物文件名 | 说明 |
+|------|------|-----------|------|
+| AppImage | `pnpm build:linux` 的一部分 | `OhMyPPT-2.2.0-x64.AppImage` | 免安装，chmod +x 后直接运行 |
+| DEB 安装包 | `pnpm build:linux` 的一部分 | `OhMyPPT-2.2.0-x64.deb` | Debian/Ubuntu 系安装包 |
+
+```bash
+# 同时生成 AppImage 和 DEB
+pnpm build:linux
+
+# 仅生成 AppImage
+pnpm build && npx electron-builder --linux AppImage
+
+# 仅生成 DEB
+pnpm build && npx electron-builder --linux deb
+```
+
+**配置详情** (`electron-builder.yml` → `linux` / `appImage` / `deb`)：
+- 架构：`x64`
+- 可执行文件名：`ohmyppt`
+- 图标：`build/icons/`
+- 分类：`Office`
+- DEB 依赖：`libgtk-3-0`, `libnotify4`, `libnss3`, `libxss1`, `libxtst6`, `xdg-utils`
+- 注意：Linux 目前缺少 ffmpeg 二进制，MP4 视频导出暂不可用
+
+### 各平台速查表
+
+| 平台 | 命令 | 产物格式 | 架构 |
+|------|------|---------|------|
+| Windows | `pnpm build:win` | NSIS 安装包 + Portable 免安装 | x64 |
+| macOS | `pnpm build:mac` | DMG | x64, arm64 |
+| Linux | `pnpm build:linux` | AppImage + DEB | x64 |
+
+> 按项目约定，日常开发**不要跑** `pnpm build` / `pnpm lint`；仅在需要打包时使用上述命令。

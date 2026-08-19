@@ -48,6 +48,13 @@ import type { ThinkingParameterMode } from '@shared/model-config.js'
 import type { ExportProgressPayload } from '@shared/export-progress.js'
 import type { PageMergeDisabledReason } from '@shared/page-merge'
 import type { ModelUsagePeriod, ModelUsageStats } from '@shared/model-usage'
+import type {
+  LogWriteEntry,
+  LogQueryParams,
+  LogQueryResult,
+  LogSettingsResult,
+  LogSettingsPayload
+} from '@shared/activity-log'
 import type { SlideSizePresetId } from '@shared/slide-size'
 import type { ParsedChartDataResult } from '@shared/chart-data'
 import type { SessionMasterConfig, SessionMasterStatus } from '@shared/master'
@@ -1528,5 +1535,15 @@ export const ipc = {
       )
     getIpc().on(channel, handler)
     return () => getIpc().removeListener(channel, handler)
-  }
+  },
+  writeLog: (entry: LogWriteEntry) =>
+    getIpc().invoke('log:write', entry) as Promise<{ success: boolean }>,
+  writeLogBatch: (entries: LogWriteEntry[]) =>
+    getIpc().invoke('log:writeBatch', entries) as Promise<{ success: boolean; count: number }>,
+  queryLogs: (params: LogQueryParams) =>
+    getIpc().invoke('log:query', params) as Promise<LogQueryResult>,
+  clearLogs: () => getIpc().invoke('log:clear') as Promise<{ success: boolean }>,
+  getLogSettings: () => getIpc().invoke('log:getSettings') as Promise<LogSettingsResult>,
+  saveLogSettings: (settings: LogSettingsPayload) =>
+    getIpc().invoke('log:saveSettings', settings) as Promise<{ success: boolean }>
 }

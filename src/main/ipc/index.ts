@@ -40,13 +40,16 @@ import { registerPageEditJobHandlers } from '../edit-jobs/page-edit-job-service'
 import { registerPageBeautifyJobHandlers } from '../edit-jobs/page-beautify-job-service'
 import { registerStyleSwitchJobHandlers } from '../edit-jobs/style-switch-job-service'
 import { registerMasterHandlers } from '../session/master-handlers'
+import { registerLogHandlers } from '../logging/log-handlers'
+import type { LoggerService } from '../logging/logger-service'
 
 export { registerLocalAssetProtocol }
 
 export function setupIPC(
   mainWindow: BrowserWindow,
   db: PPTDatabase,
-  agentManager: AgentManager
+  agentManager: AgentManager,
+  logger: LoggerService
 ): void {
   const runtimeEvents = new TypedEventBus({
     onListenerError: (error, event) => {
@@ -71,7 +74,7 @@ export function setupIPC(
   })
   const context = createIpcContext(mainWindow, db, agentManager, runtimeEvents, {
     recorder: new DbModelUsageRecorder(db)
-  })
+  }, logger)
   const jobCoordinator = new JobCoordinator()
   const generationContext = createGenerationContext(context)
 
@@ -115,4 +118,5 @@ export function setupIPC(
   registerImageGenerationHistoryHandlers(context)
   registerHtmlEditorHandlers(context)
   registerHtmlEditorAiHandlers(context)
+  registerLogHandlers(context)
 }

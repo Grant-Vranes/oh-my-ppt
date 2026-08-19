@@ -24,6 +24,7 @@ import { applyProxy } from '../utils/proxy'
 import { configureLogging, scheduleUpdateNotification } from './lifecycle'
 import { createTray, destroyTray, showTrayHideBalloon } from './tray'
 import { createMainWindow, showMainWindow } from './window'
+import { LoggerService } from '../logging/logger-service'
 
 /** Owns the main-process composition state; `index.ts` only wires Electron lifecycle events. */
 export class MainApplication {
@@ -32,6 +33,7 @@ export class MainApplication {
   private agentManager: AgentManager | null = null
   private isShuttingDown = false
   private isTrayEnabled = false
+  private logger: LoggerService | null = null
 
   focusMainWindow(): void {
     log.info('[app] second instance requested; focusing existing window')
@@ -48,6 +50,19 @@ export class MainApplication {
     configureHtmlThumbnailService(this.db)
     await this.db.failInterruptedThumbnailTasks()
     setStyleDb(this.db)
+
+    const savedLogLevel =
+      (await this.db.getSetting<string>('log_level').catch(() => undefined)) === 'debug'
+        ? 'debug'
+        : 'normal'
+    const savedLogEnabled =
+      (await this.db.getSetting<string>('log_enabled').catch(() => undefined)) !== 'false'
+    this.logger = new LoggerService(this.db, savedLogLevel, savedLogEnabled)
+    await this.logger.pruneExpired()
+    log.info('[app] logger service initialized', {
+      logLevel: savedLogLevel,
+      enabled: savedLogEnabled
+    })
     log.info('[app] database initialized', {
       env: is.dev ? 'dev' : 'prod',
       dbPath: dbPath || 'userData/ohmyppt.db'
@@ -124,7 +139,7 @@ export class MainApplication {
     }
 
     registerLocalAssetProtocol()
-    setupIPC(window, this.db, this.agentManager)
+    setupIPC(window, this.db, this.agentManager, this.logger)
     scheduleUpdateNotification(window)
 
     try {

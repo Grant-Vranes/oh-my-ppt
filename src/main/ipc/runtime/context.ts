@@ -106,7 +106,8 @@ export function createIpcContext(
   db: PPTDatabase,
   agentManager: AgentManager,
   runtimeEvents = new TypedEventBus(),
-  modelRuntime: ModelRuntimeConfig = { recorder: null }
+  modelRuntime: ModelRuntimeConfig = { recorder: null },
+  logger: LoggerService
 ): IpcContext {
   const sessionProject = createSessionProjectResolver({ db })
   const localFiles = createRuntimeLocalFiles({ db, sessionProject })
@@ -124,6 +125,7 @@ export function createIpcContext(
   return {
     mainWindow,
     db,
+    logger,
     agentManager,
     modelRuntime,
     sessionRuns,

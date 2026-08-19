@@ -11,6 +11,7 @@ import { patchModelConfigDisableTemperature } from './add-model-disable-temperat
 import { patchModelConfigThinkingParameterMode } from './add-model-thinking-parameter-mode'
 import { patchStylesColumns } from './add-styles-columns'
 import { patchDesignContractFonts } from './backfill-design-contract-fonts'
+import { patchActivityLogsTable } from './add-activity-logs-table'
 
 type LibSqlClient = ReturnType<typeof createClient>
 type DrizzleDb = ReturnType<typeof drizzle>
@@ -1591,4 +1592,5 @@ export const runDatabasePatches = async (args: {
   await patchModelConfigMaxTokens(client)
   await patchModelConfigDisableTemperature(client)
   await patchModelConfigThinkingParameterMode(client)
+  await patchActivityLogsTable(client)
 }

@@ -451,6 +451,24 @@ export const htmlEditVersions = sqliteTable(
   })
 )
 
+export const activityLogs = sqliteTable(
+  'activity_logs',
+  {
+    id: text('id').primaryKey(),
+    level: text('level').notNull(),
+    source: text('source').notNull(),
+    message: text('message').notNull(),
+    detail: text('detail'),
+    sessionId: text('session_id'),
+    createdAt: integer('created_at').notNull()
+  },
+  (table) => ({
+    activityLogsCreatedIdx: index('idx_activity_logs_created').on(table.createdAt),
+    activityLogsLevelIdx: index('idx_activity_logs_level').on(table.level, table.createdAt),
+    activityLogsSourceIdx: index('idx_activity_logs_source').on(table.source, table.createdAt)
+  })
+)
+
 export type Session = typeof sessions.$inferSelect
 export type Message = typeof messages.$inferSelect
 export type ModelUsageEvent = typeof modelUsageEvents.$inferSelect
@@ -468,6 +486,7 @@ export type SessionOperationPage = typeof sessionOperationPages.$inferSelect
 export type HtmlEditDocument = typeof htmlEditDocuments.$inferSelect
 export type HtmlEditMessage = typeof htmlEditMessages.$inferSelect
 export type HtmlEditVersion = typeof htmlEditVersions.$inferSelect
+export type ActivityLog = typeof activityLogs.$inferSelect
 
 export type SessionStatus = 'active' | 'completed' | 'failed' | 'archived'
 export type MessageRole = 'user' | 'assistant' | 'system' | 'tool'

@@ -3,6 +3,7 @@ import type { GenerateChunkEvent } from '@shared/generation'
 import type { AppLocale } from '@shared/progress'
 import type { PPTDatabase } from '../../db/database'
 import type { AgentManager } from '../../agent-runtime/agent'
+import type { LoggerService } from '../../logging/logger-service'
 import { TypedEventBus, type RuntimeDomain } from '../../agent-runtime'
 import type { ModelRuntimeConfig } from '../../agent-runtime/model'
 import { createRuntimeCredentials, type RuntimeCredentials } from './credentials'
@@ -55,6 +56,7 @@ export interface IpcContext
     PageExport {
   mainWindow: BrowserWindow
   db: PPTDatabase
+  logger: LoggerService
   agentManager: AgentManager
   modelRuntime: ModelRuntimeConfig
   sessionRuns: SessionRunStateStore

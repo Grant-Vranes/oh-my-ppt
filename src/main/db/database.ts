@@ -25,7 +25,7 @@ import type {
 import type { AnimationPreferencesPayload } from '@shared/generation'
 import { normalizeThinkingParameterMode } from '@shared/model-config'
 import { requirePersistedSlideSize, type SlideSizePresetId } from '@shared/slide-size'
-import type { HtmlEditDocument, HtmlEditMessage, HtmlEditVersion } from './schema'
+import type { HtmlEditDocument, HtmlEditMessage, HtmlEditVersion, ActivityLog } from './schema'
 
 type SessionStatus = 'active' | 'completed' | 'failed' | 'archived'
 type MessageRole = 'user' | 'assistant' | 'system' | 'tool'
@@ -2489,6 +2489,112 @@ export class PPTDatabase {
       }
     }
     return result
+  }
+
+  // ========== Activity Logs ==========
+
+  async insertActivityLog(data: {
+    level: string
+    source: string
+    message: string
+    detail?: string | null
+    sessionId?: string | null
+  }): Promise<void> {
+    const id = crypto.randomUUID()
+    const now = Math.floor(Date.now() / 1000)
+    await this.db
+      .insert(schema.activityLogs)
+      .values({
+        id,
+        level: data.level,
+        source: data.source,
+        message: data.message,
+        detail: data.detail ?? null,
+        sessionId: data.sessionId ?? null,
+        createdAt: now
+      })
+      .run()
+  }
+
+  async queryActivityLogs(params: {
+    level?: string
+    source?: string
+    sessionId?: string
+    searchText?: string
+    limit?: number
+    offset?: number
+  }): Promise<{ logs: ActivityLog[]; total: number }> {
+    const limit = Math.max(1, Math.min(500, params.limit ?? 100))
+    const offset = Math.max(0, params.offset ?? 0)
+
+    const conditions: ReturnType<typeof eq>[] = []
+    if (params.level) conditions.push(eq(schema.activityLogs.level, params.level))
+    if (params.source) conditions.push(eq(schema.activityLogs.source, params.source))
+    if (params.sessionId) conditions.push(eq(schema.activityLogs.sessionId, params.sessionId))
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined
+
+    let logs: ActivityLog[]
+    if (params.searchText) {
+      const searchPattern = `%${params.searchText}%`
+      const searchResults = await this.db
+        .select()
+        .from(schema.activityLogs)
+        .where(
+          and(
+            ...(whereClause ? [whereClause] : []),
+            sql`${schema.activityLogs.message} LIKE ${searchPattern}`
+          )
+        )
+        .orderBy(desc(schema.activityLogs.createdAt))
+        .limit(limit)
+        .offset(offset)
+        .all()
+      logs = searchResults as unknown as ActivityLog[]
+    } else {
+      const baseQuery = whereClause
+        ? this.db.select().from(schema.activityLogs).where(whereClause)
+        : this.db.select().from(schema.activityLogs)
+      const results = await baseQuery
+        .orderBy(desc(schema.activityLogs.createdAt))
+        .limit(limit)
+        .offset(offset)
+        .all()
+      logs = results as unknown as ActivityLog[]
+    }
+
+    const countBase = whereClause
+      ? this.db.select({ count: count() }).from(schema.activityLogs).where(whereClause)
+      : this.db.select({ count: count() }).from(schema.activityLogs)
+
+    const countQuery = params.searchText
+      ? this.db
+          .select({ count: count() })
+          .from(schema.activityLogs)
+          .where(
+            and(
+              ...(whereClause ? [whereClause] : []),
+              sql`${schema.activityLogs.message} LIKE ${`%${params.searchText}%`}`
+            )
+          )
+      : countBase
+
+    const countResult = await countQuery.get()
+    const total = countResult?.count ?? 0
+
+    return { logs, total }
+  }
+
+  async deleteActivityLogsBefore(timestamp: number): Promise<void> {
+    await this.db
+      .delete(schema.activityLogs)
+      .where(lte(schema.activityLogs.createdAt, timestamp))
+      .run()
+  }
+
+  async getActivityLogCount(): Promise<number> {
+    const result = await this.db.select({ count: count() }).from(schema.activityLogs).get()
+    return result?.count ?? 0
   }
 
   // ========== Model Configs ==========

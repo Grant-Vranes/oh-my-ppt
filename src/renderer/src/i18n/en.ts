@@ -375,6 +375,7 @@ export const en = {
     logTab: 'Activity Log',
     logEnabled: 'Enable Logging',
     logEnabledHint: 'When disabled, no activity logs will be recorded',
+    logRetentionHint: 'Logs are automatically retained for {days} days and then deleted',
     logLevel: 'Log Level',
     logLevelNormal: 'Standard',
     logLevelDebug: 'Detailed',

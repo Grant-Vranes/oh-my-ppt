@@ -146,14 +146,19 @@ export function LogSettingsTab({ t }: LogSettingsTabProps): React.JSX.Element {
             <div>
               <label className="text-sm font-medium">{t('settings.logEnabled')}</label>
               <p className="mt-0.5 text-xs text-muted-foreground">{t('settings.logEnabledHint')}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {t('settings.logRetentionHint', { days: 14 })}
+              </p>
             </div>
             <button
               type="button"
+              role="switch"
+              aria-checked={logSettings.logEnabled}
               onClick={() => void handleToggleEnabled()}
-              className={`relative h-6 w-11 rounded-full transition-colors ${logSettings.logEnabled ? 'bg-[#7ea06f]' : 'bg-gray-300'}`}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8eaa70]/45 ${logSettings.logEnabled ? 'bg-[#5d6b4d]' : 'bg-input'}`}
             >
               <span
-                className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${logSettings.logEnabled ? 'translate-x-5' : 'translate-x-0.5'}`}
+                className={`pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg transition-transform ${logSettings.logEnabled ? 'translate-x-5' : 'translate-x-0'}`}
               />
             </button>
           </div>

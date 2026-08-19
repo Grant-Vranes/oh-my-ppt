@@ -357,6 +357,7 @@ export const zh = {
     logTab: '操作日志',
     logEnabled: '启用日志',
     logEnabledHint: '关闭后将不再记录任何操作日志',
+    logRetentionHint: '日志将自动保留 {days} 天，超期自动删除',
     logLevel: '日志级别',
     logLevelNormal: '标准',
     logLevelDebug: '详细',

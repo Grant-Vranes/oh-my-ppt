@@ -16,6 +16,7 @@ import { ImageModelConfigDialog } from '../components/settings/ImageModelConfigD
 import { ImageModelSettingsTab } from '../components/settings/ImageModelSettingsTab'
 import { ModelConfigDialog } from '../components/settings/ModelConfigDialog'
 import { ModelSettingsTab } from '../components/settings/ModelSettingsTab'
+import { LogSettingsTab } from '../components/settings/LogSettingsTab'
 import {
   IMAGE_PROVIDER_OPTIONS,
   createDefaultImageModelConfig,
@@ -518,6 +519,7 @@ export function SettingsPage(): React.JSX.Element {
           <TabsTrigger value="model">{t('settings.modelTab')}</TabsTrigger>
           <TabsTrigger value="imageModel">{t('settings.imageModelTab')}</TabsTrigger>
           <TabsTrigger value="advanced">{t('settings.advancedTab')}</TabsTrigger>
+          <TabsTrigger value="log">{t('settings.logTab')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general">
@@ -572,6 +574,10 @@ export function SettingsPage(): React.JSX.Element {
             onSaveAdvanced={() => void handleSaveAdvanced()}
             onTimeoutChange={handleTimeoutChange}
           />
+        </TabsContent>
+
+        <TabsContent value="log">
+          <LogSettingsTab t={t} />
         </TabsContent>
       </Tabs>
 

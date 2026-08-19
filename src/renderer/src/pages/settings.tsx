@@ -17,6 +17,7 @@ import { ImageModelSettingsTab } from '../components/settings/ImageModelSettings
 import { ModelConfigDialog } from '../components/settings/ModelConfigDialog'
 import { ModelSettingsTab } from '../components/settings/ModelSettingsTab'
 import { LogSettingsTab } from '../components/settings/LogSettingsTab'
+import { logger } from '../lib/logger'
 import {
   IMAGE_PROVIDER_OPTIONS,
   createDefaultImageModelConfig,
@@ -262,6 +263,11 @@ export function SettingsPage(): React.JSX.Element {
       setModelDialogOpen(false)
       setVerifiedModelSignature(null)
       success(t('settings.modelSaved'), { description: t('settings.modelSavedDescription') })
+      logger.action('settings', '保存模型配置', {
+        name: modelForm.name,
+        provider: modelForm.provider,
+        model: modelForm.model
+      })
     } finally {
       setSavingModel(false)
     }
@@ -341,6 +347,7 @@ export function SettingsPage(): React.JSX.Element {
       success(t('settings.saved'), {
         description: t('settings.savedDescription')
       })
+      logger.action('settings', '保存高级设置')
     } finally {
       setSavingTimeouts(false)
     }
@@ -376,6 +383,10 @@ export function SettingsPage(): React.JSX.Element {
         setVerifiedModelSignature(nextVerifiedSignature)
         success(t('settings.verifyPassed'), {
           description: verifyMessage || t('settings.verifyPassedDescription')
+        })
+        logger.action('settings', '验证 API Key', {
+          provider: modelForm.provider,
+          model: modelForm.model
         })
       } else {
         error(t('settings.verifyFailed'), {
@@ -427,6 +438,7 @@ export function SettingsPage(): React.JSX.Element {
         return
       }
       success(t('settings.activeModelUpdated'))
+      logger.action('settings', '切换模型配置', { id })
     } finally {
       setActivatingId(null)
     }
@@ -444,6 +456,7 @@ export function SettingsPage(): React.JSX.Element {
         return
       }
       info(t('settings.modelDeleted'))
+      logger.action('settings', '删除模型配置', { name: config.name })
     } finally {
       setDeletingId(null)
     }
@@ -499,6 +512,7 @@ export function SettingsPage(): React.JSX.Element {
       }
       setStoragePath(path)
       info(t('settings.storagePathUpdated'), { description: path })
+      logger.action('settings', '修改存储目录', { path })
     }
   }
 

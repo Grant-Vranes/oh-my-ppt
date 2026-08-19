@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { GenerateStartPayload, SessionPageEditPlan } from '@shared/generation'
+import { logger } from '../lib/logger'
 
 export interface GenerateProgress {
   stage: string
@@ -259,7 +260,8 @@ export const useGenerateStore = create<GenerateStore>((set) => ({
   sessionErrors: {},
   cancelReason: null,
 
-  startGeneration: () =>
+  startGeneration: () => {
+    logger.action('generate', '发起生成')
     set({
       status: 'running',
       isGenerating: true,
@@ -267,9 +269,11 @@ export const useGenerateStore = create<GenerateStore>((set) => ({
       currentPages: [],
       error: null,
       cancelReason: null
-    }),
+    })
+  },
 
-  startPageEdit: (sessionId, { pageId, pageNumber }) =>
+  startPageEdit: (sessionId, { pageId, pageNumber }) => {
+    logger.action('generate', '发起单页编辑', { sessionId, pageId, pageNumber })
     set((state) => {
       const { [sessionId]: _cleared, ...sessionErrors } = state.sessionErrors
       return {
@@ -287,7 +291,8 @@ export const useGenerateStore = create<GenerateStore>((set) => ({
         error: null,
         sessionErrors
       }
-    }),
+    })
+  },
 
   updatePageEdit: (sessionId, job) =>
     set((state) => ({
@@ -305,7 +310,8 @@ export const useGenerateStore = create<GenerateStore>((set) => ({
       return { pageEditJobs }
     }),
 
-  startPageBeautify: (sessionId, { pageId, pageNumber }) =>
+  startPageBeautify: (sessionId, { pageId, pageNumber }) => {
+    logger.action('generate', '发起页面美化', { sessionId, pageId, pageNumber })
     set((state) => {
       const { [sessionId]: _cleared, ...sessionErrors } = state.sessionErrors
       return {
@@ -323,7 +329,8 @@ export const useGenerateStore = create<GenerateStore>((set) => ({
         error: null,
         sessionErrors
       }
-    }),
+    })
+  },
 
   updatePageBeautify: (sessionId, job) =>
     set((state) => ({
@@ -341,7 +348,8 @@ export const useGenerateStore = create<GenerateStore>((set) => ({
       return { pageBeautifyJobs }
     }),
 
-  startDeckEdit: (sessionId, { totalPages, payload }) =>
+  startDeckEdit: (sessionId, { totalPages, payload }) => {
+    logger.action('generate', '发起整页编辑', { sessionId, totalPages })
     set((state) => {
       const { [sessionId]: _cleared, ...sessionErrors } = state.sessionErrors
       return {
@@ -364,7 +372,8 @@ export const useGenerateStore = create<GenerateStore>((set) => ({
         sessionErrors,
         cancelReason: null
       }
-    }),
+    })
+  },
 
   updateDeckEdit: (sessionId, job) =>
     set((state) => ({
@@ -395,7 +404,8 @@ export const useGenerateStore = create<GenerateStore>((set) => ({
       return { deckEditRetries }
     }),
 
-  startStyleSwitch: (sessionId, { styleId, styleName, totalPages, pages }) =>
+  startStyleSwitch: (sessionId, { styleId, styleName, totalPages, pages }) => {
+    logger.action('generate', '发起风格切换', { sessionId, styleId, styleName, totalPages })
     set((state) => {
       const { [sessionId]: _cleared, ...sessionErrors } = state.sessionErrors
       return {
@@ -414,7 +424,8 @@ export const useGenerateStore = create<GenerateStore>((set) => ({
         },
         sessionErrors
       }
-    }),
+    })
+  },
 
   setStyleSwitchJob: (sessionId, job) =>
     set((state) => ({
@@ -548,11 +559,18 @@ export const useGenerateStore = create<GenerateStore>((set) => ({
       )
     })),
 
-  finishGeneration: () =>
-    set({ status: 'completed', isGenerating: false, progress: null, cancelReason: null }),
-  cancelGeneration: (reason = 'User cancelled generation') =>
-    set({ status: 'cancelled', isGenerating: false, progress: null, cancelReason: reason }),
-  setError: (error) => set({ status: 'failed', error, isGenerating: false }),
+  finishGeneration: () => {
+    logger.info('generate', '生成完成')
+    set({ status: 'completed', isGenerating: false, progress: null, cancelReason: null })
+  },
+  cancelGeneration: (reason = 'User cancelled generation') => {
+    logger.info('generate', '生成取消', { reason })
+    set({ status: 'cancelled', isGenerating: false, progress: null, cancelReason: reason })
+  },
+  setError: (error) => {
+    logger.info('generate', '生成失败', { error })
+    set({ status: 'failed', error, isGenerating: false })
+  },
   setSessionError: (sessionId, error) =>
     set((state) => {
       const { [sessionId]: _cleared, ...sessionErrors } = state.sessionErrors

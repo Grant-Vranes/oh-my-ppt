@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { ipc } from '@renderer/lib/ipc'
+import { logger } from '../lib/logger'
 import type { FontSelection, SourceDocumentPlan } from '@shared/generation'
 import type { SlideSizePresetId } from '@shared/slide-size'
 
@@ -152,6 +153,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   createSession: async (payload) => {
     const { sessionId } = await ipc.createSession(payload)
     await get().fetchSessions()
+    logger.action('session', '创建会话', { sessionId, title: payload.topic })
     return sessionId
   },
 
@@ -199,6 +201,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     if (get().currentSession?.id === sessionId) {
       set({ currentSession: null, currentMessages: [], currentGeneratedPages: [] })
     }
+    logger.action('session', '删除会话', { sessionId })
   },
 
   updateSessionTitle: async ({ sessionId, title }) => {
@@ -208,6 +211,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     if (currentSession?.id === sessionId) {
       set({ currentSession: { ...currentSession, title } })
     }
+    logger.action('session', '重命名会话', { sessionId, title })
   },
 
   importSessionFile: async () => {

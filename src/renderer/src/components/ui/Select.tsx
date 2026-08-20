@@ -14,7 +14,7 @@ export const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      'flex h-11 w-full items-center justify-between gap-2 rounded-lg border border-[#d8ccb5]/80 bg-[#fff9ef]/86 px-3 py-2 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(77,63,46,0.08)] focus:outline-none focus:ring-2 focus:ring-[#8fbc8f] disabled:cursor-not-allowed disabled:opacity-50',
+      'flex h-11 w-full items-center justify-between gap-2 rounded-lg border border-[#e4e4e7] bg-[#ffffff] px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#ea580c] disabled:cursor-not-allowed disabled:opacity-50',
       '[&>span]:min-w-0 [&>span]:truncate [&>span]:whitespace-nowrap',
       className
     )}
@@ -34,7 +34,7 @@ export const SelectContent = React.forwardRef<
     <SelectPrimitive.Content
       ref={ref}
       className={cn(
-        'relative z-50 min-w-[8rem] max-h-64 overflow-hidden rounded-lg border border-[#d8ccb5]/85 bg-[#fff9ef] text-foreground shadow-[0_12px_28px_rgba(88,72,54,0.18)]',
+        'relative z-50 min-w-[8rem] max-h-64 overflow-hidden rounded-lg border border-[#e4e4e7] bg-[#ffffff] text-foreground shadow-[0_4px_12px_rgba(0,0,0,0.08)]',
         position === 'popper' && 'data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1',
         className
       )}
@@ -76,7 +76,7 @@ export const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      'relative flex w-full cursor-default select-none items-center rounded-md px-3 py-2 text-sm outline-none focus:bg-[#efe5d3]/70 data-[state=checked]:bg-[#dbe7ca] data-[state=checked]:text-[#2f3b28]',
+      'relative flex w-full cursor-default select-none items-center rounded-md px-3 py-2 text-sm outline-none focus:bg-[#f4f4f5] data-[state=checked]:bg-[#fff7ed] data-[state=checked]:text-[#ea580c]',
       '[&>span]:min-w-0 [&>span]:truncate [&>span]:whitespace-nowrap',
       className
     )}

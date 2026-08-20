@@ -112,7 +112,7 @@ const getTextPreviewShadow = (color: string | undefined): string | undefined => 
   const [red, green, blue] = channels.map((channel) => Math.max(0, Math.min(255, channel)) / 255)
   const luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue
   if (luminance < 0.72) return undefined
-  return '0 1px 1px rgba(20, 28, 23, 0.9), 0 0 1px rgba(20, 28, 23, 0.72)'
+  return '0 1px 1px rgba(24, 24, 27, 0.9), 0 0 1px rgba(24, 24, 27, 0.72)'
 }
 
 const parseStyleAttribute = (style: string | undefined): React.CSSProperties | undefined => {
@@ -386,7 +386,7 @@ function getCurrentFontSize(editor: Editor, defaultFontSize?: string): number {
 
 function getCurrentColor(editor: Editor, defaultColor?: string): string {
   const marks = getSelectionMarks(editor)
-  return normalizeColor(marks.color) || normalizeColor(defaultColor) || '#34402c'
+  return normalizeColor(marks.color) || normalizeColor(defaultColor) || '#18181b'
 }
 
 function setFontSizeMark(editor: Editor, value: number, selection?: BaseSelection): void {
@@ -415,7 +415,7 @@ function ColorMarkButton({
   }
   return (
     <label
-      className="relative inline-flex h-6 w-6 cursor-pointer items-center justify-center rounded-md border border-[#d9cdb8]/80 bg-white/60 transition-colors hover:bg-[#d4e4c1]/70"
+      className="relative inline-flex h-6 w-6 cursor-pointer items-center justify-center rounded-md border border-[#e4e4e7] bg-white/60 transition-colors hover:bg-[#f4f4f5]"
       title="Text color"
       onMouseDown={captureSelection}
       onFocus={captureSelection}
@@ -427,7 +427,7 @@ function ColorMarkButton({
       <input
         type="color"
         className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-        value={/^#[0-9a-f]{6}$/i.test(color) ? color : '#34402c'}
+        value={/^#[0-9a-f]{6}$/i.test(color) ? color : '#18181b'}
         onChange={(event) => {
           const nextValue = setColorMark(editor, event.target.value, selectionRef.current)
           if (nextValue) onCommit?.(nextValue)
@@ -458,7 +458,7 @@ function FontSizeMarkInput({ defaultFontSize }: { defaultFontSize?: string }): R
       onMouseDown={captureSelection}
       onFocus={captureSelection}
       onChange={(event) => setFontSizeMark(editor, Number(event.target.value), selectionRef.current)}
-      className="h-6 w-[58px] rounded-md border border-[#d9cdb8]/80 bg-white/70 px-1 text-[11px] text-[#3f4b35] outline-none focus:border-[#9bb98a]"
+      className="h-6 w-[58px] rounded-md border border-[#e4e4e7] bg-white/70 px-1 text-[11px] text-[#18181b] outline-none focus:border-[#ea580c]"
     />
   )
 }
@@ -476,8 +476,8 @@ function ToolbarButton({ mark, label, icon: Icon }: (typeof commandButtons)[numb
         toggleMark(editor, mark)
       }}
       className={cn(
-        'inline-flex h-6 w-6 items-center justify-center rounded-md text-[#5f6e50] transition-colors hover:bg-[#d4e4c1]/70 hover:text-[#34402c]',
-        active && 'bg-[#d4e4c1]/80 text-[#34402c]'
+        'inline-flex h-6 w-6 items-center justify-center rounded-md text-[#52525b] transition-colors hover:bg-[#f4f4f5] hover:text-[#18181b]',
+        active && 'bg-[#fff7ed] text-[#ea580c]'
       )}
     >
       <Icon className="h-3.5 w-3.5" />
@@ -585,7 +585,7 @@ export function RichTextBox({
       ref={rootRef}
       onFocus={() => setFocused(true)}
       onBlur={handleRootBlur}
-      className="overflow-hidden rounded-[1rem] border border-[#ded2bd]/72 bg-[#fffdf8]/88 shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)]"
+      className="overflow-hidden rounded-[1rem] border border-[#e4e4e7] bg-[#ffffff] shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
     >
       <Slate
         key={revision}
@@ -593,7 +593,7 @@ export function RichTextBox({
         initialValue={initialValue}
         onChange={(nextValue) => onChange(serializeValue(nextValue))}
       >
-        <div className="flex h-8 items-center gap-1 border-b border-[#ded2bd]/60 bg-[#fbf6ec]/78 px-2">
+        <div className="flex h-8 items-center gap-1 border-b border-[#e4e4e7] bg-[#fafafa] px-2">
           {commandButtons.map((button) => (
             <ToolbarButton key={button.mark} {...button} />
           ))}
@@ -609,11 +609,11 @@ export function RichTextBox({
             lineHeight: 'normal',
             whiteSpace: 'pre',
             zoom: editorZoom,
-            caretColor: '#20271f',
+            caretColor: '#18181b',
             textShadow: getTextPreviewShadow(editorColor)
           }}
           className={cn(
-            'min-h-[120px] overflow-auto px-3 py-2 outline-none selection:bg-[#d4e4c1]/72 selection:text-[#20271f] focus-visible:bg-white/40 [&_a]:underline [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic [&_u]:underline',
+            'min-h-[120px] overflow-auto px-3 py-2 outline-none selection:bg-[#fff7ed] selection:text-[#18181b] focus-visible:bg-white/40 [&_a]:underline [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic [&_u]:underline',
             className
           )}
         />

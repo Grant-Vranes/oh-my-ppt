@@ -95,10 +95,10 @@ export function ColorPicker({
             type="button"
             aria-label={ariaLabel}
             title={value}
-            className="h-8 w-10 shrink-0 cursor-pointer rounded-md border border-[#d7cbb7]/70 bg-[#fffdf8] p-1 transition-colors hover:border-[#879b71] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5d6b4d]"
+            className="h-8 w-10 shrink-0 cursor-pointer rounded-md border border-[#e4e4e7] bg-[#ffffff] p-1 transition-colors hover:border-[#a1a1aa] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ea580c]"
           >
             <span
-              className="block h-full w-full rounded-[3px] shadow-[inset_0_0_0_1px_rgba(30,38,25,0.12)]"
+              className="block h-full w-full rounded-[3px] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.08)]"
               style={{
                 backgroundColor: displayColor,
                 backgroundImage:
@@ -112,7 +112,7 @@ export function ColorPicker({
           </button>
         </PopoverTrigger>
         <PopoverContent
-          className="color-picker-popover w-[244px] rounded-lg border border-[#d7cbb7]/70 bg-[#fffdf8] p-2 shadow-[0_14px_34px_-12px_rgba(66,53,36,0.3)]"
+          className="color-picker-popover w-[244px] rounded-lg border border-[#e4e4e7] bg-[#ffffff] p-2 shadow-[0_14px_34px_-12px_rgba(0,0,0,0.12)]"
           align="start"
           sideOffset={8}
         >
@@ -129,14 +129,14 @@ export function ColorPicker({
               width: 100% !important;
               border-radius: 6px !important;
               overflow: hidden;
-              --github-background-color: #fffdf8;
+              --github-background-color: #ffffff;
               --github-border: 0;
               --github-box-shadow: none;
-              --chrome-arrow-fill: #6f7d62;
-              --chrome-arrow-background-color: #f2ece0;
-              --editable-input-label-color: #7b735f;
-              --editable-input-color: #3e4a32;
-              --editable-input-box-shadow: #d7cbb7 0 0 0 1px inset;
+              --chrome-arrow-fill: #71717a;
+              --chrome-arrow-background-color: #f4f4f5;
+              --editable-input-label-color: #71717a;
+              --editable-input-color: #18181b;
+              --editable-input-box-shadow: #e4e4e7 0 0 0 1px inset;
             }
             .color-picker-popover .w-color-saturation {
               border-radius: 5px 5px 0 0;

@@ -29,7 +29,7 @@ const transitionPreviewStyles = `
   border-radius: 8px;
   border: 1px solid rgba(216, 204, 181, 0.82);
   background: linear-gradient(180deg, rgba(255,253,248,0.98), rgba(246,241,229,0.96));
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.72), 0 8px 18px rgba(74,59,42,0.08);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.72), 0 8px 18px rgba(0,0,0,0.06);
   transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
 }
 .ppt-index-transition-card:hover,
@@ -37,12 +37,12 @@ const transitionPreviewStyles = `
   transform: translateY(-1px);
   border-color: rgba(111,129,89,0.58);
   background: linear-gradient(180deg, rgba(255,253,248,1), rgba(238,245,229,0.98));
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.78), 0 12px 24px rgba(74,59,42,0.12);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.78), 0 12px 24px rgba(0,0,0,0.08);
   outline: none;
 }
 .ppt-index-transition-card[data-selected="true"] {
-  border-color: rgba(93,107,77,0.78);
-  box-shadow: inset 0 0 0 1px rgba(93,107,77,0.22), 0 12px 24px rgba(74,59,42,0.1);
+  border-color: rgba(0,0,0,0.5);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.15), 0 12px 24px rgba(0,0,0,0.07);
 }
 .ppt-index-transition-card:disabled {
   cursor: not-allowed;
@@ -96,7 +96,7 @@ const transitionPreviewStyles = `
   border-radius: 5px;
   border: 1px solid rgba(80,69,52,0.16);
   background: linear-gradient(135deg, #18181b 0%, #ea580c 44%, #f1b56f 100%);
-  box-shadow: 0 6px 12px rgba(62,74,50,0.16);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.11);
   transform-origin: center;
 }
 .ppt-index-transition-frame-old {
@@ -365,7 +365,7 @@ export function IndexTransitionPicker({
         <button
           type="button"
           disabled={disabledState}
-          className="inline-flex h-7 max-w-[190px] shrink-0 items-center gap-1.5 rounded-full border border-[#e4e4e7]/70 bg-[#ffffff]/88 px-2.5 text-[10px] font-bold leading-none text-[#314028] shadow-[inset_0_1px_2px_rgba(74,59,42,0.04)] transition-colors hover:bg-[#f3f7ed] disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-7 max-w-[190px] shrink-0 items-center gap-1.5 rounded-full border border-[#e4e4e7]/70 bg-[#ffffff]/88 px-2.5 text-[10px] font-bold leading-none text-[#314028] shadow-[inset_0_1px_2px_rgba(0,0,0,0.03)] transition-colors hover:bg-[#f3f7ed] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <TriggerIcon
             className={`h-3 w-3 shrink-0 ${isLoading || isSaving ? 'animate-spin' : ''}`}

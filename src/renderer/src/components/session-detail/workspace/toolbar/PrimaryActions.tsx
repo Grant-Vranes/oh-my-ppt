@@ -29,7 +29,7 @@ export function PrimaryActions({
             className={cn(
               'inline-flex h-6 shrink-0 items-center justify-center rounded-full px-2.5 text-[10px] font-bold leading-none transition-colors disabled:pointer-events-none disabled:opacity-45',
               hasPendingEdits
-                ? 'bg-[#18181b] text-white shadow-[0_4px_10px_rgba(62,74,50,0.15)] hover:bg-[#18181b]'
+                ? 'bg-[#18181b] text-white shadow-[0_4px_10px_rgba(0,0,0,0.10)] hover:bg-[#18181b]'
                 : 'bg-[#ffffff]/72 text-[#a1a1aa] shadow-[inset_0_1px_0_rgba(255,255,255,0.54)]'
             )}
             onClick={() => actions?.onSaveCurrentPage()}
@@ -65,7 +65,7 @@ export function PrimaryActions({
         </TooltipTrigger>
         <TooltipContent side="bottom">{t('sessionDetail.discardAllEditsTooltip')}</TooltipContent>
       </Tooltip>
-      <div className="ml-0.5 flex items-center gap-0.5 rounded-full bg-[#f4f4f5]/48 p-0.5 shadow-[inset_0_1px_3px_rgba(74,59,42,0.045)]">
+      <div className="ml-0.5 flex items-center gap-0.5 rounded-full bg-[#f4f4f5]/48 p-0.5 shadow-[inset_0_1px_3px_rgba(0,0,0,0.03)]">
         <Tooltip>
           <TooltipTrigger asChild>
             <button

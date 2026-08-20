@@ -41,7 +41,7 @@ export function TemplateCard({
   return (
     <Card
       data-template-card-id={template.id}
-      className="group overflow-hidden !rounded-lg transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(88,75,56,0.18)]"
+      className="group overflow-hidden !rounded-lg transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(0,0,0,0.12)]"
     >
       <button
         type="button"
@@ -61,7 +61,7 @@ export function TemplateCard({
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_top_left,_#ffffff,_#eee4d2)] text-[#8a7e6c]">
-            <div className="flex items-center gap-2 rounded-lg border border-white/70 bg-white/55 px-3 py-2 text-xs shadow-sm backdrop-blur-sm">
+            <div className="flex items-center gap-2 rounded-lg border border-white/70 bg-white/55 px-3 py-2 text-xs shadow-sm">
               <LayoutTemplate className="h-4 w-4" />
               <span>{t('templates.thumbnailGenerating')}</span>
             </div>

@@ -517,7 +517,7 @@ export function EditorGuidesOverlay({
         />
       )}
 
-      <div className="absolute right-2 top-1 z-50 flex items-center gap-0.5 rounded-md border border-[#cfc5b4]/80 bg-[#ffffff]/94 p-0.5 shadow-[0_5px_14px_rgba(88,72,54,0.12)] backdrop-blur-sm">
+      <div className="absolute right-2 top-1 z-50 flex items-center gap-0.5 rounded-md border border-[#cfc5b4]/80 bg-[#ffffff]/94 p-0.5 shadow-[0_5px_14px_rgba(0,0,0,0.08)]">
         <button
           type="button"
           aria-pressed={editorSnapEnabled}

@@ -341,7 +341,7 @@ export function MergeTemplatePagesDialog({
                           onClick={() => void handleSelectTemplate(template)}
                           className={`flex w-full gap-2.5 rounded-xl border p-2 text-left transition-colors ${
                             selected
-                              ? 'border-[#8eaa70] bg-[#e8f1dd] shadow-sm'
+                              ? 'border-[#ea580c] bg-[#e8f1dd] shadow-sm'
                               : 'border-[#ddd4c4] bg-[#ffffff]/80 hover:bg-white'
                           } disabled:cursor-not-allowed disabled:opacity-55`}
                         >
@@ -468,7 +468,7 @@ export function MergeTemplatePagesDialog({
                           }}
                           className={`group relative overflow-hidden rounded-xl border p-2 text-left transition-all ${
                             selected
-                              ? 'border-[#7f9f67] bg-[#e9f2df] shadow-[0_8px_18px_rgba(93,107,77,0.14)]'
+                              ? 'border-[#7f9f67] bg-[#e9f2df] shadow-[0_8px_18px_rgba(0,0,0,0.10)]'
                               : 'border-[#ddd4c4] bg-white hover:border-[#b8c7a5]'
                           } ${
                             !page.selectable || submitting

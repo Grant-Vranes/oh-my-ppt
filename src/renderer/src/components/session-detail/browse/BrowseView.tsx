@@ -58,7 +58,7 @@ const BrowseCard = memo(function BrowseCard({
   const isGeneratingPlaceholder = page.status === 'generating' || page.status === 'pending'
   if (!slideSize) {
     return (
-      <div className="group overflow-hidden rounded-[4px] bg-white/60 shadow-[0_4px_16px_rgba(93,107,77,0.08)]">
+      <div className="group overflow-hidden rounded-[4px] bg-white/60 shadow-[0_4px_16px_rgba(0,0,0,0.06)]">
         <div className="relative flex h-[220px] w-full items-center justify-center overflow-hidden rounded-t-[4px] bg-[#f4f4f5]/88" />
       </div>
     )
@@ -68,7 +68,7 @@ const BrowseCard = memo(function BrowseCard({
       ? { width: '100%', aspectRatio: `${slideSize.width}/${slideSize.height}` }
       : { height: '100%', aspectRatio: `${slideSize.width}/${slideSize.height}` }
   return (
-    <div className="group overflow-hidden rounded-[4px] bg-white/60 shadow-[0_4px_16px_rgba(93,107,77,0.08)] transition-shadow hover:shadow-[0_8px_24px_rgba(93,107,77,0.14)]">
+    <div className="group overflow-hidden rounded-[4px] bg-white/60 shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-shadow hover:shadow-[0_8px_24px_rgba(0,0,0,0.10)]">
       <div
         className="relative flex h-[220px] w-full items-center justify-center overflow-hidden rounded-t-[4px] bg-[#f4f4f5]/88"
         style={{ contain: 'paint' }}

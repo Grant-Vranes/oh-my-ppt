@@ -152,7 +152,7 @@ export function GenerationStatusPanel({
               )}
             </span>
           </div>
-          <div className="h-1.5 overflow-hidden rounded-full border border-[#e4e4e7]/80 bg-[#ffffff] shadow-[inset_0_1px_2px_rgba(74,58,40,0.12)]">
+          <div className="h-1.5 overflow-hidden rounded-full border border-[#e4e4e7]/80 bg-[#ffffff] shadow-[inset_0_1px_2px_rgba(0,0,0,0.08)]">
             <div
               className="h-full rounded-full bg-[linear-gradient(90deg,#9ecf8a_0%,#6f9f59_52%,#4f7b3f_100%)] bg-[length:200%_100%] transition-[width] duration-500"
               style={{

@@ -142,7 +142,7 @@ export function ModelSplitButton({
       className={cn(
         isPrimary
           ? hasMultiple
-            ? 'rounded-full border-0 bg-gradient-to-r from-[#ea580c] to-[#ea580c] shadow-[0_10px_22px_rgba(93,107,77,0.24)]'
+            ? 'rounded-full border-0 bg-[#ea580c] shadow-[0_10px_22px_rgba(0,0,0,0.16)]'
             : 'rounded-full border-0 bg-transparent'
           : 'h-8 rounded-lg border-[#e4e4e7]/80 bg-[#ffffff]/76 shadow-none',
         disabledState && 'cursor-not-allowed opacity-50 shadow-none saturate-75',

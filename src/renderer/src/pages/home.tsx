@@ -139,7 +139,7 @@ export function HomePage(): ReactElement {
 
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full bg-[#fff7ed]/78 px-4 py-1.5 text-[11px] font-semibold text-[#18181b] shadow-[0_6px_14px_rgba(93,107,77,0.10)]">
+            <div className="inline-flex items-center gap-2 rounded-full bg-[#fff7ed]/78 px-4 py-1.5 text-[11px] font-semibold text-[#18181b] shadow-[0_6px_14px_rgba(0,0,0,0.07)]">
               <Sparkles className="h-3.5 w-3.5 text-[#18181b]" />
               {t('home.eyebrow')}
             </div>
@@ -157,16 +157,16 @@ export function HomePage(): ReactElement {
         <button
           type="button"
           onClick={() => void handleQuickCreate()}
-          className="group relative flex min-h-[240px] flex-col overflow-hidden rounded-[2rem] border border-[#e4e4e7] bg-[#f4f4f5] p-7 text-left shadow-[0_14px_34px_rgba(86,73,54,0.12)] transition-colors hover:border-[#c8b89e] hover:bg-[#e5dccb] disabled:cursor-not-allowed disabled:opacity-65"
+          className="group relative flex min-h-[240px] flex-col overflow-hidden rounded-[2rem] border border-[#e4e4e7] bg-[#f4f4f5] p-7 text-left shadow-[0_14px_34px_rgba(0,0,0,0.08)] transition-colors hover:border-[#c8b89e] hover:bg-[#e5dccb] disabled:cursor-not-allowed disabled:opacity-65"
         >
           <div className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] bg-[#fff7ed]/70 transition-transform group-hover:scale-110" />
           <div className="pointer-events-none absolute -bottom-14 left-10 h-28 w-40 rounded-[8%_92%_12%_88%/78%_22%_78%_22%] bg-[#c8b89e]/35" />
 
           <div className="relative flex items-start justify-between gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[10%_90%_16%_84%/78%_22%_78%_22%] bg-[#ea580c] text-white shadow-[0_10px_22px_rgba(93,107,77,0.18)]">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[10%_90%_16%_84%/78%_22%_78%_22%] bg-[#ea580c] text-white shadow-[0_10px_22px_rgba(0,0,0,0.12)]">
               <FileText className="h-5 w-5" />
             </div>
-            <span className="rounded-full bg-[#ffffff]/84 px-3 py-1.5 text-[11px] font-semibold text-[#18181b] shadow-[0_6px_14px_rgba(86,73,54,0.08)]">
+            <span className="rounded-full bg-[#ffffff]/84 px-3 py-1.5 text-[11px] font-semibold text-[#18181b] shadow-[0_6px_14px_rgba(0,0,0,0.06)]">
               {t('thinking.quickCreateBadge')}
             </span>
           </div>
@@ -181,7 +181,7 @@ export function HomePage(): ReactElement {
           </div>
 
           <div className="relative mt-auto pt-7">
-            <span className="inline-flex h-11 items-center gap-2 rounded-full bg-[#18181b] px-5 text-[13px] font-semibold text-white shadow-[0_10px_22px_rgba(93,107,77,0.22)] transition-colors group-hover:bg-[#18181b]">
+            <span className="inline-flex h-11 items-center gap-2 rounded-full bg-[#18181b] px-5 text-[13px] font-semibold text-white shadow-[0_10px_22px_rgba(0,0,0,0.15)] transition-colors group-hover:bg-[#18181b]">
               {t('thinking.startQuickCreate')}
               <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
             </span>
@@ -191,16 +191,16 @@ export function HomePage(): ReactElement {
         <button
           type="button"
           onClick={() => void handleExplore()}
-          className="group relative flex min-h-[240px] flex-col overflow-hidden rounded-[2rem] border border-[#fff7ed] bg-[#fff7ed] p-7 text-left shadow-[0_14px_34px_rgba(86,73,54,0.12)] transition-colors hover:border-[#a9bd97] hover:bg-[#cedfb8]"
+          className="group relative flex min-h-[240px] flex-col overflow-hidden rounded-[2rem] border border-[#fff7ed] bg-[#fff7ed] p-7 text-left shadow-[0_14px_34px_rgba(0,0,0,0.08)] transition-colors hover:border-[#a9bd97] hover:bg-[#cedfb8]"
         >
           <div className="pointer-events-none absolute -bottom-12 -left-10 h-36 w-36 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] bg-[#ea580c]/28 transition-transform group-hover:scale-110" />
           <div className="pointer-events-none absolute right-8 top-9 h-24 w-32 rounded-[8%_92%_12%_88%/78%_22%_78%_22%] bg-[#f4f4f5]/55" />
 
           <div className="relative flex items-start justify-between gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[10%_90%_16%_84%/78%_22%_78%_22%] bg-[#18181b] text-white shadow-[0_10px_22px_rgba(93,107,77,0.18)]">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[10%_90%_16%_84%/78%_22%_78%_22%] bg-[#18181b] text-white shadow-[0_10px_22px_rgba(0,0,0,0.12)]">
               <MessageCircle className="h-5 w-5" />
             </div>
-            <span className="rounded-full bg-[#ffffff]/84 px-3 py-1.5 text-[11px] font-semibold text-[#18181b] shadow-[0_6px_14px_rgba(86,73,54,0.08)]">
+            <span className="rounded-full bg-[#ffffff]/84 px-3 py-1.5 text-[11px] font-semibold text-[#18181b] shadow-[0_6px_14px_rgba(0,0,0,0.06)]">
               {t('thinking.exploreProjectBadge')}
             </span>
           </div>
@@ -215,7 +215,7 @@ export function HomePage(): ReactElement {
           </div>
 
           <div className="relative mt-auto pt-7">
-            <span className="inline-flex h-11 items-center gap-2 rounded-full bg-[#18181b] px-5 text-[13px] font-semibold text-white shadow-[0_10px_22px_rgba(62,74,50,0.20)] transition-colors group-hover:bg-[#18181b]">
+            <span className="inline-flex h-11 items-center gap-2 rounded-full bg-[#18181b] px-5 text-[13px] font-semibold text-white shadow-[0_10px_22px_rgba(0,0,0,0.13)] transition-colors group-hover:bg-[#18181b]">
               {t('thinking.startExplore')}
               <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
             </span>
@@ -226,16 +226,16 @@ export function HomePage(): ReactElement {
           type="button"
           onClick={() => void handleImportPptxClick()}
           disabled={importingPptx}
-          className="group relative flex min-h-[240px] flex-col overflow-hidden rounded-[2rem] border border-[#e4e4e7] bg-[#f4f4f5] p-7 text-left shadow-[0_14px_34px_rgba(86,73,54,0.10)] transition-colors hover:border-[#c8b89e] hover:bg-[#fafafa] disabled:cursor-not-allowed disabled:opacity-65"
+          className="group relative flex min-h-[240px] flex-col overflow-hidden rounded-[2rem] border border-[#e4e4e7] bg-[#f4f4f5] p-7 text-left shadow-[0_14px_34px_rgba(0,0,0,0.07)] transition-colors hover:border-[#c8b89e] hover:bg-[#fafafa] disabled:cursor-not-allowed disabled:opacity-65"
         >
           <div className="pointer-events-none absolute -right-14 -bottom-12 h-36 w-36 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] bg-[#c8b89e]/30 transition-transform group-hover:scale-110" />
           <div className="pointer-events-none absolute left-8 top-9 h-24 w-32 rounded-[8%_92%_12%_88%/78%_22%_78%_22%] bg-[#fff7ed]/45" />
 
           <div className="relative flex items-start justify-between gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[10%_90%_16%_84%/78%_22%_78%_22%] bg-[#b18f5e] text-white shadow-[0_10px_22px_rgba(86,73,54,0.16)]">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[10%_90%_16%_84%/78%_22%_78%_22%] bg-[#b18f5e] text-white shadow-[0_10px_22px_rgba(0,0,0,0.10)]">
               <FileUp className="h-5 w-5" />
             </div>
-            <span className="rounded-full bg-[#ffffff]/84 px-3 py-1.5 text-[11px] font-semibold text-[#52525b] shadow-[0_6px_14px_rgba(86,73,54,0.08)]">
+            <span className="rounded-full bg-[#ffffff]/84 px-3 py-1.5 text-[11px] font-semibold text-[#52525b] shadow-[0_6px_14px_rgba(0,0,0,0.06)]">
               PPTX
             </span>
           </div>
@@ -250,7 +250,7 @@ export function HomePage(): ReactElement {
           </div>
 
           <div className="relative mt-auto pt-7">
-            <span className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#18181b] px-5 py-2 text-[13px] font-semibold text-white shadow-[0_10px_22px_rgba(93,107,77,0.20)] transition-colors group-hover:bg-[#18181b]">
+            <span className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#18181b] px-5 py-2 text-[13px] font-semibold text-white shadow-[0_10px_22px_rgba(0,0,0,0.13)] transition-colors group-hover:bg-[#18181b]">
               {importingPptx ? (
                 <>
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />

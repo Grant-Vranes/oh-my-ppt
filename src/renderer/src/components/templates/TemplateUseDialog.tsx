@@ -521,7 +521,7 @@ export function TemplateUseDialog({
                           icon={Sparkles}
                           tone="primary"
                           dropdownAlign="start"
-                          className="h-8 rounded-lg border-0 bg-gradient-to-r from-[#7f965f] to-[#5f7448] shadow-[0_8px_18px_rgba(93,107,77,0.18)]"
+                          className="h-8 rounded-lg border-0 bg-[#ea580c] shadow-[0_8px_18px_rgba(0,0,0,0.12)]"
                           mainClassName="h-full bg-transparent px-2.5 text-xs text-white shadow-none hover:bg-white/10 hover:text-white hover:shadow-none"
                           triggerClassName="h-full w-8 px-0"
                           onRun={handleAnalyzeDocument}

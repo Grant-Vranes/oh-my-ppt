@@ -35,7 +35,7 @@ export function MessageBubble({ message }: { message: Message }): React.JSX.Elem
     <div className={cn('flex w-full min-w-0', isUser ? 'justify-end' : 'justify-start')}>
       <div
         className={cn(
-          'min-w-0 overflow-hidden rounded-[1.15rem] border px-3 py-2 shadow-[0_6px_14px_rgba(74,59,42,0.08)]',
+          'min-w-0 overflow-hidden rounded-[1.15rem] border px-3 py-2 shadow-[0_6px_14px_rgba(0,0,0,0.06)]',
           selectorText ? 'w-full max-w-[238px]' : 'w-fit max-w-[238px]',
           isUser
             ? 'border-[#d6e3c8]/78 bg-[#fbfef6]/90 text-[#18181b]'

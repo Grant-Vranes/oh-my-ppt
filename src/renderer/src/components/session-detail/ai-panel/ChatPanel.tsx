@@ -206,7 +206,7 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
 
   return (
     <>
-      <div className="relative mx-2.5 mt-2.5 overflow-hidden rounded-[1.35rem] border border-[#e4e4e7]/72 bg-[#ffffff]/78 px-3 pb-2.5 pt-3 shadow-[0_4px_12px_rgba(77,61,43,0.06)]">
+      <div className="relative mx-2.5 mt-2.5 overflow-hidden rounded-[1.35rem] border border-[#e4e4e7]/72 bg-[#ffffff]/78 px-3 pb-2.5 pt-3 shadow-[0_4px_12px_rgba(0,0,0,0.04)]">
         <div className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] bg-[#fff7ed]/12" />
         <div className="relative flex flex-col gap-2">
           <h3 className="text-sm font-semibold tracking-[0.04em] text-[#18181b]">
@@ -331,7 +331,7 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
 
       <div
         className={cn(
-          'mx-2.5 mb-2.5 rounded-[1.4rem] border border-[#e4e4e7]/72 bg-[#ffffff]/84 px-2.5 pb-3 pt-2 shadow-[0_12px_24px_rgba(74,59,42,0.11)] transition-colors',
+          'mx-2.5 mb-2.5 rounded-[1.4rem] border border-[#e4e4e7]/72 bg-[#ffffff]/84 px-2.5 pb-3 pt-2 shadow-[0_12px_24px_rgba(0,0,0,0.08)] transition-colors',
           assetDragActive && 'border-[#afc79a]/75 bg-[#f3f8ec]/88'
         )}
         onDragEnter={(event) => {
@@ -456,7 +456,7 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
             {pendingAssets.map((asset) => (
               <div
                 key={asset.id}
-                className="flex max-w-full items-center gap-1.5 rounded-full border border-[#fff7ed]/66 bg-[#e6f1dc]/76 px-2 py-1 text-[11px] text-[#405333] shadow-[0_3px_8px_rgba(93,107,77,0.06)]"
+                className="flex max-w-full items-center gap-1.5 rounded-full border border-[#fff7ed]/66 bg-[#e6f1dc]/76 px-2 py-1 text-[11px] text-[#405333] shadow-[0_3px_8px_rgba(0,0,0,0.04)]"
                 title={`${asset.originalName}\n${asset.relativePath}`}
               >
                 {asset.mimeType.startsWith('video/') ? (
@@ -498,7 +498,7 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
           }}
           disabled={isGenerating}
           rows={4}
-          className="min-h-[96px] resize-none rounded-[1.15rem] border border-[#e4e4e7]/72 bg-[#ffffff]/88 px-3 py-2 text-[13px] leading-5 text-[#27272a] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#a1a1aa] focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="min-h-[96px] resize-none rounded-[1.15rem] border border-[#e4e4e7]/72 bg-[#ffffff]/88 px-3 py-2 text-[13px] leading-5 text-[#27272a] shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] focus-visible:border-[#a1a1aa] focus-visible:ring-0 focus-visible:ring-offset-0"
         />
         <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
           <div className="flex min-w-0 items-center gap-2">
@@ -507,7 +507,7 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
                 <button
                   type="button"
                   disabled={isGenerating || isUploadingAssets}
-                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[38%_62%_44%_56%/55%_45%_55%_45%] border border-[#fff7ed]/66 bg-[#e6f1dc]/80 text-[#526942] shadow-[0_4px_10px_rgba(93,107,77,0.09)] transition-colors hover:bg-[#d7e8c8] disabled:pointer-events-none disabled:opacity-45"
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[38%_62%_44%_56%/55%_45%_55%_45%] border border-[#fff7ed]/66 bg-[#e6f1dc]/80 text-[#526942] shadow-[0_4px_10px_rgba(0,0,0,0.06)] transition-colors hover:bg-[#d7e8c8] disabled:pointer-events-none disabled:opacity-45"
                   aria-label={t('sessionDetail.addAsset')}
                   title={t('sessionDetail.addAsset')}
                 >

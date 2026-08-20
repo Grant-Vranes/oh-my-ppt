@@ -58,8 +58,8 @@ export const PageThumbnail = memo(function PageThumbnail({
         'group relative block w-full min-w-0 overflow-hidden rounded-[1.25rem] p-1.5 text-left transition-all duration-200',
         onSelect ? 'cursor-pointer' : 'cursor-default opacity-60',
         isSelected
-          ? 'bg-[#fff7ed]/86 shadow-[0_14px_26px_rgba(93,107,77,0.18)]'
-          : 'bg-[#f4f4f5]/34 hover:bg-[#f4f4f5]/68 hover:shadow-[0_8px_18px_rgba(93,107,77,0.09)]'
+          ? 'bg-[#fff7ed]/86 shadow-[0_14px_26px_rgba(0,0,0,0.12)]'
+          : 'bg-[#f4f4f5]/34 hover:bg-[#f4f4f5]/68 hover:shadow-[0_8px_18px_rgba(0,0,0,0.06)]'
       )}
     >
       <div
@@ -72,10 +72,10 @@ export const PageThumbnail = memo(function PageThumbnail({
       />
       <div
         className={cn(
-          'relative flex h-[138px] w-full items-center justify-center overflow-hidden rounded-[1rem] bg-[#f4f4f5]/88 shadow-[0_5px_14px_rgba(93,107,77,0.08)]',
+          'relative flex h-[138px] w-full items-center justify-center overflow-hidden rounded-[1rem] bg-[#f4f4f5]/88 shadow-[0_5px_14px_rgba(0,0,0,0.06)]',
           isSelected
-            ? 'shadow-[0_6px_16px_rgba(93,107,77,0.13)]'
-            : 'group-hover:shadow-[0_6px_15px_rgba(93,107,77,0.1)]'
+            ? 'shadow-[0_6px_16px_rgba(0,0,0,0.09)]'
+            : 'group-hover:shadow-[0_6px_15px_rgba(0,0,0,0.07)]'
         )}
         style={{
           contain: 'paint'
@@ -119,7 +119,7 @@ export const PageThumbnail = memo(function PageThumbnail({
                 P{page.pageNumber}
               </span>
               {isSelected ? (
-                <span className="rounded-full bg-[#18181b] px-1.5 py-0.5 text-[9px] font-semibold text-white shadow-[0_3px_8px_rgba(62,74,50,0.18)]">
+                <span className="rounded-full bg-[#18181b] px-1.5 py-0.5 text-[9px] font-semibold text-white shadow-[0_3px_8px_rgba(0,0,0,0.12)]">
                   {t('sessionDetail.current')}
                 </span>
               ) : null}

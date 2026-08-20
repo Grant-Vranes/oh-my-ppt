@@ -360,7 +360,7 @@ export const PageSidebar = memo(function PageSidebar({
 
   return (
     <aside
-      className={`relative flex min-h-0 shrink-0 flex-col overflow-hidden bg-[#f4f4f5] pb-3 pt-3 shadow-[inset_-16px_0_30px_rgba(93,107,77,0.045)] transition-[width] duration-300 ${
+      className={`relative flex min-h-0 shrink-0 flex-col overflow-hidden bg-[#f4f4f5] pb-3 pt-3 shadow-[inset_-16px_0_30px_rgba(0,0,0,0.03)] transition-[width] duration-300 ${
         collapsed ? 'w-[48px] min-w-[48px] max-w-[48px]' : 'w-[220px] min-w-[220px] max-w-[220px]'
       }`}
     >
@@ -381,7 +381,7 @@ export const PageSidebar = memo(function PageSidebar({
                     type="button"
                     data-page-id={page.id}
                     onClick={() => requestSelectPage(page.id)}
-                    className={`flex h-8 w-full items-center justify-center rounded-xl text-xs font-semibold transition-all ${selectedPageId === page.id ? 'bg-[#fff7ed]/86 text-[#18181b] shadow-[0_4px_12px_rgba(93,107,77,0.15)]' : 'text-[#5c6c47] hover:bg-[#f4f4f5]/50'}`}
+                    className={`flex h-8 w-full items-center justify-center rounded-xl text-xs font-semibold transition-all ${selectedPageId === page.id ? 'bg-[#fff7ed]/86 text-[#18181b] shadow-[0_4px_12px_rgba(0,0,0,0.10)]' : 'text-[#5c6c47] hover:bg-[#f4f4f5]/50'}`}
                   >
                     P{page.pageNumber}
                   </button>
@@ -456,7 +456,7 @@ export const PageSidebar = memo(function PageSidebar({
                 onClick={() => setActiveView('pages')}
                 className={`h-6 rounded-md transition-all ${
                   activeView === 'pages'
-                    ? 'bg-[#ffffff]/86 text-[#18181b] shadow-[0_1px_4px_rgba(93,107,77,0.08)]'
+                    ? 'bg-[#ffffff]/86 text-[#18181b] shadow-[0_1px_4px_rgba(0,0,0,0.06)]'
                     : 'hover:bg-[#ffffff]/36 hover:text-[#52525b]'
                 }`}
               >
@@ -467,7 +467,7 @@ export const PageSidebar = memo(function PageSidebar({
                 onClick={() => setActiveView('outline')}
                 className={`h-6 rounded-md transition-all ${
                   activeView === 'outline'
-                    ? 'bg-[#ffffff]/86 text-[#18181b] shadow-[0_1px_4px_rgba(93,107,77,0.08)]'
+                    ? 'bg-[#ffffff]/86 text-[#18181b] shadow-[0_1px_4px_rgba(0,0,0,0.06)]'
                     : 'hover:bg-[#ffffff]/36 hover:text-[#52525b]'
                 }`}
               >
@@ -479,7 +479,7 @@ export const PageSidebar = memo(function PageSidebar({
                 type="button"
                 disabled={pages.length === 0 || !onDownloadAllOutlines}
                 onClick={handleDownloadAllOutlines}
-                className="mx-1 mb-2 flex h-7 items-center justify-center gap-1.5 rounded-lg border border-[#b5c4a1]/50 bg-[#ffffff]/72 px-2 text-[11px] font-medium text-[#18181b] shadow-[0_3px_8px_rgba(86,72,53,0.05)] transition-colors hover:bg-[#fff7ed]/45 hover:text-[#18181b] disabled:cursor-not-allowed disabled:opacity-45"
+                className="mx-1 mb-2 flex h-7 items-center justify-center gap-1.5 rounded-lg border border-[#b5c4a1]/50 bg-[#ffffff]/72 px-2 text-[11px] font-medium text-[#18181b] shadow-[0_3px_8px_rgba(0,0,0,0.04)] transition-colors hover:bg-[#fff7ed]/45 hover:text-[#18181b] disabled:cursor-not-allowed disabled:opacity-45"
               >
                 <Download className="h-3.5 w-3.5" />
                 {t('sessionDetail.downloadAllOutlines')}
@@ -516,12 +516,12 @@ export const PageSidebar = memo(function PageSidebar({
                         title={outlineText || page.title}
                         className={`group relative block w-full min-w-0 max-w-full whitespace-normal rounded-[1.25rem] p-1.5 text-left transition-all ${
                           selected
-                            ? 'bg-[#fff7ed]/86 shadow-[0_14px_26px_rgba(93,107,77,0.18)]'
-                            : 'bg-[#f4f4f5]/34 hover:bg-[#f4f4f5]/68 hover:shadow-[0_8px_18px_rgba(93,107,77,0.09)]'
+                            ? 'bg-[#fff7ed]/86 shadow-[0_14px_26px_rgba(0,0,0,0.12)]'
+                            : 'bg-[#f4f4f5]/34 hover:bg-[#f4f4f5]/68 hover:shadow-[0_8px_18px_rgba(0,0,0,0.06)]'
                         } ${pageActionDisabled ? 'opacity-45' : ''}`}
                       >
                         {editing ? (
-                          <div className="block min-w-0 max-w-full overflow-hidden rounded-[1rem] bg-[#ffffff]/72 px-2.5 py-2 shadow-[0_5px_14px_rgba(93,107,77,0.08)]">
+                          <div className="block min-w-0 max-w-full overflow-hidden rounded-[1rem] bg-[#ffffff]/72 px-2.5 py-2 shadow-[0_5px_14px_rgba(0,0,0,0.06)]">
                             <p className="mb-1 whitespace-normal break-words text-[12px] font-semibold leading-5 text-[#18181b] [overflow-wrap:anywhere]">
                               {page.title || t('sessionDetail.untitledPage')}
                             </p>
@@ -554,7 +554,7 @@ export const PageSidebar = memo(function PageSidebar({
                                   event.stopPropagation()
                                   void handleSaveOutline(page)
                                 }}
-                                className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#18181b] text-white shadow-[0_4px_10px_rgba(62,74,50,0.18)] transition-colors hover:bg-[#4d5a40] disabled:opacity-50"
+                                className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#18181b] text-white shadow-[0_4px_10px_rgba(0,0,0,0.12)] transition-colors hover:bg-[#4d5a40] disabled:opacity-50"
                                 aria-label={t('pageManagement.savePageOutline')}
                                 title={t('pageManagement.savePageOutline')}
                               >
@@ -578,7 +578,7 @@ export const PageSidebar = memo(function PageSidebar({
                               disabled ? 'cursor-not-allowed' : 'cursor-pointer'
                             }`}
                           >
-                            <span className="relative block min-w-0 max-w-full overflow-hidden rounded-[1rem] bg-[#ffffff]/72 px-2.5 py-2 shadow-[0_5px_14px_rgba(93,107,77,0.08)]">
+                            <span className="relative block min-w-0 max-w-full overflow-hidden rounded-[1rem] bg-[#ffffff]/72 px-2.5 py-2 shadow-[0_5px_14px_rgba(0,0,0,0.06)]">
                               <span className="block whitespace-normal break-words pr-14 text-[12px] font-semibold leading-5 text-[#18181b] [overflow-wrap:anywhere]">
                                 {page.title || t('sessionDetail.untitledPage')}
                               </span>
@@ -647,7 +647,7 @@ export const PageSidebar = memo(function PageSidebar({
                             P{page.pageNumber}
                           </span>
                           {selected ? (
-                            <span className="rounded-full bg-[#18181b] px-1.5 py-0.5 text-[9px] font-semibold text-white shadow-[0_3px_8px_rgba(62,74,50,0.18)]">
+                            <span className="rounded-full bg-[#18181b] px-1.5 py-0.5 text-[9px] font-semibold text-white shadow-[0_3px_8px_rgba(0,0,0,0.12)]">
                               {t('sessionDetail.current')}
                             </span>
                           ) : null}
@@ -687,7 +687,7 @@ export const PageSidebar = memo(function PageSidebar({
                                   onSelect={disabled ? undefined : requestSelectPage}
                                   failureOverlay={
                                     isRetryingSinglePage && retryingSinglePageId === page.id ? (
-                                      <div className="absolute inset-x-2 bottom-2 z-10 flex h-8 items-center justify-center gap-1.5 rounded-[0.7rem] bg-[#18181b]/88 px-2 text-[10px] font-semibold text-white shadow-[0_4px_12px_rgba(62,74,50,0.28)]">
+                                      <div className="absolute inset-x-2 bottom-2 z-10 flex h-8 items-center justify-center gap-1.5 rounded-[0.7rem] bg-[#18181b]/88 px-2 text-[10px] font-semibold text-white shadow-[0_4px_12px_rgba(0,0,0,0.16)]">
                                         <Loader2 className="h-3 w-3 animate-spin" />
                                         {t('sessionDetail.activityRetrying')}
                                       </div>
@@ -914,7 +914,7 @@ export const PageSidebar = memo(function PageSidebar({
           <div className="flex justify-end gap-2">
             <AlertDialogAction
               disabled={savingBeforeSwitch}
-              className="border border-[#e4e4e7]/80 bg-[#ffffff]/92 text-[#657058] hover:bg-[#fafafa] disabled:cursor-not-allowed disabled:opacity-60"
+              className="border border-[#e4e4e7]/80 bg-[#ffffff]/92 text-[#52525b] hover:bg-[#fafafa] disabled:cursor-not-allowed disabled:opacity-60"
               onClick={(event) => {
                 event.preventDefault()
                 handleDiscardAndSwitch()

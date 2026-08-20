@@ -68,7 +68,7 @@ export function TextInspector({ draft, onDraftChange }: ElementEditorProps): Rea
               onDraftChange({ ...draft, textAlign: value }, { commit: true, fields: ['textAlign'] })
             }}
             aria-label={t('sessionDetail.textAlign')}
-            className="inline-flex overflow-hidden rounded-[9px] border border-[#e4e4e7]/72 bg-[#ffffff]/90 p-0.5 shadow-[inset_0_1px_2px_rgba(77,63,46,0.06)]"
+            className="inline-flex overflow-hidden rounded-[9px] border border-[#e4e4e7]/72 bg-[#ffffff]/90 p-0.5 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
           >
             {TEXT_ALIGN_OPTIONS.map(({ value, icon: Icon }) => {
               const label = getAlignLabel(value)

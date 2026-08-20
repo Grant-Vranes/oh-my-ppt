@@ -156,7 +156,7 @@ export function ImageGenerationPanel({ sessionId }: { sessionId: string }): Reac
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="relative mx-2.5 mt-2.5 overflow-hidden rounded-[1.35rem] border border-[#e4e4e7]/72 bg-[#ffffff]/78 px-3 pb-2.5 pt-3 shadow-[0_4px_12px_rgba(77,61,43,0.06)]">
+      <div className="relative mx-2.5 mt-2.5 overflow-hidden rounded-[1.35rem] border border-[#e4e4e7]/72 bg-[#ffffff]/78 px-3 pb-2.5 pt-3 shadow-[0_4px_12px_rgba(0,0,0,0.04)]">
         <div className="relative flex flex-col gap-2">
           <h3 className="text-sm font-semibold tracking-[0.04em] text-[#18181b]">
             {t('sessionDetail.imageMode')}
@@ -193,7 +193,7 @@ export function ImageGenerationPanel({ sessionId }: { sessionId: string }): Reac
                 >
                   <div
                     className={cn(
-                      'min-w-0 overflow-hidden rounded-[1.15rem] border px-3 py-2 shadow-[0_6px_14px_rgba(74,59,42,0.08)]',
+                      'min-w-0 overflow-hidden rounded-[1.15rem] border px-3 py-2 shadow-[0_6px_14px_rgba(0,0,0,0.06)]',
                       isUser ? 'w-fit max-w-[238px]' : 'w-full max-w-[238px]',
                       isUser
                         ? 'border-[#d6e3c8]/78 bg-[#fbfef6]/90 text-[#18181b]'
@@ -315,7 +315,7 @@ export function ImageGenerationPanel({ sessionId }: { sessionId: string }): Reac
               )
             })}
             {isGeneratingImage && imageProgress && (
-              <div className="w-full max-w-[238px] rounded-[1.15rem] border border-[#e4e4e7]/72 bg-[#ffffff]/82 px-3 py-2 shadow-[0_6px_14px_rgba(74,59,42,0.08)]">
+              <div className="w-full max-w-[238px] rounded-[1.15rem] border border-[#e4e4e7]/72 bg-[#ffffff]/82 px-3 py-2 shadow-[0_6px_14px_rgba(0,0,0,0.06)]">
                 <p className="mb-2 text-sm text-[#655843]">
                   {imageProgress.label || t('sessionDetail.imageGenerating')}
                 </p>
@@ -327,7 +327,7 @@ export function ImageGenerationPanel({ sessionId }: { sessionId: string }): Reac
         )}
       </ScrollArea>
 
-      <div className="mx-2.5 mb-2.5 rounded-[1.4rem] border border-[#e4e4e7]/72 bg-[#ffffff]/84 px-2.5 pb-3 pt-2 shadow-[0_12px_24px_rgba(74,59,42,0.11)]">
+      <div className="mx-2.5 mb-2.5 rounded-[1.4rem] border border-[#e4e4e7]/72 bg-[#ffffff]/84 px-2.5 pb-3 pt-2 shadow-[0_12px_24px_rgba(0,0,0,0.08)]">
         <div className="mb-1.5 flex items-center justify-end gap-1.5">
           <Button
             type="button"
@@ -369,7 +369,7 @@ export function ImageGenerationPanel({ sessionId }: { sessionId: string }): Reac
             onChange={(event) => setImagePrompt(event.target.value)}
             disabled={imageControlsDisabled}
             rows={4}
-            className="min-h-[96px] resize-none rounded-[1.15rem] border border-[#e4e4e7]/72 bg-[#ffffff]/88 px-3 py-2 text-[13px] leading-5 text-[#27272a] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#a1a1aa] focus-visible:ring-0 focus-visible:ring-offset-0"
+            className="min-h-[96px] resize-none rounded-[1.15rem] border border-[#e4e4e7]/72 bg-[#ffffff]/88 px-3 py-2 text-[13px] leading-5 text-[#27272a] shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] focus-visible:border-[#a1a1aa] focus-visible:ring-0 focus-visible:ring-offset-0"
           />
         </div>
         <div className="mt-2 flex items-center justify-between gap-2">

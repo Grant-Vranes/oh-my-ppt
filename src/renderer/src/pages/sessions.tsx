@@ -600,7 +600,7 @@ export function SessionsPage(): React.JSX.Element {
               <Card
                 key={session.id}
                 data-session-card-id={session.id}
-                className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-[#e4e4e7]/75 bg-white/70 shadow-[0_4px_16px_rgba(93,107,77,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(93,107,77,0.15)]"
+                className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-[#e4e4e7]/75 bg-white/70 shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(0,0,0,0.10)]"
                 title={isPartialComplete ? t('sessions.statusPartialCompleteTip') : undefined}
                 onClick={() => navigate(getSessionRoute(session))}
               >
@@ -627,7 +627,7 @@ export function SessionsPage(): React.JSX.Element {
                     />
                   )}
                   <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/45 via-black/10 to-transparent" />
-                  <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-lg bg-[#ffffff]/92 px-2.5 py-1 text-xs font-semibold text-[#18181b] shadow-[0_4px_12px_rgba(31,38,29,0.16)] backdrop-blur-sm">
+                  <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-lg bg-[#ffffff]/92 px-2.5 py-1 text-xs font-semibold text-[#18181b] shadow-[0_4px_12px_rgba(0,0,0,0.10)]">
                     <MessageSquare className="h-3 w-3" />
                     {actionText}
                   </span>
@@ -740,11 +740,11 @@ export function SessionsPage(): React.JSX.Element {
       )}
       {renameSession ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[#27272a]/35 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#27272a]/35 p-4"
           onClick={closeRenameDialog}
         >
           <div
-            className="w-full max-w-md rounded-xl border border-[#e4e4e7]/80 bg-[#ffffff] p-5 shadow-[0_24px_60px_rgba(64,52,38,0.28)]"
+            className="w-full max-w-md rounded-xl border border-[#e4e4e7]/80 bg-[#ffffff] p-5 shadow-[0_24px_60px_rgba(0,0,0,0.12)]"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-4 flex items-start justify-between gap-3">

@@ -389,7 +389,7 @@ export function StylesPage(): React.JSX.Element {
               key={style.id}
               ref={!style.thumbnailPath && style.previewPath ? setItemRef(style.id) : undefined}
               data-style-card-id={style.id}
-              className="group overflow-hidden rounded-2xl border border-[#e4e4e7]/75 bg-white/70 text-left shadow-[0_4px_16px_rgba(93,107,77,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(93,107,77,0.15)]"
+              className="group overflow-hidden rounded-2xl border border-[#e4e4e7]/75 bg-white/70 text-left shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(0,0,0,0.10)]"
             >
               <div className="relative aspect-video overflow-hidden bg-[#f4f4f5]">
                 {style.thumbnailPath ? (

@@ -270,7 +270,7 @@ export function HtmlEditorMediaInsertDialog({
                                 onClick={() => setPlayingPath(asset.relativePath)}
                                 className="absolute inset-0 flex items-center justify-center bg-black/15 transition-colors hover:bg-black/25"
                               >
-                                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/80 shadow backdrop-blur-sm">
+                                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/80 shadow">
                                   <Play className="h-4 w-4 translate-x-px text-[#18181b]" />
                                 </span>
                               </button>

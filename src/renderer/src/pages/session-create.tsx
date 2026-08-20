@@ -586,7 +586,7 @@ export function SessionCreatePage(): ReactElement {
 
         <Card
           data-session-create-workspace
-          className="session-create-workspace overflow-hidden rounded-2xl border border-[#ded8cb] shadow-[0_12px_28px_rgba(86,73,54,0.06)]"
+          className="session-create-workspace overflow-hidden rounded-2xl border border-[#ded8cb] shadow-[0_12px_28px_rgba(0,0,0,0.04)]"
         >
           <CardContent className="grid p-0 lg:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.85fr)] [&_label]:text-[13px] [&_label]:font-semibold [&_label]:text-[#18181b]">
             <main

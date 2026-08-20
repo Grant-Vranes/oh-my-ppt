@@ -303,7 +303,7 @@ export function HtmlEditorAiPanel(): ReactElement {
             <div className="truncate text-xs font-medium text-[#405333]" title={selectedSelector}>
               {selectedLabel}
             </div>
-            <div className="mt-0.5 truncate text-[11px] text-[#5f6e50]">
+            <div className="mt-0.5 truncate text-[11px] text-[#52525b]">
               {elementTag ? `<${elementTag}>` : ''}
               {elementText ? ` ${elementText}` : ''}
             </div>

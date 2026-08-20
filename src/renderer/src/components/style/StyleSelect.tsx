@@ -103,7 +103,7 @@ export function StyleSelect({
           type="button"
           disabled={disabled}
           className={cn(
-            'flex w-full items-center justify-between gap-2 rounded-lg border border-[#e4e4e7]/80 bg-[#ffffff]/86 py-2.5 pl-3 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(77,63,46,0.08)] focus:outline-none focus:ring-2 focus:ring-[#ea580c] disabled:cursor-not-allowed disabled:opacity-50',
+            'flex w-full items-center justify-between gap-2 rounded-lg border border-[#e4e4e7]/80 bg-[#ffffff]/86 py-2.5 pl-3 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)] focus:outline-none focus:ring-2 focus:ring-[#ea580c] disabled:cursor-not-allowed disabled:opacity-50',
             compact ? 'h-9 px-2.5 text-xs' : 'pr-3',
             className
           )}
@@ -133,7 +133,7 @@ export function StyleSelect({
         side="bottom"
         avoidCollisions={false}
         className={cn(
-          'min-w-[var(--radix-popover-trigger-width)] w-[360px] overflow-hidden rounded-lg border border-[#e4e4e7]/85 bg-[#ffffff] p-0 text-foreground shadow-[0_12px_28px_rgba(88,72,54,0.18)]',
+          'min-w-[var(--radix-popover-trigger-width)] w-[360px] overflow-hidden rounded-lg border border-[#e4e4e7]/85 bg-[#ffffff] p-0 text-foreground shadow-[0_12px_28px_rgba(0,0,0,0.12)]',
           dropdownClassName
         )}
       >

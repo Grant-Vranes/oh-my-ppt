@@ -102,7 +102,7 @@ export function AddPageDialog({ sessionId }: AddPageDialogProps): React.JSX.Elem
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="w-[520px] rounded-2xl bg-white p-6 shadow-2xl">
         <h3 className="mb-3 text-base font-semibold text-[#2f3a2a]">
           {t('sessionDetail.addPage')}

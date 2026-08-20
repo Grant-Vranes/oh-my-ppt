@@ -62,7 +62,7 @@ export function AddBlankPageDialog({
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="w-[520px] rounded-2xl bg-white p-6 shadow-2xl">
         <h3 className="mb-2 text-base font-semibold text-[#2f3a2a]">
           {t('sessionDetail.addBlankPage')}
@@ -78,7 +78,7 @@ export function AddBlankPageDialog({
               onClick={() => setSourcePageId(page.id)}
               className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left transition-colors ${
                 sourcePageId === page.id
-                  ? 'border-[#8eaa70] bg-[#eef6e7] text-[#2f3a2a]'
+                  ? 'border-[#ea580c] bg-[#eef6e7] text-[#2f3a2a]'
                   : 'border-[#fff7ed]/60 bg-[#f8f6f0] text-[#18181b] hover:bg-[#f0ece3]'
               }`}
             >

@@ -186,7 +186,7 @@ export function StyleView({ sessionId }: { sessionId: string }): React.JSX.Eleme
                   }
                 }}
                 className={cn(
-                  'group overflow-hidden rounded-2xl border border-[#e4e4e7]/75 bg-white/70 text-left shadow-[0_4px_16px_rgba(93,107,77,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(93,107,77,0.15)] aria-disabled:cursor-default aria-disabled:hover:translate-y-0',
+                  'group overflow-hidden rounded-2xl border border-[#e4e4e7]/75 bg-white/70 text-left shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(0,0,0,0.10)] aria-disabled:cursor-default aria-disabled:hover:translate-y-0',
                   isStyleSwitching && 'pointer-events-none opacity-45 grayscale'
                 )}
               >

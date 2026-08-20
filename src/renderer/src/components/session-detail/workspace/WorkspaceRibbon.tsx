@@ -94,7 +94,7 @@ export function WorkspaceRibbon({
           <div className="flex justify-end gap-2">
             <AlertDialogAction
               disabled={savingBeforeTabSwitch}
-              className="border border-[#e4e4e7]/80 bg-[#ffffff]/92 text-[#657058] hover:bg-[#fafafa] disabled:cursor-not-allowed disabled:opacity-60"
+              className="border border-[#e4e4e7]/80 bg-[#ffffff]/92 text-[#52525b] hover:bg-[#fafafa] disabled:cursor-not-allowed disabled:opacity-60"
               onClick={(event) => {
                 event.preventDefault()
                 discardPendingTab()

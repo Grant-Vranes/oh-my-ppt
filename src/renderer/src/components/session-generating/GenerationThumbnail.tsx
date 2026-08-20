@@ -35,7 +35,7 @@ export function GenerationThumbnail({
       )}
     >
       <div
-        className="relative flex h-[180px] w-full min-w-0 shrink-0 items-center justify-center overflow-hidden bg-[#f4f4f5]/88 shadow-[0_5px_14px_rgba(93,107,77,0.08)]"
+        className="relative flex h-[180px] w-full min-w-0 shrink-0 items-center justify-center overflow-hidden bg-[#f4f4f5]/88 shadow-[0_5px_14px_rgba(0,0,0,0.06)]"
         style={{ contain: 'paint' }}
       >
         <div className="relative max-h-full max-w-full overflow-hidden" style={thumbnailFitStyle}>

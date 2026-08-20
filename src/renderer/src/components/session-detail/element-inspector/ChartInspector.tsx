@@ -105,7 +105,7 @@ export function ChartInspector({ draft, onDraftChange }: ElementEditorProps): Re
             value={draft[field]}
             onChange={(event) => updateDraft(event.target.value)}
             onBlur={(event) => updateDraft(event.target.value, true)}
-            className="h-8 rounded-full border border-[#e4e4e7]/72 bg-[#ffffff]/88 px-2.5 text-xs text-[#27272a] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#a1a1aa] focus-visible:ring-0 focus-visible:ring-offset-0"
+            className="h-8 rounded-full border border-[#e4e4e7]/72 bg-[#ffffff]/88 px-2.5 text-xs text-[#27272a] shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] focus-visible:border-[#a1a1aa] focus-visible:ring-0 focus-visible:ring-offset-0"
           />
         </div>
       </label>
@@ -126,7 +126,7 @@ export function ChartInspector({ draft, onDraftChange }: ElementEditorProps): Re
             value={draft.chartTitle}
             onChange={(event) => onDraftChange({ ...draft, chartTitle: event.target.value })}
             onBlur={(event) => commit({ ...draft, chartTitle: event.target.value })}
-            className="h-8 rounded-full border border-[#e4e4e7]/72 bg-[#ffffff]/88 px-2.5 text-xs text-[#27272a] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#a1a1aa] focus-visible:ring-0 focus-visible:ring-offset-0"
+            className="h-8 rounded-full border border-[#e4e4e7]/72 bg-[#ffffff]/88 px-2.5 text-xs text-[#27272a] shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] focus-visible:border-[#a1a1aa] focus-visible:ring-0 focus-visible:ring-offset-0"
           />
         </div>
 
@@ -144,7 +144,7 @@ export function ChartInspector({ draft, onDraftChange }: ElementEditorProps): Re
                     disabled={isImportingData}
                     aria-label={t('sessionDetail.chartImportDataTooltip')}
                     title={t('sessionDetail.chartImportDataTooltip')}
-                    className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[#e4e4e7]/78 bg-[#ffffff]/88 px-2.5 text-[11px] font-medium text-[#18181b] transition-colors hover:border-[#9daf8a] hover:text-[#415235] disabled:cursor-not-allowed disabled:opacity-55"
+                    className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[#e4e4e7]/78 bg-[#ffffff]/88 px-2.5 text-[11px] font-medium text-[#18181b] transition-colors hover:border-[#d4d4d8] hover:text-[#415235] disabled:cursor-not-allowed disabled:opacity-55"
                   >
                     <Upload className="h-3.5 w-3.5" />
                     {t('sessionDetail.chartImportData')}
@@ -160,7 +160,7 @@ export function ChartInspector({ draft, onDraftChange }: ElementEditorProps): Re
             value={draft.chartDataJson}
             onChange={(event) => onDraftChange({ ...draft, chartDataJson: event.target.value })}
             onBlur={(event) => commit({ ...draft, chartDataJson: event.target.value })}
-            className="min-h-[138px] w-full resize-y rounded-[9px] border border-[#e4e4e7]/72 bg-[#ffffff]/92 px-2.5 py-2 font-mono text-[11px] leading-5 text-[#18181b] outline-none transition-colors placeholder:text-[#b1a58f] focus:border-[#9daf8a]"
+            className="min-h-[138px] w-full resize-y rounded-[9px] border border-[#e4e4e7]/72 bg-[#ffffff]/92 px-2.5 py-2 font-mono text-[11px] leading-5 text-[#18181b] outline-none transition-colors placeholder:text-[#b1a58f] focus:border-[#d4d4d8]"
             placeholder={t('sessionDetail.chartDataPlaceholder')}
           />
         </div>
@@ -206,7 +206,7 @@ export function ChartInspector({ draft, onDraftChange }: ElementEditorProps): Re
                   onBlur={(event) =>
                     commit({ ...draft, chartDoughnutCutout: event.target.value })
                   }
-                  className="h-8 rounded-full border border-[#e4e4e7]/72 bg-[#ffffff]/88 px-2.5 text-xs text-[#27272a] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#a1a1aa] focus-visible:ring-0 focus-visible:ring-offset-0"
+                  className="h-8 rounded-full border border-[#e4e4e7]/72 bg-[#ffffff]/88 px-2.5 text-xs text-[#27272a] shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] focus-visible:border-[#a1a1aa] focus-visible:ring-0 focus-visible:ring-offset-0"
                 />
               </label>
             )}

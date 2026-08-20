@@ -48,7 +48,7 @@ export function GenerationLogPanel({
           {events.map((event, index) => (
             <div
               key={`${event.text}-${index}`}
-              className="rounded-lg border border-[#e4d9c3]/70 bg-white/46 px-2.5 py-1.5 text-xs leading-5 text-[#5a674c] shadow-[0_6px_14px_rgba(93,107,77,0.06)]"
+              className="rounded-lg border border-[#e4d9c3]/70 bg-white/46 px-2.5 py-1.5 text-xs leading-5 text-[#5a674c] shadow-[0_6px_14px_rgba(0,0,0,0.04)]"
             >
               {event.time && (
                 <div className="mb-0.5 text-[10px] leading-4 text-[#a09882]">
@@ -60,12 +60,12 @@ export function GenerationLogPanel({
           ))}
 
           {status === 'queued' || status === 'running' ? (
-            <div className="flex items-center gap-2 rounded-lg border border-[#e4d9c3]/70 bg-white/46 px-2.5 py-1.5 text-xs text-[#a09882] shadow-[0_6px_14px_rgba(93,107,77,0.06)]">
+            <div className="flex items-center gap-2 rounded-lg border border-[#e4d9c3]/70 bg-white/46 px-2.5 py-1.5 text-xs text-[#a09882] shadow-[0_6px_14px_rgba(0,0,0,0.04)]">
               <Loader2 className="h-3 w-3 shrink-0 animate-spin" />
               <span className="min-w-0 truncate">{growingLabel}</span>
             </div>
           ) : status === 'failed' || status === 'cancelled' ? (
-            <div className="flex items-center gap-2 rounded-lg border border-[#d7b5ae]/70 bg-[#fff8f4]/72 px-2.5 py-1.5 text-xs text-[#93564f] shadow-[0_6px_14px_rgba(93,107,77,0.06)]">
+            <div className="flex items-center gap-2 rounded-lg border border-[#d7b5ae]/70 bg-[#fff8f4]/72 px-2.5 py-1.5 text-xs text-[#93564f] shadow-[0_6px_14px_rgba(0,0,0,0.04)]">
               <CircleAlert className="h-3.5 w-3.5 shrink-0" />
               <span className="min-w-0 truncate">{failedLabel}</span>
             </div>

@@ -91,7 +91,7 @@ export function HtmlEditorTextInspector({
             onDraftChange({ ...draft, textAlign: value }, { commit: true, fields: ['textAlign'] })
           }}
           aria-label={t('sessionDetail.textAlign')}
-          className="inline-flex overflow-hidden rounded-md border border-[#e4e4e7]/72 bg-[#ffffff]/90 p-0.5 shadow-[inset_0_1px_2px_rgba(77,63,46,0.06)]"
+          className="inline-flex overflow-hidden rounded-md border border-[#e4e4e7]/72 bg-[#ffffff]/90 p-0.5 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]"
         >
           {TEXT_ALIGN_OPTIONS.map(({ value, icon: Icon }) => {
             const label = getAlignLabel(value)
@@ -135,7 +135,7 @@ export function HtmlEditorInspectorPanel({
 
   return (
     <div className="flex min-h-0 h-full w-full flex-1 flex-col overflow-hidden">
-      <div className="relative mx-2 mt-2 overflow-hidden rounded-lg border border-[#e4e4e7]/58 bg-[#ffffff]/68 px-2.5 py-2 shadow-[0_2px_8px_rgba(77,61,43,0.05)]">
+      <div className="relative mx-2 mt-2 overflow-hidden rounded-lg border border-[#e4e4e7]/58 bg-[#ffffff]/68 px-2.5 py-2 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
         <div className="relative flex items-center justify-between">
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#71717a]/90">
@@ -161,7 +161,7 @@ export function HtmlEditorInspectorPanel({
 
       <div className="flex-1 space-y-2.5 overflow-y-auto px-2 py-2">
         {!selection || !snapshot ? (
-          <div className="rounded-lg border border-[#e8c8c6]/62 bg-[#fdf0ef]/76 px-3 py-3 text-center shadow-[0_4px_10px_rgba(74,59,42,0.06)]">
+          <div className="rounded-lg border border-[#e8c8c6]/62 bg-[#fdf0ef]/76 px-3 py-3 text-center shadow-[0_4px_10px_rgba(0,0,0,0.04)]">
             <p className="whitespace-pre-line text-[11px] leading-5 text-[#dc2626]">
               {t('sessionDetail.inspectorUnavailable')}
             </p>

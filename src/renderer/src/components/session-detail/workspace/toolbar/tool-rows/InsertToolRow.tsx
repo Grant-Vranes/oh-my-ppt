@@ -405,7 +405,7 @@ export function InsertToolRow({ disabled }: ToolRowProps): React.JSX.Element {
   const renderSelectedElementTools = (): React.JSX.Element | null => {
     if (!selection) return null
     return (
-      <div className="absolute right-2 top-1/2 z-10 flex -translate-y-1/2 shrink-0 items-center gap-0.5 rounded-full border border-[#ead29a]/70 bg-[#fff4d8]/92 px-0.5 py-0.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.62),0_4px_12px_rgba(167,116,34,0.1)] backdrop-blur">
+      <div className="absolute right-2 top-1/2 z-10 flex -translate-y-1/2 shrink-0 items-center gap-0.5 rounded-full border border-[#ead29a]/70 bg-[#fff4d8]/92 px-0.5 py-0.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.62),0_4px_12px_rgba(0,0,0,0.07)]">
         <Tooltip>
           <TooltipTrigger asChild>
             <button

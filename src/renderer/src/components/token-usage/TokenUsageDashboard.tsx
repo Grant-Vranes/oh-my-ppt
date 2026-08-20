@@ -431,14 +431,14 @@ export function TokenUsageDashboard(): React.JSX.Element {
           return (
             <div
               key={card.label}
-              className={`group relative overflow-hidden rounded-[1.5rem] border ${card.border} ${card.bg} p-5 shadow-[0_14px_34px_rgba(86,73,54,0.10)] transition-transform duration-200 hover:-translate-y-0.5`}
+              className={`group relative overflow-hidden rounded-[1.5rem] border ${card.border} ${card.bg} p-5 shadow-[0_14px_34px_rgba(0,0,0,0.07)] transition-transform duration-200 hover:-translate-y-0.5`}
             >
               <div
                 className={`pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] ${card.blob} transition-transform duration-300 group-hover:scale-110`}
               />
               <div className="relative flex items-start justify-between">
                 <div
-                  className={`flex h-10 w-10 items-center justify-center rounded-[10%_90%_16%_84%/78%_22%_78%_22%] ${card.iconBg} text-white shadow-[0_8px_18px_rgba(86,73,54,0.16)]`}
+                  className={`flex h-10 w-10 items-center justify-center rounded-[10%_90%_16%_84%/78%_22%_78%_22%] ${card.iconBg} text-white shadow-[0_8px_18px_rgba(0,0,0,0.10)]`}
                 >
                   <Icon className="h-4 w-4" />
                 </div>

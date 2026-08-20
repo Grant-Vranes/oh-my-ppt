@@ -357,7 +357,7 @@ export function buildChartElementHtml(layout: InsertChartLayout, data: InsertCha
     'border-radius:8px',
     'background:#ffffff',
     'border:1px solid rgba(216,204,181,0.72)',
-    'box-shadow:0 8px 22px rgba(74,59,42,0.08)'
+    'box-shadow:0 8px 22px rgba(0,0,0,0.06)'
   ].join('; ')
   return [
     `<div data-block-id="${layout.blockId}" data-ppt-edit-kind="chart" data-ppt-chart-editable="simple" style="${escapeHtmlText(style)}">`,

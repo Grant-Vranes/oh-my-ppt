@@ -113,12 +113,12 @@ const elementAnimationPreviewStyles = `
 .ppt-element-animation-card:hover,.ppt-element-animation-card:focus-visible {
   transform: translateY(-1px);
   border-color: rgba(111,129,89,.58);
-  box-shadow: 0 10px 22px rgba(74,59,42,.11);
+  box-shadow: 0 10px 22px rgba(0,0,0,0.08);
   outline: none;
 }
 .ppt-element-animation-card[data-selected="true"] {
-  border-color: rgba(93,107,77,.78);
-  box-shadow: inset 0 0 0 1px rgba(93,107,77,.2),0 10px 22px rgba(74,59,42,.09);
+  border-color: rgba(0,0,0,0.5);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.15),0 10px 22px rgba(0,0,0,0.06);
 }
 .ppt-element-animation-stage {
   position: absolute;
@@ -139,7 +139,7 @@ const elementAnimationPreviewStyles = `
   margin: -11px 0 0 -24px;
   border-radius: 6px;
   background: linear-gradient(135deg,#18181b,#ea580c 58%,#f1b56f);
-  box-shadow: 0 5px 10px rgba(62,74,50,.17);
+  box-shadow: 0 5px 10px rgba(0,0,0,0.11);
   animation-duration: 1.8s;
   animation-iteration-count: infinite;
   animation-timing-function: cubic-bezier(.2,.82,.22,1);
@@ -379,7 +379,7 @@ export function ElementAnimationPicker({ disabled = false }: { disabled?: boolea
         <button
           type="button"
           disabled={triggerDisabled}
-          className="inline-flex h-7 max-w-[220px] shrink-0 items-center gap-1.5 rounded-full border border-[#e4e4e7]/70 bg-[#ffffff]/88 px-2.5 text-[10px] font-bold leading-none text-[#314028] shadow-[inset_0_1px_2px_rgba(74,59,42,0.04)] transition-colors hover:bg-[#f3f7ed] disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-7 max-w-[220px] shrink-0 items-center gap-1.5 rounded-full border border-[#e4e4e7]/70 bg-[#ffffff]/88 px-2.5 text-[10px] font-bold leading-none text-[#314028] shadow-[inset_0_1px_2px_rgba(0,0,0,0.03)] transition-colors hover:bg-[#f3f7ed] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <TriggerIcon
             className={`h-3 w-3 shrink-0 ${isLoading || isSaving ? 'animate-spin' : ''}`}

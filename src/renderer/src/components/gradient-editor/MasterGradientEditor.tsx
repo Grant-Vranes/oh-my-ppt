@@ -334,7 +334,7 @@ export function MasterGradientEditor(): React.JSX.Element {
               <button
                 type="button"
                 aria-label={t('sessionDetail.masterGradientConfigure')}
-                className="block h-12 w-full cursor-pointer overflow-hidden rounded-md border border-[#e4e4e7]/75 shadow-[inset_0_1px_2px_rgba(74,59,42,0.08)] transition-shadow hover:shadow-[inset_0_0_0_1px_rgba(80,102,66,0.72)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#18181b]"
+                className="block h-12 w-full cursor-pointer overflow-hidden rounded-md border border-[#e4e4e7]/75 shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)] transition-shadow hover:shadow-[inset_0_0_0_1px_rgba(0,0,0,0.5)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#18181b]"
                 style={{ background: buildMasterGradientCss(config.backgroundGradient) }}
                 onClick={openGradientEditor}
               />
@@ -419,7 +419,7 @@ export function MasterGradientEditor(): React.JSX.Element {
           <div className="space-y-3">
             <div
               aria-label={t('sessionDetail.masterGradientPreview')}
-              className="h-16 overflow-hidden rounded-md border border-[#e4e4e7]/75 shadow-[inset_0_1px_2px_rgba(74,59,42,0.08)]"
+              className="h-16 overflow-hidden rounded-md border border-[#e4e4e7]/75 shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)]"
               style={{ background: buildMasterGradientCss(gradient) }}
             />
 
@@ -519,7 +519,7 @@ export function MasterGradientEditor(): React.JSX.Element {
                     type="button"
                     aria-label={t('sessionDetail.masterGradientStop', { position: stop.position })}
                     title={t('sessionDetail.masterGradientStop', { position: stop.position })}
-                    className="absolute top-1/2 z-10 h-9 w-4 -translate-y-1/2 cursor-grab rounded-full border-2 border-white shadow-[0_0_0_1px_rgba(62,74,50,0.54)] active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#18181b]"
+                    className="absolute top-1/2 z-10 h-9 w-4 -translate-y-1/2 cursor-grab rounded-full border-2 border-white shadow-[0_0_0_1px_rgba(0,0,0,0.3)] active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#18181b]"
                     style={{
                       backgroundColor: stop.color,
                       left: `calc(${stop.position}% - 8px)`,

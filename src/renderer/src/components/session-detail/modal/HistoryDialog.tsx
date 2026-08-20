@@ -112,7 +112,7 @@ export function HistoryDialog({ sessionId }: HistoryDialogProps): React.JSX.Elem
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="flex max-h-[min(640px,78vh)] w-[560px] flex-col rounded-2xl bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-[#f4f4f5] px-5 py-4">
           <div>

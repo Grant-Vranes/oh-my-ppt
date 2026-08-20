@@ -228,7 +228,7 @@ export function EditHtmlListPage(): ReactElement {
                 <div
                   key={document.id}
                   data-html-document-card-id={document.id}
-                  className="group overflow-hidden rounded-lg border border-[#e4e4e7]/75 bg-white/70 shadow-[0_4px_16px_rgba(93,107,77,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(93,107,77,0.15)]"
+                  className="group overflow-hidden rounded-lg border border-[#e4e4e7]/75 bg-white/70 shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(0,0,0,0.10)]"
                 >
                   <button
                     type="button"
@@ -256,7 +256,7 @@ export function EditHtmlListPage(): ReactElement {
                         </div>
                       )}
                       <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
-                      <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-md bg-[#ffffff]/92 px-2.5 py-1 text-xs font-semibold text-[#18181b] shadow-[0_4px_12px_rgba(31,38,29,0.16)] backdrop-blur-sm">
+                      <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-md bg-[#ffffff]/92 px-2.5 py-1 text-xs font-semibold text-[#18181b] shadow-[0_4px_12px_rgba(0,0,0,0.10)]">
                         <Pencil className="h-3 w-3" />
                         {t('htmlEditor.edit')}
                       </span>

@@ -115,7 +115,7 @@ export function HtmlEditorToolbar({ onOpenHistory }: { onOpenHistory: () => void
   )
 
   return (
-    <header className="app-drag-region app-titlebar relative shrink-0 bg-[#f4f4f5]/95 shadow-[0_10px_26px_rgba(93,107,77,0.055)] backdrop-blur-xl">
+    <header className="app-drag-region app-titlebar relative shrink-0 bg-[#f4f4f5]/95 shadow-[0_10px_26px_rgba(0,0,0,0.04)]">
       <div
         className={`relative flex h-full items-center gap-1.5 ${
           isMac ? 'pl-[85px]' : 'pl-4'
@@ -127,7 +127,7 @@ export function HtmlEditorToolbar({ onOpenHistory }: { onOpenHistory: () => void
             <button
               type="button"
               onClick={() => navigate('/edit-html')}
-              className="app-no-drag inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] bg-[#f4f4f5]/72 text-[#18181b] shadow-[0_4px_10px_rgba(86,72,53,0.08)] transition-colors hover:bg-[#fff7ed]/78"
+              className="app-no-drag inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] bg-[#f4f4f5]/72 text-[#18181b] shadow-[0_4px_10px_rgba(0,0,0,0.06)] transition-colors hover:bg-[#fff7ed]/78"
             >
               <Home className="h-3.5 w-3.5" />
             </button>

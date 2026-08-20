@@ -41,7 +41,7 @@ export function LayerInspector({ draft, onDraftChange }: ElementEditorProps): Re
               { commit: true, fields: ['layoutZIndex'] }
             )
           }
-          className="h-8 flex-1 rounded-full border border-[#e4e4e7]/72 bg-[#ffffff]/88 px-2.5 text-center text-xs text-[#27272a] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#a1a1aa] focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="h-8 flex-1 rounded-full border border-[#e4e4e7]/72 bg-[#ffffff]/88 px-2.5 text-center text-xs text-[#27272a] shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] focus-visible:border-[#a1a1aa] focus-visible:ring-0 focus-visible:ring-offset-0"
         />
         <button
           type="button"

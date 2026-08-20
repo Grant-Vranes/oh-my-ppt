@@ -146,7 +146,7 @@ export function AssetPickerDialog({
                             onClick={() => setPlayingPath(asset.relativePath)}
                             className="absolute inset-0 flex items-center justify-center bg-black/15 transition-opacity hover:bg-black/25"
                           >
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/80 shadow backdrop-blur-sm">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/80 shadow">
                               <Play className="h-4 w-4 translate-x-[1px] text-[#18181b]" />
                             </div>
                           </button>

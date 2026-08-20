@@ -33,7 +33,7 @@ export function WorkspaceTabs({
       aria-disabled={disabled || undefined}
       >
         <div className="flex max-w-full items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <div className="flex shrink-0 items-center gap-0.5 rounded-full bg-[#fff7ed]/30 p-0.5 shadow-[inset_0_1px_4px_rgba(62,74,50,0.08)]">
+          <div className="flex shrink-0 items-center gap-0.5 rounded-full bg-[#fff7ed]/30 p-0.5 shadow-[inset_0_1px_4px_rgba(0,0,0,0.06)]">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
@@ -41,7 +41,7 @@ export function WorkspaceTabs({
                 className={cn(
                   'inline-flex h-6 min-w-[68px] shrink-0 items-center justify-center gap-1 rounded-full px-2 text-[10px] font-bold leading-none transition-all',
                   activeTab === tab.id
-                    ? 'bg-[#18181b] text-white shadow-[0_4px_10px_rgba(62,74,50,0.16)]'
+                    ? 'bg-[#18181b] text-white shadow-[0_4px_10px_rgba(0,0,0,0.11)]'
                     : 'text-[#4f5f40] hover:bg-[#ffffff]/54 hover:text-[#314028]'
                 )}
                 onClick={() => onActivate(tab.id)}

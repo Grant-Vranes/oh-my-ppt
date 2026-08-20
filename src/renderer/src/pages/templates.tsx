@@ -293,7 +293,7 @@ export function TemplatesPage(): React.JSX.Element {
       )}
 
       {directCreatingTemplate ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2d261f]/28 backdrop-blur-[2px]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2d261f]/28">
           <div className="w-[min(360px,calc(100vw-32px))] rounded-xl border border-[#e4e4e7]/80 bg-[#ffffff] px-5 py-4 shadow-[0_18px_45px_rgba(57,47,36,0.22)]">
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#eef3e7] text-[#52525b]">
@@ -309,7 +309,7 @@ export function TemplatesPage(): React.JSX.Element {
       ) : null}
 
       {importingPptxTemplate ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2d261f]/28 backdrop-blur-[2px]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2d261f]/28">
           <div className="w-[min(380px,calc(100vw-32px))] rounded-xl border border-[#e4e4e7]/80 bg-[#ffffff] px-5 py-4 shadow-[0_18px_45px_rgba(57,47,36,0.22)]">
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#eef3e7] text-[#52525b]">
@@ -352,7 +352,7 @@ export function TemplatesPage(): React.JSX.Element {
                 ).map((page) => (
                   <div
                     key={`${previewTarget.id}-${page.pageId}-${page.pageNumber}`}
-                    className="overflow-hidden rounded-lg border border-[#e4e4e7]/80 bg-[#ffffff] shadow-[0_8px_18px_rgba(74,59,42,0.09)]"
+                    className="overflow-hidden rounded-lg border border-[#e4e4e7]/80 bg-[#ffffff] shadow-[0_8px_18px_rgba(0,0,0,0.06)]"
                   >
                     <div
                       className="relative overflow-hidden bg-white"

@@ -35,7 +35,7 @@ export function ElementInspectorPanel({
 
   return (
     <div className={sessionDetailRightPanelContentClass}>
-      <div className="relative mx-2 mt-2 overflow-hidden rounded-[0.85rem] border border-[#e4e4e7]/58 bg-[#ffffff]/68 px-2.5 py-2 shadow-[0_2px_8px_rgba(77,61,43,0.05)]">
+      <div className="relative mx-2 mt-2 overflow-hidden rounded-[0.85rem] border border-[#e4e4e7]/58 bg-[#ffffff]/68 px-2.5 py-2 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
         <div className="pointer-events-none absolute -right-8 -top-10 h-20 w-20 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] bg-[#fff7ed]/10" />
         <div className="relative flex items-center justify-between">
           <div>
@@ -62,7 +62,7 @@ export function ElementInspectorPanel({
 
       <div className="flex-1 space-y-2.5 overflow-y-auto px-2 py-2">
         {!selection || !snapshot ? (
-          <div className="rounded-[0.8rem] border border-[#e8c8c6]/62 bg-[#fdf0ef]/76 px-3 py-3 text-center shadow-[0_4px_10px_rgba(74,59,42,0.06)]">
+          <div className="rounded-[0.8rem] border border-[#e8c8c6]/62 bg-[#fdf0ef]/76 px-3 py-3 text-center shadow-[0_4px_10px_rgba(0,0,0,0.04)]">
             <p className="whitespace-pre-line text-[11px] leading-5 text-[#dc2626]">
               {t('sessionDetail.inspectorUnavailable')}
             </p>

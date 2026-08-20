@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#1a1a1a; font-family:-apple-system,system-ui,sans-serif; padding:28px; color:#e4e4e7; }
+h1 { font-size:20px; font-weight:700; color:#fff; margin-bottom:2px; }
+.sub { font-size:12px; color:#71717a; margin-bottom:24px; }
+h2 { font-size:13px; font-weight:600; color:#a1a1aa; text-transform:uppercase; letter-spacing:.05em; margin:20px 0 10px; }
+.pal { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:8px; margin-bottom:8px; }
+.sw { border-radius:3px; padding:8px; font-size:10px; border:1px solid rgba(255,255,255,.08); }
+.sw .c { font-family:'SF Mono',monospace; font-weight:600; }
+.sw .l { color:#71717a; font-size:9px; margin-top:1px; }
+.mock { background:#f4f4f5; border-radius:4px; overflow:hidden; display:flex; height:320px; border:1px solid #27272a; }
+.sb { width:180px; background:#fff; border-right:1px solid #e4e4e7; padding:14px 10px; display:flex; flex-direction:column; }
+.sb .logo { font-size:13px; font-weight:700; color:#18181b; }
+.sb .tag { font-size:8px; color:#71717a; margin-bottom:14px; }
+.ni { display:flex; align-items:center; gap:7px; padding:6px 9px; border-radius:3px; font-size:10px; color:#52525b; margin-bottom:1px; }
+.ni.act { background:#fafafa; color:#18181b; font-weight:600; border-left:2px solid #ea580c; padding-left:7px; }
+.nd { width:11px; height:11px; border-radius:2px; background:#d4d4d8; }
+.ni.act .nd { background:#ea580c; }
+.nb { margin-top:auto; background:#ea580c; color:#fff; font-size:9px; font-weight:600; padding:7px 10px; border-radius:3px; text-align:center; }
+.mm { flex:1; padding:16px; }
+.mm h3 { font-size:14px; font-weight:700; color:#18181b; }
+.mm .d { font-size:9px; color:#71717a; margin-bottom:12px; }
+.mc { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:10px; }
+.mcc { background:#fff; border:1px solid #e4e4e7; border-radius:3px; padding:10px; box-shadow:0 1px 2px rgba(0,0,0,.04); }
+.mcc .cl { font-size:7px; color:#71717a; text-transform:uppercase; letter-spacing:.05em; }
+.mcc .cv { font-size:20px; font-weight:700; color:#18181b; font-variant-numeric:tabular-nums; }
+.mcc .cv.ac { color:#ea580c; }
+.ml { background:#fff; border:1px solid #e4e4e7; border-radius:3px; box-shadow:0 1px 2px rgba(0,0,0,.04); }
+.mlh { padding:8px 10px; border-bottom:1px solid #e4e4e7; font-size:9px; font-weight:600; color:#18181b; }
+.mli { display:flex; align-items:center; gap:7px; padding:7px 10px; border-bottom:1px solid #f4f4f5; font-size:9px; }
+.mli:last-child { border:none; }
+.dt { width:5px; height:5px; border-radius:50%; background:#d4d4d8; }
+.dt.on { background:#ea580c; }
+.nm { color:#18181b; font-weight:500; }
+.mt { color:#71717a; margin-left:auto; }
+.bg { background:#fff7ed; color:#ea580c; font-size:7px; padding:1px 5px; border-radius:2px; font-weight:600; }
+.comp { background:#f4f4f5; border-radius:4px; padding:14px; border:1px solid #27272a; }
+.cr { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px; }
+.cl2 { font-size:9px; color:#71717a; width:70px; text-transform:uppercase; }
+.bp { background:#ea580c; color:#fff; font-size:10px; font-weight:600; padding:5px 12px; border-radius:3px; }
+.bs { background:#18181b; color:#fff; font-size:10px; font-weight:600; padding:5px 12px; border-radius:3px; }
+.bo { background:#fff; color:#18181b; font-size:10px; font-weight:500; padding:5px 12px; border-radius:3px; border:1px solid #d4d4d8; }
+.bg2 { background:transparent; color:#52525b; font-size:10px; font-weight:500; padding:5px 12px; border-radius:3px; }
+.bd { background:#dc2626; color:#fff; font-size:10px; font-weight:600; padding:5px 12px; border-radius:3px; }
+.if { background:#fff; border:1px solid #d4d4d8; border-radius:3px; padding:5px 9px; font-size:10px; color:#18181b; width:140px; }
+.pl { background:#fff7ed; color:#ea580c; font-size:8px; padding:2px 7px; border-radius:2px; font-weight:600; }
+.pn { background:#f4f4f5; color:#52525b; font-size:8px; padding:2px 7px; border-radius:2px; font-weight:600; }
+.cb { width:13px; height:13px; border-radius:2px; background:#ea580c; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-size:8px; font-weight:700; }
+.ce { width:13px; height:13px; border-radius:2px; border:1.5px solid #d4d4d8; display:inline-block; }
+.ta { font-size:10px; font-weight:600; color:#18181b; padding:5px 10px; border-bottom:2px solid #ea580c; }
+.ti { font-size:10px; font-weight:500; color:#71717a; padding:5px 10px; border-bottom:2px solid transparent; }
+table { width:100%; border-collapse:collapse; font-size:10px; margin-bottom:20px; }
+th { text-align:left; padding:6px 8px; border-bottom:1px solid #27272a; color:#71717a; text-transform:uppercase; font-size:8px; letter-spacing:.05em; }
+td { padding:5px 8px; border-bottom:1px solid #1f1f22; font-family:'SF Mono',monospace; }
+.oc { display:inline-block; width:10px; height:10px; border-radius:2px; vertical-align:middle; margin-right:5px; }
+.nc { display:inline-block; width:10px; height:10px; border-radius:2px; vertical-align:middle; margin-right:5px; border:1px solid rgba(255,255,255,.1); }
+</style>
+</head>
+<body>
+<h1>Graphite Industrial</h1>
+<p class="sub">石墨商务风 · 纯浅色 · 工业橙 #ea580c · System UI · 3-4px 圆角 · 轻阴影</p>
+
+<h2>新色板</h2>
+<div class="pal">
+<div class="sw" style="background:#f4f4f5;color:#18181b"><div class="c">#f4f4f5</div><div class="l">Background</div></div>
+<div class="sw" style="background:#fff;color:#18181b"><div class="c">#ffffff</div><div class="l">Card Surface</div></div>
+<div class="sw" style="background:#fafafa;color:#18181b"><div class="c">#fafafa</div><div class="l">Muted Surface</div></div>
+<div class="sw" style="background:#18181b;color:#fafafa"><div class="c">#18181b</div><div class="l">Foreground</div></div>
+<div class="sw" style="background:#ea580c;color:#fff"><div class="c">#ea580c</div><div class="l">Accent Orange</div></div>
+<div class="sw" style="background:#fff7ed;color:#ea580c"><div class="c">#fff7ed</div><div class="l">Accent Soft</div></div>
+<div class="sw" style="background:#dc2626;color:#fff"><div class="c">#dc2626</div><div class="l">Destructive</div></div>
+<div class="sw" style="background:#71717a;color:#fff"><div class="c">#71717a</div><div class="l">Muted Text</div></div>
+<div class="sw" style="background:#e4e4e7;color:#18181b"><div class="c">#e4e4e7</div><div class="l">Border</div></div>
+<div class="sw" style="background:#d4d4d8;color:#18181b"><div class="c">#d4d4d8</div><div class="l">Border Strong</div></div>
+<div class="sw" style="background:#52525b;color:#fff"><div class="c">#52525b</div><div class="l">Secondary Text</div></div>
+<div class="sw" style="background:#27272a;color:#fafafa"><div class="c">#27272a</div><div class="l">Overlay</div></div>
+</div>
+
+<h2>应用预览 — 首页 + 侧栏</h2>
+<div class="mock">
+<div class="sb">
+<div class="logo">Oh My PPT</div>
+<div class="tag">Presentation Studio</div>
+<div class="ni act"><div class="nd"></div>Home</div>
+<div class="ni"><div class="nd"></div>Sessions</div>
+<div class="ni"><div class="nd"></div>Templates</div>
+<div class="ni"><div class="nd"></div>Styles</div>
+<div class="ni"><div class="nd"></div>Fonts</div>
+<div class="ni"><div class="nd"></div>Settings</div>
+<div class="nb">+ NEW</div>
+</div>
+<div class="mm">
+<h3>Dashboard</h3>
+<div class="d">Recent sessions and templates</div>
+<div class="mc">
+<div class="mcc"><div class="cl">Sessions</div><div class="cv ac">24</div></div>
+<div class="mcc"><div class="cl">Templates</div><div class="cv">12</div></div>
+<div class="mcc"><div class="cl">Styles</div><div class="cv">8</div></div>
+</div>
+<div class="ml">
+<div class="mlh">Recent Sessions</div>
+<div class="mli"><div class="dt on"></div><div class="nm">Q3 Revenue Review</div><div class="bg">ACTIVE</div><div class="mt">2h ago</div></div>
+<div class="mli"><div class="dt"></div><div class="nm">Product Launch Deck</div><div class="mt">1d ago</div></div>
+<div class="mli"><div class="dt"></div><div class="nm">Team All-Hands</div><div class="mt">3d ago</div></div>
+<div class="mli"><div class="dt"></div><div class="nm">Investor Pitch v2</div><div class="mt">1w ago</div></div>
+</div>
+</div>
+</div>
+
+<h2>组件样式</h2>
+<div class="comp">
+<div class="cr"><div class="cl2">Buttons</div><span class="bp">Primary</span><span class="bs">Secondary</span><span class="bo">Outline</span><span class="bg2">Ghost</span><span class="bd">Destructive</span></div>
+<div class="cr"><div class="cl2">Input</div><input class="if" placeholder="Enter text..."></div>
+<div class="cr"><div class="cl2">Pills</div><span class="pl">ACTIVE</span><span class="pn">DRAFT</span></div>
+<div class="cr"><div class="cl2">Checkbox</div><span class="cb">&#10003;</span><span class="ce"></span></div>
+<div class="cr"><div class="cl2">Tabs</div><span class="ta">Active</span><span class="ti">Inactive</span></div>
+</div>
+
+<h2>核心颜色映射表</h2>
+<table>
+<tr><th>旧色 (暖有机)</th><th>用途</th><th>新色 (石墨工业)</th></tr>
+<tr><td><span class="oc" style="background:#f5f1e8"></span>#f5f1e8</td><td>Background</td><td><span class="nc" style="background:#f4f4f5"></span>#f4f4f5</td></tr>
+<tr><td><span class="oc" style="background:#3e4a32"></span>#3e4a32</td><td>Foreground</td><td><span class="nc" style="background:#18181b"></span>#18181b</td></tr>
+<tr><td><span class="oc" style="background:#5d6b4d"></span>#5d6b4d</td><td>Primary</td><td><span class="nc" style="background:#18181b"></span>#18181b</td></tr>
+<tr><td><span class="oc" style="background:#ea580c"></span>#ea580c</td><td>Accent (NEW)</td><td><span class="nc" style="background:#ea580c"></span>#ea580c</td></tr>
+<tr><td><span class="oc" style="background:#8fbc8f"></span>#8fbc8f</td><td>Ring/Focus</td><td><span class="nc" style="background:#ea580c"></span>#ea580c</td></tr>
+<tr><td><span class="oc" style="background:#b15a58"></span>#b15a58</td><td>Destructive</td><td><span class="nc" style="background:#dc2626"></span>#dc2626</td></tr>
+<tr><td><span class="oc" style="background:#fffdf8"></span>#fffdf8</td><td>Card</td><td><span class="nc" style="background:#fff"></span>#ffffff</td></tr>
+<tr><td><span class="oc" style="background:#fff9ef"></span>#fff9ef</td><td>Surface</td><td><span class="nc" style="background:#fff"></span>#ffffff</td></tr>
+<tr><td><span class="oc" style="background:#efe5d3"></span>#efe5d3</td><td>Muted/Hover</td><td><span class="nc" style="background:#fafafa"></span>#fafafa</td></tr>
+<tr><td><span class="oc" style="background:#e8e0d0"></span>#e8e0d0</td><td>Secondary</td><td><span class="nc" style="background:#f4f4f5"></span>#f4f4f5</td></tr>
+<tr><td><span class="oc" style="background:#d4e4c1"></span>#d4e4c1</td><td>Accent Soft</td><td><span class="nc" style="background:#fff7ed"></span>#fff7ed</td></tr>
+<tr><td><span class="oc" style="background:#d8ccb5"></span>#d8ccb5</td><td>Border</td><td><span class="nc" style="background:#e4e4e7"></span>#e4e4e7</td></tr>
+<tr><td><span class="oc" style="background:#d8cfbc"></span>#d8cfbc</td><td>Border Alt</td><td><span class="nc" style="background:#e4e4e7"></span>#e4e4e7</td></tr>
+<tr><td><span class="oc" style="background:#7a8369"></span>#7a8369</td><td>Muted Text</td><td><span class="nc" style="background:#71717a"></span>#71717a</td></tr>
+<tr><td><span class="oc" style="background:#2f3b28"></span>#2f3b28</td><td>Dark Text</td><td><span class="nc" style="background:#18181b"></span>#18181b</td></tr>
+<tr><td><span class="oc" style="background:#1f261d"></span>#1f261d</td><td>Overlay</td><td><span class="nc" style="background:#27272a"></span>#27272a</td></tr>
+<tr><td><span class="oc" style="background:#6f8159"></span>#6f8159</td><td>Gradient From</td><td><span class="nc" style="background:#ea580c"></span>#ea580c (纯色)</td></tr>
+<tr><td><span class="oc" style="background:#4f613f"></span>#4f613f</td><td>Gradient To</td><td><span class="nc" style="background:#ea580c"></span>#ea580c (纯色)</td></tr>
+</table>
+
+<h2>其他变更</h2>
+<div style="font-size:11px; color:#a1a1aa; line-height:1.8;">
+<b style="color:#fff">字体:</b> 移除 @font-face Elms Sans, 改为 system-ui, -apple-system, 'SF Pro Text', 'Segoe UI', sans-serif<br>
+<b style="color:#fff">圆角:</b> rounded-sm 2px, rounded-md 3px, rounded-lg 4px, rounded-xl 4px, rounded-2xl/3xl 4px (全部 cap 到 4px)<br>
+<b style="color:#fff">阴影:</b> 卡片 0 1px 2px rgba(0,0,0,0.04), 弹窗 0 4px 12px rgba(0,0,0,0.08), 按钮 hover 0 2px 4px rgba(0,0,0,0.06)<br>
+<b style="color:#fff">渐变:</b> 全部移除渐变背景, 改为纯色填充<br>
+<b style="color:#fff">毛玻璃:</b> 移除 backdrop-blur, titlebar 改为不透明白色 #fff/95<br>
+<b style="color:#fff">背景纹理:</b> 移除 body radial-gradient, 改为纯色 #f4f4f5<br>
+<b style="color:#fff">滚动条:</b> 灰色系 thumb #d4d4d8, track #f4f4f5<br>
+<b style="color:#fff">Store 默认色:</b> chartPrimaryColor #ea580c, chartAccentColor #18181b, chartTextColor #18181b
+</div>
+
+</body>
+</html>

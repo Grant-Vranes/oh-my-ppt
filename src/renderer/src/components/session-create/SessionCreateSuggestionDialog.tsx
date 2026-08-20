@@ -179,7 +179,7 @@ export function SessionCreateSuggestionDialog({
   return (
     <Dialog open={open} onOpenChange={close}>
       <DialogContent className="max-w-4xl gap-0 overflow-hidden border-[#d8ccb5]/85 bg-[#f7f1e8] p-0">
-        <DialogHeader className="border-b border-[#ded4c1] bg-[#fffaf1] px-5 py-4 pr-12">
+        <DialogHeader className="border-b border-[#ded4c1] bg-[#ffffff] px-5 py-4 pr-12">
           <div className="flex items-start gap-3">
             <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#b9cda7]/75 bg-[#e6f1dc] text-[#405333] shadow-[0_4px_10px_rgba(93,107,77,0.08)]">
               <Sparkles className="h-4 w-4" />
@@ -188,7 +188,7 @@ export function SessionCreateSuggestionDialog({
               <DialogTitle className="text-sm">{t('home.analysisSuggestionTitle')}</DialogTitle>
               {attachedReferenceFile && (
                 <span
-                  className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full border border-[#d8ccb5]/72 bg-[#fff9ef]/86 px-2 py-1 text-[11px] font-medium text-[#5d6b4d]"
+                  className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full border border-[#d8ccb5]/72 bg-[#ffffff]/86 px-2 py-1 text-[11px] font-medium text-[#5d6b4d]"
                   title={attachedReferenceFile.path}
                 >
                   <FileText className="h-3 w-3 shrink-0" />
@@ -203,7 +203,7 @@ export function SessionCreateSuggestionDialog({
           <div className="max-h-[64vh] overflow-y-auto px-5 py-4">
             <div className="space-y-2.5">
               <section
-                className={`overflow-hidden rounded-xl border bg-[#fffdf8] shadow-[0_8px_18px_rgba(74,59,42,0.06)] transition-colors ${
+                className={`overflow-hidden rounded-xl border bg-[#ffffff] shadow-[0_8px_18px_rgba(74,59,42,0.06)] transition-colors ${
                   applyTopicSuggestion
                     ? 'border-[#a9c693] ring-1 ring-[#cfe2c1]'
                     : 'border-[#e1d7c6]'
@@ -262,7 +262,7 @@ export function SessionCreateSuggestionDialog({
 
               {hasSourceOutline && (
                 <section
-                  className={`overflow-hidden rounded-xl border bg-[#fffdf8] shadow-[0_8px_18px_rgba(74,59,42,0.06)] transition-colors ${
+                  className={`overflow-hidden rounded-xl border bg-[#ffffff] shadow-[0_8px_18px_rgba(74,59,42,0.06)] transition-colors ${
                     applyBriefSuggestion
                       ? 'border-[#a9c693] ring-1 ring-[#cfe2c1]'
                       : 'border-[#e1d7c6]'
@@ -383,7 +383,7 @@ export function SessionCreateSuggestionDialog({
 
               {!hasSourceOutline && (
                 <section
-                  className={`overflow-hidden rounded-xl border bg-[#fffdf8] shadow-[0_8px_18px_rgba(74,59,42,0.06)] transition-colors ${
+                  className={`overflow-hidden rounded-xl border bg-[#ffffff] shadow-[0_8px_18px_rgba(74,59,42,0.06)] transition-colors ${
                     applyPageCountSuggestion
                       ? 'border-[#a9c693] ring-1 ring-[#cfe2c1]'
                       : 'border-[#e1d7c6]'
@@ -455,7 +455,7 @@ export function SessionCreateSuggestionDialog({
 
               {!hasSourceOutline && (
                 <section
-                  className={`overflow-hidden rounded-xl border bg-[#fffdf8] shadow-[0_8px_18px_rgba(74,59,42,0.06)] transition-colors ${
+                  className={`overflow-hidden rounded-xl border bg-[#ffffff] shadow-[0_8px_18px_rgba(74,59,42,0.06)] transition-colors ${
                     applyBriefSuggestion
                       ? 'border-[#a9c693] ring-1 ring-[#cfe2c1]'
                       : 'border-[#e1d7c6]'
@@ -520,7 +520,7 @@ export function SessionCreateSuggestionDialog({
           </div>
         )}
 
-        <DialogFooter className="flex-col-reverse gap-1.5 border-t border-[#ded4c1] bg-[#fffaf1] px-5 py-2.5 sm:flex-row">
+        <DialogFooter className="flex-col-reverse gap-1.5 border-t border-[#ded4c1] bg-[#ffffff] px-5 py-2.5 sm:flex-row">
           <Button
             variant="ghost"
             size="sm"

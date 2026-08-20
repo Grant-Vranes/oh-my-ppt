@@ -21,7 +21,7 @@ export function LayoutInspector({ draft }: ElementEditorProps): React.JSX.Elemen
         {LAYOUT_FIELDS.map(({ key, label }) => (
           <div key={key} className="space-y-1 text-center">
             <span className="text-[11px] font-medium text-[#7a875f]">{label}</span>
-            <div className="flex h-8 items-center justify-center rounded-full border border-[#d7cbb7]/40 bg-[#f5efe4]/40 px-1.5 text-[11px] text-[#a0977e]/70">
+            <div className="flex h-8 items-center justify-center rounded-full border border-[#d7cbb7]/40 bg-[#fafafa]/40 px-1.5 text-[11px] text-[#a0977e]/70">
               {draft[key]}
             </div>
           </div>

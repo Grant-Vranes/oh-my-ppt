@@ -89,7 +89,7 @@ export function ImageModelConfigDialog({
         if (event.target === event.currentTarget && !saving) onClose()
       }}
     >
-      <div className="max-h-[80vh] w-full max-w-2xl overflow-y-auto rounded-lg border border-[#d8ccb5]/85 bg-[#fffaf1] shadow-[0_24px_70px_rgba(53,44,32,0.28)]">
+      <div className="max-h-[80vh] w-full max-w-2xl overflow-y-auto rounded-lg border border-[#d8ccb5]/85 bg-[#ffffff] shadow-[0_24px_70px_rgba(53,44,32,0.28)]">
         <div className="flex items-center justify-between border-b border-[#e3d8c5] px-4 py-2.5">
           <h2 className="text-sm font-semibold text-[#33402a]">
             {form.id ? t('settings.editImageModel') : t('settings.addImageModel')}
@@ -149,7 +149,7 @@ export function ImageModelConfigDialog({
                     href={providerDocs.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 rounded-md border border-[#cbbfa8]/80 bg-[#fffaf1]/75 px-2 py-0.5 font-medium text-[#5d6b4d] transition-colors hover:border-[#aebd9a] hover:text-[#3e4a32]"
+                    className="inline-flex items-center gap-1 rounded-md border border-[#cbbfa8]/80 bg-[#ffffff]/75 px-2 py-0.5 font-medium text-[#5d6b4d] transition-colors hover:border-[#aebd9a] hover:text-[#3e4a32]"
                   >
                     {t('settings.imageProviderOfficialDocs')}
                     <ExternalLink className="h-3 w-3" />
@@ -161,7 +161,7 @@ export function ImageModelConfigDialog({
                     {SILICONFLOW_MODELS.map((model) => (
                       <span
                         key={model}
-                        className="rounded-md border border-[#d8ccb5]/78 bg-[#fffaf1]/72 px-2 py-0.5 font-mono text-[11px] text-[#526044]"
+                        className="rounded-md border border-[#d8ccb5]/78 bg-[#ffffff]/72 px-2 py-0.5 font-mono text-[11px] text-[#526044]"
                       >
                         {model}
                       </span>

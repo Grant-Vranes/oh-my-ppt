@@ -54,7 +54,7 @@ export function ModelSettingsTab({
               <PopoverContent
                 side="bottom"
                 align="start"
-                className="w-auto max-w-xs border-[#d8cfbc]/80 bg-[#fffdf8] p-3"
+                className="w-auto max-w-xs border-[#d8cfbc]/80 bg-[#ffffff] p-3"
               >
                 <p className="mb-2 text-[11px] font-semibold text-[#3e4a32]">
                   {t('settings.modelHelpTitle')}
@@ -96,7 +96,7 @@ export function ModelSettingsTab({
       </CardHeader>
       <CardContent className="space-y-2.5 p-5 pt-0">
         {modelConfigs.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-[#d8ccb5]/85 bg-[#fff9ef]/70 p-6 text-sm text-muted-foreground">
+          <div className="rounded-lg border border-dashed border-[#d8ccb5]/85 bg-[#ffffff]/70 p-6 text-sm text-muted-foreground">
             {t('settings.noModels')}
           </div>
         ) : (
@@ -106,7 +106,7 @@ export function ModelSettingsTab({
               className={
                 config.active
                   ? 'flex flex-col gap-3 rounded-lg border border-[#96b77f]/80 bg-[#eef6e8] p-3 shadow-[inset_3px_0_0_#6f8f64] sm:flex-row sm:items-center sm:justify-between'
-                  : 'flex flex-col gap-3 rounded-lg border border-[#d8ccb5]/80 bg-[#fffdf8]/78 p-3 sm:flex-row sm:items-center sm:justify-between'
+                  : 'flex flex-col gap-3 rounded-lg border border-[#d8ccb5]/80 bg-[#ffffff]/78 p-3 sm:flex-row sm:items-center sm:justify-between'
               }
             >
               <div className="min-w-0">

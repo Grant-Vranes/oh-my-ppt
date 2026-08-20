@@ -51,7 +51,7 @@ export function ModelConfigDialog({
         if (event.target === event.currentTarget && !saving) onClose()
       }}
     >
-      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg border border-[#d8ccb5]/85 bg-[#fffaf1] shadow-[0_24px_70px_rgba(53,44,32,0.28)]">
+      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg border border-[#d8ccb5]/85 bg-[#ffffff] shadow-[0_24px_70px_rgba(53,44,32,0.28)]">
         <div className="flex items-center justify-between border-b border-[#e3d8c5] px-5 py-3.5">
           <h2 className="flex items-center gap-1.5 text-base font-semibold text-[#33402a]">
             {form.id ? t('settings.editModel') : t('settings.addModel')}
@@ -62,7 +62,7 @@ export function ModelConfigDialog({
               <PopoverContent
                 side="bottom"
                 align="start"
-                className="w-auto max-w-xs border-[#d8cfbc]/80 bg-[#fffdf8] p-3"
+                className="w-auto max-w-xs border-[#d8cfbc]/80 bg-[#ffffff] p-3"
               >
                 <p className="mb-2 text-xs font-semibold text-[#3e4a32]">
                   {t('settings.modelHelpTitle')}
@@ -197,7 +197,7 @@ export function ModelConfigDialog({
             </p>
           </div>
 
-          <div className="flex items-center justify-between gap-4 rounded-lg border border-[#e3d8c5] bg-[#fffdf8]/70 p-3">
+          <div className="flex items-center justify-between gap-4 rounded-lg border border-[#e3d8c5] bg-[#ffffff]/70 p-3">
             <span className="min-w-0">
               <span className="block text-sm font-medium">{t('settings.disableTemperature')}</span>
               <span className="mt-0.5 block text-[12px] text-muted-foreground/50">
@@ -216,7 +216,7 @@ export function ModelConfigDialog({
           </div>
 
           {form.provider === 'openai' && (
-            <div className="rounded-lg border border-[#e3d8c5] bg-[#fffdf8]/70 p-3">
+            <div className="rounded-lg border border-[#e3d8c5] bg-[#ffffff]/70 p-3">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <span className="min-w-0">
                   <span className="block text-sm font-medium">

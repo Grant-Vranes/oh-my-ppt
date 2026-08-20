@@ -144,7 +144,7 @@ export function ModelSplitButton({
           ? hasMultiple
             ? 'rounded-full border-0 bg-gradient-to-r from-[#6f8159] to-[#4f613f] shadow-[0_10px_22px_rgba(93,107,77,0.24)]'
             : 'rounded-full border-0 bg-transparent'
-          : 'h-8 rounded-lg border-[#d8ccb5]/80 bg-[#fffdf8]/76 shadow-none',
+          : 'h-8 rounded-lg border-[#d8ccb5]/80 bg-[#ffffff]/76 shadow-none',
         disabledState && 'cursor-not-allowed opacity-50 shadow-none saturate-75',
         className
       )}

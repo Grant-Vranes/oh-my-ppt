@@ -59,7 +59,7 @@ const BrowseCard = memo(function BrowseCard({
   if (!slideSize) {
     return (
       <div className="group overflow-hidden rounded-[4px] bg-white/60 shadow-[0_4px_16px_rgba(93,107,77,0.08)]">
-        <div className="relative flex h-[220px] w-full items-center justify-center overflow-hidden rounded-t-[4px] bg-[#f5f1e8]/88" />
+        <div className="relative flex h-[220px] w-full items-center justify-center overflow-hidden rounded-t-[4px] bg-[#f4f4f5]/88" />
       </div>
     )
   }
@@ -70,7 +70,7 @@ const BrowseCard = memo(function BrowseCard({
   return (
     <div className="group overflow-hidden rounded-[4px] bg-white/60 shadow-[0_4px_16px_rgba(93,107,77,0.08)] transition-shadow hover:shadow-[0_8px_24px_rgba(93,107,77,0.14)]">
       <div
-        className="relative flex h-[220px] w-full items-center justify-center overflow-hidden rounded-t-[4px] bg-[#f5f1e8]/88"
+        className="relative flex h-[220px] w-full items-center justify-center overflow-hidden rounded-t-[4px] bg-[#f4f4f5]/88"
         style={{ contain: 'paint' }}
       >
         <div className="relative max-h-full max-w-full overflow-hidden" style={thumbnailFitStyle}>
@@ -204,7 +204,7 @@ function SortableBrowseCard({
           ref={setActivatorNodeRef}
           disabled={structureDisabled}
           onClick={(event) => event.stopPropagation()}
-          className={`inline-flex h-8 w-8 items-center justify-center rounded bg-white/90 p-1 text-[#5d6b4d] shadow-sm transition-colors hover:bg-[#f5f1e8] hover:text-[#3e4a32] disabled:cursor-not-allowed disabled:opacity-50 ${
+          className={`inline-flex h-8 w-8 items-center justify-center rounded bg-white/90 p-1 text-[#5d6b4d] shadow-sm transition-colors hover:bg-[#f4f4f5] hover:text-[#3e4a32] disabled:cursor-not-allowed disabled:opacity-50 ${
             isDragging ? 'cursor-grabbing' : 'cursor-grab'
           }`}
           aria-label={dragHandleLabel}
@@ -224,7 +224,7 @@ function SortableBrowseCard({
                       type="button"
                       disabled={disabled || isExportingPptx}
                       onClick={(event) => event.stopPropagation()}
-                      className="rounded bg-white/90 p-1 text-[#5d6b4d] shadow-sm transition-colors hover:bg-[#f5f1e8] hover:text-[#3e4a32] disabled:cursor-not-allowed disabled:opacity-50"
+                      className="rounded bg-white/90 p-1 text-[#5d6b4d] shadow-sm transition-colors hover:bg-[#f4f4f5] hover:text-[#3e4a32] disabled:cursor-not-allowed disabled:opacity-50"
                       aria-label={exportLabel}
                     >
                       <Presentation className="h-3.5 w-3.5" />
@@ -257,7 +257,7 @@ function SortableBrowseCard({
               event.stopPropagation()
               onRenamePage(page)
             }}
-            className="rounded bg-white/90 p-1 text-[#5d6b4d] shadow-sm transition-colors hover:bg-[#f5f1e8] hover:text-[#3e4a32] disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded bg-white/90 p-1 text-[#5d6b4d] shadow-sm transition-colors hover:bg-[#f4f4f5] hover:text-[#3e4a32] disabled:cursor-not-allowed disabled:opacity-50"
             aria-label={renameLabel}
             title={renameLabel}
           >
@@ -270,7 +270,7 @@ function SortableBrowseCard({
               event.stopPropagation()
               onDuplicatePage(page)
             }}
-            className="rounded bg-white/90 p-1 text-[#5d6b4d] shadow-sm transition-colors hover:bg-[#f5f1e8] hover:text-[#3e4a32] disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded bg-white/90 p-1 text-[#5d6b4d] shadow-sm transition-colors hover:bg-[#f4f4f5] hover:text-[#3e4a32] disabled:cursor-not-allowed disabled:opacity-50"
             aria-label={duplicateLabel}
             title={duplicateLabel}
           >
@@ -283,7 +283,7 @@ function SortableBrowseCard({
               event.stopPropagation()
               onDeletePage(page)
             }}
-            className="rounded bg-white/90 p-1 shadow-sm transition-colors hover:bg-[#f5f1e8] disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded bg-white/90 p-1 shadow-sm transition-colors hover:bg-[#f4f4f5] disabled:cursor-not-allowed disabled:opacity-50"
             aria-label={deleteLabel}
             title={deleteLabel}
           >

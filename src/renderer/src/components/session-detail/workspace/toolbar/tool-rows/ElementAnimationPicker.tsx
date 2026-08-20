@@ -379,7 +379,7 @@ export function ElementAnimationPicker({ disabled = false }: { disabled?: boolea
         <button
           type="button"
           disabled={triggerDisabled}
-          className="inline-flex h-7 max-w-[220px] shrink-0 items-center gap-1.5 rounded-full border border-[#d8ccb5]/70 bg-[#fffdf8]/88 px-2.5 text-[10px] font-bold leading-none text-[#314028] shadow-[inset_0_1px_2px_rgba(74,59,42,0.04)] transition-colors hover:bg-[#f3f7ed] disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-7 max-w-[220px] shrink-0 items-center gap-1.5 rounded-full border border-[#d8ccb5]/70 bg-[#ffffff]/88 px-2.5 text-[10px] font-bold leading-none text-[#314028] shadow-[inset_0_1px_2px_rgba(74,59,42,0.04)] transition-colors hover:bg-[#f3f7ed] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <TriggerIcon
             className={`h-3 w-3 shrink-0 ${isLoading || isSaving ? 'animate-spin' : ''}`}
@@ -392,11 +392,11 @@ export function ElementAnimationPicker({ disabled = false }: { disabled?: boolea
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="w-[536px] max-w-[calc(100vw-2rem)] border-[#d8ccb5]/85 bg-[#fff9ef] p-2"
+        className="w-[536px] max-w-[calc(100vw-2rem)] border-[#d8ccb5]/85 bg-[#ffffff] p-2"
       >
         <style>{elementAnimationPreviewStyles}</style>
         {!selectedSelector ? (
-          <div className="flex h-36 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[#d8ccb5] bg-[#fffdf8]/72 text-center">
+          <div className="flex h-36 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[#d8ccb5] bg-[#ffffff]/72 text-center">
             <MousePointer2 className="h-5 w-5 text-[#6f8159]" />
             <p className="text-xs font-bold text-[#314028]">
               {t('sessionDetail.elementAnimationSelectTargetTitle')}
@@ -416,7 +416,7 @@ export function ElementAnimationPicker({ disabled = false }: { disabled?: boolea
                   className={`rounded-full px-2 py-1 text-[10px] font-bold ${
                     triggerBucket === trigger
                       ? 'bg-[#5d6b4d] text-white'
-                      : 'bg-[#fffdf8] text-[#617253] hover:bg-[#e5eedb]'
+                      : 'bg-[#ffffff] text-[#617253] hover:bg-[#e5eedb]'
                   }`}
                   onClick={() => {
                     if (!animation || triggerBucket === trigger) return
@@ -445,7 +445,7 @@ export function ElementAnimationPicker({ disabled = false }: { disabled?: boolea
                     className={`rounded-full px-2 py-1 text-[10px] font-bold ${
                       currentDuration === option.value
                         ? 'bg-[#d9e8cb] text-[#314028]'
-                        : 'bg-[#fffdf8] text-[#69745e] hover:bg-[#edf4e6]'
+                        : 'bg-[#ffffff] text-[#69745e] hover:bg-[#edf4e6]'
                     }`}
                     onClick={() => {
                       if (currentDuration === option.value) return
@@ -478,7 +478,7 @@ export function ElementAnimationPicker({ disabled = false }: { disabled?: boolea
                     className={`rounded-full px-2 py-1 text-[10px] font-bold ${
                       currentDirection === option.value
                         ? 'bg-[#d9e8cb] text-[#314028]'
-                        : 'bg-[#fffdf8] text-[#69745e] hover:bg-[#edf4e6]'
+                        : 'bg-[#ffffff] text-[#69745e] hover:bg-[#edf4e6]'
                     }`}
                     onClick={() => {
                       if (currentDirection === option.value) return
@@ -520,7 +520,7 @@ export function ElementAnimationPicker({ disabled = false }: { disabled?: boolea
                 className={`ml-auto rounded-full px-2.5 py-1 text-[10px] font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                   hasAnimation
                     ? 'bg-[#8b6658] text-white hover:bg-[#7a554a]'
-                    : 'bg-[#fffdf8] text-[#8b6658] hover:bg-[#f8e8df]'
+                    : 'bg-[#ffffff] text-[#8b6658] hover:bg-[#f8e8df]'
                 }`}
                 onClick={() => handleTypeChange(null)}
               >

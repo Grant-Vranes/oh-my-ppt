@@ -52,7 +52,7 @@ export function ImageModelSettingsTab({
       </CardHeader>
       <CardContent className="space-y-2.5 p-5 pt-0">
         {imageModelConfigs.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-[#d8ccb5]/85 bg-[#fff9ef]/70 p-6 text-sm text-muted-foreground">
+          <div className="rounded-lg border border-dashed border-[#d8ccb5]/85 bg-[#ffffff]/70 p-6 text-sm text-muted-foreground">
             {t('settings.noImageModels')}
           </div>
         ) : (
@@ -62,7 +62,7 @@ export function ImageModelSettingsTab({
               className={
                 config.active
                   ? 'flex flex-col gap-3 rounded-lg border border-[#96b77f]/80 bg-[#eef6e8] p-3 shadow-[inset_3px_0_0_#6f8f64] sm:flex-row sm:items-center sm:justify-between'
-                  : 'flex flex-col gap-3 rounded-lg border border-[#d8ccb5]/80 bg-[#fffdf8]/78 p-3 sm:flex-row sm:items-center sm:justify-between'
+                  : 'flex flex-col gap-3 rounded-lg border border-[#d8ccb5]/80 bg-[#ffffff]/78 p-3 sm:flex-row sm:items-center sm:justify-between'
               }
             >
               <div className="min-w-0">

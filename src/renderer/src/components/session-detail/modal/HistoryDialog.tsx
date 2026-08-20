@@ -114,7 +114,7 @@ export function HistoryDialog({ sessionId }: HistoryDialogProps): React.JSX.Elem
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
       <div className="flex max-h-[min(640px,78vh)] w-[560px] flex-col rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-[#e8e0d0] px-5 py-4">
+        <div className="flex items-center justify-between border-b border-[#f4f4f5] px-5 py-4">
           <div>
             <h3 className="text-base font-semibold text-[#2f3a2a]">
               {t('sessionDetail.historyTitle')}
@@ -155,7 +155,7 @@ export function HistoryDialog({ sessionId }: HistoryDialogProps): React.JSX.Elem
                 return (
                   <div
                     key={version.id}
-                    className="rounded-xl border border-[#e8e0d0] bg-[#faf8f2] px-4 py-3"
+                    className="rounded-xl border border-[#f4f4f5] bg-[#faf8f2] px-4 py-3"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">

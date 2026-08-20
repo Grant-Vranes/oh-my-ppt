@@ -1398,7 +1398,7 @@ export const HtmlEditorCanvas = forwardRef<
   }
 
   return (
-    <div ref={rootRef} className="relative h-full w-full rounded-[inherit] bg-[#f5f1e8]">
+    <div ref={rootRef} className="relative h-full w-full rounded-[inherit] bg-[#f4f4f5]">
       <div
         ref={containerRef}
         className={`absolute overflow-x-hidden overflow-y-auto transition-opacity duration-150 ${
@@ -1428,7 +1428,7 @@ export const HtmlEditorCanvas = forwardRef<
       </div>
       {webviewSrc && !webviewReady ? (
         <div
-          className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-5 bg-[#f5f1e8] text-[#7c786b]"
+          className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-5 bg-[#f4f4f5] text-[#7c786b]"
           aria-busy="true"
           aria-live="polite"
         >

@@ -60,7 +60,7 @@ export function TemplateCard({
             className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.015]"
           />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_top_left,_#fffaf0,_#eee4d2)] text-[#8a7e6c]">
+          <div className="absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_top_left,_#ffffff,_#eee4d2)] text-[#8a7e6c]">
             <div className="flex items-center gap-2 rounded-lg border border-white/70 bg-white/55 px-3 py-2 text-xs shadow-sm backdrop-blur-sm">
               <LayoutTemplate className="h-4 w-4" />
               <span>{t('templates.thumbnailGenerating')}</span>
@@ -71,7 +71,7 @@ export function TemplateCard({
       <CardHeader className="pb-2">
         <CardTitle className="flex items-start justify-between gap-3 text-base">
           <span className="min-w-0 truncate text-[#3e4a32]">{template.name}</span>
-          <span className="shrink-0 rounded-md border border-[#d6c08d]/80 bg-[#fff7e8] px-2 py-1 text-[11px] font-medium text-[#7c6a4c]">
+          <span className="shrink-0 rounded-md border border-[#d6c08d]/80 bg-[#ffffff] px-2 py-1 text-[11px] font-medium text-[#7c6a4c]">
             {t('templates.pageCount', { count: template.pageCount })}
           </span>
         </CardTitle>
@@ -85,7 +85,7 @@ export function TemplateCard({
             {template.tags.slice(0, 4).map((tag) => (
               <span
                 key={tag}
-                className="rounded-md border border-[#d6c08d]/80 bg-[#fff7e8] px-1.5 py-0.5 text-[11px] text-[#7c6a4c]"
+                className="rounded-md border border-[#d6c08d]/80 bg-[#ffffff] px-1.5 py-0.5 text-[11px] text-[#7c6a4c]"
               >
                 {tag}
               </span>
@@ -175,7 +175,7 @@ export function TemplateEmptyState(): React.JSX.Element {
   return (
     <section className="flex min-h-[calc(100vh-220px)] items-center justify-center px-4 py-12">
       <div className="flex w-full max-w-[460px] flex-col items-center text-center">
-        <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-lg border border-[#d7cab1] bg-[#fff9ef] text-[#617052] shadow-[0_6px_16px_rgba(78,88,62,0.08)]">
+        <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-lg border border-[#d7cab1] bg-[#ffffff] text-[#617052] shadow-[0_6px_16px_rgba(78,88,62,0.08)]">
           <LayoutTemplate className="h-8 w-8" />
         </div>
         <h3 className="text-xl font-semibold text-[#3e4a32]">{t('templates.emptyTitle')}</h3>

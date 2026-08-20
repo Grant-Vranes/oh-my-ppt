@@ -103,7 +103,7 @@ export function StyleSelect({
           type="button"
           disabled={disabled}
           className={cn(
-            'flex w-full items-center justify-between gap-2 rounded-lg border border-[#d8ccb5]/80 bg-[#fff9ef]/86 py-2.5 pl-3 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(77,63,46,0.08)] focus:outline-none focus:ring-2 focus:ring-[#8fbc8f] disabled:cursor-not-allowed disabled:opacity-50',
+            'flex w-full items-center justify-between gap-2 rounded-lg border border-[#d8ccb5]/80 bg-[#ffffff]/86 py-2.5 pl-3 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(77,63,46,0.08)] focus:outline-none focus:ring-2 focus:ring-[#8fbc8f] disabled:cursor-not-allowed disabled:opacity-50',
             compact ? 'h-9 px-2.5 text-xs' : 'pr-3',
             className
           )}
@@ -116,7 +116,7 @@ export function StyleSelect({
                   <Star className="h-3.5 w-3.5 shrink-0 fill-[#d6a942] text-[#d6a942]" />
                 )}
                 {selected.styleCase && !compact && (
-                  <span className="hidden shrink-0 truncate rounded-md border border-[#d6c08d]/80 bg-[#fff7e8] px-1.5 py-px text-[10px] font-medium leading-tight text-[#7c6a4c] sm:inline-block">
+                  <span className="hidden shrink-0 truncate rounded-md border border-[#d6c08d]/80 bg-[#ffffff] px-1.5 py-px text-[10px] font-medium leading-tight text-[#7c6a4c] sm:inline-block">
                     {parseStyleCases(selected.styleCase)[0]}
                   </span>
                 )}
@@ -133,7 +133,7 @@ export function StyleSelect({
         side="bottom"
         avoidCollisions={false}
         className={cn(
-          'min-w-[var(--radix-popover-trigger-width)] w-[360px] overflow-hidden rounded-lg border border-[#d8ccb5]/85 bg-[#fff9ef] p-0 text-foreground shadow-[0_12px_28px_rgba(88,72,54,0.18)]',
+          'min-w-[var(--radix-popover-trigger-width)] w-[360px] overflow-hidden rounded-lg border border-[#d8ccb5]/85 bg-[#ffffff] p-0 text-foreground shadow-[0_12px_28px_rgba(88,72,54,0.18)]',
           dropdownClassName
         )}
       >
@@ -174,7 +174,7 @@ export function StyleSelect({
                   type="button"
                   onClick={() => handlePick(option.id)}
                   className={cn(
-                    'relative flex w-full items-stretch gap-2.5 rounded-md px-2.5 py-2 text-left outline-none transition-colors hover:bg-[#efe5d3]/70 focus-visible:bg-[#efe5d3]/70',
+                    'relative flex w-full items-stretch gap-2.5 rounded-md px-2.5 py-2 text-left outline-none transition-colors hover:bg-[#fafafa]/70 focus-visible:bg-[#fafafa]/70',
                     isSelected && 'bg-[#dbe7ca] text-[#2f3b28]',
                     compact && 'py-1.5'
                   )}
@@ -187,7 +187,7 @@ export function StyleSelect({
                       className="h-11 w-[78px] shrink-0 rounded-[3px] border border-black/5 object-cover"
                     />
                   ) : (
-                    <span className="h-11 w-[78px] shrink-0 rounded-[3px] border border-[#e5ddc8] bg-[#f5f1e8]" />
+                    <span className="h-11 w-[78px] shrink-0 rounded-[3px] border border-[#e5ddc8] bg-[#f4f4f5]" />
                   )}
                   <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 py-0.5">
                     <span className="flex min-w-0 items-center gap-1.5">
@@ -195,7 +195,7 @@ export function StyleSelect({
                         {option.label}
                       </span>
                       {option.styleCase && (
-                        <span className="shrink-0 truncate rounded-md border border-[#d6c08d]/80 bg-[#fff7e8] px-1.5 py-px text-[10px] font-medium leading-tight text-[#7c6a4c]">
+                        <span className="shrink-0 truncate rounded-md border border-[#d6c08d]/80 bg-[#ffffff] px-1.5 py-px text-[10px] font-medium leading-tight text-[#7c6a4c]">
                           {option.styleCase}
                         </span>
                       )}

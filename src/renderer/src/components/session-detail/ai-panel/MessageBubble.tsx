@@ -39,7 +39,7 @@ export function MessageBubble({ message }: { message: Message }): React.JSX.Elem
           selectorText ? 'w-full max-w-[238px]' : 'w-fit max-w-[238px]',
           isUser
             ? 'border-[#d6e3c8]/78 bg-[#fbfef6]/90 text-[#34402c]'
-            : 'border-[#ded2bd]/78 bg-[#fffaf1]/88 text-[#3f372b]'
+            : 'border-[#ded2bd]/78 bg-[#ffffff]/88 text-[#3f372b]'
         )}
       >
         <div className="space-y-1">

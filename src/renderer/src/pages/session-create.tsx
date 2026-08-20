@@ -607,7 +607,7 @@ export function SessionCreatePage(): ReactElement {
               <div>
                 <div className="mb-2 flex items-center justify-between">
                   <label className="block font-medium">{t('home.brief')}</label>
-                  <div className="flex items-center gap-1 rounded-lg bg-[#fffdf8]/84 p-0.5">
+                  <div className="flex items-center gap-1 rounded-lg bg-[#ffffff]/84 p-0.5">
                     <button
                       type="button"
                       onClick={() => setBriefMode('edit')}
@@ -634,7 +634,7 @@ export function SessionCreatePage(): ReactElement {
                     </button>
                   </div>
                 </div>
-                <div className="overflow-hidden rounded-xl border border-[#e0d8c8] bg-[#fffdf8]/90">
+                <div className="overflow-hidden rounded-xl border border-[#e0d8c8] bg-[#ffffff]/90">
                   {briefMode === 'edit' ? (
                     <Textarea
                       placeholder={t('home.briefPlaceholder')}
@@ -709,7 +709,7 @@ export function SessionCreatePage(): ReactElement {
                         className={`inline-flex h-8 max-w-full items-center gap-1.5 rounded-lg border px-2.5 text-[11px] ${
                           pendingImageReference
                             ? 'border-[#e7a19a]/80 bg-[#fff1ef] text-[#9a3f35]'
-                            : 'border-[#c8d6ba] bg-[#fffdf8]/84 text-[#5d6b4d]'
+                            : 'border-[#c8d6ba] bg-[#ffffff]/84 text-[#5d6b4d]'
                         }`}
                         title={
                           pendingImageReference
@@ -774,7 +774,7 @@ export function SessionCreatePage(): ReactElement {
                                   void handleChooseReferenceClick()
                                 }}
                                 disabled={parsingDocument}
-                                className="h-8 shrink-0 rounded-lg border border-[#e0d8c8] bg-[#fffdf8]/84 px-3 text-xs font-medium text-[#5d6b4d] shadow-none hover:bg-[#d4e4c1]/65 hover:text-[#3e4a32]"
+                                className="h-8 shrink-0 rounded-lg border border-[#e0d8c8] bg-[#ffffff]/84 px-3 text-xs font-medium text-[#5d6b4d] shadow-none hover:bg-[#d4e4c1]/65 hover:text-[#3e4a32]"
                               >
                                 {parsingDocument ? (
                                   <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
@@ -858,7 +858,7 @@ export function SessionCreatePage(): ReactElement {
                         options={styleOptions}
                         placeholder={t('home.stylePlaceholder')}
                         compact
-                        className="h-8 border-[#c8d6ba] bg-[#fffdf8]/90 px-2.5 py-1.5 text-xs shadow-none"
+                        className="h-8 border-[#c8d6ba] bg-[#ffffff]/90 px-2.5 py-1.5 text-xs shadow-none"
                         dropdownAlign="end"
                         dropdownClassName="w-[min(700px,calc(100vw-3rem))]"
                       />

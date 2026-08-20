@@ -260,7 +260,7 @@ export function MasterWorkbenchPanel(): React.JSX.Element | null {
             type="button"
             variant="outline"
             size="sm"
-            className="h-6 min-w-[56px] shrink-0 gap-1 rounded-full border-0 bg-transparent px-2 text-[10px] font-bold text-[#4f5f40] shadow-none hover:bg-[#fffaf1]/54 hover:text-[#314028]"
+            className="h-6 min-w-[56px] shrink-0 gap-1 rounded-full border-0 bg-transparent px-2 text-[10px] font-bold text-[#4f5f40] shadow-none hover:bg-[#ffffff]/54 hover:text-[#314028]"
             disabled={busy}
           >
             <Palette className="h-3 w-3" />

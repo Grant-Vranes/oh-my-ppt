@@ -105,7 +105,7 @@ function HoverInsertButton({
         sideOffset={8}
         onMouseEnter={cancelClose}
         onMouseLeave={scheduleClose}
-        className="z-50 border-[#d8ccb5]/85 bg-[#fff9ef] p-2 shadow-lg"
+        className="z-50 border-[#d8ccb5]/85 bg-[#ffffff] p-2 shadow-lg"
       >
         {children}
       </PopoverContent>
@@ -178,7 +178,7 @@ export function HtmlEditorInsertRibbon({
   )
 
   return (
-    <aside className="flex w-12 flex-col items-center gap-1 border-r border-[#e2dccf] bg-[#f5f1e8] py-3">
+    <aside className="flex w-12 flex-col items-center gap-1 border-r border-[#e2dccf] bg-[#f4f4f5] py-3">
       <DirectButton
         icon={Type}
         label={t('editMode.addText')}

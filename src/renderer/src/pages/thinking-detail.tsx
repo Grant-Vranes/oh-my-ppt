@@ -322,8 +322,8 @@ export function ThinkingDetailPage(): ReactElement {
   })
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col bg-[#f5f1e8] text-foreground">
-      <div className="relative z-50 shrink-0 border-b border-[#e0d8c8] bg-[#f5f1e8]/90 px-6 py-4 backdrop-blur">
+    <div className="relative flex h-full min-h-0 flex-col bg-[#f4f4f5] text-foreground">
+      <div className="relative z-50 shrink-0 border-b border-[#e0d8c8] bg-[#f4f4f5]/90 px-6 py-4 backdrop-blur">
         <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
@@ -351,7 +351,7 @@ export function ThinkingDetailPage(): ReactElement {
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-[#d9cfbd] bg-[#fffdf8]/95 px-4 text-[13px] font-semibold text-[#3e4a32] shadow-[0_10px_22px_rgba(86,73,54,0.12)] transition-colors hover:bg-[#f5f1e8]"
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-[#d9cfbd] bg-[#ffffff]/95 px-4 text-[13px] font-semibold text-[#3e4a32] shadow-[0_10px_22px_rgba(86,73,54,0.12)] transition-colors hover:bg-[#f4f4f5]"
                 >
                   {historyLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin text-[#7a806c]" />
@@ -364,7 +364,7 @@ export function ThinkingDetailPage(): ReactElement {
               <PopoverContent
                 align="end"
                 sideOffset={8}
-                className="z-[60] flex w-[320px] flex-col overflow-hidden rounded-[1.5rem] border border-[#e0d8c8] bg-[#fffdf8]/98 p-0 shadow-[0_22px_54px_rgba(86,73,54,0.22)] backdrop-blur"
+                className="z-[60] flex w-[320px] flex-col overflow-hidden rounded-[1.5rem] border border-[#e0d8c8] bg-[#ffffff]/98 p-0 shadow-[0_22px_54px_rgba(86,73,54,0.22)] backdrop-blur"
                 style={{ height: 'min(420px, calc(100vh - 160px))' }}
               >
                 <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#eee4d4] px-4 py-3">
@@ -390,7 +390,7 @@ export function ThinkingDetailPage(): ReactElement {
                             className={`group flex w-full items-start gap-1.5 rounded-[1.25rem] border p-2 transition-colors ${
                               active
                                 ? 'border-[#9eb88a] bg-[#d4e4c1] text-[#2f3b28]'
-                                : 'border-transparent bg-[#f5f1e8]/76 text-[#3e4a32] hover:border-[#d9cfbd] hover:bg-[#efe7d8]'
+                                : 'border-transparent bg-[#f4f4f5]/76 text-[#3e4a32] hover:border-[#d9cfbd] hover:bg-[#fafafa]'
                             }`}
                           >
                             <button
@@ -416,7 +416,7 @@ export function ThinkingDetailPage(): ReactElement {
                                   </div>
                                 </div>
                               </div>
-                              <div className="mt-2 inline-flex rounded-full bg-[#fffdf8]/72 px-2 py-0.5 text-[10px] font-semibold text-[#5d6b4d]">
+                              <div className="mt-2 inline-flex rounded-full bg-[#ffffff]/72 px-2 py-0.5 text-[10px] font-semibold text-[#5d6b4d]">
                                 {t(stageKeyByStage[item.stage])}
                               </div>
                             </button>
@@ -475,7 +475,7 @@ export function ThinkingDetailPage(): ReactElement {
           showOutlinePanel ? 'lg:grid-cols-[minmax(0,1fr)_360px]' : 'grid-cols-1'
         }`}
       >
-        <section className="min-h-0 overflow-hidden rounded-[2rem] border border-[#e0d8c8] bg-[#fffdf8] shadow-[0_14px_34px_rgba(86,73,54,0.12)]">
+        <section className="min-h-0 overflow-hidden rounded-[2rem] border border-[#e0d8c8] bg-[#ffffff] shadow-[0_14px_34px_rgba(86,73,54,0.12)]">
           {thinkingId ? (
             <ThinkingChat
               thinkingId={thinkingId}

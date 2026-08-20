@@ -433,7 +433,7 @@ export function SessionsPage(): React.JSX.Element {
                     type="search"
                     value={searchQuery}
                     placeholder={t('sessions.searchPlaceholder')}
-                    className="h-9 bg-[#fffaf1] pl-9 pr-10"
+                    className="h-9 bg-[#ffffff] pl-9 pr-10"
                     onChange={(event) => setSearchQuery(event.target.value)}
                     onBlur={() => {
                       if (!searchQuery.trim()) setSearchOpen(false)
@@ -504,7 +504,7 @@ export function SessionsPage(): React.JSX.Element {
       {sessions.length === 0 ? (
         <section className="flex min-h-[calc(100vh-220px)] items-center justify-center px-4 py-12">
           <div className="flex w-full max-w-[460px] flex-col items-center text-center">
-            <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-lg border border-[#d7cab1] bg-[#fff9ef] text-[#617052] shadow-[0_6px_16px_rgba(78,88,62,0.08)]">
+            <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-lg border border-[#d7cab1] bg-[#ffffff] text-[#617052] shadow-[0_6px_16px_rgba(78,88,62,0.08)]">
               <FolderOpen className="h-8 w-8" />
             </div>
             <h3 className="text-xl font-semibold text-[#3e4a32]">{t('sessions.emptyTitle')}</h3>
@@ -605,7 +605,7 @@ export function SessionsPage(): React.JSX.Element {
                 onClick={() => navigate(getSessionRoute(session))}
               >
                 <div
-                  className="relative flex h-[230px] w-full shrink-0 items-center justify-center overflow-hidden bg-[#f5f1e8]"
+                  className="relative flex h-[230px] w-full shrink-0 items-center justify-center overflow-hidden bg-[#f4f4f5]"
                   data-session-thumbnail-frame
                 >
                   {thumbnailPath ? (
@@ -627,7 +627,7 @@ export function SessionsPage(): React.JSX.Element {
                     />
                   )}
                   <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/45 via-black/10 to-transparent" />
-                  <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-lg bg-[#fffaf0]/92 px-2.5 py-1 text-xs font-semibold text-[#3e4a32] shadow-[0_4px_12px_rgba(31,38,29,0.16)] backdrop-blur-sm">
+                  <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-lg bg-[#ffffff]/92 px-2.5 py-1 text-xs font-semibold text-[#3e4a32] shadow-[0_4px_12px_rgba(31,38,29,0.16)] backdrop-blur-sm">
                     <MessageSquare className="h-3 w-3" />
                     {actionText}
                   </span>
@@ -651,7 +651,7 @@ export function SessionsPage(): React.JSX.Element {
                       <SourceIcon className={`h-3.5 w-3.5 ${sourceTag.iconClassName}`} />
                       {sourceTag.label}
                     </span>
-                    <span className="rounded-lg border border-[#e1d1b7]/80 bg-[#fff7e8]/75 px-2 py-1 text-[#7c6a4c]">
+                    <span className="rounded-lg border border-[#e1d1b7]/80 bg-[#ffffff]/75 px-2 py-1 text-[#7c6a4c]">
                       {t('sessions.pagesCount', {
                         generated: displayGeneratedCount,
                         total: displayTotalCount
@@ -675,7 +675,7 @@ export function SessionsPage(): React.JSX.Element {
                   </div>
                 </div>
 
-                <div className="flex shrink-0 items-center justify-end gap-1 border-t border-[#e7dfd0]/70 bg-[#fffaf0]/45 px-3 py-2">
+                <div className="flex shrink-0 items-center justify-end gap-1 border-t border-[#e7dfd0]/70 bg-[#ffffff]/45 px-3 py-2">
                   <TooltipProvider delayDuration={180}>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -744,7 +744,7 @@ export function SessionsPage(): React.JSX.Element {
           onClick={closeRenameDialog}
         >
           <div
-            className="w-full max-w-md rounded-xl border border-[#d8cfbc]/80 bg-[#fffaf0] p-5 shadow-[0_24px_60px_rgba(64,52,38,0.28)]"
+            className="w-full max-w-md rounded-xl border border-[#d8cfbc]/80 bg-[#ffffff] p-5 shadow-[0_24px_60px_rgba(64,52,38,0.28)]"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-4 flex items-start justify-between gap-3">

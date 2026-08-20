@@ -287,7 +287,7 @@ export function MasterGradientEditor(): React.JSX.Element {
             type="single"
             value={activeBackgroundStyle}
             onValueChange={selectBackgroundStyle}
-            className="flex-wrap rounded-md border border-[#d7cbb7]/70 bg-[#fffdf8] p-0.5"
+            className="flex-wrap rounded-md border border-[#d7cbb7]/70 bg-[#ffffff] p-0.5"
           >
             <ToggleGroupItem
               value="solid"
@@ -314,7 +314,7 @@ export function MasterGradientEditor(): React.JSX.Element {
         </div>
 
         {!isGradient && !isImage ? (
-          <div className="flex items-center justify-between rounded-md border border-[#e4dac9] bg-[#fffdf8]/70 px-2.5 py-2 text-sm text-[#4a563d]">
+          <div className="flex items-center justify-between rounded-md border border-[#e4dac9] bg-[#ffffff]/70 px-2.5 py-2 text-sm text-[#4a563d]">
             <span>{t('sessionDetail.masterBackground')}</span>
             <div className="flex items-center gap-2">
               <span className="font-mono text-xs text-[#667257]">{config.backgroundColor}</span>
@@ -342,7 +342,7 @@ export function MasterGradientEditor(): React.JSX.Element {
             <TooltipContent>{t('sessionDetail.masterGradientConfigure')}</TooltipContent>
           </Tooltip>
         ) : (
-          <div className="overflow-hidden rounded-md border border-[#e4dac9] bg-[#fffdf8]/70">
+          <div className="overflow-hidden rounded-md border border-[#e4dac9] bg-[#ffffff]/70">
             <div className="flex h-[196px] items-center justify-center bg-[#eee8dc] p-2">
               <div
                 className="relative h-full max-w-full overflow-hidden"
@@ -363,7 +363,7 @@ export function MasterGradientEditor(): React.JSX.Element {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="absolute right-2 top-2 h-7 w-7 rounded-md bg-[#fffdf8]/90 p-0 text-[#667257] shadow-sm hover:bg-white hover:text-[#a14f4a]"
+                        className="absolute right-2 top-2 h-7 w-7 rounded-md bg-[#ffffff]/90 p-0 text-[#667257] shadow-sm hover:bg-white hover:text-[#a14f4a]"
                         aria-label={t('sessionDetail.masterBackgroundImageClear')}
                         onClick={clearBackgroundImage}
                       >
@@ -423,7 +423,7 @@ export function MasterGradientEditor(): React.JSX.Element {
               style={{ background: buildMasterGradientCss(gradient) }}
             />
 
-            <div className="space-y-2 rounded-md border border-[#e4dac9] bg-[#fffdf8]/70 p-2.5">
+            <div className="space-y-2 rounded-md border border-[#e4dac9] bg-[#ffffff]/70 p-2.5">
               <div className="flex items-center justify-between gap-2 text-xs text-[#667257]">
                 <span>{t('sessionDetail.masterGradientType')}</span>
                 <ToggleGroup
@@ -434,7 +434,7 @@ export function MasterGradientEditor(): React.JSX.Element {
                       setGradientDraft(normalizeMasterGradient({ ...gradient, type }))
                     }
                   }}
-                  className="rounded-md border border-[#d7cbb7]/70 bg-[#fffdf8] p-0.5"
+                  className="rounded-md border border-[#d7cbb7]/70 bg-[#ffffff] p-0.5"
                 >
                   <ToggleGroupItem
                     value="linear"
@@ -464,7 +464,7 @@ export function MasterGradientEditor(): React.JSX.Element {
                           type="button"
                           aria-label={`${t('sessionDetail.masterGradientAngle')} ${angle}°`}
                           title={`${t('sessionDetail.masterGradientAngle')} ${angle}°`}
-                          className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md text-[#667257] transition-colors hover:bg-[#ebe4d6] hover:text-[#3e4a32] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5d6b4d]"
+                          className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md text-[#667257] transition-colors hover:bg-[#f4f4f5] hover:text-[#3e4a32] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5d6b4d]"
                           onClick={() => updateAngle(angle)}
                         >
                           <Icon className="h-3.5 w-3.5" />
@@ -488,7 +488,7 @@ export function MasterGradientEditor(): React.JSX.Element {
                       max={359}
                       value={gradient.angle}
                       aria-label={t('sessionDetail.masterGradientAngle')}
-                      className="h-7 rounded-md border-[#d7cbb7]/70 bg-[#fffdf8] px-1 text-center text-xs"
+                      className="h-7 rounded-md border-[#d7cbb7]/70 bg-[#ffffff] px-1 text-center text-xs"
                       onChange={(event) => updateAngle(Number(event.target.value))}
                     />
                   </label>
@@ -534,7 +534,7 @@ export function MasterGradientEditor(): React.JSX.Element {
             </div>
 
             {selectedStop && (
-              <div className="grid grid-cols-[40px_1fr_46px_28px] items-center gap-2 rounded-md border border-[#e4dac9] bg-[#fffdf8]/70 p-2">
+              <div className="grid grid-cols-[40px_1fr_46px_28px] items-center gap-2 rounded-md border border-[#e4dac9] bg-[#ffffff]/70 p-2">
                 <ColorPicker
                   value={selectedStop.color}
                   allowAlpha={false}
@@ -560,7 +560,7 @@ export function MasterGradientEditor(): React.JSX.Element {
                   aria-label={t('sessionDetail.masterGradientStop', {
                     position: selectedStop.position
                   })}
-                  className="h-7 rounded-md border-[#d7cbb7]/70 bg-[#fffdf8] px-1 text-center text-xs"
+                  className="h-7 rounded-md border-[#d7cbb7]/70 bg-[#ffffff] px-1 text-center text-xs"
                   onChange={(event) => updateSelectedStop({ position: Number(event.target.value) })}
                 />
                 <Tooltip>

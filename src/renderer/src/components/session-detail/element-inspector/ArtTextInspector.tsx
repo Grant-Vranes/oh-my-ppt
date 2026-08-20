@@ -38,7 +38,7 @@ export function ArtTextInspector({
       icon={<Sparkles className="h-3.5 w-3.5 text-[#7a875f]" />}
     >
       <div className="space-y-2.5">
-        <div className="rounded-[1rem] border border-[#ded2bd]/60 bg-[#fffdf8]/70 px-3 py-2">
+        <div className="rounded-[1rem] border border-[#ded2bd]/60 bg-[#ffffff]/70 px-3 py-2">
           <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a806b]">
             {t('editMode.artTextEffect')}
           </div>
@@ -54,7 +54,7 @@ export function ArtTextInspector({
             onChange={(event) => updateText(event.target.value)}
             onBlur={(event) => updateText(event.target.value, true)}
             disabled={!canEditText}
-            className="h-8 rounded-full border border-[#ded2bd]/72 bg-[#fffdf8]/88 px-2.5 text-xs text-[#3f4b35] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#9bb98a] focus-visible:ring-0 focus-visible:ring-offset-0"
+            className="h-8 rounded-full border border-[#ded2bd]/72 bg-[#ffffff]/88 px-2.5 text-xs text-[#3f4b35] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#9bb98a] focus-visible:ring-0 focus-visible:ring-offset-0"
           />
         </label>
 
@@ -74,7 +74,7 @@ export function ArtTextInspector({
                 { commit: true, fields: ['fontSize'] }
               )
             }
-            className="h-8 rounded-full border border-[#ded2bd]/72 bg-[#fffdf8]/88 px-2.5 text-xs text-[#3f4b35] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#9bb98a] focus-visible:ring-0 focus-visible:ring-offset-0"
+            className="h-8 rounded-full border border-[#ded2bd]/72 bg-[#ffffff]/88 px-2.5 text-xs text-[#3f4b35] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#9bb98a] focus-visible:ring-0 focus-visible:ring-offset-0"
           />
         </label>
       </div>

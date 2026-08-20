@@ -412,7 +412,7 @@ export function MasterElementsEditor(): React.JSX.Element {
         <div className="flex min-w-0 justify-center rounded-md border border-[#e4dac9] bg-[#f7f2e8]/68 p-3">
           <div
             ref={canvasRef}
-            className="relative max-w-full select-none overflow-hidden border border-[#cfc3ae] bg-[#fffdf8] shadow-[0_12px_28px_rgba(73,61,43,0.12)]"
+            className="relative max-w-full select-none overflow-hidden border border-[#cfc3ae] bg-[#ffffff] shadow-[0_12px_28px_rgba(73,61,43,0.12)]"
             style={{ aspectRatio, width: `${canvasWidth}px` }}
             onPointerDown={() => setSelectedElement(null)}
           >
@@ -515,7 +515,7 @@ export function MasterElementsEditor(): React.JSX.Element {
               </label>
             </div>
             <div className="flex items-center gap-2">
-              <div className="flex h-12 min-w-0 flex-1 items-center justify-center overflow-hidden rounded border border-[#e4dac9] bg-[#fffdf8] p-1.5 text-xs text-[#667257]">
+              <div className="flex h-12 min-w-0 flex-1 items-center justify-center overflow-hidden rounded border border-[#e4dac9] bg-[#ffffff] p-1.5 text-xs text-[#667257]">
                 {logoPreviewUrl ? (
                   <img src={logoPreviewUrl} alt="" className="h-full max-w-full object-contain" />
                 ) : (

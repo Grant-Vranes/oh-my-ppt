@@ -355,7 +355,7 @@ export function buildChartElementHtml(layout: InsertChartLayout, data: InsertCha
     'box-sizing:border-box',
     'padding:12px',
     'border-radius:8px',
-    'background:#fffdf8',
+    'background:#ffffff',
     'border:1px solid rgba(216,204,181,0.72)',
     'box-shadow:0 8px 22px rgba(74,59,42,0.08)'
   ].join('; ')

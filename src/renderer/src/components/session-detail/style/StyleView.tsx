@@ -190,7 +190,7 @@ export function StyleView({ sessionId }: { sessionId: string }): React.JSX.Eleme
                   isStyleSwitching && 'pointer-events-none opacity-45 grayscale'
                 )}
               >
-                <div className="relative aspect-video overflow-hidden bg-[#f5f1e8]">
+                <div className="relative aspect-video overflow-hidden bg-[#f4f4f5]">
                   {style.thumbnailPath ? (
                     <img
                       src={stylePreviewUrl(style.thumbnailPath)}

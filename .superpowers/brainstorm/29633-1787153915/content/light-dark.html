@@ -1,0 +1,87 @@
+<h2>Graphite 风格 — 明暗模式</h2>
+<p class="subtitle">石墨商务风支持三种模式选择，你倾向哪种？</p>
+
+<div class="cards" style="grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+
+  <!-- Light only -->
+  <div class="card" data-choice="light" onclick="toggleSelect(this)" style="cursor:pointer;">
+    <div class="card-image" style="padding:0; overflow:hidden;">
+      <div style="background:#f4f4f5; padding:16px; font-family:system-ui,sans-serif; height:160px;">
+        <div style="display:flex; gap:6px; height:100%;">
+          <div style="width:36px; background:#18181b; border-radius:3px; padding:6px 3px; display:flex; flex-direction:column; gap:6px; align-items:center;">
+            <div style="width:18px; height:18px; background:#3f3f46; border-radius:2px;"></div>
+            <div style="width:14px; height:14px; background:#52525b; border-radius:2px;"></div>
+            <div style="width:14px; height:14px; background:#3f3f46; border-radius:2px;"></div>
+          </div>
+          <div style="flex:1; background:#ffffff; border:1px solid #e4e4e7; border-radius:3px; padding:10px;">
+            <div style="color:#18181b; font-size:10px; font-weight:600;">Light Mode</div>
+            <div style="background:#fafafa; border:1px solid #e4e4e7; border-radius:2px; padding:6px; margin-top:6px;">
+              <div style="color:#71717a; font-size:7px; text-transform:uppercase;">Cards</div>
+              <div style="color:#18181b; font-size:14px; font-weight:700;">24</div>
+            </div>
+            <div style="display:inline-block; background:#18181b; color:white; font-size:7px; padding:2px 6px; border-radius:2px; margin-top:4px; font-weight:600;">BUTTON</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>纯浅色模式</h3>
+      <p>始终浅色底 (#f4f4f5 / #ffffff)，黑色强调。简洁明亮，适合白天办公环境。</p>
+    </div>
+  </div>
+
+  <!-- Dark only -->
+  <div class="card" data-choice="dark" onclick="toggleSelect(this)" style="cursor:pointer;">
+    <div class="card-image" style="padding:0; overflow:hidden;">
+      <div style="background:#09090b; padding:16px; font-family:system-ui,sans-serif; height:160px;">
+        <div style="display:flex; gap:6px; height:100%;">
+          <div style="width:36px; background:#18181b; border:1px solid #27272a; border-radius:3px; padding:6px 3px; display:flex; flex-direction:column; gap:6px; align-items:center;">
+            <div style="width:18px; height:18px; background:#27272a; border-radius:2px;"></div>
+            <div style="width:14px; height:14px; background:#3f3f46; border-radius:2px;"></div>
+            <div style="width:14px; height:14px; background:#27272a; border-radius:2px;"></div>
+          </div>
+          <div style="flex:1; background:#18181b; border:1px solid #27272a; border-radius:3px; padding:10px;">
+            <div style="color:#fafafa; font-size:10px; font-weight:600;">Dark Mode</div>
+            <div style="background:#09090b; border:1px solid #27272a; border-radius:2px; padding:6px; margin-top:6px;">
+              <div style="color:#71717a; font-size:7px; text-transform:uppercase;">Cards</div>
+              <div style="color:#fafafa; font-size:14px; font-weight:700;">24</div>
+            </div>
+            <div style="display:inline-block; background:#fafafa; color:#09090b; font-size:7px; padding:2px 6px; border-radius:2px; margin-top:4px; font-weight:600;">BUTTON</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>纯深色模式</h3>
+      <p>始终深色底 (#09090b / #18181b)，白色强调。专注沉浸，适合暗光环境。</p>
+    </div>
+  </div>
+
+  <!-- Both with toggle -->
+  <div class="card" data-choice="both" onclick="toggleSelect(this)" style="cursor:pointer;">
+    <div class="card-image" style="padding:0; overflow:hidden;">
+      <div style="display:flex; height:160px; font-family:system-ui,sans-serif;">
+        <div style="flex:1; background:#f4f4f5; padding:12px; display:flex; align-items:center; justify-content:center;">
+          <div style="text-align:center;">
+            <div style="width:32px; height:32px; background:#ffffff; border:1px solid #e4e4e7; border-radius:3px; margin:0 auto 4px; display:flex; align-items:center; justify-content:center; font-size:14px;">☀</div>
+            <div style="color:#18181b; font-size:8px; font-weight:600;">Light</div>
+          </div>
+        </div>
+        <div style="width:24px; background:linear-gradient(90deg, #f4f4f5, #09090b); display:flex; align-items:center; justify-content:center;">
+          <div style="color:#71717a; font-size:8px;">↔</div>
+        </div>
+        <div style="flex:1; background:#09090b; padding:12px; display:flex; align-items:center; justify-content:center;">
+          <div style="text-align:center;">
+            <div style="width:32px; height:32px; background:#18181b; border:1px solid #27272a; border-radius:3px; margin:0 auto 4px; display:flex; align-items:center; justify-content:center; font-size:14px;">☾</div>
+            <div style="color:#fafafa; font-size:8px; font-weight:600;">Dark</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>浅色 + 深色双模式</h3>
+      <p>默认浅色，设置中可切换深色。工作量更大但灵活性最高，跟随系统主题。</p>
+    </div>
+  </div>
+
+</div>

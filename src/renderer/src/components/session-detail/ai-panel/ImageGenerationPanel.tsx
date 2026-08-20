@@ -156,7 +156,7 @@ export function ImageGenerationPanel({ sessionId }: { sessionId: string }): Reac
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="relative mx-2.5 mt-2.5 overflow-hidden rounded-[1.35rem] border border-[#e1d6c4]/72 bg-[#fffaf1]/78 px-3 pb-2.5 pt-3 shadow-[0_4px_12px_rgba(77,61,43,0.06)]">
+      <div className="relative mx-2.5 mt-2.5 overflow-hidden rounded-[1.35rem] border border-[#e1d6c4]/72 bg-[#ffffff]/78 px-3 pb-2.5 pt-3 shadow-[0_4px_12px_rgba(77,61,43,0.06)]">
         <div className="relative flex flex-col gap-2">
           <h3 className="text-sm font-semibold tracking-[0.04em] text-[#34402c]">
             {t('sessionDetail.imageMode')}
@@ -197,7 +197,7 @@ export function ImageGenerationPanel({ sessionId }: { sessionId: string }): Reac
                       isUser ? 'w-fit max-w-[238px]' : 'w-full max-w-[238px]',
                       isUser
                         ? 'border-[#d6e3c8]/78 bg-[#fbfef6]/90 text-[#34402c]'
-                        : 'border-[#ded2bd]/78 bg-[#fffaf1]/88 text-[#3f372b]'
+                        : 'border-[#ded2bd]/78 bg-[#ffffff]/88 text-[#3f372b]'
                     )}
                   >
                     {message.content && (
@@ -210,7 +210,7 @@ export function ImageGenerationPanel({ sessionId }: { sessionId: string }): Reac
                         {message.assets.map((asset) => (
                           <div
                             key={asset.id}
-                            className="rounded-[0.9rem] border border-[#ded2bd]/72 bg-[#fffdf8]/82 p-1.5"
+                            className="rounded-[0.9rem] border border-[#ded2bd]/72 bg-[#ffffff]/82 p-1.5"
                           >
                             {asset.absolutePath ? (
                               <button
@@ -225,7 +225,7 @@ export function ImageGenerationPanel({ sessionId }: { sessionId: string }): Reac
                                   alt={asset.fileName}
                                   className="h-full w-full object-contain"
                                 />
-                                <span className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-[#2f3829]/70 text-[#fffaf1] opacity-0 shadow-[0_6px_14px_rgba(33,29,21,0.24)] transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+                                <span className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-[#2f3829]/70 text-[#ffffff] opacity-0 shadow-[0_6px_14px_rgba(33,29,21,0.24)] transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
                                   <Maximize2 className="h-3 w-3" />
                                 </span>
                               </button>
@@ -315,7 +315,7 @@ export function ImageGenerationPanel({ sessionId }: { sessionId: string }): Reac
               )
             })}
             {isGeneratingImage && imageProgress && (
-              <div className="w-full max-w-[238px] rounded-[1.15rem] border border-[#ded2bd]/72 bg-[#fffaf1]/82 px-3 py-2 shadow-[0_6px_14px_rgba(74,59,42,0.08)]">
+              <div className="w-full max-w-[238px] rounded-[1.15rem] border border-[#ded2bd]/72 bg-[#ffffff]/82 px-3 py-2 shadow-[0_6px_14px_rgba(74,59,42,0.08)]">
                 <p className="mb-2 text-sm text-[#655843]">
                   {imageProgress.label || t('sessionDetail.imageGenerating')}
                 </p>
@@ -327,7 +327,7 @@ export function ImageGenerationPanel({ sessionId }: { sessionId: string }): Reac
         )}
       </ScrollArea>
 
-      <div className="mx-2.5 mb-2.5 rounded-[1.4rem] border border-[#ded2bd]/72 bg-[#fffaf1]/84 px-2.5 pb-3 pt-2 shadow-[0_12px_24px_rgba(74,59,42,0.11)]">
+      <div className="mx-2.5 mb-2.5 rounded-[1.4rem] border border-[#ded2bd]/72 bg-[#ffffff]/84 px-2.5 pb-3 pt-2 shadow-[0_12px_24px_rgba(74,59,42,0.11)]">
         <div className="mb-1.5 flex items-center justify-end gap-1.5">
           <Button
             type="button"
@@ -369,7 +369,7 @@ export function ImageGenerationPanel({ sessionId }: { sessionId: string }): Reac
             onChange={(event) => setImagePrompt(event.target.value)}
             disabled={imageControlsDisabled}
             rows={4}
-            className="min-h-[96px] resize-none rounded-[1.15rem] border border-[#ded2bd]/72 bg-[#fffdf8]/88 px-3 py-2 text-[13px] leading-5 text-[#3f4b35] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#9bb98a] focus-visible:ring-0 focus-visible:ring-offset-0"
+            className="min-h-[96px] resize-none rounded-[1.15rem] border border-[#ded2bd]/72 bg-[#ffffff]/88 px-3 py-2 text-[13px] leading-5 text-[#3f4b35] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#9bb98a] focus-visible:ring-0 focus-visible:ring-offset-0"
           />
         </div>
         <div className="mt-2 flex items-center justify-between gap-2">
@@ -380,7 +380,7 @@ export function ImageGenerationPanel({ sessionId }: { sessionId: string }): Reac
                 variant="secondary"
                 size="sm"
                 disabled={imageControlsDisabled}
-                className="h-8 min-w-0 flex-1 justify-start rounded-full border border-[#ded2bd]/70 bg-[#fffdf8]/88 px-2.5 text-xs text-[#52614a]"
+                className="h-8 min-w-0 flex-1 justify-start rounded-full border border-[#ded2bd]/70 bg-[#ffffff]/88 px-2.5 text-xs text-[#52614a]"
               >
                 <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5 shrink-0" />
                 <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
@@ -391,7 +391,7 @@ export function ImageGenerationPanel({ sessionId }: { sessionId: string }): Reac
             <PopoverContent
               side="top"
               align="start"
-              className="w-[268px] border-[#d8cfbc]/80 bg-[#fffdf8] p-3"
+              className="w-[268px] border-[#d8cfbc]/80 bg-[#ffffff] p-3"
             >
               <div className="space-y-3">
                 <div>
@@ -411,7 +411,7 @@ export function ImageGenerationPanel({ sessionId }: { sessionId: string }): Reac
                     onValueChange={setSelectedImageModelConfigId}
                     disabled={imageControlsDisabled}
                   >
-                    <SelectTrigger className="h-8 w-full min-w-0 rounded-lg border-[#ded2bd]/70 bg-[#fffdf8]/82 px-3 py-1 text-xs text-[#3e4a32] shadow-none">
+                    <SelectTrigger className="h-8 w-full min-w-0 rounded-lg border-[#ded2bd]/70 bg-[#ffffff]/82 px-3 py-1 text-xs text-[#3e4a32] shadow-none">
                       <SelectValue placeholder={t('sessionDetail.imageModelPlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
@@ -433,7 +433,7 @@ export function ImageGenerationPanel({ sessionId }: { sessionId: string }): Reac
                       onValueChange={setImageSize}
                       disabled={imageControlsDisabled}
                     >
-                      <SelectTrigger className="h-8 w-full rounded-lg border-[#ded2bd]/70 bg-[#fffdf8]/82 px-3 py-1 text-xs text-[#3e4a32] shadow-none">
+                      <SelectTrigger className="h-8 w-full rounded-lg border-[#ded2bd]/70 bg-[#ffffff]/82 px-3 py-1 text-xs text-[#3e4a32] shadow-none">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -450,7 +450,7 @@ export function ImageGenerationPanel({ sessionId }: { sessionId: string }): Reac
                       {t('sessionDetail.imageCountLabel')}
                     </label>
                     <Select value="1" disabled>
-                      <SelectTrigger className="h-8 w-full rounded-lg border-[#ded2bd]/70 bg-[#fffdf8]/82 px-3 py-1 text-xs text-[#3e4a32] shadow-none">
+                      <SelectTrigger className="h-8 w-full rounded-lg border-[#ded2bd]/70 bg-[#ffffff]/82 px-3 py-1 text-xs text-[#3e4a32] shadow-none">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -487,9 +487,9 @@ export function ImageGenerationPanel({ sessionId }: { sessionId: string }): Reac
         </div>
       </div>
       <Dialog open={Boolean(previewAsset)} onOpenChange={(open) => !open && setPreviewAsset(null)}>
-        <DialogContent className="w-[min(96vw,1080px)] max-w-none gap-3 border-[#d8cfbc]/80 bg-[#171b14] p-3 text-[#fffaf1] shadow-[0_28px_90px_rgba(12,15,10,0.42)] sm:p-4">
+        <DialogContent className="w-[min(96vw,1080px)] max-w-none gap-3 border-[#d8cfbc]/80 bg-[#171b14] p-3 text-[#ffffff] shadow-[0_28px_90px_rgba(12,15,10,0.42)] sm:p-4">
           <DialogHeader className="pr-10">
-            <DialogTitle className="truncate text-sm text-[#fffaf1]">
+            <DialogTitle className="truncate text-sm text-[#ffffff]">
               {previewAsset?.fileName || t('sessionDetail.imagePreviewTitle')}
             </DialogTitle>
           </DialogHeader>
@@ -510,7 +510,7 @@ export function ImageGenerationPanel({ sessionId }: { sessionId: string }): Reac
                     <Button
                       size="sm"
                       variant="secondary"
-                      className="h-8 w-8 bg-[#fffaf1] p-0 text-[#34402c] hover:bg-[#efe5d5]"
+                      className="h-8 w-8 bg-[#ffffff] p-0 text-[#34402c] hover:bg-[#efe5d5]"
                       disabled={!selectedPageExists}
                       onClick={() => void addToCanvas(previewAsset)}
                       aria-label={t('sessionDetail.addImageToCanvas')}
@@ -525,7 +525,7 @@ export function ImageGenerationPanel({ sessionId }: { sessionId: string }): Reac
                     <Button
                       size="sm"
                       variant="secondary"
-                      className="h-8 w-8 bg-[#fffaf1] p-0 text-[#34402c] hover:bg-[#efe5d5]"
+                      className="h-8 w-8 bg-[#ffffff] p-0 text-[#34402c] hover:bg-[#efe5d5]"
                       disabled={!selectedPageExists}
                       onClick={() => void setAsBackground(previewAsset)}
                       aria-label={t('sessionDetail.setImageAsBackground')}
@@ -538,7 +538,7 @@ export function ImageGenerationPanel({ sessionId }: { sessionId: string }): Reac
                 <Button
                   size="sm"
                   variant="secondary"
-                  className="h-8 bg-[#fffaf1] px-2.5 text-xs text-[#34402c] hover:bg-[#efe5d5]"
+                  className="h-8 bg-[#ffffff] px-2.5 text-xs text-[#34402c] hover:bg-[#efe5d5]"
                   onClick={() => void revealFile(previewAsset.absolutePath)}
                 >
                   <FolderOpen className="mr-1 h-3.5 w-3.5" />

@@ -125,7 +125,7 @@ export function EditHtmlListPage(): ReactElement {
                       type="search"
                       value={searchQuery}
                       placeholder={t('htmlEditor.searchPlaceholder')}
-                      className="h-9 bg-[#fffaf1] pl-9 pr-10"
+                      className="h-9 bg-[#ffffff] pl-9 pr-10"
                       onChange={(event) => setSearchQuery(event.target.value)}
                       onBlur={() => {
                         if (!searchQuery.trim()) setSearchOpen(false)
@@ -190,7 +190,7 @@ export function EditHtmlListPage(): ReactElement {
         {documents.length === 0 ? (
           <section className="flex min-h-[calc(100vh-220px)] items-center justify-center px-4 py-12">
             <div className="flex w-full max-w-[460px] flex-col items-center text-center">
-              <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-lg border border-[#d7cab1] bg-[#fff9ef] text-[#617052] shadow-[0_6px_16px_rgba(78,88,62,0.08)]">
+              <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-lg border border-[#d7cab1] bg-[#ffffff] text-[#617052] shadow-[0_6px_16px_rgba(78,88,62,0.08)]">
                 <FileCode2 className="h-8 w-8" />
               </div>
               <h3 className="text-xl font-semibold text-[#3e4a32]">{t('htmlEditor.emptyTitle')}</h3>
@@ -236,7 +236,7 @@ export function EditHtmlListPage(): ReactElement {
                     onClick={() => enterDoc(document.id)}
                   >
                     <div
-                      className="relative aspect-video overflow-hidden bg-[#f5f1e8]"
+                      className="relative aspect-video overflow-hidden bg-[#f4f4f5]"
                       data-html-document-thumbnail-frame
                     >
                       {document.thumbnailPath ? (
@@ -256,7 +256,7 @@ export function EditHtmlListPage(): ReactElement {
                         </div>
                       )}
                       <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
-                      <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-md bg-[#fffaf0]/92 px-2.5 py-1 text-xs font-semibold text-[#3e4a32] shadow-[0_4px_12px_rgba(31,38,29,0.16)] backdrop-blur-sm">
+                      <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-md bg-[#ffffff]/92 px-2.5 py-1 text-xs font-semibold text-[#3e4a32] shadow-[0_4px_12px_rgba(31,38,29,0.16)] backdrop-blur-sm">
                         <Pencil className="h-3 w-3" />
                         {t('htmlEditor.edit')}
                       </span>
@@ -266,7 +266,7 @@ export function EditHtmlListPage(): ReactElement {
                         {document.title || t('htmlEditor.untitled')}
                       </div>
                       <div className="mt-1.5 flex min-w-0 items-center gap-2 text-xs text-[#847866]">
-                        <span className="shrink-0 rounded border border-[#d8ccb5]/70 bg-[#fffaf0] px-1.5 py-0.5 text-[10px] font-semibold text-[#6c795e]">
+                        <span className="shrink-0 rounded border border-[#d8ccb5]/70 bg-[#ffffff] px-1.5 py-0.5 text-[10px] font-semibold text-[#6c795e]">
                           HTML
                         </span>
                         <span className="truncate" title={sourcePath}>

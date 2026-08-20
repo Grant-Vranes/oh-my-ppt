@@ -113,7 +113,7 @@ function LayoutPreview({ preview }: { preview: LayoutMasterTemplate['preview'] }
         <>
           <span className={`absolute left-[11%] top-[35%] h-[45%] w-[34%] rounded-sm ${muted}`} />
           <span className={`absolute right-[11%] top-[35%] h-[45%] w-[34%] rounded-sm ${accent}`} />
-          <span className="absolute left-[47%] top-[53%] h-[12%] w-[6%] rounded-full bg-[#fffaf0] text-center text-[7px] leading-[24px] text-[#42533a]">
+          <span className="absolute left-[47%] top-[53%] h-[12%] w-[6%] rounded-full bg-[#ffffff] text-center text-[7px] leading-[24px] text-[#42533a]">
             VS
           </span>
         </>
@@ -302,7 +302,7 @@ export function MasterLayoutLibraryDialog(): React.JSX.Element | null {
                     'flex h-8 w-full items-center rounded-md px-3 text-left text-xs transition-colors',
                     selectedIntent === intent
                       ? 'bg-[#d9e4c9] font-semibold text-[#33422a]'
-                      : 'text-[#667257] hover:bg-[#ebe4d6] hover:text-[#3f5035]'
+                      : 'text-[#667257] hover:bg-[#f4f4f5] hover:text-[#3f5035]'
                   )}
                   onClick={() => setSelectedIntent(intent)}
                   disabled={busy}
@@ -336,7 +336,7 @@ export function MasterLayoutLibraryDialog(): React.JSX.Element | null {
                         key={template.id}
                         type="button"
                         className={cn(
-                          'group overflow-hidden rounded-md border bg-[#fffdf8] text-left shadow-[0_1px_2px_rgba(78,62,43,0.06)] transition-all',
+                          'group overflow-hidden rounded-md border bg-[#ffffff] text-left shadow-[0_1px_2px_rgba(78,62,43,0.06)] transition-all',
                           'w-full',
                           selected
                             ? 'border-[#71885b] ring-2 ring-[#a9bd91]/60'
@@ -378,7 +378,7 @@ export function MasterLayoutLibraryDialog(): React.JSX.Element | null {
           </ScrollArea>
         </div>
 
-        <DialogFooter className="border-t border-[#e3dacb] bg-[#fffaf0] px-6 py-4">
+        <DialogFooter className="border-t border-[#e3dacb] bg-[#ffffff] px-6 py-4">
           <Button type="button" variant="ghost" size="sm" disabled={saving} onClick={close}>
             {t('common.cancel')}
           </Button>

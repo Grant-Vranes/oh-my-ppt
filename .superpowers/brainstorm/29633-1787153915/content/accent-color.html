@@ -1,0 +1,110 @@
+<h2>强调色选择</h2>
+<p class="subtitle">石墨商务风的主强调色（用于按钮、链接、选中态、焦点环）。你倾向哪种？</p>
+
+<div class="cards" style="grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px;">
+
+  <!-- Pure Black -->
+  <div class="card" data-choice="black" onclick="toggleSelect(this)" style="cursor:pointer;">
+    <div class="card-image" style="padding:0; overflow:hidden;">
+      <div style="background:#f4f4f5; padding:16px; font-family:system-ui,sans-serif; height:140px;">
+        <div style="background:#ffffff; border:1px solid #e4e4e7; border-radius:3px; padding:12px; height:100%;">
+          <div style="color:#18181b; font-size:10px; font-weight:600; margin-bottom:8px;">Pure Black</div>
+          <div style="display:flex; gap:6px; margin-bottom:6px;">
+            <div style="background:#18181b; color:white; font-size:7px; padding:3px 8px; border-radius:2px; font-weight:600;">Primary</div>
+            <div style="background:#fafafa; border:1px solid #e4e4e7; color:#18181b; font-size:7px; padding:3px 8px; border-radius:2px;">Secondary</div>
+          </div>
+          <div style="background:#fafafa; border:1px solid #e4e4e7; border-left:3px solid #18181b; border-radius:2px; padding:6px; margin-bottom:4px;">
+            <div style="color:#71717a; font-size:7px;">Selected item</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:4px;">
+            <div style="width:8px; height:8px; background:#18181b; border-radius:1px;"></div>
+            <div style="color:#18181b; font-size:7px; font-weight:600;">Checkbox</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>纯黑 #18181b</h3>
+      <p>极致克制，零彩色干扰。Notion / Vercel 风格。</p>
+    </div>
+  </div>
+
+  <!-- Blue -->
+  <div class="card" data-choice="blue" onclick="toggleSelect(this)" style="cursor:pointer;">
+    <div class="card-image" style="padding:0; overflow:hidden;">
+      <div style="background:#f4f4f5; padding:16px; font-family:system-ui,sans-serif; height:140px;">
+        <div style="background:#ffffff; border:1px solid #e4e4e7; border-radius:3px; padding:12px; height:100%;">
+          <div style="color:#18181b; font-size:10px; font-weight:600; margin-bottom:8px;">Blue</div>
+          <div style="display:flex; gap:6px; margin-bottom:6px;">
+            <div style="background:#2563eb; color:white; font-size:7px; padding:3px 8px; border-radius:2px; font-weight:600;">Primary</div>
+            <div style="background:#fafafa; border:1px solid #e4e4e7; color:#18181b; font-size:7px; padding:3px 8px; border-radius:2px;">Secondary</div>
+          </div>
+          <div style="background:#fafafa; border:1px solid #e4e4e7; border-left:3px solid #2563eb; border-radius:2px; padding:6px; margin-bottom:4px;">
+            <div style="color:#71717a; font-size:7px;">Selected item</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:4px;">
+            <div style="width:8px; height:8px; background:#2563eb; border-radius:1px;"></div>
+            <div style="color:#18181b; font-size:7px; font-weight:600;">Checkbox</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>蓝色 #2563eb</h3>
+      <p>商务经典蓝，专业可信。Stripe / Linear 风格。</p>
+    </div>
+  </div>
+
+  <!-- Slate Blue -->
+  <div class="card" data-choice="slate" onclick="toggleSelect(this)" style="cursor:pointer;">
+    <div class="card-image" style="padding:0; overflow:hidden;">
+      <div style="background:#f4f4f5; padding:16px; font-family:system-ui,sans-serif; height:140px;">
+        <div style="background:#ffffff; border:1px solid #e4e4e7; border-radius:3px; padding:12px; height:100%;">
+          <div style="color:#18181b; font-size:10px; font-weight:600; margin-bottom:8px;">Slate Blue</div>
+          <div style="display:flex; gap:6px; margin-bottom:6px;">
+            <div style="background:#475569; color:white; font-size:7px; padding:3px 8px; border-radius:2px; font-weight:600;">Primary</div>
+            <div style="background:#fafafa; border:1px solid #e4e4e7; color:#18181b; font-size:7px; padding:3px 8px; border-radius:2px;">Secondary</div>
+          </div>
+          <div style="background:#fafafa; border:1px solid #e4e4e7; border-left:3px solid #475569; border-radius:2px; padding:6px; margin-bottom:4px;">
+            <div style="color:#71717a; font-size:7px;">Selected item</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:4px;">
+            <div style="width:8px; height:8px; background:#475569; border-radius:1px;"></div>
+            <div style="color:#18181b; font-size:7px; font-weight:600;">Checkbox</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>板岩蓝 #475569</h3>
+      <p>低调灰蓝，沉稳内敛。GitHub / Tailwind 风格。</p>
+    </div>
+  </div>
+
+  <!-- Industrial Orange -->
+  <div class="card" data-choice="orange" onclick="toggleSelect(this)" style="cursor:pointer;">
+    <div class="card-image" style="padding:0; overflow:hidden;">
+      <div style="background:#f4f4f5; padding:16px; font-family:system-ui,sans-serif; height:140px;">
+        <div style="background:#ffffff; border:1px solid #e4e4e7; border-radius:3px; padding:12px; height:100%;">
+          <div style="color:#18181b; font-size:10px; font-weight:600; margin-bottom:8px;">Industrial Orange</div>
+          <div style="display:flex; gap:6px; margin-bottom:6px;">
+            <div style="background:#ea580c; color:white; font-size:7px; padding:3px 8px; border-radius:2px; font-weight:600;">Primary</div>
+            <div style="background:#fafafa; border:1px solid #e4e4e7; color:#18181b; font-size:7px; padding:3px 8px; border-radius:2px;">Secondary</div>
+          </div>
+          <div style="background:#fafafa; border:1px solid #e4e4e7; border-left:3px solid #ea580c; border-radius:2px; padding:6px; margin-bottom:4px;">
+            <div style="color:#71717a; font-size:7px;">Selected item</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:4px;">
+            <div style="width:8px; height:8px; background:#ea580c; border-radius:1px;"></div>
+            <div style="color:#18181b; font-size:7px; font-weight:600;">Checkbox</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>工业橙 #ea580c</h3>
+      <p>黑灰底 + 安全橙点缀，硬朗工业感。Hacker News 风格。</p>
+    </div>
+  </div>
+
+</div>

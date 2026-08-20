@@ -143,7 +143,7 @@ export function EditHtmlPage(): ReactElement {
   // 加载中（openDocument 进行时）
   if (!docId && loadError) {
     return (
-      <div className="flex h-screen w-screen flex-col items-center justify-center gap-3 bg-[#f5f1e8] text-sm text-[#8a8676]">
+      <div className="flex h-screen w-screen flex-col items-center justify-center gap-3 bg-[#f4f4f5] text-sm text-[#8a8676]">
         <p className="max-w-md text-center text-[#8e5a53]">{loadError}</p>
         <button
           type="button"
@@ -160,7 +160,7 @@ export function EditHtmlPage(): ReactElement {
 
   if (!docId) {
     return (
-      <div className="flex h-screen w-screen flex-col items-center justify-center gap-3 bg-[#f5f1e8] text-sm text-[#8a8676]">
+      <div className="flex h-screen w-screen flex-col items-center justify-center gap-3 bg-[#f4f4f5] text-sm text-[#8a8676]">
         <Loader2 className="h-5 w-5 animate-spin text-[#657050]" aria-hidden="true" />
         <span>{t('common.loading')}</span>
       </div>
@@ -181,7 +181,7 @@ export function EditHtmlPage(): ReactElement {
           <main className="relative min-w-0 flex-1">
             <div
               className={`absolute inset-0 overflow-hidden ${
-                aiModeEnabled ? 'rounded-xl bg-[#e8e1d4] p-3' : 'bg-[#f5f1e8]'
+                aiModeEnabled ? 'rounded-xl bg-[#e8e1d4] p-3' : 'bg-[#f4f4f5]'
               }`}
             >
               <HtmlEditorCanvas
@@ -223,7 +223,7 @@ export function EditHtmlPage(): ReactElement {
           {aiModeEnabled ? (
             <HtmlEditorAiPanel />
           ) : selection ? (
-            <aside className="flex w-72 shrink-0 flex-col border-l border-[#e2dccf] bg-[#f5f1e8]">
+            <aside className="flex w-72 shrink-0 flex-col border-l border-[#e2dccf] bg-[#f4f4f5]">
               <div className="flex shrink-0 items-center gap-1 border-b border-[#e2dccf] px-2 py-1.5">
                 <button
                   type="button"

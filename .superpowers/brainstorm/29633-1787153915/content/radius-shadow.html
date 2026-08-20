@@ -1,0 +1,94 @@
+<h2>圆角与阴影风格</h2>
+<p class="subtitle">工业商务风的锐利程度和阴影深度。你倾向哪种组合？</p>
+
+<div class="cards" style="grid-template-columns: 1fr 1fr; gap: 20px;">
+
+  <!-- Sharp + Flat -->
+  <div class="card" data-choice="sharp-flat" onclick="toggleSelect(this)" style="cursor:pointer;">
+    <div class="card-image" style="padding:0; overflow:hidden;">
+      <div style="background:#f4f4f5; padding:16px; font-family:system-ui,sans-serif; height:170px;">
+        <div style="background:#ffffff; border:1px solid #d4d4d8; border-radius:0px; padding:12px; height:100%;">
+          <div style="color:#18181b; font-size:11px; font-weight:600; margin-bottom:8px;">Sharp + Flat</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px;">
+            <div style="background:#fafafa; border:1px solid #d4d4d8; border-radius:0px; padding:8px;">
+              <div style="color:#71717a; font-size:7px; text-transform:uppercase;">Sessions</div>
+              <div style="color:#18181b; font-size:16px; font-weight:700;">24</div>
+            </div>
+            <div style="background:#fafafa; border:1px solid #d4d4d8; border-radius:0px; padding:8px;">
+              <div style="color:#71717a; font-size:7px; text-transform:uppercase;">Templates</div>
+              <div style="color:#18181b; font-size:16px; font-weight:700;">12</div>
+            </div>
+          </div>
+          <div style="display:inline-block; background:#ea580c; color:white; font-size:8px; padding:4px 10px; border-radius:0px; font-weight:600;">+ NEW</div>
+          <div style="margin-top:6px; background:#fafafa; border:1px solid #d4d4d8; border-radius:0px; padding:4px 8px;">
+            <div style="color:#71717a; font-size:8px;">Input field</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>锐利 + 无阴影</h3>
+      <p>0px 圆角，纯边框无投影。极致硬朗，像工程图纸。类似 Bash/终端工具。</p>
+    </div>
+  </div>
+
+  <!-- Subtle Rounded + Soft Shadow -->
+  <div class="card" data-choice="subtle-soft" onclick="toggleSelect(this)" style="cursor:pointer;">
+    <div class="card-image" style="padding:0; overflow:hidden;">
+      <div style="background:#f4f4f5; padding:16px; font-family:system-ui,sans-serif; height:170px;">
+        <div style="background:#ffffff; border:1px solid #e4e4e7; border-radius:4px; padding:12px; height:100%; box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+          <div style="color:#18181b; font-size:11px; font-weight:600; margin-bottom:8px;">Subtle + Soft</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px;">
+            <div style="background:#fafafa; border:1px solid #e4e4e7; border-radius:3px; padding:8px;">
+              <div style="color:#71717a; font-size:7px; text-transform:uppercase;">Sessions</div>
+              <div style="color:#18181b; font-size:16px; font-weight:700;">24</div>
+            </div>
+            <div style="background:#fafafa; border:1px solid #e4e4e7; border-radius:3px; padding:8px;">
+              <div style="color:#71717a; font-size:7px; text-transform:uppercase;">Templates</div>
+              <div style="color:#18181b; font-size:16px; font-weight:700;">12</div>
+            </div>
+          </div>
+          <div style="display:inline-block; background:#ea580c; color:white; font-size:8px; padding:4px 10px; border-radius:3px; font-weight:600;">+ NEW</div>
+          <div style="margin-top:6px; background:#fafafa; border:1px solid #e4e4e7; border-radius:3px; padding:4px 8px;">
+            <div style="color:#71717a; font-size:8px;">Input field</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>微圆角 + 轻阴影</h3>
+      <p>3-4px 圆角，1px 轻投影。商务克制，层次清晰但不浮夸。类似 Linear/Vercel。</p>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:20px; padding:16px; background:rgba(255,255,255,0.05); border-radius:8px; border:1px solid rgba(255,255,255,0.1);">
+  <h3 style="margin-top:0; font-size:14px;">对比当前风格</h3>
+  <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px; font-size:12px;">
+    <div>
+      <strong style="color:#8fbc8f;">当前</strong>
+      <ul style="margin:4px 0; padding-left:14px; color:#aaa; font-size:11px;">
+        <li>圆角 10-12px</li>
+        <li>多层柔和阴影</li>
+        <li>渐变背景</li>
+      </ul>
+    </div>
+    <div>
+      <strong style="color:#ea580c;">锐利+无阴影</strong>
+      <ul style="margin:4px 0; padding-left:14px; color:#aaa; font-size:11px;">
+        <li>圆角 0px</li>
+        <li>零阴影，纯边框</li>
+        <li>极致硬朗</li>
+      </ul>
+    </div>
+    <div>
+      <strong style="color:#ea580c;">微圆角+轻阴影</strong>
+      <ul style="margin:4px 0; padding-left:14px; color:#aaa; font-size:11px;">
+        <li>圆角 3-4px</li>
+        <li>1px 轻投影</li>
+        <li>商务克制</li>
+      </ul>
+    </div>
+  </div>
+</div>

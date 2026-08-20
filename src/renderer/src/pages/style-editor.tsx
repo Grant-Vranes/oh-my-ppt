@@ -422,7 +422,7 @@ export function StyleEditorPage(): React.JSX.Element {
                   <PopoverTrigger asChild>
                     <CircleHelp className="ml-1 inline h-3.5 w-3.5 cursor-pointer text-[#5d6f4d]/60 hover:text-[#5d6f4d]" />
                   </PopoverTrigger>
-                  <PopoverContent align="start" side="bottom" className="w-80 border-[#d8ccb5]/80 bg-[#fffdf8] p-3">
+                  <PopoverContent align="start" side="bottom" className="w-80 border-[#d8ccb5]/80 bg-[#ffffff] p-3">
                     <p className="mb-1.5 text-[11px] font-semibold text-[#3e4a32]">
                       {t('styleEditor.promptReferenceTitle')}
                       <span className="ml-1 font-normal text-[#5b6b4d]/70">{t('styleEditor.promptReferenceSubtitle')}</span>

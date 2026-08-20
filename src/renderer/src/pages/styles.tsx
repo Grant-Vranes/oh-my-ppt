@@ -334,7 +334,7 @@ export function StylesPage(): React.JSX.Element {
         <p className="mt-2 text-[12px] text-muted-foreground">{t('styles.description')}</p>
       </div>
 
-      <div className="mb-5 rounded-lg border border-[#d8ccb5]/75 bg-[#fff9ef]/76 p-3">
+      <div className="mb-5 rounded-lg border border-[#d8ccb5]/75 bg-[#ffffff]/76 p-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-h-9 flex-1 items-center gap-2 rounded-md border border-[#d8ccb5]/80 bg-white/80 px-2.5">
             <Search className="h-4 w-4 shrink-0 text-[#7c6a4c]/60" />
@@ -391,7 +391,7 @@ export function StylesPage(): React.JSX.Element {
               data-style-card-id={style.id}
               className="group overflow-hidden rounded-2xl border border-[#d8cfbc]/75 bg-white/70 text-left shadow-[0_4px_16px_rgba(93,107,77,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(93,107,77,0.15)]"
             >
-              <div className="relative aspect-video overflow-hidden bg-[#f5f1e8]">
+              <div className="relative aspect-video overflow-hidden bg-[#f4f4f5]">
                 {style.thumbnailPath ? (
                   <img
                     src={stylePreviewUrl(style.thumbnailPath)}
@@ -571,7 +571,7 @@ export function StylesPage(): React.JSX.Element {
                     {parseStyleCases(style.styleCase).map((styleCase) => (
                       <span
                         key={styleCase}
-                        className="rounded-md border border-[#d6c08d]/80 bg-[#fff7e8] px-1.5 py-0.5 text-[11px] font-medium leading-4 text-[#8a7048]"
+                        className="rounded-md border border-[#d6c08d]/80 bg-[#ffffff] px-1.5 py-0.5 text-[11px] font-medium leading-4 text-[#8a7048]"
                       >
                         {styleCase}
                       </span>

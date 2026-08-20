@@ -30,7 +30,7 @@ export const PageThumbnail = memo(function PageThumbnail({
   const slideSize = trySessionSlideSize(currentSession)
   const isGeneratingPlaceholder = page.status === 'generating' || page.status === 'pending'
   if (!slideSize) {
-    return <div className="h-[154px] w-full rounded-[1.25rem] bg-[#e8e0d0]/34" />
+    return <div className="h-[154px] w-full rounded-[1.25rem] bg-[#f4f4f5]/34" />
   }
   const thumbnailFitStyle =
     slideSize.width >= slideSize.height
@@ -59,7 +59,7 @@ export const PageThumbnail = memo(function PageThumbnail({
         onSelect ? 'cursor-pointer' : 'cursor-default opacity-60',
         isSelected
           ? 'bg-[#d4e4c1]/86 shadow-[0_14px_26px_rgba(93,107,77,0.18)]'
-          : 'bg-[#e8e0d0]/34 hover:bg-[#e8e0d0]/68 hover:shadow-[0_8px_18px_rgba(93,107,77,0.09)]'
+          : 'bg-[#f4f4f5]/34 hover:bg-[#f4f4f5]/68 hover:shadow-[0_8px_18px_rgba(93,107,77,0.09)]'
       )}
     >
       <div
@@ -72,7 +72,7 @@ export const PageThumbnail = memo(function PageThumbnail({
       />
       <div
         className={cn(
-          'relative flex h-[138px] w-full items-center justify-center overflow-hidden rounded-[1rem] bg-[#f5f1e8]/88 shadow-[0_5px_14px_rgba(93,107,77,0.08)]',
+          'relative flex h-[138px] w-full items-center justify-center overflow-hidden rounded-[1rem] bg-[#f4f4f5]/88 shadow-[0_5px_14px_rgba(93,107,77,0.08)]',
           isSelected
             ? 'shadow-[0_6px_16px_rgba(93,107,77,0.13)]'
             : 'group-hover:shadow-[0_6px_15px_rgba(93,107,77,0.1)]'

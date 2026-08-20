@@ -491,7 +491,7 @@ export function TemplateUseDialog({
                         size="sm"
                         onClick={() => void handleChooseDocumentClick()}
                         disabled={parsingDocument || creating}
-                        className="h-8 shrink-0 rounded-lg border border-[#d8ccb5]/80 bg-[#fffdf8]/76 px-2.5 text-xs font-medium text-[#405333] shadow-none hover:bg-[#f3f7ed] hover:text-[#2f3b28]"
+                        className="h-8 shrink-0 rounded-lg border border-[#d8ccb5]/80 bg-[#ffffff]/76 px-2.5 text-xs font-medium text-[#405333] shadow-none hover:bg-[#f3f7ed] hover:text-[#2f3b28]"
                       >
                         {parsingDocument ? (
                           <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />

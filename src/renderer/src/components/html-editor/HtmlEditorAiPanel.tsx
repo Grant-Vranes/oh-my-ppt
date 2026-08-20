@@ -37,7 +37,7 @@ function HtmlEditorAiMessageBubble({
         className={`max-w-[280px] whitespace-pre-wrap break-words rounded-2xl border px-3 py-2 text-[13px] leading-5 shadow-sm ${
           isUser
             ? 'border-[#c7d9b4]/80 bg-[#e6f1dc]/85 text-[#34402c]'
-            : 'border-[#ded2bd]/80 bg-[#fffaf1]/90 text-[#3f372b]'
+            : 'border-[#ded2bd]/80 bg-[#ffffff]/90 text-[#3f372b]'
         }`}
       >
         {isUser && selectedElement?.selector ? (
@@ -231,7 +231,7 @@ export function HtmlEditorAiPanel(): ReactElement {
   }
 
   return (
-    <aside className="flex h-full w-[360px] shrink-0 flex-col border-l border-[#e2dccf] bg-[#f5f1e8]">
+    <aside className="flex h-full w-[360px] shrink-0 flex-col border-l border-[#e2dccf] bg-[#f4f4f5]">
       <div className="flex shrink-0 items-center gap-2 border-b border-[#e2dccf] px-3 py-2.5">
         <Sparkles className="h-4 w-4 text-[#5d6b4d]" />
         <div className="min-w-0 flex-1">
@@ -283,7 +283,7 @@ export function HtmlEditorAiPanel(): ReactElement {
         </div>
       </div>
 
-      <div className="shrink-0 border-t border-[#e2dccf] bg-[#fffaf1]/45 p-3">
+      <div className="shrink-0 border-t border-[#e2dccf] bg-[#ffffff]/45 p-3">
         {selectedSelector ? (
           <div className="mb-2 rounded-xl border border-[#c7d9b4]/70 bg-[#e6f1dc]/70 px-2.5 py-2">
             <div className="mb-1 flex items-center justify-between gap-2">
@@ -309,7 +309,7 @@ export function HtmlEditorAiPanel(): ReactElement {
             </div>
           </div>
         ) : (
-          <div className="mb-2 rounded-xl border border-dashed border-[#cfc4b1] bg-[#fffaf1]/70 px-3 py-2 text-xs leading-5 text-[#766c5b]">
+          <div className="mb-2 rounded-xl border border-dashed border-[#cfc4b1] bg-[#ffffff]/70 px-3 py-2 text-xs leading-5 text-[#766c5b]">
             {t('htmlEditor.aiSelectHint')}
           </div>
         )}
@@ -336,7 +336,7 @@ export function HtmlEditorAiPanel(): ReactElement {
           placeholder={t('htmlEditor.aiPlaceholder')}
           disabled={isSending}
           rows={4}
-          className="min-h-[96px] resize-none rounded-xl border-[#ded2bd]/75 bg-[#fffdf8]/90 text-[13px] leading-5 focus-visible:border-[#9bb98a] focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="min-h-[96px] resize-none rounded-xl border-[#ded2bd]/75 bg-[#ffffff]/90 text-[13px] leading-5 focus-visible:border-[#9bb98a] focus-visible:ring-0 focus-visible:ring-offset-0"
         />
         <div className="mt-2 flex items-center justify-between gap-2">
           <span className="min-w-0 truncate text-[10px] text-[#827662]">

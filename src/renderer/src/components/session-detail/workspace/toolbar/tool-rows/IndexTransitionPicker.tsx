@@ -365,7 +365,7 @@ export function IndexTransitionPicker({
         <button
           type="button"
           disabled={disabledState}
-          className="inline-flex h-7 max-w-[190px] shrink-0 items-center gap-1.5 rounded-full border border-[#d8ccb5]/70 bg-[#fffdf8]/88 px-2.5 text-[10px] font-bold leading-none text-[#314028] shadow-[inset_0_1px_2px_rgba(74,59,42,0.04)] transition-colors hover:bg-[#f3f7ed] disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-7 max-w-[190px] shrink-0 items-center gap-1.5 rounded-full border border-[#d8ccb5]/70 bg-[#ffffff]/88 px-2.5 text-[10px] font-bold leading-none text-[#314028] shadow-[inset_0_1px_2px_rgba(74,59,42,0.04)] transition-colors hover:bg-[#f3f7ed] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <TriggerIcon
             className={`h-3 w-3 shrink-0 ${isLoading || isSaving ? 'animate-spin' : ''}`}
@@ -376,7 +376,7 @@ export function IndexTransitionPicker({
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="w-[536px] max-w-[calc(100vw-2rem)] border-[#d8ccb5]/85 bg-[#fff9ef] p-2"
+        className="w-[536px] max-w-[calc(100vw-2rem)] border-[#d8ccb5]/85 bg-[#ffffff] p-2"
       >
         <style>{transitionPreviewStyles}</style>
         <div className="ppt-index-transition-grid">

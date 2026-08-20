@@ -313,7 +313,7 @@ export function MergeSessionPagesDialog({
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder={t('sessionDetail.mergeSearchSessions')}
-                  className="h-9 bg-[#fffaf1] pl-9"
+                  className="h-9 bg-[#ffffff] pl-9"
                   disabled={submitting}
                 />
               </div>
@@ -339,7 +339,7 @@ export function MergeSessionPagesDialog({
                           className={`w-full rounded-xl border px-3 py-2.5 text-left transition-colors ${
                             selected
                               ? 'border-[#8eaa70] bg-[#e8f1dd] shadow-sm'
-                              : 'border-[#ddd4c4] bg-[#fffaf1]/80 hover:bg-white'
+                              : 'border-[#ddd4c4] bg-[#ffffff]/80 hover:bg-white'
                           } disabled:cursor-not-allowed disabled:opacity-55`}
                         >
                           <div className="truncate text-sm font-semibold text-[#3e4a32]">
@@ -368,7 +368,7 @@ export function MergeSessionPagesDialog({
               </ScrollArea>
             </div>
 
-            <div className="flex min-h-0 flex-col bg-[#fffaf1]/75 p-4">
+            <div className="flex min-h-0 flex-col bg-[#ffffff]/75 p-4">
               <div className="mb-3 flex min-h-9 items-center justify-between gap-3">
                 <div className="min-w-0">
                   <div className="truncate text-sm font-semibold text-[#3e4a32]">
@@ -386,7 +386,7 @@ export function MergeSessionPagesDialog({
                   ) : null}
                 </div>
                 {selectedSourceSession && sourcePages.length > 0 ? (
-                  <label className="flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-[#5d6b4d] hover:bg-[#e8e0d0]/70">
+                  <label className="flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-[#5d6b4d] hover:bg-[#f4f4f5]/70">
                     <Checkbox
                       checked={allSelectablePagesSelected}
                       disabled={submitting || selectablePageIds.length === 0}
@@ -457,11 +457,11 @@ export function MergeSessionPagesDialog({
                               page={page}
                               renderPreview={previewPageIds.has(page.id)}
                             />
-                            <span className="absolute left-2 top-2 z-10 rounded-md bg-[#fffaf1]/92 px-1.5 py-0.5 text-[10px] font-semibold text-[#4f613f] shadow-sm">
+                            <span className="absolute left-2 top-2 z-10 rounded-md bg-[#ffffff]/92 px-1.5 py-0.5 text-[10px] font-semibold text-[#4f613f] shadow-sm">
                               P{page.pageNumber}
                             </span>
                             <span
-                              className="absolute right-2 top-2 z-10 rounded bg-[#fffaf1]/92 p-1 shadow-sm"
+                              className="absolute right-2 top-2 z-10 rounded bg-[#ffffff]/92 p-1 shadow-sm"
                               onClick={(event) => event.stopPropagation()}
                               onKeyDown={(event) => event.stopPropagation()}
                             >

@@ -85,10 +85,10 @@ function parsePageCards(thinkingMd: string): PageCard[] {
 }
 
 const STAGE_COLORS: Record<ThinkingStage, { bg: string; text: string; border: string }> = {
-  collect: { bg: 'bg-[#e8e0d0]', text: 'text-[#5d6b4d]', border: 'border-[#c8b89e]' },
-  outline: { bg: 'bg-[#f5f1e8]', text: 'text-[#5d6b4d]', border: 'border-[#e0d8c8]' },
-  draft: { bg: 'bg-[#e8e0d0]', text: 'text-[#5d6b4d]', border: 'border-[#c8b89e]' },
-  refine: { bg: 'bg-[#f5f1e8]', text: 'text-[#5d6b4d]', border: 'border-[#e0d8c8]' },
+  collect: { bg: 'bg-[#f4f4f5]', text: 'text-[#5d6b4d]', border: 'border-[#c8b89e]' },
+  outline: { bg: 'bg-[#f4f4f5]', text: 'text-[#5d6b4d]', border: 'border-[#e0d8c8]' },
+  draft: { bg: 'bg-[#f4f4f5]', text: 'text-[#5d6b4d]', border: 'border-[#c8b89e]' },
+  refine: { bg: 'bg-[#f4f4f5]', text: 'text-[#5d6b4d]', border: 'border-[#e0d8c8]' },
   ready: { bg: 'bg-[#8fbc8f]', text: 'text-[#3e4a32]', border: 'border-[#8fbc8f]' }
 }
 
@@ -194,14 +194,14 @@ export function ThinkingPageCards({
             {t(STAGE_I18N_KEYS[stage] as Parameters<typeof t>[0])}
           </span>
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-1 rounded-full border border-[#c8d6ba] bg-[#e8e0d0]/70 p-1">
+        <div className="mt-4 grid grid-cols-2 gap-1 rounded-full border border-[#c8d6ba] bg-[#f4f4f5]/70 p-1">
           <button
             type="button"
             onClick={() => setViewMode('outline')}
             className={`flex h-8 items-center justify-center gap-1.5 rounded-full text-[11px] font-semibold transition-colors ${
               viewMode === 'outline'
-                ? 'bg-[#fffdf8] text-[#3e4a32] shadow-sm'
-                : 'text-[#5d6b4d] hover:bg-[#fffdf8]/60'
+                ? 'bg-[#ffffff] text-[#3e4a32] shadow-sm'
+                : 'text-[#5d6b4d] hover:bg-[#ffffff]/60'
             }`}
           >
             <LayoutList className="h-3.5 w-3.5" />
@@ -212,8 +212,8 @@ export function ThinkingPageCards({
             onClick={() => setViewMode('document')}
             className={`flex h-8 items-center justify-center gap-1.5 rounded-full text-[11px] font-semibold transition-colors ${
               viewMode === 'document'
-                ? 'bg-[#fffdf8] text-[#3e4a32] shadow-sm'
-                : 'text-[#5d6b4d] hover:bg-[#fffdf8]/60'
+                ? 'bg-[#ffffff] text-[#3e4a32] shadow-sm'
+                : 'text-[#5d6b4d] hover:bg-[#ffffff]/60'
             }`}
           >
             <FileText className="h-3.5 w-3.5" />
@@ -225,8 +225,8 @@ export function ThinkingPageCards({
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
         {viewMode === 'document' ? (
           hasDocument ? (
-            <div className="rounded-[2rem] border border-[#e0d8c8] bg-[#fffdf8] px-4 py-4 shadow-sm">
-              <div className="mb-3 flex items-center gap-2 border-b border-[#e8e0d0] pb-2 text-[11px] font-semibold text-[#5d6b4d]">
+            <div className="rounded-[2rem] border border-[#e0d8c8] bg-[#ffffff] px-4 py-4 shadow-sm">
+              <div className="mb-3 flex items-center gap-2 border-b border-[#f4f4f5] pb-2 text-[11px] font-semibold text-[#5d6b4d]">
                 <FileText className="h-3.5 w-3.5" />
                 <span>thinking.md</span>
               </div>
@@ -286,7 +286,7 @@ export function ThinkingPageCards({
               </div>
             </div>
           ) : (
-            <div className="flex min-h-[260px] flex-col items-center justify-center rounded-[2rem] border border-dashed border-[#c8d6ba] bg-[#f5f1e8]/72 px-6 text-center">
+            <div className="flex min-h-[260px] flex-col items-center justify-center rounded-[2rem] border border-dashed border-[#c8d6ba] bg-[#f4f4f5]/72 px-6 text-center">
               <div className="flex h-12 w-12 items-center justify-center rounded-[5%_95%_10%_90%/85%_15%_85%_15%] bg-[#8fbc8f] text-white">
                 <FileText className="h-5 w-5" />
               </div>
@@ -296,7 +296,7 @@ export function ThinkingPageCards({
             </div>
           )
         ) : cards.length === 0 ? (
-          <div className="flex min-h-[260px] flex-col items-center justify-center rounded-[2rem] border border-dashed border-[#c8d6ba] bg-[#f5f1e8]/72 px-6 text-center">
+          <div className="flex min-h-[260px] flex-col items-center justify-center rounded-[2rem] border border-dashed border-[#c8d6ba] bg-[#f4f4f5]/72 px-6 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-[5%_95%_10%_90%/85%_15%_85%_15%] bg-[#8fbc8f] text-white">
               <FileText className="h-5 w-5" />
             </div>
@@ -309,7 +309,7 @@ export function ThinkingPageCards({
             {cards.map((card) => (
               <div
                 key={card.pageNumber}
-                className="group rounded-[1.5rem] border border-[#c8d6ba] bg-[#f5f1e8] px-3 py-3 shadow-sm transition-colors hover:border-[#8fbc8f]"
+                className="group rounded-[1.5rem] border border-[#c8d6ba] bg-[#f4f4f5] px-3 py-3 shadow-sm transition-colors hover:border-[#8fbc8f]"
               >
                 <div className="flex items-start gap-3">
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#8fbc8f] text-[11px] font-bold text-[#3e4a32]">
@@ -319,7 +319,7 @@ export function ThinkingPageCards({
                     {editingPageNumber === card.pageNumber && draft ? (
                       <div className="space-y-2.5">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="rounded-full border border-[#c8d6ba] bg-[#fffdf8] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.04em] text-[#5d6b4d]">
+                          <span className="rounded-full border border-[#c8d6ba] bg-[#ffffff] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.04em] text-[#5d6b4d]">
                             {card.role}
                           </span>
                           <div className="flex items-center gap-1">
@@ -327,7 +327,7 @@ export function ThinkingPageCards({
                               type="button"
                               onClick={cancelEditing}
                               disabled={savingPageNumber !== null}
-                              className="inline-flex h-7 w-7 items-center justify-center rounded-full text-[#7a806c] transition-colors hover:bg-[#e8e0d0] hover:text-[#3e4a32] disabled:opacity-40"
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-full text-[#7a806c] transition-colors hover:bg-[#f4f4f5] hover:text-[#3e4a32] disabled:opacity-40"
                               title={t('common.cancel')}
                             >
                               <X className="h-3.5 w-3.5" />
@@ -358,7 +358,7 @@ export function ThinkingPageCards({
                                 current ? { ...current, title: event.target.value } : current
                               )
                             }
-                            className="h-8 rounded-lg border-[#c8d6ba] bg-[#fffdf8] px-2.5 text-[12px]"
+                            className="h-8 rounded-lg border-[#c8d6ba] bg-[#ffffff] px-2.5 text-[12px]"
                           />
                         </label>
                         <label className="block">
@@ -373,7 +373,7 @@ export function ThinkingPageCards({
                               )
                             }
                             rows={2}
-                            className="min-h-14 resize-y rounded-lg border-[#c8d6ba] bg-[#fffdf8] px-2.5 py-2 text-[12px]"
+                            className="min-h-14 resize-y rounded-lg border-[#c8d6ba] bg-[#ffffff] px-2.5 py-2 text-[12px]"
                           />
                         </label>
                         <label className="block">
@@ -388,7 +388,7 @@ export function ThinkingPageCards({
                               )
                             }
                             rows={3}
-                            className="min-h-20 resize-y rounded-lg border-[#c8d6ba] bg-[#fffdf8] px-2.5 py-2 text-[12px]"
+                            className="min-h-20 resize-y rounded-lg border-[#c8d6ba] bg-[#ffffff] px-2.5 py-2 text-[12px]"
                           />
                         </label>
                         <label className="block">
@@ -404,7 +404,7 @@ export function ThinkingPageCards({
                             }
                             rows={4}
                             placeholder={t('thinking.outlineKeyPointsHint')}
-                            className="min-h-24 resize-y rounded-lg border-[#c8d6ba] bg-[#fffdf8] px-2.5 py-2 text-[12px]"
+                            className="min-h-24 resize-y rounded-lg border-[#c8d6ba] bg-[#ffffff] px-2.5 py-2 text-[12px]"
                           />
                         </label>
                       </div>
@@ -415,14 +415,14 @@ export function ThinkingPageCards({
                             {card.title}
                           </div>
                           <div className="flex shrink-0 items-center gap-1">
-                            <span className="rounded-full border border-[#c8d6ba] bg-[#fffdf8] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.04em] text-[#5d6b4d]">
+                            <span className="rounded-full border border-[#c8d6ba] bg-[#ffffff] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.04em] text-[#5d6b4d]">
                               {card.role}
                             </span>
                             <button
                               type="button"
                               onClick={() => startEditing(card)}
                               disabled={busy || editingPageNumber !== null}
-                              className="inline-flex h-6 w-6 items-center justify-center rounded-full text-[#7a806c] opacity-70 transition-colors hover:bg-[#e8e0d0] hover:text-[#3e4a32] hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-30"
+                              className="inline-flex h-6 w-6 items-center justify-center rounded-full text-[#7a806c] opacity-70 transition-colors hover:bg-[#f4f4f5] hover:text-[#3e4a32] hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-30"
                               title={t('thinking.editOutline')}
                             >
                               <Pencil className="h-3 w-3" />

@@ -91,7 +91,7 @@ export function HtmlEditorTextInspector({
             onDraftChange({ ...draft, textAlign: value }, { commit: true, fields: ['textAlign'] })
           }}
           aria-label={t('sessionDetail.textAlign')}
-          className="inline-flex overflow-hidden rounded-md border border-[#d9cfbd]/72 bg-[#fffaf1]/90 p-0.5 shadow-[inset_0_1px_2px_rgba(77,63,46,0.06)]"
+          className="inline-flex overflow-hidden rounded-md border border-[#d9cfbd]/72 bg-[#ffffff]/90 p-0.5 shadow-[inset_0_1px_2px_rgba(77,63,46,0.06)]"
         >
           {TEXT_ALIGN_OPTIONS.map(({ value, icon: Icon }) => {
             const label = getAlignLabel(value)
@@ -135,7 +135,7 @@ export function HtmlEditorInspectorPanel({
 
   return (
     <div className="flex min-h-0 h-full w-full flex-1 flex-col overflow-hidden">
-      <div className="relative mx-2 mt-2 overflow-hidden rounded-lg border border-[#e1d6c4]/58 bg-[#fffaf1]/68 px-2.5 py-2 shadow-[0_2px_8px_rgba(77,61,43,0.05)]">
+      <div className="relative mx-2 mt-2 overflow-hidden rounded-lg border border-[#e1d6c4]/58 bg-[#ffffff]/68 px-2.5 py-2 shadow-[0_2px_8px_rgba(77,61,43,0.05)]">
         <div className="relative flex items-center justify-between">
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#7a875f]/90">

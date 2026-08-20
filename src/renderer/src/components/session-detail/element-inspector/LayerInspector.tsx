@@ -17,7 +17,7 @@ export function LayerInspector({ draft, onDraftChange }: ElementEditorProps): Re
       <div className="flex items-center gap-2">
         <button
           type="button"
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#e4e4e7]/40 bg-[#fafafa]/40 text-[13px] font-medium text-[#59664b] transition-colors hover:bg-[#d4e4c1]/60"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#e4e4e7]/40 bg-[#fafafa]/40 text-[13px] font-medium text-[#59664b] transition-colors hover:bg-[#fff7ed]/60"
           onClick={() => {
             const current = parseInt(draft.layoutZIndex || '0', 10) || 0
             onDraftChange(
@@ -45,7 +45,7 @@ export function LayerInspector({ draft, onDraftChange }: ElementEditorProps): Re
         />
         <button
           type="button"
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#e4e4e7]/40 bg-[#fafafa]/40 text-[13px] font-medium text-[#59664b] transition-colors hover:bg-[#d4e4c1]/60"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#e4e4e7]/40 bg-[#fafafa]/40 text-[13px] font-medium text-[#59664b] transition-colors hover:bg-[#fff7ed]/60"
           onClick={() => {
             const current = parseInt(draft.layoutZIndex || '0', 10) || 0
             onDraftChange(

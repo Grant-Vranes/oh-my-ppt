@@ -95,7 +95,7 @@ export function GenerationThumbnail({
       </div>
 
       <div className="flex w-full min-w-0 items-center justify-between gap-2 px-0.5 pb-0.5 pt-2">
-        <span className="shrink-0 rounded-md bg-[#5d6b4d]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[#4f613f]">
+        <span className="shrink-0 rounded-md bg-[#5d6b4d]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[#ea580c]">
           P{page.pageNumber}
         </span>
         {page.status !== 'failed' && (

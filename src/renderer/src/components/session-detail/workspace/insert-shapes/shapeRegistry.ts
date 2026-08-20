@@ -21,7 +21,7 @@ export interface ShapeRenderContext {
   strokeWidth: number
 }
 
-const DEFAULT_FILL = '#d4e4c1'
+const DEFAULT_FILL = '#fff7ed'
 const DEFAULT_STROKE = '#7a875f'
 
 function round(n: number): number {

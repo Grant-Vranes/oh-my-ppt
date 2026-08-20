@@ -524,7 +524,7 @@ export function EditorGuidesOverlay({
           aria-label={t('sessionDetail.editorSnap')}
           title={t('sessionDetail.editorSnap')}
           className={`flex h-6 w-6 items-center justify-center rounded transition-colors ${
-            editorSnapEnabled ? 'bg-[#dce8cf] text-[#4f613f]' : 'text-[#8b8376] hover:bg-[#eee7da]'
+            editorSnapEnabled ? 'bg-[#dce8cf] text-[#ea580c]' : 'text-[#8b8376] hover:bg-[#eee7da]'
           }`}
           onClick={() => setEditorSnapEnabled(!editorSnapEnabled)}
         >
@@ -536,7 +536,7 @@ export function EditorGuidesOverlay({
           aria-label={t('sessionDetail.editorGrid')}
           title={t('sessionDetail.editorGrid')}
           className={`flex h-6 w-6 items-center justify-center rounded transition-colors ${
-            editorGridVisible ? 'bg-[#dce8cf] text-[#4f613f]' : 'text-[#8b8376] hover:bg-[#eee7da]'
+            editorGridVisible ? 'bg-[#dce8cf] text-[#ea580c]' : 'text-[#8b8376] hover:bg-[#eee7da]'
           }`}
           onClick={() => setEditorGridVisible(!editorGridVisible)}
         >

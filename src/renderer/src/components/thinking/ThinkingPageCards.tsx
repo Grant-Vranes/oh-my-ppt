@@ -89,7 +89,7 @@ const STAGE_COLORS: Record<ThinkingStage, { bg: string; text: string; border: st
   outline: { bg: 'bg-[#f4f4f5]', text: 'text-[#5d6b4d]', border: 'border-[#e4e4e7]' },
   draft: { bg: 'bg-[#f4f4f5]', text: 'text-[#5d6b4d]', border: 'border-[#c8b89e]' },
   refine: { bg: 'bg-[#f4f4f5]', text: 'text-[#5d6b4d]', border: 'border-[#e4e4e7]' },
-  ready: { bg: 'bg-[#8fbc8f]', text: 'text-[#3e4a32]', border: 'border-[#8fbc8f]' }
+  ready: { bg: 'bg-[#ea580c]', text: 'text-[#3e4a32]', border: 'border-[#ea580c]' }
 }
 
 const STAGE_I18N_KEYS: Record<ThinkingStage, string> = {
@@ -176,7 +176,7 @@ export function ThinkingPageCards({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="shrink-0 border-b border-[#c8d6ba] px-5 py-4">
+      <div className="shrink-0 border-b border-[#fff7ed] px-5 py-4">
         <div className="flex items-center justify-between gap-3">
           <div>
             <h3 className="organic-serif text-[22px] font-semibold leading-none text-[#3e4a32]">
@@ -194,7 +194,7 @@ export function ThinkingPageCards({
             {t(STAGE_I18N_KEYS[stage] as Parameters<typeof t>[0])}
           </span>
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-1 rounded-full border border-[#c8d6ba] bg-[#f4f4f5]/70 p-1">
+        <div className="mt-4 grid grid-cols-2 gap-1 rounded-full border border-[#fff7ed] bg-[#f4f4f5]/70 p-1">
           <button
             type="button"
             onClick={() => setViewMode('outline')}
@@ -286,8 +286,8 @@ export function ThinkingPageCards({
               </div>
             </div>
           ) : (
-            <div className="flex min-h-[260px] flex-col items-center justify-center rounded-[2rem] border border-dashed border-[#c8d6ba] bg-[#f4f4f5]/72 px-6 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-[5%_95%_10%_90%/85%_15%_85%_15%] bg-[#8fbc8f] text-white">
+            <div className="flex min-h-[260px] flex-col items-center justify-center rounded-[2rem] border border-dashed border-[#fff7ed] bg-[#f4f4f5]/72 px-6 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-[5%_95%_10%_90%/85%_15%_85%_15%] bg-[#ea580c] text-white">
                 <FileText className="h-5 w-5" />
               </div>
               <p className="mt-3 text-xs leading-relaxed text-[#7a806c]">
@@ -296,8 +296,8 @@ export function ThinkingPageCards({
             </div>
           )
         ) : cards.length === 0 ? (
-          <div className="flex min-h-[260px] flex-col items-center justify-center rounded-[2rem] border border-dashed border-[#c8d6ba] bg-[#f4f4f5]/72 px-6 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-[5%_95%_10%_90%/85%_15%_85%_15%] bg-[#8fbc8f] text-white">
+          <div className="flex min-h-[260px] flex-col items-center justify-center rounded-[2rem] border border-dashed border-[#fff7ed] bg-[#f4f4f5]/72 px-6 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-[5%_95%_10%_90%/85%_15%_85%_15%] bg-[#ea580c] text-white">
               <FileText className="h-5 w-5" />
             </div>
             <p className="mt-3 text-xs leading-relaxed text-[#7a806c]">
@@ -309,17 +309,17 @@ export function ThinkingPageCards({
             {cards.map((card) => (
               <div
                 key={card.pageNumber}
-                className="group rounded-[1.5rem] border border-[#c8d6ba] bg-[#f4f4f5] px-3 py-3 shadow-sm transition-colors hover:border-[#8fbc8f]"
+                className="group rounded-[1.5rem] border border-[#fff7ed] bg-[#f4f4f5] px-3 py-3 shadow-sm transition-colors hover:border-[#ea580c]"
               >
                 <div className="flex items-start gap-3">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#8fbc8f] text-[11px] font-bold text-[#3e4a32]">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ea580c] text-[11px] font-bold text-[#3e4a32]">
                     {card.pageNumber}
                   </span>
                   <div className="min-w-0 flex-1">
                     {editingPageNumber === card.pageNumber && draft ? (
                       <div className="space-y-2.5">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="rounded-full border border-[#c8d6ba] bg-[#ffffff] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.04em] text-[#5d6b4d]">
+                          <span className="rounded-full border border-[#fff7ed] bg-[#ffffff] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.04em] text-[#5d6b4d]">
                             {card.role}
                           </span>
                           <div className="flex items-center gap-1">
@@ -358,7 +358,7 @@ export function ThinkingPageCards({
                                 current ? { ...current, title: event.target.value } : current
                               )
                             }
-                            className="h-8 rounded-lg border-[#c8d6ba] bg-[#ffffff] px-2.5 text-[12px]"
+                            className="h-8 rounded-lg border-[#fff7ed] bg-[#ffffff] px-2.5 text-[12px]"
                           />
                         </label>
                         <label className="block">
@@ -373,7 +373,7 @@ export function ThinkingPageCards({
                               )
                             }
                             rows={2}
-                            className="min-h-14 resize-y rounded-lg border-[#c8d6ba] bg-[#ffffff] px-2.5 py-2 text-[12px]"
+                            className="min-h-14 resize-y rounded-lg border-[#fff7ed] bg-[#ffffff] px-2.5 py-2 text-[12px]"
                           />
                         </label>
                         <label className="block">
@@ -388,7 +388,7 @@ export function ThinkingPageCards({
                               )
                             }
                             rows={3}
-                            className="min-h-20 resize-y rounded-lg border-[#c8d6ba] bg-[#ffffff] px-2.5 py-2 text-[12px]"
+                            className="min-h-20 resize-y rounded-lg border-[#fff7ed] bg-[#ffffff] px-2.5 py-2 text-[12px]"
                           />
                         </label>
                         <label className="block">
@@ -404,7 +404,7 @@ export function ThinkingPageCards({
                             }
                             rows={4}
                             placeholder={t('thinking.outlineKeyPointsHint')}
-                            className="min-h-24 resize-y rounded-lg border-[#c8d6ba] bg-[#ffffff] px-2.5 py-2 text-[12px]"
+                            className="min-h-24 resize-y rounded-lg border-[#fff7ed] bg-[#ffffff] px-2.5 py-2 text-[12px]"
                           />
                         </label>
                       </div>
@@ -415,7 +415,7 @@ export function ThinkingPageCards({
                             {card.title}
                           </div>
                           <div className="flex shrink-0 items-center gap-1">
-                            <span className="rounded-full border border-[#c8d6ba] bg-[#ffffff] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.04em] text-[#5d6b4d]">
+                            <span className="rounded-full border border-[#fff7ed] bg-[#ffffff] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.04em] text-[#5d6b4d]">
                               {card.role}
                             </span>
                             <button
@@ -441,7 +441,7 @@ export function ThinkingPageCards({
                           <ul className="mt-2 space-y-1 text-[11px] leading-relaxed text-[#747968]">
                             {card.keyPoints.slice(0, 3).map((point, pointIndex) => (
                               <li key={pointIndex} className="flex gap-1.5">
-                                <span className="mt-[0.55em] h-1 w-1 shrink-0 rounded-full bg-[#8fbc8f]" />
+                                <span className="mt-[0.55em] h-1 w-1 shrink-0 rounded-full bg-[#ea580c]" />
                                 <span className="line-clamp-2">{point}</span>
                               </li>
                             ))}
@@ -457,7 +457,7 @@ export function ThinkingPageCards({
         )}
       </div>
 
-      <div className="shrink-0 border-t border-[#c8d6ba] bg-[#d4e4c1] p-3">
+      <div className="shrink-0 border-t border-[#fff7ed] bg-[#fff7ed] p-3">
         <button
           type="button"
           onClick={onConfirmGenerate}

@@ -143,7 +143,7 @@ export function SpeechScriptDrawer({ sessionId }: { sessionId: string }): React.
     <div className={sessionDetailRightPanelContentClass}>
       {/* Header card */}
       <div className="relative mx-2 mt-2 overflow-hidden rounded-[0.85rem] border border-[#e4e4e7]/58 bg-[#ffffff]/68 px-2.5 py-2 shadow-[0_2px_8px_rgba(77,61,43,0.05)]">
-        <div className="pointer-events-none absolute -right-8 -top-10 h-20 w-20 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] bg-[#c7d9b4]/10" />
+        <div className="pointer-events-none absolute -right-8 -top-10 h-20 w-20 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] bg-[#fff7ed]/10" />
         <div className="relative flex items-center justify-between">
           <h3 className="text-[12px] font-semibold tracking-[0.03em] text-[#34402c]">
             {t('sessionDetail.speechScriptDialogTitle')}
@@ -276,7 +276,7 @@ export function SpeechScriptDrawer({ sessionId }: { sessionId: string }): React.
       {/* Result area (only this section scrolls) */}
       {isGenerating ? (
         <div className="flex flex-col items-center gap-2 py-8">
-          <Loader2 className="h-5 w-5 animate-spin text-[#6f8159]" />
+          <Loader2 className="h-5 w-5 animate-spin text-[#ea580c]" />
           <p className="text-center text-xs text-[#7a6b56]">{generationLabel}</p>
         </div>
       ) : visibleScript ? (

@@ -381,7 +381,7 @@ export const PageSidebar = memo(function PageSidebar({
                     type="button"
                     data-page-id={page.id}
                     onClick={() => requestSelectPage(page.id)}
-                    className={`flex h-8 w-full items-center justify-center rounded-xl text-xs font-semibold transition-all ${selectedPageId === page.id ? 'bg-[#d4e4c1]/86 text-[#3e4a32] shadow-[0_4px_12px_rgba(93,107,77,0.15)]' : 'text-[#5c6c47] hover:bg-[#f4f4f5]/50'}`}
+                    className={`flex h-8 w-full items-center justify-center rounded-xl text-xs font-semibold transition-all ${selectedPageId === page.id ? 'bg-[#fff7ed]/86 text-[#3e4a32] shadow-[0_4px_12px_rgba(93,107,77,0.15)]' : 'text-[#5c6c47] hover:bg-[#f4f4f5]/50'}`}
                   >
                     P{page.pageNumber}
                   </button>
@@ -398,7 +398,7 @@ export const PageSidebar = memo(function PageSidebar({
                     disabled={disabled || pageManagementDisabled}
                     title={t('sessionDetail.addPage')}
                     aria-label={t('sessionDetail.addPage')}
-                    className="flex h-8 w-full items-center justify-center rounded-xl bg-[#d4e4c1]/30 text-[#5d6b4d] transition-colors hover:bg-[#d4e4c1]/50 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+                    className="flex h-8 w-full items-center justify-center rounded-xl bg-[#fff7ed]/30 text-[#5d6b4d] transition-colors hover:bg-[#fff7ed]/50 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
                   >
                     <Plus className="h-3.5 w-3.5" />
                   </button>
@@ -479,7 +479,7 @@ export const PageSidebar = memo(function PageSidebar({
                 type="button"
                 disabled={pages.length === 0 || !onDownloadAllOutlines}
                 onClick={handleDownloadAllOutlines}
-                className="mx-1 mb-2 flex h-7 items-center justify-center gap-1.5 rounded-lg border border-[#b5c4a1]/50 bg-[#ffffff]/72 px-2 text-[11px] font-medium text-[#5d6b4d] shadow-[0_3px_8px_rgba(86,72,53,0.05)] transition-colors hover:bg-[#d4e4c1]/45 hover:text-[#3e4a32] disabled:cursor-not-allowed disabled:opacity-45"
+                className="mx-1 mb-2 flex h-7 items-center justify-center gap-1.5 rounded-lg border border-[#b5c4a1]/50 bg-[#ffffff]/72 px-2 text-[11px] font-medium text-[#5d6b4d] shadow-[0_3px_8px_rgba(86,72,53,0.05)] transition-colors hover:bg-[#fff7ed]/45 hover:text-[#3e4a32] disabled:cursor-not-allowed disabled:opacity-45"
               >
                 <Download className="h-3.5 w-3.5" />
                 {t('sessionDetail.downloadAllOutlines')}
@@ -516,7 +516,7 @@ export const PageSidebar = memo(function PageSidebar({
                         title={outlineText || page.title}
                         className={`group relative block w-full min-w-0 max-w-full whitespace-normal rounded-[1.25rem] p-1.5 text-left transition-all ${
                           selected
-                            ? 'bg-[#d4e4c1]/86 shadow-[0_14px_26px_rgba(93,107,77,0.18)]'
+                            ? 'bg-[#fff7ed]/86 shadow-[0_14px_26px_rgba(93,107,77,0.18)]'
                             : 'bg-[#f4f4f5]/34 hover:bg-[#f4f4f5]/68 hover:shadow-[0_8px_18px_rgba(93,107,77,0.09)]'
                         } ${pageActionDisabled ? 'opacity-45' : ''}`}
                       >
@@ -846,7 +846,7 @@ export const PageSidebar = memo(function PageSidebar({
                   <button
                     type="button"
                     disabled={disabled || pageManagementDisabled}
-                    className="flex flex-1 items-center justify-center gap-1 rounded-[1rem] border border-dashed border-[#b5c4a1]/60 bg-[#d4e4c1]/30 px-2 py-1.5 text-[11px] font-medium text-[#5d6b4d] transition-colors hover:bg-[#d4e4c1]/50 hover:text-[#3e4a32] disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+                    className="flex flex-1 items-center justify-center gap-1 rounded-[1rem] border border-dashed border-[#b5c4a1]/60 bg-[#fff7ed]/30 px-2 py-1.5 text-[11px] font-medium text-[#5d6b4d] transition-colors hover:bg-[#fff7ed]/50 hover:text-[#3e4a32] disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
                   >
                     <Plus className="h-3 w-3" />
                     {t('sessionDetail.addPage')}

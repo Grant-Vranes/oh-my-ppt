@@ -93,7 +93,7 @@ export const DEFAULT_CHART_DATA: Record<InsertChartType, InsertChartData> = {
 }
 
 const DEFAULT_CHART_PRIMARY_COLOR = '#5d6b4d'
-const DEFAULT_CHART_ACCENT_COLOR = '#8fbc8f'
+const DEFAULT_CHART_ACCENT_COLOR = '#ea580c'
 const DEFAULT_CHART_TEXT_COLOR = '#2f3b28'
 const CHART_COLORS = [
   DEFAULT_CHART_PRIMARY_COLOR,

@@ -79,10 +79,10 @@ export function AddBlankPageDialog({
               className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left transition-colors ${
                 sourcePageId === page.id
                   ? 'border-[#8eaa70] bg-[#eef6e7] text-[#2f3a2a]'
-                  : 'border-[#d4e4c1]/60 bg-[#f8f6f0] text-[#5d6b4d] hover:bg-[#f0ece3]'
+                  : 'border-[#fff7ed]/60 bg-[#f8f6f0] text-[#5d6b4d] hover:bg-[#f0ece3]'
               }`}
             >
-              <span className="shrink-0 rounded-md bg-[#d4e4c1]/70 px-2 py-1 text-[11px] font-semibold text-[#3e4a32]">
+              <span className="shrink-0 rounded-md bg-[#fff7ed]/70 px-2 py-1 text-[11px] font-semibold text-[#3e4a32]">
                 P{page.pageNumber}
               </span>
               <span className="min-w-0 flex-1 truncate text-sm font-medium">

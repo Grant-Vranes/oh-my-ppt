@@ -314,7 +314,7 @@ export function ThinkingChat({
       <ScrollArea className="flex-1 px-5 py-5" viewportRef={scrollRef}>
         {sources.length > 0 && (
           <div className="mb-4 flex justify-end">
-            <div className="rounded-full bg-[#d4e4c1] px-3 py-1 text-[11px] font-semibold text-[#5d6b4d]">
+            <div className="rounded-full bg-[#fff7ed] px-3 py-1 text-[11px] font-semibold text-[#5d6b4d]">
               {t('thinking.sourceCount', { count: sources.length })}
             </div>
           </div>
@@ -327,7 +327,7 @@ export function ThinkingChat({
             >
               <div
                 className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[5%_95%_10%_90%/85%_15%_85%_15%] ${
-                  msg.role === 'user' ? 'bg-[#5d6b4d] text-white' : 'bg-[#8fbc8f] text-white'
+                  msg.role === 'user' ? 'bg-[#5d6b4d] text-white' : 'bg-[#ea580c] text-white'
                 }`}
               >
                 {msg.role === 'user' ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
@@ -348,7 +348,7 @@ export function ThinkingChat({
                         className={`inline-flex max-w-[200px] items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium ${
                           msg.role === 'user'
                             ? 'border border-white/20 bg-white/15 text-white/90'
-                            : 'border border-[#c8d6ba] bg-[#d4e4c1] text-[#4f6340]'
+                            : 'border border-[#fff7ed] bg-[#fff7ed] text-[#4f6340]'
                         }`}
                       >
                         {sourceIcon(att.kind)}
@@ -362,7 +362,7 @@ export function ThinkingChat({
           ))}
           {loading && (
             <div className="flex gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[5%_95%_10%_90%/85%_15%_85%_15%] bg-[#8fbc8f] text-white">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[5%_95%_10%_90%/85%_15%_85%_15%] bg-[#ea580c] text-white">
                 <Bot className="h-4 w-4" />
               </div>
               <div className="max-w-[78%] space-y-2">
@@ -371,7 +371,7 @@ export function ThinkingChat({
                   <button
                     type="button"
                     onClick={() => setThinkingExpanded(!thinkingExpanded)}
-                    className="flex w-[180px] items-center gap-1.5 rounded-full border border-[#e4e4e7] bg-[#f4f4f5] px-3 py-2 text-left text-[11px] text-[#5d6b4d] transition-colors hover:bg-[#d4e4c1]"
+                    className="flex w-[180px] items-center gap-1.5 rounded-full border border-[#e4e4e7] bg-[#f4f4f5] px-3 py-2 text-left text-[11px] text-[#5d6b4d] transition-colors hover:bg-[#fff7ed]"
                   >
                     {thinkingExpanded ? (
                       <ChevronDown className="h-3 w-3 shrink-0" />
@@ -415,13 +415,13 @@ export function ThinkingChat({
       </ScrollArea>
 
       <div className="border-t border-[#e4e4e7] bg-[#ffffff] px-4 py-3">
-        <div className="rounded-xl border border-[#e4e4e7] bg-[#f4f4f5] px-2 py-2 shadow-sm focus-within:border-[#8fbc8f] focus-within:ring-2 focus-within:ring-[#d4e4c1]">
+        <div className="rounded-xl border border-[#e4e4e7] bg-[#f4f4f5] px-2 py-2 shadow-sm focus-within:border-[#ea580c] focus-within:ring-2 focus-within:ring-[#fff7ed]">
           {pendingSources.length > 0 && (
             <div className="flex max-h-16 flex-wrap gap-1.5 overflow-y-auto px-2 pb-1.5">
               {pendingSources.map((source) => (
                 <span
                   key={source.id}
-                  className="inline-flex max-w-[240px] items-center gap-1.5 rounded-full border border-[#b8cca5] bg-[#d4e4c1] px-2.5 py-1 text-[10px] font-medium text-[#4f6340]"
+                  className="inline-flex max-w-[240px] items-center gap-1.5 rounded-full border border-[#b8cca5] bg-[#fff7ed] px-2.5 py-1 text-[10px] font-medium text-[#4f6340]"
                 >
                   {sourceIcon(source.kind)}
                   <span className="truncate">{source.name}</span>
@@ -450,7 +450,7 @@ export function ThinkingChat({
                     type="button"
                     onClick={handleAttachClick}
                     disabled={loading || uploading}
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#5d6b4d] transition-colors hover:bg-[#d4e4c1] hover:text-[#3e4a32] disabled:opacity-40"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#5d6b4d] transition-colors hover:bg-[#fff7ed] hover:text-[#3e4a32] disabled:opacity-40"
                   >
                     {uploading ? (
                       <Loader2 className="h-4 w-4 animate-spin" />

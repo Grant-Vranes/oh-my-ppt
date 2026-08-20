@@ -158,7 +158,7 @@ export function HtmlEditorInsertRibbon({
             key={icon.id}
             type="button"
             title={icon.label}
-            className="flex h-12 items-center justify-center rounded-lg border border-transparent text-[#3e4a32] transition-colors hover:border-[#8fbc8f] hover:bg-white"
+            className="flex h-12 items-center justify-center rounded-lg border border-transparent text-[#3e4a32] transition-colors hover:border-[#ea580c] hover:bg-white"
             onClick={() => void insertion.addIcon(icon.id)}
           >
             <svg
@@ -206,7 +206,7 @@ export function HtmlEditorInsertRibbon({
             <button
               key={tpl.id}
               type="button"
-              className="flex min-h-[90px] flex-col items-center justify-center gap-2 rounded-lg border border-[#e4e4e7]/78 bg-[#1f261d] px-2 py-3 text-center transition-colors hover:border-[#8fbc8f]"
+              className="flex min-h-[90px] flex-col items-center justify-center gap-2 rounded-lg border border-[#e4e4e7]/78 bg-[#1f261d] px-2 py-3 text-center transition-colors hover:border-[#ea580c]"
               onClick={() => void insertion.addArtText(tpl.id as ArtTextTemplateId)}
             >
               <span className="text-[18px] font-extrabold text-white">{tpl.defaultText}</span>
@@ -222,7 +222,7 @@ export function HtmlEditorInsertRibbon({
             <button
               key={def.type}
               type="button"
-              className="flex min-h-[68px] flex-col items-center justify-center gap-1 rounded-lg border border-[#e4e4e7]/70 bg-white/70 px-2 py-2 text-[10px] font-bold text-[#3e4a32] transition-colors hover:border-[#8fbc8f] hover:bg-white"
+              className="flex min-h-[68px] flex-col items-center justify-center gap-1 rounded-lg border border-[#e4e4e7]/70 bg-white/70 px-2 py-2 text-[10px] font-bold text-[#3e4a32] transition-colors hover:border-[#ea580c] hover:bg-white"
               onClick={() => void insertion.addShape(def.type)}
             >
               <svg
@@ -268,7 +268,7 @@ export function HtmlEditorInsertRibbon({
               <button
                 key={item.type}
                 type="button"
-                className="flex min-h-[60px] flex-col items-center justify-center gap-1 rounded-lg border border-[#e4e4e7]/70 bg-white/70 px-2 py-2 text-[10px] font-bold text-[#3e4a32] transition-colors hover:border-[#8fbc8f] hover:bg-white"
+                className="flex min-h-[60px] flex-col items-center justify-center gap-1 rounded-lg border border-[#e4e4e7]/70 bg-white/70 px-2 py-2 text-[10px] font-bold text-[#3e4a32] transition-colors hover:border-[#ea580c] hover:bg-white"
                 onClick={() => void insertion.addChart(item.type)}
               >
                 <Icon className="h-5 w-5 text-[#5d6b4d]" />

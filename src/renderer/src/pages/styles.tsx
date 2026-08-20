@@ -363,7 +363,7 @@ export function StylesPage(): React.JSX.Element {
             className={cn(
               'inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-md border px-3 text-xs font-medium transition-colors',
               favoriteOnly
-                ? 'border-[#97aa7c] bg-[#dbe7ca] text-[#2f3b28]'
+                ? 'border-[#97aa7c] bg-[#fff7ed] text-[#2f3b28]'
                 : 'border-[#d6c08d]/80 bg-white/70 text-[#7c6a4c] hover:bg-[#fff3d8]'
             )}
             aria-pressed={favoriteOnly}

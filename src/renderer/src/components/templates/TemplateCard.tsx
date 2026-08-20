@@ -135,7 +135,7 @@ export function TemplateCard({
               <DropdownMenuTrigger asChild>
                 <Button
                   size="sm"
-                  className="h-8 rounded-md bg-[#5d6b4d] px-3 text-white shadow-none hover:bg-[#4f613f]"
+                  className="h-8 rounded-md bg-[#5d6b4d] px-3 text-white shadow-none hover:bg-[#ea580c]"
                   disabled={directCreating}
                 >
                   <LayoutTemplate className="mr-1.5 h-3.5 w-3.5" />

@@ -456,7 +456,7 @@ export function TemplateUseDialog({
             {attachedReferenceFile ? (
               <div className="flex min-w-0">
                 <span
-                  className="inline-flex h-6 max-w-[260px] items-center gap-1 rounded-full border border-[#c7d9b4]/70 bg-[#e6f1dc]/80 px-2 text-[10px] text-[#405333]"
+                  className="inline-flex h-6 max-w-[260px] items-center gap-1 rounded-full border border-[#fff7ed]/70 bg-[#e6f1dc]/80 px-2 text-[10px] text-[#405333]"
                   title={attachedReferenceFile.path}
                 >
                   <FileText className="h-3 w-3 shrink-0" />

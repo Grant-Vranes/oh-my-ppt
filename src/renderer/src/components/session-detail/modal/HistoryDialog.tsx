@@ -164,7 +164,7 @@ export function HistoryDialog({ sessionId }: HistoryDialogProps): React.JSX.Elem
                             {version.title}
                           </p>
                           {version.isCurrent && (
-                            <span className="rounded-full bg-[#d4e4c1] px-2 py-0.5 text-[10px] font-medium text-[#3e4a32]">
+                            <span className="rounded-full bg-[#fff7ed] px-2 py-0.5 text-[10px] font-medium text-[#3e4a32]">
                               {t('sessionDetail.historyCurrent')}
                             </span>
                           )}

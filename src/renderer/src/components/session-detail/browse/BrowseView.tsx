@@ -100,7 +100,7 @@ const BrowseCard = memo(function BrowseCard({
         </div>
       </div>
       <div className="px-3 py-2.5">
-        <span className="inline-block rounded-full bg-[#d4e4c1]/60 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-[#5c6c47]">
+        <span className="inline-block rounded-full bg-[#fff7ed]/60 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-[#5c6c47]">
           P{page.pageNumber}
         </span>
         <p

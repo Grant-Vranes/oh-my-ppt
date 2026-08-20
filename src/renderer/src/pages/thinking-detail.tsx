@@ -334,7 +334,7 @@ export function ThinkingDetailPage(): ReactElement {
               {thinkingId && (
                 <button
                   type="button"
-                  className="min-w-0 rounded-full px-2 py-0.5 font-mono text-[11px] font-normal leading-none text-[#7a806c] transition-colors hover:bg-[#d4e4c1] hover:text-[#3e4a32]"
+                  className="min-w-0 rounded-full px-2 py-0.5 font-mono text-[11px] font-normal leading-none text-[#7a806c] transition-colors hover:bg-[#fff7ed] hover:text-[#3e4a32]"
                   onClick={() => void handleRevealWorkspace()}
                   title={t('thinking.revealWorkspace')}
                 >
@@ -389,7 +389,7 @@ export function ThinkingDetailPage(): ReactElement {
                             key={item.thinkingId}
                             className={`group flex w-full items-start gap-1.5 rounded-[1.25rem] border p-2 transition-colors ${
                               active
-                                ? 'border-[#9eb88a] bg-[#d4e4c1] text-[#2f3b28]'
+                                ? 'border-[#9eb88a] bg-[#fff7ed] text-[#2f3b28]'
                                 : 'border-transparent bg-[#f4f4f5]/76 text-[#3e4a32] hover:border-[#e4e4e7] hover:bg-[#fafafa]'
                             }`}
                           >
@@ -400,7 +400,7 @@ export function ThinkingDetailPage(): ReactElement {
                                 setPendingSources([])
                                 void loadWorkspace(item.thinkingId)
                               }}
-                              className="min-w-0 flex-1 rounded-[1rem] p-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8fbc8f]"
+                              className="min-w-0 flex-1 rounded-[1rem] p-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ea580c]"
                             >
                               <div className="flex min-w-0 items-start gap-2.5">
                                 <FileText className="mt-0.5 h-4 w-4 shrink-0 text-[#7a806c]" />
@@ -491,7 +491,7 @@ export function ThinkingDetailPage(): ReactElement {
             />
           ) : (
             <div className="flex h-full min-h-[360px] flex-col items-center justify-center px-8 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-[10%_90%_16%_84%/78%_22%_78%_22%] bg-[#d4e4c1] text-[#3e4a32]">
+              <div className="flex h-14 w-14 items-center justify-center rounded-[10%_90%_16%_84%/78%_22%_78%_22%] bg-[#fff7ed] text-[#3e4a32]">
                 <History className="h-6 w-6" />
               </div>
               <h2 className="organic-serif mt-5 text-[28px] font-semibold leading-none text-[#3e4a32]">
@@ -517,7 +517,7 @@ export function ThinkingDetailPage(): ReactElement {
           )}
         </section>
         {showOutlinePanel && (
-          <aside className="min-h-0 overflow-hidden rounded-[2rem] border border-[#c8d6ba] bg-[#d4e4c1] shadow-[0_14px_34px_rgba(86,73,54,0.12)]">
+          <aside className="min-h-0 overflow-hidden rounded-[2rem] border border-[#fff7ed] bg-[#fff7ed] shadow-[0_14px_34px_rgba(86,73,54,0.12)]">
             <ThinkingPageCards
               thinkingMd={thinkingMd}
               stage={stage}

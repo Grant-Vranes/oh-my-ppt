@@ -67,7 +67,7 @@ export function GenerationStatusPanel({
               <button
                 type="button"
                 onClick={onEnterEditor}
-                className="shrink-0 text-xs font-medium text-[#6f8159] underline-offset-2 hover:underline"
+                className="shrink-0 text-xs font-medium text-[#ea580c] underline-offset-2 hover:underline"
               >
                 {enterEditorLabel}
               </button>

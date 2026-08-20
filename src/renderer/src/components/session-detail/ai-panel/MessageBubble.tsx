@@ -46,7 +46,7 @@ export function MessageBubble({ message }: { message: Message }): React.JSX.Elem
           {isUser && selectorText && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="flex w-full min-w-0 items-center overflow-hidden rounded-full border border-[#c7d9b4]/62 bg-[#e6f1dc]/72 px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.08em] text-[#4b5f3b]">
+                <div className="flex w-full min-w-0 items-center overflow-hidden rounded-full border border-[#fff7ed]/62 bg-[#e6f1dc]/72 px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.08em] text-[#4b5f3b]">
                   <span className="mr-1 shrink-0">{t('sessionDetail.selectorBadge')}</span>
                   <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap font-normal tracking-normal">
                     {selectorText}
@@ -63,7 +63,7 @@ export function MessageBubble({ message }: { message: Message }): React.JSX.Elem
               {mediaPaths.map((mediaPath) => (
                 <Tooltip key={mediaPath}>
                   <TooltipTrigger asChild>
-                    <span className="inline-flex max-w-full items-center gap-1 rounded-full border border-[#c7d9b4]/62 bg-[#e6f1dc]/72 px-1.5 py-0.5 text-[10px] font-medium text-[#4b5f3b]">
+                    <span className="inline-flex max-w-full items-center gap-1 rounded-full border border-[#fff7ed]/62 bg-[#e6f1dc]/72 px-1.5 py-0.5 text-[10px] font-medium text-[#4b5f3b]">
                       {mediaPath.startsWith('./videos/') ? (
                         <Video className="h-3 w-3 shrink-0" />
                       ) : (

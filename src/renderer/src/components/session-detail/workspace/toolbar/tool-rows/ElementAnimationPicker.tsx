@@ -138,7 +138,7 @@ const elementAnimationPreviewStyles = `
   height: 22px;
   margin: -11px 0 0 -24px;
   border-radius: 6px;
-  background: linear-gradient(135deg,#5d6b4d,#8fbc8f 58%,#f1b56f);
+  background: linear-gradient(135deg,#5d6b4d,#ea580c 58%,#f1b56f);
   box-shadow: 0 5px 10px rgba(62,74,50,.17);
   animation-duration: 1.8s;
   animation-iteration-count: infinite;
@@ -385,7 +385,7 @@ export function ElementAnimationPicker({ disabled = false }: { disabled?: boolea
             className={`h-3 w-3 shrink-0 ${isLoading || isSaving ? 'animate-spin' : ''}`}
           />
           <span className="shrink-0">{t('sessionDetail.elementAnimationLabel')}</span>
-          <span className="min-w-0 truncate text-[#6f8159]">
+          <span className="min-w-0 truncate text-[#ea580c]">
             {selectedSelector ? currentLabel : t('sessionDetail.elementAnimationSelectTarget')}
           </span>
         </button>
@@ -397,7 +397,7 @@ export function ElementAnimationPicker({ disabled = false }: { disabled?: boolea
         <style>{elementAnimationPreviewStyles}</style>
         {!selectedSelector ? (
           <div className="flex h-36 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[#e4e4e7] bg-[#ffffff]/72 text-center">
-            <MousePointer2 className="h-5 w-5 text-[#6f8159]" />
+            <MousePointer2 className="h-5 w-5 text-[#ea580c]" />
             <p className="text-xs font-bold text-[#314028]">
               {t('sessionDetail.elementAnimationSelectTargetTitle')}
             </p>

@@ -150,7 +150,7 @@ export function HtmlEditorInspectorPanel({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[#667257] transition-colors hover:bg-[#d4e4c1]/70 hover:text-[#34402c]"
+            className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[#667257] transition-colors hover:bg-[#fff7ed]/70 hover:text-[#34402c]"
             aria-label={t('sessionDetail.closeInspector')}
             title={t('sessionDetail.closeInspector')}
           >

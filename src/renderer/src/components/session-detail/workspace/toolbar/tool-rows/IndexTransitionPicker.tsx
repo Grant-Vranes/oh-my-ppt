@@ -95,7 +95,7 @@ const transitionPreviewStyles = `
   inset: 7px 14px;
   border-radius: 5px;
   border: 1px solid rgba(80,69,52,0.16);
-  background: linear-gradient(135deg, #5d6b4d 0%, #8fbc8f 44%, #f1b56f 100%);
+  background: linear-gradient(135deg, #5d6b4d 0%, #ea580c 44%, #f1b56f 100%);
   box-shadow: 0 6px 12px rgba(62,74,50,0.16);
   transform-origin: center;
 }
@@ -371,7 +371,7 @@ export function IndexTransitionPicker({
             className={`h-3 w-3 shrink-0 ${isLoading || isSaving ? 'animate-spin' : ''}`}
           />
           <span className="shrink-0">{t('sessionDetail.indexTransitionLabel')}</span>
-          <span className="min-w-0 truncate text-[#6f8159]">{currentOption?.label}</span>
+          <span className="min-w-0 truncate text-[#ea580c]">{currentOption?.label}</span>
         </button>
       </PopoverTrigger>
       <PopoverContent

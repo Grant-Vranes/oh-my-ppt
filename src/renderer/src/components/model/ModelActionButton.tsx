@@ -142,7 +142,7 @@ export function ModelSplitButton({
       className={cn(
         isPrimary
           ? hasMultiple
-            ? 'rounded-full border-0 bg-gradient-to-r from-[#6f8159] to-[#4f613f] shadow-[0_10px_22px_rgba(93,107,77,0.24)]'
+            ? 'rounded-full border-0 bg-gradient-to-r from-[#ea580c] to-[#ea580c] shadow-[0_10px_22px_rgba(93,107,77,0.24)]'
             : 'rounded-full border-0 bg-transparent'
           : 'h-8 rounded-lg border-[#e4e4e7]/80 bg-[#ffffff]/76 shadow-none',
         disabledState && 'cursor-not-allowed opacity-50 shadow-none saturate-75',
@@ -232,7 +232,7 @@ export function ModelSelectButton({
           type="button"
           disabled={disabledState}
           className={cn(
-            'flex h-8 max-w-[10rem] items-center gap-1 rounded-full border border-[#d0c8b8] bg-[#ece6d8] px-2 text-[11px] text-[#5d6b4d] transition-colors hover:bg-[#d4e4c1] hover:text-[#3e4a32] disabled:opacity-40',
+            'flex h-8 max-w-[10rem] items-center gap-1 rounded-full border border-[#d0c8b8] bg-[#ece6d8] px-2 text-[11px] text-[#5d6b4d] transition-colors hover:bg-[#fff7ed] hover:text-[#3e4a32] disabled:opacity-40',
             className
           )}
         >

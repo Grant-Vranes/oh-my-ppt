@@ -559,7 +559,7 @@ export function SessionCreatePage(): ReactElement {
   return (
     <div className="session-create-page mx-auto flex min-h-full w-full max-w-7xl flex-col gap-4 px-5 py-4 sm:px-6">
       <div className="flex max-w-4xl flex-col items-start gap-1.5 border-b border-[#e4e4e7] px-1 pb-4">
-        <p className="rounded bg-[#d4e4c1]/78 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#3e4a32]">
+        <p className="rounded bg-[#fff7ed]/78 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#3e4a32]">
           {t('home.eyebrow')}
         </p>
         <h1 className="organic-serif text-[32px] font-semibold leading-tight text-[#3e4a32]">
@@ -613,8 +613,8 @@ export function SessionCreatePage(): ReactElement {
                       onClick={() => setBriefMode('edit')}
                       className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium transition-colors ${
                         briefMode === 'edit'
-                          ? 'bg-[#8fbc8f] text-[#3e4a32]'
-                          : 'text-[#5d6b4d] hover:bg-[#d4e4c1]/70 hover:text-[#3e4a32]'
+                          ? 'bg-[#ea580c] text-[#3e4a32]'
+                          : 'text-[#5d6b4d] hover:bg-[#fff7ed]/70 hover:text-[#3e4a32]'
                       }`}
                     >
                       <Pencil className="h-3.5 w-3.5" />
@@ -625,8 +625,8 @@ export function SessionCreatePage(): ReactElement {
                       onClick={() => setBriefMode('preview')}
                       className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium transition-colors ${
                         briefMode === 'preview'
-                          ? 'bg-[#8fbc8f] text-[#3e4a32]'
-                          : 'text-[#5d6b4d] hover:bg-[#d4e4c1]/70 hover:text-[#3e4a32]'
+                          ? 'bg-[#ea580c] text-[#3e4a32]'
+                          : 'text-[#5d6b4d] hover:bg-[#fff7ed]/70 hover:text-[#3e4a32]'
                       }`}
                     >
                       <Eye className="h-3.5 w-3.5" />
@@ -709,7 +709,7 @@ export function SessionCreatePage(): ReactElement {
                         className={`inline-flex h-8 max-w-full items-center gap-1.5 rounded-lg border px-2.5 text-[11px] ${
                           pendingImageReference
                             ? 'border-[#e7a19a]/80 bg-[#fff1ef] text-[#9a3f35]'
-                            : 'border-[#c8d6ba] bg-[#ffffff]/84 text-[#5d6b4d]'
+                            : 'border-[#fff7ed] bg-[#ffffff]/84 text-[#5d6b4d]'
                         }`}
                         title={
                           pendingImageReference
@@ -774,7 +774,7 @@ export function SessionCreatePage(): ReactElement {
                                   void handleChooseReferenceClick()
                                 }}
                                 disabled={parsingDocument}
-                                className="h-8 shrink-0 rounded-lg border border-[#e4e4e7] bg-[#ffffff]/84 px-3 text-xs font-medium text-[#5d6b4d] shadow-none hover:bg-[#d4e4c1]/65 hover:text-[#3e4a32]"
+                                className="h-8 shrink-0 rounded-lg border border-[#e4e4e7] bg-[#ffffff]/84 px-3 text-xs font-medium text-[#5d6b4d] shadow-none hover:bg-[#fff7ed]/65 hover:text-[#3e4a32]"
                               >
                                 {parsingDocument ? (
                                   <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
@@ -809,7 +809,7 @@ export function SessionCreatePage(): ReactElement {
                                 icon={Sparkles}
                                 tone="primary"
                                 dropdownAlign="end"
-                                className="box-border h-8 rounded-lg border-0 bg-[#8fbc8f] shadow-[0_6px_14px_rgba(113,134,95,0.15)]"
+                                className="box-border h-8 rounded-lg border-0 bg-[#ea580c] shadow-[0_6px_14px_rgba(113,134,95,0.15)]"
                                 mainClassName="h-full bg-transparent px-2.5 text-xs text-[#3e4a32] shadow-none hover:bg-white/10 hover:text-[#3e4a32] hover:shadow-none"
                                 triggerClassName="h-full w-8 px-0 text-[#3e4a32] hover:text-[#3e4a32]"
                                 onRun={handleAnalyzeReference}
@@ -858,7 +858,7 @@ export function SessionCreatePage(): ReactElement {
                         options={styleOptions}
                         placeholder={t('home.stylePlaceholder')}
                         compact
-                        className="h-8 border-[#c8d6ba] bg-[#ffffff]/90 px-2.5 py-1.5 text-xs shadow-none"
+                        className="h-8 border-[#fff7ed] bg-[#ffffff]/90 px-2.5 py-1.5 text-xs shadow-none"
                         dropdownAlign="end"
                         dropdownClassName="w-[min(700px,calc(100vw-3rem))]"
                       />

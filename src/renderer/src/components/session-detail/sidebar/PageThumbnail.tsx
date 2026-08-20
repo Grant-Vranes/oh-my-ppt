@@ -58,7 +58,7 @@ export const PageThumbnail = memo(function PageThumbnail({
         'group relative block w-full min-w-0 overflow-hidden rounded-[1.25rem] p-1.5 text-left transition-all duration-200',
         onSelect ? 'cursor-pointer' : 'cursor-default opacity-60',
         isSelected
-          ? 'bg-[#d4e4c1]/86 shadow-[0_14px_26px_rgba(93,107,77,0.18)]'
+          ? 'bg-[#fff7ed]/86 shadow-[0_14px_26px_rgba(93,107,77,0.18)]'
           : 'bg-[#f4f4f5]/34 hover:bg-[#f4f4f5]/68 hover:shadow-[0_8px_18px_rgba(93,107,77,0.09)]'
       )}
     >
@@ -66,8 +66,8 @@ export const PageThumbnail = memo(function PageThumbnail({
         className={cn(
           'pointer-events-none absolute -right-7 -top-8 h-20 w-20 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] transition-opacity',
           isSelected
-            ? 'bg-[#8fbc8f]/24 opacity-100'
-            : 'bg-[#d4e4c1]/28 opacity-0 group-hover:opacity-100'
+            ? 'bg-[#ea580c]/24 opacity-100'
+            : 'bg-[#fff7ed]/28 opacity-0 group-hover:opacity-100'
         )}
       />
       <div

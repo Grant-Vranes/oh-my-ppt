@@ -70,7 +70,7 @@ export function PrimaryActions({
           <TooltipTrigger asChild>
             <button
               type="button"
-              className="inline-flex h-[22px] w-[22px] items-center justify-center rounded-full text-[#5d6b4d] transition-colors hover:bg-[#d4e4c1]/64 hover:text-[#3e4a32] disabled:pointer-events-none disabled:text-[#a4aa9a] disabled:opacity-45"
+              className="inline-flex h-[22px] w-[22px] items-center justify-center rounded-full text-[#5d6b4d] transition-colors hover:bg-[#fff7ed]/64 hover:text-[#3e4a32] disabled:pointer-events-none disabled:text-[#a4aa9a] disabled:opacity-45"
               onClick={() => actions?.onUndo()}
               disabled={disabled || !canUndo}
               aria-label={t('sessionDetail.undoCurrentPageTooltip')}
@@ -84,7 +84,7 @@ export function PrimaryActions({
           <TooltipTrigger asChild>
             <button
               type="button"
-              className="inline-flex h-[22px] w-[22px] items-center justify-center rounded-full text-[#5d6b4d] transition-colors hover:bg-[#d4e4c1]/64 hover:text-[#3e4a32] disabled:pointer-events-none disabled:text-[#a4aa9a] disabled:opacity-45"
+              className="inline-flex h-[22px] w-[22px] items-center justify-center rounded-full text-[#5d6b4d] transition-colors hover:bg-[#fff7ed]/64 hover:text-[#3e4a32] disabled:pointer-events-none disabled:text-[#a4aa9a] disabled:opacity-45"
               onClick={() => actions?.onRedo()}
               disabled={disabled || !canRedo}
               aria-label={t('sessionDetail.redoCurrentPageTooltip')}

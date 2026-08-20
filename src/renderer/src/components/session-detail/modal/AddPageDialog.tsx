@@ -112,7 +112,7 @@ export function AddPageDialog({ sessionId }: AddPageDialogProps): React.JSX.Elem
           value={value}
           onChange={(event) => setValue(event.target.value)}
           placeholder={t('sessionDetail.addPageDescription')}
-          className="mb-4 h-40 w-full resize-none rounded-xl border border-[#d4e4c1]/60 bg-[#f8f6f0] px-4 py-3 text-sm leading-relaxed text-[#2f3a2a] placeholder:text-[#8a9a7b] focus:border-[#5d6b4d] focus:outline-none"
+          className="mb-4 h-40 w-full resize-none rounded-xl border border-[#fff7ed]/60 bg-[#f8f6f0] px-4 py-3 text-sm leading-relaxed text-[#2f3a2a] placeholder:text-[#8a9a7b] focus:border-[#5d6b4d] focus:outline-none"
           autoFocus
           onKeyDown={(event) => {
             if (

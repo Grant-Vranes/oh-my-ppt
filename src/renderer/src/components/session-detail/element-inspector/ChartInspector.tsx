@@ -84,7 +84,7 @@ export function ChartInspector({ draft, onDraftChange }: ElementEditorProps): Re
       field === 'chartPrimaryColor'
         ? '#5d6b4d'
         : field === 'chartAccentColor'
-          ? '#8fbc8f'
+          ? '#ea580c'
           : '#2f3b28'
     const updateDraft = (value: string, shouldCommit = false): void => {
       const nextDraft: ElementEditDraft = { ...draft, [field]: value }

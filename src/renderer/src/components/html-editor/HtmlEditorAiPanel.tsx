@@ -36,7 +36,7 @@ function HtmlEditorAiMessageBubble({
       <div
         className={`max-w-[280px] whitespace-pre-wrap break-words rounded-2xl border px-3 py-2 text-[13px] leading-5 shadow-sm ${
           isUser
-            ? 'border-[#c7d9b4]/80 bg-[#e6f1dc]/85 text-[#34402c]'
+            ? 'border-[#fff7ed]/80 bg-[#e6f1dc]/85 text-[#34402c]'
             : 'border-[#e4e4e7]/80 bg-[#ffffff]/90 text-[#3f372b]'
         }`}
       >
@@ -285,7 +285,7 @@ export function HtmlEditorAiPanel(): ReactElement {
 
       <div className="shrink-0 border-t border-[#e2dccf] bg-[#ffffff]/45 p-3">
         {selectedSelector ? (
-          <div className="mb-2 rounded-xl border border-[#c7d9b4]/70 bg-[#e6f1dc]/70 px-2.5 py-2">
+          <div className="mb-2 rounded-xl border border-[#fff7ed]/70 bg-[#e6f1dc]/70 px-2.5 py-2">
             <div className="mb-1 flex items-center justify-between gap-2">
               <span className="text-[10px] font-semibold tracking-wide text-[#4f6340]">
                 {t('htmlEditor.selectedElement')}
@@ -293,7 +293,7 @@ export function HtmlEditorAiPanel(): ReactElement {
               <button
                 type="button"
                 onClick={() => useHtmlEditorUiStore.getState().clearSelectedElement()}
-                className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[#64735a] hover:bg-[#d4e4c1]"
+                className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[#64735a] hover:bg-[#fff7ed]"
                 title={t('htmlEditor.clearSelectedElement')}
                 aria-label={t('htmlEditor.clearSelectedElement')}
               >

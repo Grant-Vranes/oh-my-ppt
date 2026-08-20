@@ -457,7 +457,7 @@ export function MergeSessionPagesDialog({
                               page={page}
                               renderPreview={previewPageIds.has(page.id)}
                             />
-                            <span className="absolute left-2 top-2 z-10 rounded-md bg-[#ffffff]/92 px-1.5 py-0.5 text-[10px] font-semibold text-[#4f613f] shadow-sm">
+                            <span className="absolute left-2 top-2 z-10 rounded-md bg-[#ffffff]/92 px-1.5 py-0.5 text-[10px] font-semibold text-[#ea580c] shadow-sm">
                               P{page.pageNumber}
                             </span>
                             <span

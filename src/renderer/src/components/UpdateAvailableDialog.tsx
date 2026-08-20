@@ -46,7 +46,7 @@ export function UpdateAvailableDialog({
               <span>{t('app.currentVersion')}</span>
               <span className="text-[#3e4a32]">{update.currentVersion}</span>
             </span>
-            <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[#6f8159]/25 bg-[#eaf2df] px-3 text-xs font-semibold text-[#3e4a32]">
+            <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[#ea580c]/25 bg-[#eaf2df] px-3 text-xs font-semibold text-[#3e4a32]">
               <span>{t('app.latestVersion')}</span>
               <span>{update.latestVersion}</span>
             </span>

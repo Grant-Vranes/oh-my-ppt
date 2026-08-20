@@ -207,7 +207,7 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
   return (
     <>
       <div className="relative mx-2.5 mt-2.5 overflow-hidden rounded-[1.35rem] border border-[#e4e4e7]/72 bg-[#ffffff]/78 px-3 pb-2.5 pt-3 shadow-[0_4px_12px_rgba(77,61,43,0.06)]">
-        <div className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] bg-[#c7d9b4]/12" />
+        <div className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] bg-[#fff7ed]/12" />
         <div className="relative flex flex-col gap-2">
           <h3 className="text-sm font-semibold tracking-[0.04em] text-[#34402c]">
             {t('sessionDetail.messageTitle')}
@@ -253,7 +253,7 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
               </div>
             )}
             {(isPageEditing || isDeckEditing) && (
-              <div className="flex items-center gap-2 rounded-[1.15rem] border border-[#c7d9b4]/70 bg-[#edf5e5]/76 px-3 py-2 text-sm text-[#4f6340]">
+              <div className="flex items-center gap-2 rounded-[1.15rem] border border-[#fff7ed]/70 bg-[#edf5e5]/76 px-3 py-2 text-sm text-[#4f6340]">
                 <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
                 <span className="min-w-0 flex-1 break-words">
                   {progress?.label || t('sessionDetail.activityProcessing')}
@@ -278,13 +278,13 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
               </div>
             )}
             {isPlanningPageEdit && (
-              <div className="flex items-center gap-2 rounded-lg border border-[#c7d9b4]/70 bg-[#edf5e5]/76 px-3 py-2 text-sm text-[#4f6340]" aria-live="polite">
+              <div className="flex items-center gap-2 rounded-lg border border-[#fff7ed]/70 bg-[#edf5e5]/76 px-3 py-2 text-sm text-[#4f6340]" aria-live="polite">
                 <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
                 <span>{t('sessionDetail.pageEditPlanning')}</span>
               </div>
             )}
             {pendingPageEditPlan && (
-              <section className="rounded-lg border border-[#c7d9b4]/80 bg-[#f7fbf2] px-3 py-2.5 text-sm text-[#405333]" aria-live="polite">
+              <section className="rounded-lg border border-[#fff7ed]/80 bg-[#f7fbf2] px-3 py-2.5 text-sm text-[#405333]" aria-live="polite">
                 <div className="flex items-start justify-between gap-3">
                   <h4 className="font-semibold">{t('sessionDetail.pageEditPlanTitle')}</h4>
                   <span className="shrink-0 text-xs text-[#6d7b5d]">
@@ -382,7 +382,7 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
             <button
               type="button"
               onClick={clearSelectedElement}
-              className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[#64735a] transition-colors hover:bg-[#d4e4c1]/78 hover:text-[#3e4a32]"
+              className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[#64735a] transition-colors hover:bg-[#fff7ed]/78 hover:text-[#3e4a32]"
               aria-label={t('sessionDetail.clearSelector')}
               title={t('sessionDetail.clearSelector')}
             >
@@ -398,7 +398,7 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
                 <button
                   type="button"
                   disabled={isGenerating || pages.length === 0}
-                  className="inline-flex h-7 max-w-[116px] shrink-0 items-center gap-1.5 rounded-full border border-[#c7d9b4]/72 bg-[#ffffff]/86 px-2 text-[11px] font-medium text-[#405333] transition-colors hover:bg-[#edf5e5] disabled:pointer-events-none disabled:opacity-45"
+                  className="inline-flex h-7 max-w-[116px] shrink-0 items-center gap-1.5 rounded-full border border-[#fff7ed]/72 bg-[#ffffff]/86 px-2 text-[11px] font-medium text-[#405333] transition-colors hover:bg-[#edf5e5] disabled:pointer-events-none disabled:opacity-45"
                   title={
                     effectiveMainPageIds.length > 0
                       ? effectiveMainPageIds.map((id) => `/${id}.html`).join('\n')
@@ -456,7 +456,7 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
             {pendingAssets.map((asset) => (
               <div
                 key={asset.id}
-                className="flex max-w-full items-center gap-1.5 rounded-full border border-[#c7d9b4]/66 bg-[#e6f1dc]/76 px-2 py-1 text-[11px] text-[#405333] shadow-[0_3px_8px_rgba(93,107,77,0.06)]"
+                className="flex max-w-full items-center gap-1.5 rounded-full border border-[#fff7ed]/66 bg-[#e6f1dc]/76 px-2 py-1 text-[11px] text-[#405333] shadow-[0_3px_8px_rgba(93,107,77,0.06)]"
                 title={`${asset.originalName}\n${asset.relativePath}`}
               >
                 {asset.mimeType.startsWith('video/') ? (
@@ -507,7 +507,7 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
                 <button
                   type="button"
                   disabled={isGenerating || isUploadingAssets}
-                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[38%_62%_44%_56%/55%_45%_55%_45%] border border-[#c7d9b4]/66 bg-[#e6f1dc]/80 text-[#526942] shadow-[0_4px_10px_rgba(93,107,77,0.09)] transition-colors hover:bg-[#d7e8c8] disabled:pointer-events-none disabled:opacity-45"
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[38%_62%_44%_56%/55%_45%_55%_45%] border border-[#fff7ed]/66 bg-[#e6f1dc]/80 text-[#526942] shadow-[0_4px_10px_rgba(93,107,77,0.09)] transition-colors hover:bg-[#d7e8c8] disabled:pointer-events-none disabled:opacity-45"
                   aria-label={t('sessionDetail.addAsset')}
                   title={t('sessionDetail.addAsset')}
                 >

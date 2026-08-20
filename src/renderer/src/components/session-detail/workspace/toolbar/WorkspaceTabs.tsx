@@ -33,7 +33,7 @@ export function WorkspaceTabs({
       aria-disabled={disabled || undefined}
       >
         <div className="flex max-w-full items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <div className="flex shrink-0 items-center gap-0.5 rounded-full bg-[#d4e4c1]/30 p-0.5 shadow-[inset_0_1px_4px_rgba(62,74,50,0.08)]">
+          <div className="flex shrink-0 items-center gap-0.5 rounded-full bg-[#fff7ed]/30 p-0.5 shadow-[inset_0_1px_4px_rgba(62,74,50,0.08)]">
             {tabs.map((tab) => (
               <button
                 key={tab.id}

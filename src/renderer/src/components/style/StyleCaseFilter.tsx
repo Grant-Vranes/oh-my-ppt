@@ -23,7 +23,7 @@ const chipClassName = (active: boolean): string =>
   cn(
     'rounded-md border px-2 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-45',
     active
-      ? 'border-[#97aa7c] bg-[#dbe7ca] text-[#2f3b28]'
+      ? 'border-[#97aa7c] bg-[#fff7ed] text-[#2f3b28]'
       : 'border-[#d6c08d]/80 bg-white/70 text-[#7c6a4c] hover:bg-[#fff3d8]'
   )
 

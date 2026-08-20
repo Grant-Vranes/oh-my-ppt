@@ -103,7 +103,7 @@ export function StyleSelect({
           type="button"
           disabled={disabled}
           className={cn(
-            'flex w-full items-center justify-between gap-2 rounded-lg border border-[#e4e4e7]/80 bg-[#ffffff]/86 py-2.5 pl-3 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(77,63,46,0.08)] focus:outline-none focus:ring-2 focus:ring-[#8fbc8f] disabled:cursor-not-allowed disabled:opacity-50',
+            'flex w-full items-center justify-between gap-2 rounded-lg border border-[#e4e4e7]/80 bg-[#ffffff]/86 py-2.5 pl-3 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(77,63,46,0.08)] focus:outline-none focus:ring-2 focus:ring-[#ea580c] disabled:cursor-not-allowed disabled:opacity-50',
             compact ? 'h-9 px-2.5 text-xs' : 'pr-3',
             className
           )}
@@ -175,7 +175,7 @@ export function StyleSelect({
                   onClick={() => handlePick(option.id)}
                   className={cn(
                     'relative flex w-full items-stretch gap-2.5 rounded-md px-2.5 py-2 text-left outline-none transition-colors hover:bg-[#fafafa]/70 focus-visible:bg-[#fafafa]/70',
-                    isSelected && 'bg-[#dbe7ca] text-[#2f3b28]',
+                    isSelected && 'bg-[#fff7ed] text-[#2f3b28]',
                     compact && 'py-1.5'
                   )}
                 >

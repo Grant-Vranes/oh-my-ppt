@@ -37,7 +37,7 @@ export const EMPTY_ELEMENT_DRAFT: ElementEditDraft = {
   chartValues: '',
   chartDataJson: '',
   chartPrimaryColor: '#5d6b4d',
-  chartAccentColor: '#8fbc8f',
+  chartAccentColor: '#ea580c',
   chartTextColor: '#2f3b28',
   chartSmooth: true,
   chartHorizontal: false,

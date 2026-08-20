@@ -70,7 +70,7 @@ export function AnimationPreferenceChips({
             } ${
               selected
                 ? compact
-                  ? 'bg-[#8fbc8f] text-[#25351f] shadow-[inset_0_0_0_1px_rgba(62,74,50,0.34),0_2px_6px_rgba(93,107,77,0.12)] hover:bg-[#7eab7e] hover:text-[#1f2c19] hover:shadow-[inset_0_0_0_1px_rgba(62,74,50,0.5),0_3px_8px_rgba(93,107,77,0.16)]'
+                  ? 'bg-[#ea580c] text-[#25351f] shadow-[inset_0_0_0_1px_rgba(62,74,50,0.34),0_2px_6px_rgba(93,107,77,0.12)] hover:bg-[#7eab7e] hover:text-[#1f2c19] hover:shadow-[inset_0_0_0_1px_rgba(62,74,50,0.5),0_3px_8px_rgba(93,107,77,0.16)]'
                   : 'border-[#65794d] bg-[#d4e8c6] text-[#28331f] shadow-[0_2px_8px_rgba(93,107,77,0.12)] hover:border-[#4f623d] hover:bg-[#c3dcb2] hover:text-[#202b18]'
                 : compact
                   ? 'bg-[#ffffff]/72 text-[#5d6b4d] hover:bg-[#dfeccd] hover:text-[#33402a] hover:shadow-[inset_0_0_0_1px_rgba(93,107,77,0.18)]'

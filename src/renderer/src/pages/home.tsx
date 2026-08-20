@@ -134,12 +134,12 @@ export function HomePage(): ReactElement {
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-9 text-[#3e4a32] lg:px-8">
       <section className="relative overflow-hidden border-b border-[#e4e4e7] pb-8">
-        <div className="pointer-events-none absolute -right-10 -top-14 h-36 w-36 rounded-[38%_62%_44%_56%/55%_45%_55%_45%] bg-[#d4e4c1]/55" />
+        <div className="pointer-events-none absolute -right-10 -top-14 h-36 w-36 rounded-[38%_62%_44%_56%/55%_45%_55%_45%] bg-[#fff7ed]/55" />
         <div className="pointer-events-none absolute bottom-3 right-28 h-16 w-28 rounded-[8%_92%_12%_88%/78%_22%_78%_22%] bg-[#c8b89e]/30" />
 
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full bg-[#d4e4c1]/78 px-4 py-1.5 text-[11px] font-semibold text-[#3e4a32] shadow-[0_6px_14px_rgba(93,107,77,0.10)]">
+            <div className="inline-flex items-center gap-2 rounded-full bg-[#fff7ed]/78 px-4 py-1.5 text-[11px] font-semibold text-[#3e4a32] shadow-[0_6px_14px_rgba(93,107,77,0.10)]">
               <Sparkles className="h-3.5 w-3.5 text-[#5d6b4d]" />
               {t('home.eyebrow')}
             </div>
@@ -159,11 +159,11 @@ export function HomePage(): ReactElement {
           onClick={() => void handleQuickCreate()}
           className="group relative flex min-h-[240px] flex-col overflow-hidden rounded-[2rem] border border-[#e4e4e7] bg-[#f4f4f5] p-7 text-left shadow-[0_14px_34px_rgba(86,73,54,0.12)] transition-colors hover:border-[#c8b89e] hover:bg-[#e5dccb] disabled:cursor-not-allowed disabled:opacity-65"
         >
-          <div className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] bg-[#d4e4c1]/70 transition-transform group-hover:scale-110" />
+          <div className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] bg-[#fff7ed]/70 transition-transform group-hover:scale-110" />
           <div className="pointer-events-none absolute -bottom-14 left-10 h-28 w-40 rounded-[8%_92%_12%_88%/78%_22%_78%_22%] bg-[#c8b89e]/35" />
 
           <div className="relative flex items-start justify-between gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[10%_90%_16%_84%/78%_22%_78%_22%] bg-[#8fbc8f] text-white shadow-[0_10px_22px_rgba(93,107,77,0.18)]">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[10%_90%_16%_84%/78%_22%_78%_22%] bg-[#ea580c] text-white shadow-[0_10px_22px_rgba(93,107,77,0.18)]">
               <FileText className="h-5 w-5" />
             </div>
             <span className="rounded-full bg-[#ffffff]/84 px-3 py-1.5 text-[11px] font-semibold text-[#5d6b4d] shadow-[0_6px_14px_rgba(86,73,54,0.08)]">
@@ -191,9 +191,9 @@ export function HomePage(): ReactElement {
         <button
           type="button"
           onClick={() => void handleExplore()}
-          className="group relative flex min-h-[240px] flex-col overflow-hidden rounded-[2rem] border border-[#c8d6ba] bg-[#d4e4c1] p-7 text-left shadow-[0_14px_34px_rgba(86,73,54,0.12)] transition-colors hover:border-[#a9bd97] hover:bg-[#cedfb8]"
+          className="group relative flex min-h-[240px] flex-col overflow-hidden rounded-[2rem] border border-[#fff7ed] bg-[#fff7ed] p-7 text-left shadow-[0_14px_34px_rgba(86,73,54,0.12)] transition-colors hover:border-[#a9bd97] hover:bg-[#cedfb8]"
         >
-          <div className="pointer-events-none absolute -bottom-12 -left-10 h-36 w-36 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] bg-[#8fbc8f]/28 transition-transform group-hover:scale-110" />
+          <div className="pointer-events-none absolute -bottom-12 -left-10 h-36 w-36 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] bg-[#ea580c]/28 transition-transform group-hover:scale-110" />
           <div className="pointer-events-none absolute right-8 top-9 h-24 w-32 rounded-[8%_92%_12%_88%/78%_22%_78%_22%] bg-[#f4f4f5]/55" />
 
           <div className="relative flex items-start justify-between gap-4">
@@ -229,7 +229,7 @@ export function HomePage(): ReactElement {
           className="group relative flex min-h-[240px] flex-col overflow-hidden rounded-[2rem] border border-[#e4e4e7] bg-[#f4f4f5] p-7 text-left shadow-[0_14px_34px_rgba(86,73,54,0.10)] transition-colors hover:border-[#c8b89e] hover:bg-[#fafafa] disabled:cursor-not-allowed disabled:opacity-65"
         >
           <div className="pointer-events-none absolute -right-14 -bottom-12 h-36 w-36 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] bg-[#c8b89e]/30 transition-transform group-hover:scale-110" />
-          <div className="pointer-events-none absolute left-8 top-9 h-24 w-32 rounded-[8%_92%_12%_88%/78%_22%_78%_22%] bg-[#d4e4c1]/45" />
+          <div className="pointer-events-none absolute left-8 top-9 h-24 w-32 rounded-[8%_92%_12%_88%/78%_22%_78%_22%] bg-[#fff7ed]/45" />
 
           <div className="relative flex items-start justify-between gap-4">
             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[10%_90%_16%_84%/78%_22%_78%_22%] bg-[#b18f5e] text-white shadow-[0_10px_22px_rgba(86,73,54,0.16)]">

@@ -26,7 +26,7 @@ function CheckIcon({ checked }: { checked: boolean }): React.JSX.Element {
       className={cn(
         'flex h-5 w-5 items-center justify-center rounded-full border-2 transition-all duration-200',
         checked
-          ? 'border-[#6f8159] bg-[#6f8159] text-white'
+          ? 'border-[#ea580c] bg-[#ea580c] text-white'
           : 'border-[#e4e4e7]/80 bg-white/70 text-transparent group-hover:border-[#b5c9a0]'
       )}
     >
@@ -115,8 +115,8 @@ export function AssetPickerDialog({
                   className={cn(
                     'group overflow-hidden rounded-lg border-2 transition-all duration-200',
                     checked
-                      ? 'border-[#6f8159] ring-2 ring-[#6f8159]/40 shadow-md shadow-[#6f8159]/20'
-                      : 'border-[#e4e4e7]/60 hover:border-[#b5c9a0] hover:shadow-md hover:shadow-[#c7d9b4]/40 active:scale-[0.97]'
+                      ? 'border-[#ea580c] ring-2 ring-[#ea580c]/40 shadow-md shadow-[#ea580c]/20'
+                      : 'border-[#e4e4e7]/60 hover:border-[#b5c9a0] hover:shadow-md hover:shadow-[#fff7ed]/40 active:scale-[0.97]'
                   )}
                 >
                   <div className="relative aspect-[4/3]">

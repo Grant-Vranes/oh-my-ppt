@@ -32,7 +32,7 @@ function CheckIcon({ checked }: { checked: boolean }): ReactNode {
       className={cn(
         'flex h-5 w-5 items-center justify-center rounded-full border-2 transition-all duration-200',
         checked
-          ? 'border-[#6f8159] bg-[#6f8159] text-white'
+          ? 'border-[#ea580c] bg-[#ea580c] text-white'
           : 'border-[#e4e4e7]/80 bg-white/85 text-transparent group-hover:border-[#b5c9a0]'
       )}
     >
@@ -229,7 +229,7 @@ export function HtmlEditorMediaInsertDialog({
               </div>
             ) : assets.length === 0 ? (
               <div className="flex h-48 flex-col items-center justify-center gap-2 rounded-md border border-dashed border-[#cfc2aa] bg-[#fffdf7] text-sm text-[#6f6658]">
-                <Icon className="h-6 w-6 text-[#6f8159]" />
+                <Icon className="h-6 w-6 text-[#ea580c]" />
                 {t('htmlEditor.mediaLibraryEmpty')}
               </div>
             ) : (
@@ -242,8 +242,8 @@ export function HtmlEditorMediaInsertDialog({
                       className={cn(
                         'group overflow-hidden rounded-lg border-2 transition-all duration-200',
                         selected
-                          ? 'border-[#6f8159] ring-2 ring-[#6f8159]/40 shadow-md shadow-[#6f8159]/20'
-                          : 'border-[#e4e4e7]/60 hover:border-[#b5c9a0] hover:shadow-md hover:shadow-[#c7d9b4]/40'
+                          ? 'border-[#ea580c] ring-2 ring-[#ea580c]/40 shadow-md shadow-[#ea580c]/20'
+                          : 'border-[#e4e4e7]/60 hover:border-[#b5c9a0] hover:shadow-md hover:shadow-[#fff7ed]/40'
                       )}
                     >
                       <div className="relative aspect-[4/3]">
@@ -322,7 +322,7 @@ export function HtmlEditorMediaInsertDialog({
                 if (event.key === 'Enter') void insertExternalUrl()
               }}
               placeholder={t('htmlEditor.mediaUrlPlaceholder')}
-              className={`h-10 w-full rounded-md border bg-white px-3 text-sm text-[#3e4a32] outline-none placeholder:text-[#9a907f] focus:ring-2 focus:ring-[#8fbc8f]/50 ${
+              className={`h-10 w-full rounded-md border bg-white px-3 text-sm text-[#3e4a32] outline-none placeholder:text-[#9a907f] focus:ring-2 focus:ring-[#ea580c]/50 ${
                 urlError ? 'border-[#b65c50]' : 'border-[#cfc2aa]'
               }`}
             />

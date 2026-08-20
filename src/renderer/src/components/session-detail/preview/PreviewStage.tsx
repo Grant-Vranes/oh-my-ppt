@@ -274,7 +274,7 @@ export const PreviewStage = forwardRef<
   return (
     <main className="flex min-h-0 flex-1 flex-col px-3 pb-3 pt-1">
       <div className="relative min-h-0 flex-1 overflow-hidden rounded-[2rem] bg-[#f4f4f5]/54 p-3 shadow-[0_18px_38px_rgba(93,107,77,0.11)]">
-        <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] bg-[#d4e4c1]/42" />
+        <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] bg-[#fff7ed]/42" />
         <div className="pointer-events-none absolute -bottom-24 left-8 h-48 w-64 rounded-[5%_95%_10%_90%/85%_15%_85%_15%] bg-[#c8b89e]/20" />
         {selectedPage ? (
           <div
@@ -396,7 +396,7 @@ export const PreviewStage = forwardRef<
           </div>
         ) : (
           <div className="relative flex h-full min-h-[420px] flex-col items-center justify-center gap-4 rounded-[1.55rem] bg-[#f4f4f5]/84 text-center text-[#5d6b4d] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.32)]">
-            <Sparkles className="h-7 w-7 text-[#8fbc8f]" />
+            <Sparkles className="h-7 w-7 text-[#ea580c]" />
             <div className="space-y-1">
               <p className="text-base font-medium text-[#3e4a32]">
                 {t('sessionDetail.emptyPreviewTitle')}

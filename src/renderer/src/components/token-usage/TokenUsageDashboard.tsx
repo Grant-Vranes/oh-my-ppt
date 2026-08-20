@@ -85,10 +85,10 @@ export function TokenUsageDashboard(): React.JSX.Element {
       label: t('settings.usageTotalTokens'),
       value: totalTokens,
       icon: Coins,
-      bg: 'bg-[#d4e4c1]',
-      border: 'border-[#c8d6ba]',
+      bg: 'bg-[#fff7ed]',
+      border: 'border-[#fff7ed]',
       iconBg: 'bg-[#5d6b4d]',
-      blob: 'bg-[#8fbc8f]/30'
+      blob: 'bg-[#ea580c]/30'
     },
     {
       label: t('settings.usageInputTokens'),
@@ -97,7 +97,7 @@ export function TokenUsageDashboard(): React.JSX.Element {
       bg: 'bg-[#f4f4f5]',
       border: 'border-[#e4e4e7]',
       iconBg: 'bg-[#6f8a5b]',
-      blob: 'bg-[#d4e4c1]/55'
+      blob: 'bg-[#fff7ed]/55'
     },
     {
       label: t('settings.usageOutputTokens'),
@@ -112,7 +112,7 @@ export function TokenUsageDashboard(): React.JSX.Element {
       label: t('settings.usageCalls'),
       value: callCount,
       icon: Activity,
-      bg: 'bg-[#d4e4c1]',
+      bg: 'bg-[#fff7ed]',
       border: 'border-[#a9bd97]',
       iconBg: 'bg-[#3e4a32]',
       blob: 'bg-[#5d6b4d]/22'

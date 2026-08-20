@@ -37,7 +37,7 @@ function HtmlEditorAiMessageBubble({
         className={`max-w-[280px] whitespace-pre-wrap break-words rounded-2xl border px-3 py-2 text-[13px] leading-5 shadow-sm ${
           isUser
             ? 'border-[#c7d9b4]/80 bg-[#e6f1dc]/85 text-[#34402c]'
-            : 'border-[#ded2bd]/80 bg-[#ffffff]/90 text-[#3f372b]'
+            : 'border-[#e4e4e7]/80 bg-[#ffffff]/90 text-[#3f372b]'
         }`}
       >
         {isUser && selectedElement?.selector ? (
@@ -336,7 +336,7 @@ export function HtmlEditorAiPanel(): ReactElement {
           placeholder={t('htmlEditor.aiPlaceholder')}
           disabled={isSending}
           rows={4}
-          className="min-h-[96px] resize-none rounded-xl border-[#ded2bd]/75 bg-[#ffffff]/90 text-[13px] leading-5 focus-visible:border-[#9bb98a] focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="min-h-[96px] resize-none rounded-xl border-[#e4e4e7]/75 bg-[#ffffff]/90 text-[13px] leading-5 focus-visible:border-[#9bb98a] focus-visible:ring-0 focus-visible:ring-offset-0"
         />
         <div className="mt-2 flex items-center justify-between gap-2">
           <span className="min-w-0 truncate text-[10px] text-[#827662]">

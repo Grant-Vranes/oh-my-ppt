@@ -103,7 +103,7 @@ export function StyleSelect({
           type="button"
           disabled={disabled}
           className={cn(
-            'flex w-full items-center justify-between gap-2 rounded-lg border border-[#d8ccb5]/80 bg-[#ffffff]/86 py-2.5 pl-3 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(77,63,46,0.08)] focus:outline-none focus:ring-2 focus:ring-[#8fbc8f] disabled:cursor-not-allowed disabled:opacity-50',
+            'flex w-full items-center justify-between gap-2 rounded-lg border border-[#e4e4e7]/80 bg-[#ffffff]/86 py-2.5 pl-3 text-sm text-foreground shadow-[inset_0_1px_2px_rgba(77,63,46,0.08)] focus:outline-none focus:ring-2 focus:ring-[#8fbc8f] disabled:cursor-not-allowed disabled:opacity-50',
             compact ? 'h-9 px-2.5 text-xs' : 'pr-3',
             className
           )}
@@ -133,12 +133,12 @@ export function StyleSelect({
         side="bottom"
         avoidCollisions={false}
         className={cn(
-          'min-w-[var(--radix-popover-trigger-width)] w-[360px] overflow-hidden rounded-lg border border-[#d8ccb5]/85 bg-[#ffffff] p-0 text-foreground shadow-[0_12px_28px_rgba(88,72,54,0.18)]',
+          'min-w-[var(--radix-popover-trigger-width)] w-[360px] overflow-hidden rounded-lg border border-[#e4e4e7]/85 bg-[#ffffff] p-0 text-foreground shadow-[0_12px_28px_rgba(88,72,54,0.18)]',
           dropdownClassName
         )}
       >
         <div className="border-b border-[#e5ddc8]/80 p-2">
-          <div className="flex items-center gap-1.5 rounded-md border border-[#d8ccb5]/80 bg-white/80 px-2 py-1">
+          <div className="flex items-center gap-1.5 rounded-md border border-[#e4e4e7]/80 bg-white/80 px-2 py-1">
             <Search className="h-3.5 w-3.5 shrink-0 text-[#7c6a4c]/60" />
             <input
               type="text"

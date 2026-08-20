@@ -74,7 +74,7 @@ export function AnimationPreferenceChips({
                   : 'border-[#65794d] bg-[#d4e8c6] text-[#28331f] shadow-[0_2px_8px_rgba(93,107,77,0.12)] hover:border-[#4f623d] hover:bg-[#c3dcb2] hover:text-[#202b18]'
                 : compact
                   ? 'bg-[#ffffff]/72 text-[#5d6b4d] hover:bg-[#dfeccd] hover:text-[#33402a] hover:shadow-[inset_0_0_0_1px_rgba(93,107,77,0.18)]'
-                  : 'border-[#d8ccb5]/75 bg-white/65 text-[#7f8a70] hover:border-[#a9c394] hover:bg-[#dfeccd] hover:text-[#33402a]'
+                  : 'border-[#e4e4e7]/75 bg-white/65 text-[#7f8a70] hover:border-[#a9c394] hover:bg-[#dfeccd] hover:text-[#33402a]'
             }`}
           >
             {t(option.labelKey)}

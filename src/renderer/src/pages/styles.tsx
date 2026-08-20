@@ -334,9 +334,9 @@ export function StylesPage(): React.JSX.Element {
         <p className="mt-2 text-[12px] text-muted-foreground">{t('styles.description')}</p>
       </div>
 
-      <div className="mb-5 rounded-lg border border-[#d8ccb5]/75 bg-[#ffffff]/76 p-3">
+      <div className="mb-5 rounded-lg border border-[#e4e4e7]/75 bg-[#ffffff]/76 p-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex min-h-9 flex-1 items-center gap-2 rounded-md border border-[#d8ccb5]/80 bg-white/80 px-2.5">
+          <div className="flex min-h-9 flex-1 items-center gap-2 rounded-md border border-[#e4e4e7]/80 bg-white/80 px-2.5">
             <Search className="h-4 w-4 shrink-0 text-[#7c6a4c]/60" />
             <input
               type="text"
@@ -389,7 +389,7 @@ export function StylesPage(): React.JSX.Element {
               key={style.id}
               ref={!style.thumbnailPath && style.previewPath ? setItemRef(style.id) : undefined}
               data-style-card-id={style.id}
-              className="group overflow-hidden rounded-2xl border border-[#d8cfbc]/75 bg-white/70 text-left shadow-[0_4px_16px_rgba(93,107,77,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(93,107,77,0.15)]"
+              className="group overflow-hidden rounded-2xl border border-[#e4e4e7]/75 bg-white/70 text-left shadow-[0_4px_16px_rgba(93,107,77,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(93,107,77,0.15)]"
             >
               <div className="relative aspect-video overflow-hidden bg-[#f4f4f5]">
                 {style.thumbnailPath ? (
@@ -583,7 +583,7 @@ export function StylesPage(): React.JSX.Element {
         ))}
       </div>
       {filteredStyles.length === 0 && (
-        <div className="rounded-lg border border-dashed border-[#d8ccb5] py-12 text-center text-sm text-muted-foreground">
+        <div className="rounded-lg border border-dashed border-[#e4e4e7] py-12 text-center text-sm text-muted-foreground">
           {emptyStylesText}
         </div>
       )}

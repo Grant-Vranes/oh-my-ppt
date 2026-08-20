@@ -287,7 +287,7 @@ export function MasterGradientEditor(): React.JSX.Element {
             type="single"
             value={activeBackgroundStyle}
             onValueChange={selectBackgroundStyle}
-            className="flex-wrap rounded-md border border-[#d7cbb7]/70 bg-[#ffffff] p-0.5"
+            className="flex-wrap rounded-md border border-[#e4e4e7]/70 bg-[#ffffff] p-0.5"
           >
             <ToggleGroupItem
               value="solid"
@@ -334,7 +334,7 @@ export function MasterGradientEditor(): React.JSX.Element {
               <button
                 type="button"
                 aria-label={t('sessionDetail.masterGradientConfigure')}
-                className="block h-12 w-full cursor-pointer overflow-hidden rounded-md border border-[#d7cbb7]/75 shadow-[inset_0_1px_2px_rgba(74,59,42,0.08)] transition-shadow hover:shadow-[inset_0_0_0_1px_rgba(80,102,66,0.72)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5d6b4d]"
+                className="block h-12 w-full cursor-pointer overflow-hidden rounded-md border border-[#e4e4e7]/75 shadow-[inset_0_1px_2px_rgba(74,59,42,0.08)] transition-shadow hover:shadow-[inset_0_0_0_1px_rgba(80,102,66,0.72)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5d6b4d]"
                 style={{ background: buildMasterGradientCss(config.backgroundGradient) }}
                 onClick={openGradientEditor}
               />
@@ -419,7 +419,7 @@ export function MasterGradientEditor(): React.JSX.Element {
           <div className="space-y-3">
             <div
               aria-label={t('sessionDetail.masterGradientPreview')}
-              className="h-16 overflow-hidden rounded-md border border-[#d7cbb7]/75 shadow-[inset_0_1px_2px_rgba(74,59,42,0.08)]"
+              className="h-16 overflow-hidden rounded-md border border-[#e4e4e7]/75 shadow-[inset_0_1px_2px_rgba(74,59,42,0.08)]"
               style={{ background: buildMasterGradientCss(gradient) }}
             />
 
@@ -434,7 +434,7 @@ export function MasterGradientEditor(): React.JSX.Element {
                       setGradientDraft(normalizeMasterGradient({ ...gradient, type }))
                     }
                   }}
-                  className="rounded-md border border-[#d7cbb7]/70 bg-[#ffffff] p-0.5"
+                  className="rounded-md border border-[#e4e4e7]/70 bg-[#ffffff] p-0.5"
                 >
                   <ToggleGroupItem
                     value="linear"
@@ -488,7 +488,7 @@ export function MasterGradientEditor(): React.JSX.Element {
                       max={359}
                       value={gradient.angle}
                       aria-label={t('sessionDetail.masterGradientAngle')}
-                      className="h-7 rounded-md border-[#d7cbb7]/70 bg-[#ffffff] px-1 text-center text-xs"
+                      className="h-7 rounded-md border-[#e4e4e7]/70 bg-[#ffffff] px-1 text-center text-xs"
                       onChange={(event) => updateAngle(Number(event.target.value))}
                     />
                   </label>
@@ -503,7 +503,7 @@ export function MasterGradientEditor(): React.JSX.Element {
               <div
                 aria-label={t('sessionDetail.masterGradientAddStop')}
                 title={t('sessionDetail.masterGradientAddStop')}
-                className="relative h-10 cursor-copy select-none touch-none rounded-md border border-[#d7cbb7]/75"
+                className="relative h-10 cursor-copy select-none touch-none rounded-md border border-[#e4e4e7]/75"
                 style={{ background: buildMasterGradientCss(gradient) }}
                 onPointerDown={(event) => {
                   if (event.target === event.currentTarget)
@@ -560,7 +560,7 @@ export function MasterGradientEditor(): React.JSX.Element {
                   aria-label={t('sessionDetail.masterGradientStop', {
                     position: selectedStop.position
                   })}
-                  className="h-7 rounded-md border-[#d7cbb7]/70 bg-[#ffffff] px-1 text-center text-xs"
+                  className="h-7 rounded-md border-[#e4e4e7]/70 bg-[#ffffff] px-1 text-center text-xs"
                   onChange={(event) => updateSelectedStop({ position: Number(event.target.value) })}
                 />
                 <Tooltip>
@@ -593,7 +593,7 @@ export function MasterGradientEditor(): React.JSX.Element {
                     type="button"
                     aria-label={t('sessionDetail.masterGradientPresets')}
                     title={colors.join(' → ')}
-                    className="h-7 cursor-pointer rounded-md border border-[#d7cbb7]/70 transition-transform hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5d6b4d]"
+                    className="h-7 cursor-pointer rounded-md border border-[#e4e4e7]/70 transition-transform hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5d6b4d]"
                     style={{ background: `linear-gradient(135deg, ${colors.join(', ')})` }}
                     onClick={() => applyPreset(colors)}
                   />

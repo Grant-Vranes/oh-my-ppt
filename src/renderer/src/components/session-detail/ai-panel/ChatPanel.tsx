@@ -206,7 +206,7 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
 
   return (
     <>
-      <div className="relative mx-2.5 mt-2.5 overflow-hidden rounded-[1.35rem] border border-[#e1d6c4]/72 bg-[#ffffff]/78 px-3 pb-2.5 pt-3 shadow-[0_4px_12px_rgba(77,61,43,0.06)]">
+      <div className="relative mx-2.5 mt-2.5 overflow-hidden rounded-[1.35rem] border border-[#e4e4e7]/72 bg-[#ffffff]/78 px-3 pb-2.5 pt-3 shadow-[0_4px_12px_rgba(77,61,43,0.06)]">
         <div className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] bg-[#c7d9b4]/12" />
         <div className="relative flex flex-col gap-2">
           <h3 className="text-sm font-semibold tracking-[0.04em] text-[#34402c]">
@@ -218,7 +218,7 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
               value={chatType}
               onValueChange={(value) => setChatType(value === 'page' ? 'page' : 'main')}
             >
-              <SelectTrigger className="h-8 w-[132px] rounded-full border-[#ded2bd]/70 bg-[#ffffff]/82 px-3 py-1 text-xs text-[#3e4a32] shadow-none">
+              <SelectTrigger className="h-8 w-[132px] rounded-full border-[#e4e4e7]/70 bg-[#ffffff]/82 px-3 py-1 text-xs text-[#3e4a32] shadow-none">
                 <SelectValue placeholder={t('sessionDetail.contextPlaceholder')} />
               </SelectTrigger>
               <SelectContent>
@@ -331,7 +331,7 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
 
       <div
         className={cn(
-          'mx-2.5 mb-2.5 rounded-[1.4rem] border border-[#ded2bd]/72 bg-[#ffffff]/84 px-2.5 pb-3 pt-2 shadow-[0_12px_24px_rgba(74,59,42,0.11)] transition-colors',
+          'mx-2.5 mb-2.5 rounded-[1.4rem] border border-[#e4e4e7]/72 bg-[#ffffff]/84 px-2.5 pb-3 pt-2 shadow-[0_12px_24px_rgba(74,59,42,0.11)] transition-colors',
           assetDragActive && 'border-[#afc79a]/75 bg-[#f3f8ec]/88'
         )}
         onDragEnter={(event) => {
@@ -353,7 +353,7 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
         }}
       >
         {selectedSelector && (
-          <div className="mb-2 flex items-center gap-2 rounded-[1rem] border border-[#ded2bd]/65 bg-[#f4ebdc]/70 px-2 py-1.5">
+          <div className="mb-2 flex items-center gap-2 rounded-[1rem] border border-[#e4e4e7]/65 bg-[#f4ebdc]/70 px-2 py-1.5">
             <span className="shrink-0 rounded-full bg-[#dcebcf]/82 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-[#4f6340]">
               {t('sessionDetail.selectorBadge')}
             </span>
@@ -391,7 +391,7 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
           </div>
         )}
         {chatType === 'main' && (
-          <div className="mb-2 flex items-center gap-2 rounded-[1rem] border border-[#ded2bd]/65 bg-[#f4ebdc]/70 px-2.5 py-2 text-xs text-[#6a5c48]">
+          <div className="mb-2 flex items-center gap-2 rounded-[1rem] border border-[#e4e4e7]/65 bg-[#f4ebdc]/70 px-2.5 py-2 text-xs text-[#6a5c48]">
             <span className="min-w-0 flex-1">{t('sessionDetail.mainDeckHint')}</span>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -498,7 +498,7 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
           }}
           disabled={isGenerating}
           rows={4}
-          className="min-h-[96px] resize-none rounded-[1.15rem] border border-[#ded2bd]/72 bg-[#ffffff]/88 px-3 py-2 text-[13px] leading-5 text-[#3f4b35] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#9bb98a] focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="min-h-[96px] resize-none rounded-[1.15rem] border border-[#e4e4e7]/72 bg-[#ffffff]/88 px-3 py-2 text-[13px] leading-5 text-[#3f4b35] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#9bb98a] focus-visible:ring-0 focus-visible:ring-offset-0"
         />
         <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
           <div className="flex min-w-0 items-center gap-2">

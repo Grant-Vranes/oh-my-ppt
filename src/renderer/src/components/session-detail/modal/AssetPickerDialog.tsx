@@ -27,7 +27,7 @@ function CheckIcon({ checked }: { checked: boolean }): React.JSX.Element {
         'flex h-5 w-5 items-center justify-center rounded-full border-2 transition-all duration-200',
         checked
           ? 'border-[#6f8159] bg-[#6f8159] text-white'
-          : 'border-[#ded2bd]/80 bg-white/70 text-transparent group-hover:border-[#b5c9a0]'
+          : 'border-[#e4e4e7]/80 bg-white/70 text-transparent group-hover:border-[#b5c9a0]'
       )}
     >
       <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -116,7 +116,7 @@ export function AssetPickerDialog({
                     'group overflow-hidden rounded-lg border-2 transition-all duration-200',
                     checked
                       ? 'border-[#6f8159] ring-2 ring-[#6f8159]/40 shadow-md shadow-[#6f8159]/20'
-                      : 'border-[#ded2bd]/60 hover:border-[#b5c9a0] hover:shadow-md hover:shadow-[#c7d9b4]/40 active:scale-[0.97]'
+                      : 'border-[#e4e4e7]/60 hover:border-[#b5c9a0] hover:shadow-md hover:shadow-[#c7d9b4]/40 active:scale-[0.97]'
                   )}
                 >
                   <div className="relative aspect-[4/3]">

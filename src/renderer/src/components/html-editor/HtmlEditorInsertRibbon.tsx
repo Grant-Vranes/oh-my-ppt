@@ -105,7 +105,7 @@ function HoverInsertButton({
         sideOffset={8}
         onMouseEnter={cancelClose}
         onMouseLeave={scheduleClose}
-        className="z-50 border-[#d8ccb5]/85 bg-[#ffffff] p-2 shadow-lg"
+        className="z-50 border-[#e4e4e7]/85 bg-[#ffffff] p-2 shadow-lg"
       >
         {children}
       </PopoverContent>
@@ -206,7 +206,7 @@ export function HtmlEditorInsertRibbon({
             <button
               key={tpl.id}
               type="button"
-              className="flex min-h-[90px] flex-col items-center justify-center gap-2 rounded-lg border border-[#d8ccb5]/78 bg-[#1f261d] px-2 py-3 text-center transition-colors hover:border-[#8fbc8f]"
+              className="flex min-h-[90px] flex-col items-center justify-center gap-2 rounded-lg border border-[#e4e4e7]/78 bg-[#1f261d] px-2 py-3 text-center transition-colors hover:border-[#8fbc8f]"
               onClick={() => void insertion.addArtText(tpl.id as ArtTextTemplateId)}
             >
               <span className="text-[18px] font-extrabold text-white">{tpl.defaultText}</span>
@@ -222,7 +222,7 @@ export function HtmlEditorInsertRibbon({
             <button
               key={def.type}
               type="button"
-              className="flex min-h-[68px] flex-col items-center justify-center gap-1 rounded-lg border border-[#d8ccb5]/70 bg-white/70 px-2 py-2 text-[10px] font-bold text-[#3e4a32] transition-colors hover:border-[#8fbc8f] hover:bg-white"
+              className="flex min-h-[68px] flex-col items-center justify-center gap-1 rounded-lg border border-[#e4e4e7]/70 bg-white/70 px-2 py-2 text-[10px] font-bold text-[#3e4a32] transition-colors hover:border-[#8fbc8f] hover:bg-white"
               onClick={() => void insertion.addShape(def.type)}
             >
               <svg
@@ -268,7 +268,7 @@ export function HtmlEditorInsertRibbon({
               <button
                 key={item.type}
                 type="button"
-                className="flex min-h-[60px] flex-col items-center justify-center gap-1 rounded-lg border border-[#d8ccb5]/70 bg-white/70 px-2 py-2 text-[10px] font-bold text-[#3e4a32] transition-colors hover:border-[#8fbc8f] hover:bg-white"
+                className="flex min-h-[60px] flex-col items-center justify-center gap-1 rounded-lg border border-[#e4e4e7]/70 bg-white/70 px-2 py-2 text-[10px] font-bold text-[#3e4a32] transition-colors hover:border-[#8fbc8f] hover:bg-white"
                 onClick={() => void insertion.addChart(item.type)}
               >
                 <Icon className="h-5 w-5 text-[#5d6b4d]" />

@@ -15,7 +15,7 @@ function ToggleRow({
   onChange: (checked: boolean) => void
 }): React.JSX.Element {
   return (
-    <label className="flex h-8 items-center justify-between rounded-full border border-[#d7cbb7]/40 bg-[#fafafa]/40 px-3 text-xs text-[#59664b]">
+    <label className="flex h-8 items-center justify-between rounded-full border border-[#e4e4e7]/40 bg-[#fafafa]/40 px-3 text-xs text-[#59664b]">
       <span>{label}</span>
       <input
         type="checkbox"
@@ -62,7 +62,7 @@ export function MediaInspector({
                 )
               }
             >
-              <SelectTrigger className="h-8 rounded-full border-[#ded2bd]/72 bg-[#ffffff]/88 px-2.5 text-xs text-[#3f4b35] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#9bb98a]">
+              <SelectTrigger className="h-8 rounded-full border-[#e4e4e7]/72 bg-[#ffffff]/88 px-2.5 text-xs text-[#3f4b35] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#9bb98a]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -87,7 +87,7 @@ export function MediaInspector({
                   { commit: true, fields: ['alt'] }
                 )
               }
-              className="h-8 rounded-full border border-[#ded2bd]/72 bg-[#ffffff]/88 px-2.5 text-xs text-[#3f4b35] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#9bb98a] focus-visible:ring-0 focus-visible:ring-offset-0"
+              className="h-8 rounded-full border border-[#e4e4e7]/72 bg-[#ffffff]/88 px-2.5 text-xs text-[#3f4b35] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#9bb98a] focus-visible:ring-0 focus-visible:ring-offset-0"
             />
           </label>
         )}

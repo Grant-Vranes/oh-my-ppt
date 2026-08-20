@@ -38,7 +38,7 @@ export function AppearanceInspector({
                 { commit: true, fields: ['opacity'] }
               )
             }
-            className="h-8 rounded-full border border-[#ded2bd]/72 bg-[#ffffff]/88 px-2.5 text-xs text-[#3f4b35] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#9bb98a] focus-visible:ring-0 focus-visible:ring-offset-0"
+            className="h-8 rounded-full border border-[#e4e4e7]/72 bg-[#ffffff]/88 px-2.5 text-xs text-[#3f4b35] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#9bb98a] focus-visible:ring-0 focus-visible:ring-offset-0"
           />
         </label>
         {!isVideo && (
@@ -68,7 +68,7 @@ export function AppearanceInspector({
                     { commit: true, fields: ['backgroundColor'] }
                   )
                 }
-                className="h-8 rounded-full border border-[#ded2bd]/72 bg-[#ffffff]/88 px-2.5 text-xs text-[#3f4b35] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#9bb98a] focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="h-8 rounded-full border border-[#e4e4e7]/72 bg-[#ffffff]/88 px-2.5 text-xs text-[#3f4b35] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#9bb98a] focus-visible:ring-0 focus-visible:ring-offset-0"
               />
             </div>
           </label>

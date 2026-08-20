@@ -86,9 +86,9 @@ function parsePageCards(thinkingMd: string): PageCard[] {
 
 const STAGE_COLORS: Record<ThinkingStage, { bg: string; text: string; border: string }> = {
   collect: { bg: 'bg-[#f4f4f5]', text: 'text-[#5d6b4d]', border: 'border-[#c8b89e]' },
-  outline: { bg: 'bg-[#f4f4f5]', text: 'text-[#5d6b4d]', border: 'border-[#e0d8c8]' },
+  outline: { bg: 'bg-[#f4f4f5]', text: 'text-[#5d6b4d]', border: 'border-[#e4e4e7]' },
   draft: { bg: 'bg-[#f4f4f5]', text: 'text-[#5d6b4d]', border: 'border-[#c8b89e]' },
-  refine: { bg: 'bg-[#f4f4f5]', text: 'text-[#5d6b4d]', border: 'border-[#e0d8c8]' },
+  refine: { bg: 'bg-[#f4f4f5]', text: 'text-[#5d6b4d]', border: 'border-[#e4e4e7]' },
   ready: { bg: 'bg-[#8fbc8f]', text: 'text-[#3e4a32]', border: 'border-[#8fbc8f]' }
 }
 
@@ -225,7 +225,7 @@ export function ThinkingPageCards({
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
         {viewMode === 'document' ? (
           hasDocument ? (
-            <div className="rounded-[2rem] border border-[#e0d8c8] bg-[#ffffff] px-4 py-4 shadow-sm">
+            <div className="rounded-[2rem] border border-[#e4e4e7] bg-[#ffffff] px-4 py-4 shadow-sm">
               <div className="mb-3 flex items-center gap-2 border-b border-[#f4f4f5] pb-2 text-[11px] font-semibold text-[#5d6b4d]">
                 <FileText className="h-3.5 w-3.5" />
                 <span>thinking.md</span>

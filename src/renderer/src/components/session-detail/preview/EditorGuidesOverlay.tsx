@@ -436,7 +436,7 @@ export function EditorGuidesOverlay({
               aria-disabled={!hasEditorGuides}
               className={`flex h-full w-full items-center justify-center rounded-tl-md border border-[#c9c0ae]/75 transition-colors ${
                 hasEditorGuides
-                  ? 'bg-[#e4ddcf] text-[#746d60] hover:bg-[#d9cfbd]'
+                  ? 'bg-[#e4ddcf] text-[#746d60] hover:bg-[#e4e4e7]'
                   : 'cursor-not-allowed bg-[#e4ddcf]/70 text-[#a59b8c]'
               }`}
               onClick={(event) => {

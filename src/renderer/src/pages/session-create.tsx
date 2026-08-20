@@ -58,11 +58,11 @@ const isSupportedImageFile = (file: File): boolean =>
 type AttachedReferenceFile = ParsedDocumentPlanResult['files'][number]
 
 const compactInputClass =
-  'h-10 border-[#d8ccb5]/70 bg-white/75 px-3 py-2 text-sm shadow-[inset_0_1px_2px_rgba(73,61,44,0.04)] placeholder:text-[#9aa18b]'
+  'h-10 border-[#e4e4e7]/70 bg-white/75 px-3 py-2 text-sm shadow-[inset_0_1px_2px_rgba(73,61,44,0.04)] placeholder:text-[#9aa18b]'
 const settingsInputClass =
-  'h-8 border-[#d8ccb5]/70 bg-white/75 px-2.5 py-1.5 text-xs shadow-[inset_0_1px_2px_rgba(73,61,44,0.04)] placeholder:text-[#9aa18b]'
+  'h-8 border-[#e4e4e7]/70 bg-white/75 px-2.5 py-1.5 text-xs shadow-[inset_0_1px_2px_rgba(73,61,44,0.04)] placeholder:text-[#9aa18b]'
 const settingsSelectTriggerClass =
-  'h-8 border-[#d8ccb5]/70 bg-white/75 px-2.5 py-1.5 text-xs shadow-[inset_0_1px_2px_rgba(73,61,44,0.04)]'
+  'h-8 border-[#e4e4e7]/70 bg-white/75 px-2.5 py-1.5 text-xs shadow-[inset_0_1px_2px_rgba(73,61,44,0.04)]'
 const compactSelectContentClass = 'text-xs'
 const compactSelectItemClass = 'px-2.5 py-1.5 text-xs'
 const delay = (ms: number): Promise<void> =>
@@ -558,7 +558,7 @@ export function SessionCreatePage(): ReactElement {
 
   return (
     <div className="session-create-page mx-auto flex min-h-full w-full max-w-7xl flex-col gap-4 px-5 py-4 sm:px-6">
-      <div className="flex max-w-4xl flex-col items-start gap-1.5 border-b border-[#e0d8c8] px-1 pb-4">
+      <div className="flex max-w-4xl flex-col items-start gap-1.5 border-b border-[#e4e4e7] px-1 pb-4">
         <p className="rounded bg-[#d4e4c1]/78 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#3e4a32]">
           {t('home.eyebrow')}
         </p>
@@ -634,7 +634,7 @@ export function SessionCreatePage(): ReactElement {
                     </button>
                   </div>
                 </div>
-                <div className="overflow-hidden rounded-xl border border-[#e0d8c8] bg-[#ffffff]/90">
+                <div className="overflow-hidden rounded-xl border border-[#e4e4e7] bg-[#ffffff]/90">
                   {briefMode === 'edit' ? (
                     <Textarea
                       placeholder={t('home.briefPlaceholder')}
@@ -774,7 +774,7 @@ export function SessionCreatePage(): ReactElement {
                                   void handleChooseReferenceClick()
                                 }}
                                 disabled={parsingDocument}
-                                className="h-8 shrink-0 rounded-lg border border-[#e0d8c8] bg-[#ffffff]/84 px-3 text-xs font-medium text-[#5d6b4d] shadow-none hover:bg-[#d4e4c1]/65 hover:text-[#3e4a32]"
+                                className="h-8 shrink-0 rounded-lg border border-[#e4e4e7] bg-[#ffffff]/84 px-3 text-xs font-medium text-[#5d6b4d] shadow-none hover:bg-[#d4e4c1]/65 hover:text-[#3e4a32]"
                               >
                                 {parsingDocument ? (
                                   <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
@@ -929,9 +929,9 @@ export function SessionCreatePage(): ReactElement {
 
                 <section>
                   <label className="mb-2 block">{t('home.fontScheme')}</label>
-                  <div className="grid min-w-0 grid-cols-2 overflow-hidden rounded-lg border border-[#d8ccb5]/70 bg-white/75 shadow-[inset_0_1px_2px_rgba(73,61,44,0.04)]">
+                  <div className="grid min-w-0 grid-cols-2 overflow-hidden rounded-lg border border-[#e4e4e7]/70 bg-white/75 shadow-[inset_0_1px_2px_rgba(73,61,44,0.04)]">
                     <Select value={selectedTitleFontId} onValueChange={setSelectedTitleFontId}>
-                      <SelectTrigger className="h-8 min-w-0 rounded-none border-0 border-r border-[#d8ccb5]/70 bg-transparent px-2.5 py-1.5 text-xs shadow-none focus:ring-1">
+                      <SelectTrigger className="h-8 min-w-0 rounded-none border-0 border-r border-[#e4e4e7]/70 bg-transparent px-2.5 py-1.5 text-xs shadow-none focus:ring-1">
                         <span className="min-w-0 flex-1 truncate text-left">
                           <span className="mr-1.5 text-[10px] font-medium text-[#8b927f]">
                             {t('home.fontPairTitle')}

@@ -178,7 +178,7 @@ export function SessionCreateSuggestionDialog({
 
   return (
     <Dialog open={open} onOpenChange={close}>
-      <DialogContent className="max-w-4xl gap-0 overflow-hidden border-[#d8ccb5]/85 bg-[#f7f1e8] p-0">
+      <DialogContent className="max-w-4xl gap-0 overflow-hidden border-[#e4e4e7]/85 bg-[#f7f1e8] p-0">
         <DialogHeader className="border-b border-[#ded4c1] bg-[#ffffff] px-5 py-4 pr-12">
           <div className="flex items-start gap-3">
             <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#b9cda7]/75 bg-[#e6f1dc] text-[#405333] shadow-[0_4px_10px_rgba(93,107,77,0.08)]">
@@ -188,7 +188,7 @@ export function SessionCreateSuggestionDialog({
               <DialogTitle className="text-sm">{t('home.analysisSuggestionTitle')}</DialogTitle>
               {attachedReferenceFile && (
                 <span
-                  className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full border border-[#d8ccb5]/72 bg-[#ffffff]/86 px-2 py-1 text-[11px] font-medium text-[#5d6b4d]"
+                  className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full border border-[#e4e4e7]/72 bg-[#ffffff]/86 px-2 py-1 text-[11px] font-medium text-[#5d6b4d]"
                   title={attachedReferenceFile.path}
                 >
                   <FileText className="h-3 w-3 shrink-0" />

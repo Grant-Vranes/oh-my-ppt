@@ -524,7 +524,7 @@ export function InsertToolRow({ disabled }: ToolRowProps): React.JSX.Element {
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="w-[280px] max-w-[calc(100vw-2rem)] border-[#d8ccb5]/85 bg-[#ffffff] p-2"
+        className="w-[280px] max-w-[calc(100vw-2rem)] border-[#e4e4e7]/85 bg-[#ffffff] p-2"
       >
         <div className="grid grid-cols-3 gap-2">
           {CHART_TYPE_LIST.map((item) => {
@@ -533,7 +533,7 @@ export function InsertToolRow({ disabled }: ToolRowProps): React.JSX.Element {
               <button
                 type="button"
                 key={item.type}
-                className="flex min-h-[60px] flex-col items-center justify-center gap-1 rounded-lg border border-[#d8ccb5]/70 bg-white/70 px-2 py-2 text-[10px] font-bold text-[#3e4a32] transition-colors hover:border-[#8fbc8f] hover:bg-white"
+                className="flex min-h-[60px] flex-col items-center justify-center gap-1 rounded-lg border border-[#e4e4e7]/70 bg-white/70 px-2 py-2 text-[10px] font-bold text-[#3e4a32] transition-colors hover:border-[#8fbc8f] hover:bg-white"
                 onClick={() => {
                   actions?.onAddChart(item.type)
                   setChartOpen(false)
@@ -591,7 +591,7 @@ export function InsertToolRow({ disabled }: ToolRowProps): React.JSX.Element {
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="w-[560px] max-w-[calc(100vw-2rem)] border-[#d8ccb5]/85 bg-[#ffffff] p-2"
+        className="w-[560px] max-w-[calc(100vw-2rem)] border-[#e4e4e7]/85 bg-[#ffffff] p-2"
       >
         <style>{artTextPreviewStyles}</style>
         <div className="grid max-h-[420px] grid-cols-3 gap-2 overflow-y-auto pr-1">
@@ -653,14 +653,14 @@ export function InsertToolRow({ disabled }: ToolRowProps): React.JSX.Element {
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="w-[280px] max-w-[calc(100vw-2rem)] border-[#d8ccb5]/85 bg-[#ffffff] p-2"
+        className="w-[280px] max-w-[calc(100vw-2rem)] border-[#e4e4e7]/85 bg-[#ffffff] p-2"
       >
         <div className="grid grid-cols-3 gap-2">
           {SHAPE_LIST.map((def) => (
             <button
               type="button"
               key={def.type}
-              className="flex min-h-[68px] flex-col items-center justify-center gap-1 rounded-lg border border-[#d8ccb5]/70 bg-white/70 px-2 py-2 text-[10px] font-bold text-[#3e4a32] transition-colors hover:border-[#8fbc8f] hover:bg-white"
+              className="flex min-h-[68px] flex-col items-center justify-center gap-1 rounded-lg border border-[#e4e4e7]/70 bg-white/70 px-2 py-2 text-[10px] font-bold text-[#3e4a32] transition-colors hover:border-[#8fbc8f] hover:bg-white"
               onClick={() => {
                 actions?.onAddShape(def.type)
                 setShapeOpen(false)
@@ -727,7 +727,7 @@ export function InsertToolRow({ disabled }: ToolRowProps): React.JSX.Element {
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="w-[390px] max-w-[calc(100vw-2rem)] border-[#d8ccb5]/85 bg-[#ffffff] p-2"
+        className="w-[390px] max-w-[calc(100vw-2rem)] border-[#e4e4e7]/85 bg-[#ffffff] p-2"
       >
         <div className="max-h-[360px] space-y-2 overflow-y-auto pr-1">
           <div>

@@ -228,7 +228,7 @@ export function EditHtmlListPage(): ReactElement {
                 <div
                   key={document.id}
                   data-html-document-card-id={document.id}
-                  className="group overflow-hidden rounded-lg border border-[#d8cfbc]/75 bg-white/70 shadow-[0_4px_16px_rgba(93,107,77,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(93,107,77,0.15)]"
+                  className="group overflow-hidden rounded-lg border border-[#e4e4e7]/75 bg-white/70 shadow-[0_4px_16px_rgba(93,107,77,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(93,107,77,0.15)]"
                 >
                   <button
                     type="button"
@@ -266,7 +266,7 @@ export function EditHtmlListPage(): ReactElement {
                         {document.title || t('htmlEditor.untitled')}
                       </div>
                       <div className="mt-1.5 flex min-w-0 items-center gap-2 text-xs text-[#847866]">
-                        <span className="shrink-0 rounded border border-[#d8ccb5]/70 bg-[#ffffff] px-1.5 py-0.5 text-[10px] font-semibold text-[#6c795e]">
+                        <span className="shrink-0 rounded border border-[#e4e4e7]/70 bg-[#ffffff] px-1.5 py-0.5 text-[10px] font-semibold text-[#6c795e]">
                           HTML
                         </span>
                         <span className="truncate" title={sourcePath}>

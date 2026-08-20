@@ -600,7 +600,7 @@ export function SessionsPage(): React.JSX.Element {
               <Card
                 key={session.id}
                 data-session-card-id={session.id}
-                className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-[#d8cfbc]/75 bg-white/70 shadow-[0_4px_16px_rgba(93,107,77,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(93,107,77,0.15)]"
+                className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-[#e4e4e7]/75 bg-white/70 shadow-[0_4px_16px_rgba(93,107,77,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(93,107,77,0.15)]"
                 title={isPartialComplete ? t('sessions.statusPartialCompleteTip') : undefined}
                 onClick={() => navigate(getSessionRoute(session))}
               >
@@ -744,7 +744,7 @@ export function SessionsPage(): React.JSX.Element {
           onClick={closeRenameDialog}
         >
           <div
-            className="w-full max-w-md rounded-xl border border-[#d8cfbc]/80 bg-[#ffffff] p-5 shadow-[0_24px_60px_rgba(64,52,38,0.28)]"
+            className="w-full max-w-md rounded-xl border border-[#e4e4e7]/80 bg-[#ffffff] p-5 shadow-[0_24px_60px_rgba(64,52,38,0.28)]"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-4 flex items-start justify-between gap-3">

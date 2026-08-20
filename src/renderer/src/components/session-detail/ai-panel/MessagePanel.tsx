@@ -13,7 +13,7 @@ export function MessagePanel({ sessionId }: { sessionId: string }): React.JSX.El
 
   return (
     <div className={sessionDetailRightPanelContentClass}>
-      <div className="mx-2 mt-2 grid grid-cols-2 gap-1 rounded-[0.8rem] border border-[#ded2bd]/58 bg-[#ffffff]/68 p-0.75 shadow-[0_2px_8px_rgba(77,61,43,0.05)]">
+      <div className="mx-2 mt-2 grid grid-cols-2 gap-1 rounded-[0.8rem] border border-[#e4e4e7]/58 bg-[#ffffff]/68 p-0.75 shadow-[0_2px_8px_rgba(77,61,43,0.05)]">
         <button
           type="button"
           onClick={() => setAiPanelMode('chat')}

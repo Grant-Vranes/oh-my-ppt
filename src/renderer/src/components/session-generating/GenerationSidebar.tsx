@@ -30,12 +30,12 @@ export function GenerationSidebar({
 }): React.JSX.Element {
   return (
     <aside className="flex min-h-0 w-full shrink-0 flex-col gap-3 lg:w-[250px]">
-      <section className="rounded-lg border border-[#d8ccb5]/78 bg-[#ffffff]/88 p-3 text-[#435138] shadow-[0_14px_30px_rgba(78,91,63,0.12)]">
+      <section className="rounded-lg border border-[#e4e4e7]/78 bg-[#ffffff]/88 p-3 text-[#435138] shadow-[0_14px_30px_rgba(78,91,63,0.12)]">
         <div className="flex items-center gap-2.5">
           <button
             type="button"
             onClick={onBackHome}
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[#d8ccb5]/80 bg-[#ffffff] text-[#5d6b4d] transition-colors hover:bg-[#f4ecd9] hover:text-[#34402c]"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[#e4e4e7]/80 bg-[#ffffff] text-[#5d6b4d] transition-colors hover:bg-[#f4ecd9] hover:text-[#34402c]"
             aria-label={backHomeLabel}
             title={backHomeLabel}
           >

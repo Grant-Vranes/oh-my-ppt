@@ -416,7 +416,7 @@ export function MasterElementsEditor(): React.JSX.Element {
             style={{ aspectRatio, width: `${canvasWidth}px` }}
             onPointerDown={() => setSelectedElement(null)}
           >
-            <div className="pointer-events-none absolute inset-[7%] border border-dashed border-[#d9cfbd]" />
+            <div className="pointer-events-none absolute inset-[7%] border border-dashed border-[#e4e4e7]" />
             <div className="pointer-events-none absolute left-[10%] right-[10%] top-[24%] h-px bg-[#eee5d7]" />
             <div className="pointer-events-none absolute left-[10%] right-[10%] top-[58%] h-px bg-[#eee5d7]" />
             <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(232,242,221,.32),transparent_48%)]" />

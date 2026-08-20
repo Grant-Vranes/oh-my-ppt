@@ -336,7 +336,7 @@ export function ThinkingChat({
                 className={`max-w-[78%] rounded-[1.5rem] px-4 py-3 text-[13px] leading-relaxed shadow-sm ${
                   msg.role === 'user'
                     ? 'bg-[#5d6b4d] text-white'
-                    : 'border border-[#e0d8c8] bg-[#f4f4f5] text-[#2f3329]'
+                    : 'border border-[#e4e4e7] bg-[#f4f4f5] text-[#2f3329]'
                 }`}
               >
                 <MessageMarkdown content={msg.content} role={msg.role} />
@@ -371,7 +371,7 @@ export function ThinkingChat({
                   <button
                     type="button"
                     onClick={() => setThinkingExpanded(!thinkingExpanded)}
-                    className="flex w-[180px] items-center gap-1.5 rounded-full border border-[#e0d8c8] bg-[#f4f4f5] px-3 py-2 text-left text-[11px] text-[#5d6b4d] transition-colors hover:bg-[#d4e4c1]"
+                    className="flex w-[180px] items-center gap-1.5 rounded-full border border-[#e4e4e7] bg-[#f4f4f5] px-3 py-2 text-left text-[11px] text-[#5d6b4d] transition-colors hover:bg-[#d4e4c1]"
                   >
                     {thinkingExpanded ? (
                       <ChevronDown className="h-3 w-3 shrink-0" />
@@ -383,7 +383,7 @@ export function ThinkingChat({
                   </button>
                 )}
                 {thinkingExpanded && visibleThinkingSteps.length > 0 && (
-                  <div className="w-[180px] rounded-[1.25rem] border border-[#e0d8c8] bg-[#f4f4f5]">
+                  <div className="w-[180px] rounded-[1.25rem] border border-[#e4e4e7] bg-[#f4f4f5]">
                     <div className="space-y-1.5 px-3 py-2">
                       {visibleThinkingSteps.map((step, idx) => (
                         <div
@@ -399,11 +399,11 @@ export function ThinkingChat({
                 )}
                 {/* Animated response text */}
                 {animatingText ? (
-                  <div className="rounded-[1.5rem] border border-[#e0d8c8] bg-[#f4f4f5] px-4 py-3 text-[13px] leading-relaxed shadow-sm">
+                  <div className="rounded-[1.5rem] border border-[#e4e4e7] bg-[#f4f4f5] px-4 py-3 text-[13px] leading-relaxed shadow-sm">
                     <MessageMarkdown content={animatingText} role="assistant" />
                   </div>
                 ) : visibleThinkingSteps.length === 0 ? (
-                  <div className="w-[180px] rounded-[1.5rem] border border-[#e0d8c8] bg-[#f4f4f5] px-4 py-3 text-[13px] text-[#5d6b4d] shadow-sm">
+                  <div className="w-[180px] rounded-[1.5rem] border border-[#e4e4e7] bg-[#f4f4f5] px-4 py-3 text-[13px] text-[#5d6b4d] shadow-sm">
                     <Loader2 className="mr-1.5 inline h-3.5 w-3.5 animate-spin align-[-2px]" />
                     {t('thinking.thinking')}
                   </div>
@@ -414,8 +414,8 @@ export function ThinkingChat({
         </div>
       </ScrollArea>
 
-      <div className="border-t border-[#e0d8c8] bg-[#ffffff] px-4 py-3">
-        <div className="rounded-xl border border-[#e0d8c8] bg-[#f4f4f5] px-2 py-2 shadow-sm focus-within:border-[#8fbc8f] focus-within:ring-2 focus-within:ring-[#d4e4c1]">
+      <div className="border-t border-[#e4e4e7] bg-[#ffffff] px-4 py-3">
+        <div className="rounded-xl border border-[#e4e4e7] bg-[#f4f4f5] px-2 py-2 shadow-sm focus-within:border-[#8fbc8f] focus-within:ring-2 focus-within:ring-[#d4e4c1]">
           {pendingSources.length > 0 && (
             <div className="flex max-h-16 flex-wrap gap-1.5 overflow-y-auto px-2 pb-1.5">
               {pendingSources.map((source) => (

@@ -89,7 +89,7 @@ export function ImageModelConfigDialog({
         if (event.target === event.currentTarget && !saving) onClose()
       }}
     >
-      <div className="max-h-[80vh] w-full max-w-2xl overflow-y-auto rounded-lg border border-[#d8ccb5]/85 bg-[#ffffff] shadow-[0_24px_70px_rgba(53,44,32,0.28)]">
+      <div className="max-h-[80vh] w-full max-w-2xl overflow-y-auto rounded-lg border border-[#e4e4e7]/85 bg-[#ffffff] shadow-[0_24px_70px_rgba(53,44,32,0.28)]">
         <div className="flex items-center justify-between border-b border-[#e3d8c5] px-4 py-2.5">
           <h2 className="text-sm font-semibold text-[#33402a]">
             {form.id ? t('settings.editImageModel') : t('settings.addImageModel')}
@@ -138,7 +138,7 @@ export function ImageModelConfigDialog({
               onChange={(e) => onFormChange({ modelConfig: e.target.value })}
               className="min-h-[120px] resize-y font-mono text-xs leading-4"
             />
-            <div className="mt-2 flex items-start gap-2 rounded-lg border border-[#d8ccb5]/80 bg-[#f8f1e6]/82 px-2.5 py-2 text-xs text-[#5f5649]">
+            <div className="mt-2 flex items-start gap-2 rounded-lg border border-[#e4e4e7]/80 bg-[#f8f1e6]/82 px-2.5 py-2 text-xs text-[#5f5649]">
               <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-[#eef0e5] text-[#687a58]">
                 <CircleHelp className="h-3 w-3" />
               </div>
@@ -161,7 +161,7 @@ export function ImageModelConfigDialog({
                     {SILICONFLOW_MODELS.map((model) => (
                       <span
                         key={model}
-                        className="rounded-md border border-[#d8ccb5]/78 bg-[#ffffff]/72 px-2 py-0.5 font-mono text-[11px] text-[#526044]"
+                        className="rounded-md border border-[#e4e4e7]/78 bg-[#ffffff]/72 px-2 py-0.5 font-mono text-[11px] text-[#526044]"
                       >
                         {model}
                       </span>

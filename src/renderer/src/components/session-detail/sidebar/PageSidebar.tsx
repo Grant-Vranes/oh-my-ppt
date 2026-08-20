@@ -529,7 +529,7 @@ export const PageSidebar = memo(function PageSidebar({
                               value={outlineDraft}
                               onChange={(event) => setOutlineDraft(event.target.value)}
                               disabled={savingOutline}
-                              className="min-h-[84px] w-full resize-none rounded-lg border border-[#d8cfbc]/80 bg-[#ffffff]/90 px-2 py-1.5 text-[11px] leading-4 text-[#514736] shadow-inner outline-none focus:border-[#9bb98a] disabled:opacity-60"
+                              className="min-h-[84px] w-full resize-none rounded-lg border border-[#e4e4e7]/80 bg-[#ffffff]/90 px-2 py-1.5 text-[11px] leading-4 text-[#514736] shadow-inner outline-none focus:border-[#9bb98a] disabled:opacity-60"
                               placeholder={t('pageManagement.pageOutlinePlaceholder')}
                               autoFocus
                             />
@@ -914,7 +914,7 @@ export const PageSidebar = memo(function PageSidebar({
           <div className="flex justify-end gap-2">
             <AlertDialogAction
               disabled={savingBeforeSwitch}
-              className="border border-[#d7cbb7]/80 bg-[#ffffff]/92 text-[#657058] hover:bg-[#fafafa] disabled:cursor-not-allowed disabled:opacity-60"
+              className="border border-[#e4e4e7]/80 bg-[#ffffff]/92 text-[#657058] hover:bg-[#fafafa] disabled:cursor-not-allowed disabled:opacity-60"
               onClick={(event) => {
                 event.preventDefault()
                 handleDiscardAndSwitch()

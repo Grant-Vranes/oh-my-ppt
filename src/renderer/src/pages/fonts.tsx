@@ -381,7 +381,7 @@ export function FontsPage(): React.JSX.Element {
             </div>
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#d8ccb5]/60 text-xs text-muted-foreground">
+                <tr className="border-b border-[#e4e4e7]/60 text-xs text-muted-foreground">
                   <th className="pb-1.5 text-left font-medium">File</th>
                   <th className="pb-1.5 text-center font-medium" style={{ width: 72 }}>Font Weight</th>
                   <th className="pb-1.5 text-center font-medium" style={{ width: 110 }}>Style</th>
@@ -391,7 +391,7 @@ export function FontsPage(): React.JSX.Element {
               {fileEntries.length > 0 && (
                 <tbody>
                   {fileEntries.map((entry, i) => (
-                    <tr key={entry.path} className="border-b border-[#d8ccb5]/30 align-middle">
+                    <tr key={entry.path} className="border-b border-[#e4e4e7]/30 align-middle">
                       <td className="py-1.5 pr-2">
                         <span className="block truncate text-[#33402a]">
                           {entry.path.split(/[\\/]/).pop() || entry.path}
@@ -469,7 +469,7 @@ export function FontsPage(): React.JSX.Element {
             {loading ? (
               <p className="py-4 text-center text-sm text-muted-foreground">{t('fonts.loading')}</p>
             ) : userFonts.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-[#d8ccb5]/85 bg-[#ffffff]/70 py-6 text-center text-sm text-muted-foreground">
+              <div className="rounded-lg border border-dashed border-[#e4e4e7]/85 bg-[#ffffff]/70 py-6 text-center text-sm text-muted-foreground">
                 {t('fonts.emptyUpload')}
               </div>
             ) : (
@@ -477,7 +477,7 @@ export function FontsPage(): React.JSX.Element {
                 {userFonts.map((font) => (
                   <div
                     key={font.id}
-                    className="group flex items-center justify-between gap-3 rounded-lg border border-[#d8ccb5]/80 bg-[#ffffff]/78 p-3 transition-all hover:border-[#c4b89e]/90 hover:shadow-[0_8px_20px_rgba(90,72,52,0.1)]"
+                    className="group flex items-center justify-between gap-3 rounded-lg border border-[#e4e4e7]/80 bg-[#ffffff]/78 p-3 transition-all hover:border-[#c4b89e]/90 hover:shadow-[0_8px_20px_rgba(90,72,52,0.1)]"
                   >
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-[#33402a]">{font.family}</p>
@@ -542,7 +542,7 @@ export function FontsPage(): React.JSX.Element {
                 {googleFonts.map((font) => (
                   <div
                     key={font.id}
-                    className="rounded-lg border border-[#d8ccb5]/60 bg-[#ffffff]/50 px-3 py-2.5 transition-colors hover:border-[#c4b89e]/80 hover:bg-[#ffffff]"
+                    className="rounded-lg border border-[#e4e4e7]/60 bg-[#ffffff]/50 px-3 py-2.5 transition-colors hover:border-[#c4b89e]/80 hover:bg-[#ffffff]"
                   >
                     {previewReady && (
                       <p

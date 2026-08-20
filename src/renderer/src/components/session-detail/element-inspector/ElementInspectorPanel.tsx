@@ -35,7 +35,7 @@ export function ElementInspectorPanel({
 
   return (
     <div className={sessionDetailRightPanelContentClass}>
-      <div className="relative mx-2 mt-2 overflow-hidden rounded-[0.85rem] border border-[#e1d6c4]/58 bg-[#ffffff]/68 px-2.5 py-2 shadow-[0_2px_8px_rgba(77,61,43,0.05)]">
+      <div className="relative mx-2 mt-2 overflow-hidden rounded-[0.85rem] border border-[#e4e4e7]/58 bg-[#ffffff]/68 px-2.5 py-2 shadow-[0_2px_8px_rgba(77,61,43,0.05)]">
         <div className="pointer-events-none absolute -right-8 -top-10 h-20 w-20 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] bg-[#c7d9b4]/10" />
         <div className="relative flex items-center justify-between">
           <div>

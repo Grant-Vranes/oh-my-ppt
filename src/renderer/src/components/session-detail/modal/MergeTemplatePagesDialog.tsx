@@ -303,8 +303,8 @@ export function MergeTemplatePagesDialog({
             <DialogDescription>{t('sessionDetail.mergeTemplateDescription')}</DialogDescription>
           </DialogHeader>
 
-          <div className="grid min-h-0 grid-cols-[280px_minmax(0,1fr)] overflow-hidden rounded-2xl border border-[#d8cfbc]/75 bg-[#f8f4eb]">
-            <div className="flex min-h-0 flex-col border-r border-[#d8cfbc]/75 bg-[#f2ecdf]/75 p-3">
+          <div className="grid min-h-0 grid-cols-[280px_minmax(0,1fr)] overflow-hidden rounded-2xl border border-[#e4e4e7]/75 bg-[#f8f4eb]">
+            <div className="flex min-h-0 flex-col border-r border-[#e4e4e7]/75 bg-[#f2ecdf]/75 p-3">
               <div className="relative mb-3">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#829071]" />
                 <Input

@@ -379,7 +379,7 @@ export function ElementAnimationPicker({ disabled = false }: { disabled?: boolea
         <button
           type="button"
           disabled={triggerDisabled}
-          className="inline-flex h-7 max-w-[220px] shrink-0 items-center gap-1.5 rounded-full border border-[#d8ccb5]/70 bg-[#ffffff]/88 px-2.5 text-[10px] font-bold leading-none text-[#314028] shadow-[inset_0_1px_2px_rgba(74,59,42,0.04)] transition-colors hover:bg-[#f3f7ed] disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-7 max-w-[220px] shrink-0 items-center gap-1.5 rounded-full border border-[#e4e4e7]/70 bg-[#ffffff]/88 px-2.5 text-[10px] font-bold leading-none text-[#314028] shadow-[inset_0_1px_2px_rgba(74,59,42,0.04)] transition-colors hover:bg-[#f3f7ed] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <TriggerIcon
             className={`h-3 w-3 shrink-0 ${isLoading || isSaving ? 'animate-spin' : ''}`}
@@ -392,11 +392,11 @@ export function ElementAnimationPicker({ disabled = false }: { disabled?: boolea
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="w-[536px] max-w-[calc(100vw-2rem)] border-[#d8ccb5]/85 bg-[#ffffff] p-2"
+        className="w-[536px] max-w-[calc(100vw-2rem)] border-[#e4e4e7]/85 bg-[#ffffff] p-2"
       >
         <style>{elementAnimationPreviewStyles}</style>
         {!selectedSelector ? (
-          <div className="flex h-36 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[#d8ccb5] bg-[#ffffff]/72 text-center">
+          <div className="flex h-36 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[#e4e4e7] bg-[#ffffff]/72 text-center">
             <MousePointer2 className="h-5 w-5 text-[#6f8159]" />
             <p className="text-xs font-bold text-[#314028]">
               {t('sessionDetail.elementAnimationSelectTargetTitle')}

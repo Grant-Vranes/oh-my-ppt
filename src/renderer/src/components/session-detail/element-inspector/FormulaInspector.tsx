@@ -45,7 +45,7 @@ export function FormulaInspector({ draft, onDraftChange }: ElementEditorProps): 
             event.currentTarget.blur()
           }
         }}
-        className="min-h-[92px] w-full resize-y rounded-[9px] border border-[#d9cfbd]/72 bg-[#ffffff]/92 px-2.5 py-2 font-mono text-[11px] leading-5 text-[#34402c] outline-none transition-colors placeholder:text-[#b1a58f] focus:border-[#9daf8a]"
+        className="min-h-[92px] w-full resize-y rounded-[9px] border border-[#e4e4e7]/72 bg-[#ffffff]/92 px-2.5 py-2 font-mono text-[11px] leading-5 text-[#34402c] outline-none transition-colors placeholder:text-[#b1a58f] focus:border-[#9daf8a]"
         placeholder="x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}"
         spellCheck={false}
       />
@@ -60,7 +60,7 @@ export function FormulaInspector({ draft, onDraftChange }: ElementEditorProps): 
         <span>{t('sessionDetail.formulaDisplayMode')}</span>
       </label>
 
-      <div className="mt-3 rounded-[9px] border border-[#e1d6c4]/70 bg-white/64 px-2.5 py-2">
+      <div className="mt-3 rounded-[9px] border border-[#e4e4e7]/70 bg-white/64 px-2.5 py-2">
         <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a806b]">
           {t('sessionDetail.formulaPreview')}
         </div>

@@ -95,7 +95,7 @@ export function TokenUsageDashboard(): React.JSX.Element {
       value: inputTokens,
       icon: ArrowDownToLine,
       bg: 'bg-[#f4f4f5]',
-      border: 'border-[#d9cfbd]',
+      border: 'border-[#e4e4e7]',
       iconBg: 'bg-[#6f8a5b]',
       blob: 'bg-[#d4e4c1]/55'
     },
@@ -104,7 +104,7 @@ export function TokenUsageDashboard(): React.JSX.Element {
       value: outputTokens,
       icon: ArrowUpFromLine,
       bg: 'bg-[#f4f4f5]',
-      border: 'border-[#e0d8c8]',
+      border: 'border-[#e4e4e7]',
       iconBg: 'bg-[#b18f5e]',
       blob: 'bg-[#c8b89e]/30'
     },

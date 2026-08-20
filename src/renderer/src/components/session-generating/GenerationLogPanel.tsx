@@ -24,7 +24,7 @@ export function GenerationLogPanel({
   onViewportScroll?: React.UIEventHandler<HTMLDivElement>
 }): React.JSX.Element {
   return (
-    <section className="relative flex min-h-0 flex-1 flex-col rounded-lg border border-[#d8ccb5]/72 bg-[#ffffff]/82 p-2.5 shadow-[0_14px_30px_rgba(78,91,63,0.1)]">
+    <section className="relative flex min-h-0 flex-1 flex-col rounded-lg border border-[#e4e4e7]/72 bg-[#ffffff]/82 p-2.5 shadow-[0_14px_30px_rgba(78,91,63,0.1)]">
       <div className="mb-2 flex min-h-8 items-center pr-14">
         <div className="flex min-w-0 items-center gap-1.5 text-xs font-semibold text-[#495a3b]">
           <Sparkles className="h-4 w-4 text-[#6f8159]" />

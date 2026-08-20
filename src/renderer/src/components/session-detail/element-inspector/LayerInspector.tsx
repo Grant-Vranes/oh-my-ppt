@@ -17,7 +17,7 @@ export function LayerInspector({ draft, onDraftChange }: ElementEditorProps): Re
       <div className="flex items-center gap-2">
         <button
           type="button"
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#d7cbb7]/40 bg-[#fafafa]/40 text-[13px] font-medium text-[#59664b] transition-colors hover:bg-[#d4e4c1]/60"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#e4e4e7]/40 bg-[#fafafa]/40 text-[13px] font-medium text-[#59664b] transition-colors hover:bg-[#d4e4c1]/60"
           onClick={() => {
             const current = parseInt(draft.layoutZIndex || '0', 10) || 0
             onDraftChange(
@@ -41,11 +41,11 @@ export function LayerInspector({ draft, onDraftChange }: ElementEditorProps): Re
               { commit: true, fields: ['layoutZIndex'] }
             )
           }
-          className="h-8 flex-1 rounded-full border border-[#ded2bd]/72 bg-[#ffffff]/88 px-2.5 text-center text-xs text-[#3f4b35] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#9bb98a] focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="h-8 flex-1 rounded-full border border-[#e4e4e7]/72 bg-[#ffffff]/88 px-2.5 text-center text-xs text-[#3f4b35] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#9bb98a] focus-visible:ring-0 focus-visible:ring-offset-0"
         />
         <button
           type="button"
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#d7cbb7]/40 bg-[#fafafa]/40 text-[13px] font-medium text-[#59664b] transition-colors hover:bg-[#d4e4c1]/60"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#e4e4e7]/40 bg-[#fafafa]/40 text-[13px] font-medium text-[#59664b] transition-colors hover:bg-[#d4e4c1]/60"
           onClick={() => {
             const current = parseInt(draft.layoutZIndex || '0', 10) || 0
             onDraftChange(

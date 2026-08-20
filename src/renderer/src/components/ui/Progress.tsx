@@ -5,7 +5,7 @@ export function Progress({ className, value = 0, ...props }: React.HTMLAttribute
   return (
     <div className={cn('soft-inset relative h-3.5 w-full overflow-hidden rounded-full', className)} {...props}>
       <div
-        className="h-full rounded-full bg-[linear-gradient(90deg,#8fbc8f_0%,#6f8159_55%,#4f613f_100%)] transition-all"
+        className="h-full rounded-full bg-[#ea580c] transition-all"
         style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
       />
     </div>

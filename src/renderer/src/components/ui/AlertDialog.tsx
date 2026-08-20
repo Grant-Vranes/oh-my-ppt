@@ -12,7 +12,7 @@ const AlertDialogOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <AlertDialogPrimitive.Overlay
     ref={ref}
-    className={cn('fixed inset-0 z-50 bg-[#1f261d]/38 backdrop-blur-sm', className)}
+    className={cn('fixed inset-0 z-50 bg-[#27272a]/40', className)}
     {...props}
   />
 ))
@@ -27,7 +27,7 @@ const AlertDialogContent = React.forwardRef<
     <AlertDialogPrimitive.Content
       ref={ref}
       className={cn(
-        'fixed left-1/2 top-1/2 z-50 grid w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl border border-[#d8cfbc]/80 bg-[#fffaf0] p-5 shadow-[0_24px_60px_rgba(64,52,38,0.28)]',
+        'fixed left-1/2 top-1/2 z-50 grid w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl border border-[#e4e4e7] bg-[#ffffff] p-5 shadow-[0_4px_12px_rgba(0,0,0,0.08)]',
         className
       )}
       {...props}
@@ -42,7 +42,7 @@ const AlertDialogTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <AlertDialogPrimitive.Title
     ref={ref}
-    className={cn('text-base font-semibold text-[#3e4a32]', className)}
+    className={cn('text-base font-semibold text-[#18181b]', className)}
     {...props}
   />
 ))
@@ -54,7 +54,7 @@ const AlertDialogDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <AlertDialogPrimitive.Description
     ref={ref}
-    className={cn('text-sm leading-6 text-[#6f6658]', className)}
+    className={cn('text-sm leading-6 text-[#71717a]', className)}
     {...props}
   />
 ))
@@ -82,7 +82,7 @@ const AlertDialogCancel = React.forwardRef<
   <AlertDialogPrimitive.Cancel
     ref={ref}
     className={cn(
-      'inline-flex h-9 items-center justify-center rounded-[10px] border border-[#d7cbb7]/80 bg-[#fffdf8]/92 px-4 text-sm font-medium text-[#657058] transition-colors hover:bg-[#f5efe4]',
+      'inline-flex h-9 items-center justify-center rounded-[10px] border border-[#e4e4e7] bg-[#ffffff] px-4 text-sm font-medium text-[#52525b] transition-colors hover:bg-[#f4f4f5]',
       className
     )}
     {...props}

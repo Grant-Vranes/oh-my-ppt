@@ -23,8 +23,8 @@ const chipClassName = (active: boolean): string =>
   cn(
     'rounded-md border px-2 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-45',
     active
-      ? 'border-[#97aa7c] bg-[#fff7ed] text-[#2f3b28]'
-      : 'border-[#d6c08d]/80 bg-white/70 text-[#7c6a4c] hover:bg-[#fff3d8]'
+      ? 'border-[#97aa7c] bg-[#fff7ed] text-[#18181b]'
+      : 'border-[#a1a1aa]/80 bg-white/70 text-[#52525b] hover:bg-[#fff3d8]'
   )
 
 /**
@@ -57,7 +57,7 @@ export function StyleCaseFilter({
 
   return (
     <div className={className}>
-      {title ? <p className="mb-2 text-xs font-medium text-[#3e4a32]">{title}</p> : null}
+      {title ? <p className="mb-2 text-xs font-medium text-[#18181b]">{title}</p> : null}
       <div className="flex flex-wrap gap-1.5">
         <button type="button" className={chipClassName(selected === '')} onClick={() => onSelect('')}>
           {`${allLabel} · ${items.length}`}

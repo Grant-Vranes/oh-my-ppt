@@ -79,7 +79,7 @@ function ModelMenuItems({
             )}
           />
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-xs text-[#33402a]">{config.name}</span>
+            <span className="block truncate text-xs text-[#18181b]">{config.name}</span>
             <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
               {config.provider} · {config.model}
             </span>
@@ -159,10 +159,10 @@ export function ModelSplitButton({
           hasMultiple
             ? isPrimary
               ? 'rounded-none bg-transparent px-4 text-white shadow-none hover:bg-white/10 hover:text-white hover:shadow-none'
-              : 'h-full rounded-none border-0 bg-transparent px-2.5 text-xs text-[#405333] shadow-none hover:bg-[#f3f7ed] hover:text-[#2f3b28] hover:shadow-none'
+              : 'h-full rounded-none border-0 bg-transparent px-2.5 text-xs text-[#405333] shadow-none hover:bg-[#f3f7ed] hover:text-[#18181b] hover:shadow-none'
             : isPrimary
               ? 'rounded-full'
-              : 'h-full rounded-lg border-0 bg-transparent px-2.5 text-xs text-[#405333] shadow-none hover:bg-[#f3f7ed] hover:text-[#2f3b28] hover:shadow-none',
+              : 'h-full rounded-lg border-0 bg-transparent px-2.5 text-xs text-[#405333] shadow-none hover:bg-[#f3f7ed] hover:text-[#18181b] hover:shadow-none',
           mainClassName
         )}
       >
@@ -191,7 +191,7 @@ export function ModelSplitButton({
                 className={cn(
                   isPrimary
                     ? 'shrink-0 rounded-none border-0 bg-transparent px-2.5 text-white shadow-none hover:bg-white/10 hover:text-white hover:shadow-none'
-                    : 'h-full w-8 shrink-0 rounded-none border-0 bg-transparent px-0 text-[#405333] shadow-none hover:bg-[#f3f7ed] hover:text-[#2f3b28] hover:shadow-none',
+                    : 'h-full w-8 shrink-0 rounded-none border-0 bg-transparent px-0 text-[#405333] shadow-none hover:bg-[#f3f7ed] hover:text-[#18181b] hover:shadow-none',
                   triggerClassName
                 )}
                 aria-label={t('settings.generationModel')}
@@ -232,7 +232,7 @@ export function ModelSelectButton({
           type="button"
           disabled={disabledState}
           className={cn(
-            'flex h-8 max-w-[10rem] items-center gap-1 rounded-full border border-[#d0c8b8] bg-[#ece6d8] px-2 text-[11px] text-[#5d6b4d] transition-colors hover:bg-[#fff7ed] hover:text-[#3e4a32] disabled:opacity-40',
+            'flex h-8 max-w-[10rem] items-center gap-1 rounded-full border border-[#d0c8b8] bg-[#ece6d8] px-2 text-[11px] text-[#18181b] transition-colors hover:bg-[#fff7ed] hover:text-[#18181b] disabled:opacity-40',
             className
           )}
         >

@@ -91,7 +91,7 @@ export function ImageModelConfigDialog({
     >
       <div className="max-h-[80vh] w-full max-w-2xl overflow-y-auto rounded-lg border border-[#e4e4e7]/85 bg-[#ffffff] shadow-[0_24px_70px_rgba(53,44,32,0.28)]">
         <div className="flex items-center justify-between border-b border-[#e3d8c5] px-4 py-2.5">
-          <h2 className="text-sm font-semibold text-[#33402a]">
+          <h2 className="text-sm font-semibold text-[#18181b]">
             {form.id ? t('settings.editImageModel') : t('settings.addImageModel')}
           </h2>
           <Button size="sm" variant="ghost" onClick={onClose} disabled={saving}>
@@ -144,18 +144,18 @@ export function ImageModelConfigDialog({
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="font-semibold text-[#33402a]">{providerDocs.label}</span>
+                  <span className="font-semibold text-[#18181b]">{providerDocs.label}</span>
                   <a
                     href={providerDocs.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 rounded-md border border-[#cbbfa8]/80 bg-[#ffffff]/75 px-2 py-0.5 font-medium text-[#5d6b4d] transition-colors hover:border-[#aebd9a] hover:text-[#3e4a32]"
+                    className="inline-flex items-center gap-1 rounded-md border border-[#cbbfa8]/80 bg-[#ffffff]/75 px-2 py-0.5 font-medium text-[#18181b] transition-colors hover:border-[#aebd9a] hover:text-[#18181b]"
                   >
                     {t('settings.imageProviderOfficialDocs')}
                     <ExternalLink className="h-3 w-3" />
                   </a>
                 </div>
-                <p className="mt-1 leading-4 text-[#6d604d]">{providerHint}</p>
+                <p className="mt-1 leading-4 text-[#52525b]">{providerHint}</p>
                 {form.provider === 'siliconflow' && (
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {SILICONFLOW_MODELS.map((model) => (

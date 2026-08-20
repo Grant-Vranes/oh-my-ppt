@@ -111,7 +111,7 @@ export function EditHtmlListPage(): ReactElement {
           </p>
           <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
-              <h1 className="organic-serif text-[32px] font-semibold leading-none text-[#3e4a32]">
+              <h1 className="organic-serif text-[32px] font-semibold leading-none text-[#18181b]">
                 {t('htmlEditor.listTitle')}
               </h1>
             </div>
@@ -136,7 +136,7 @@ export function EditHtmlListPage(): ReactElement {
                       variant="ghost"
                       size="sm"
                       aria-label={t('htmlEditor.clearSearch')}
-                      className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 p-0 text-[#829071] hover:text-[#3e4a32]"
+                      className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 p-0 text-[#829071] hover:text-[#18181b]"
                       onMouseDown={(event) => event.preventDefault()}
                       onClick={() => {
                         setSearchQuery('')
@@ -193,13 +193,13 @@ export function EditHtmlListPage(): ReactElement {
               <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-lg border border-[#d7cab1] bg-[#ffffff] text-[#617052] shadow-[0_6px_16px_rgba(78,88,62,0.08)]">
                 <FileCode2 className="h-8 w-8" />
               </div>
-              <h3 className="text-xl font-semibold text-[#3e4a32]">{t('htmlEditor.emptyTitle')}</h3>
+              <h3 className="text-xl font-semibold text-[#18181b]">{t('htmlEditor.emptyTitle')}</h3>
               <p className="mt-2 text-sm leading-6 text-[#7b705f]">{t('htmlEditor.emptyHint')}</p>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     type="button"
-                    className="mt-6 min-w-[148px] bg-[#5d6b4d] text-white hover:bg-[#4b593d]"
+                    className="mt-6 min-w-[148px] bg-[#18181b] text-white hover:bg-[#4b593d]"
                     onClick={() => void handleImport()}
                     disabled={importing}
                   >
@@ -256,13 +256,13 @@ export function EditHtmlListPage(): ReactElement {
                         </div>
                       )}
                       <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
-                      <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-md bg-[#ffffff]/92 px-2.5 py-1 text-xs font-semibold text-[#3e4a32] shadow-[0_4px_12px_rgba(31,38,29,0.16)] backdrop-blur-sm">
+                      <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-md bg-[#ffffff]/92 px-2.5 py-1 text-xs font-semibold text-[#18181b] shadow-[0_4px_12px_rgba(31,38,29,0.16)] backdrop-blur-sm">
                         <Pencil className="h-3 w-3" />
                         {t('htmlEditor.edit')}
                       </span>
                     </div>
                     <div className="min-w-0 p-4">
-                      <div className="line-clamp-2 min-h-10 text-base font-semibold leading-5 text-[#3e4a32]">
+                      <div className="line-clamp-2 min-h-10 text-base font-semibold leading-5 text-[#18181b]">
                         {document.title || t('htmlEditor.untitled')}
                       </div>
                       <div className="mt-1.5 flex min-w-0 items-center gap-2 text-xs text-[#847866]">

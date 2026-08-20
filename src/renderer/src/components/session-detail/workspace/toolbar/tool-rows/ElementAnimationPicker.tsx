@@ -138,7 +138,7 @@ const elementAnimationPreviewStyles = `
   height: 22px;
   margin: -11px 0 0 -24px;
   border-radius: 6px;
-  background: linear-gradient(135deg,#5d6b4d,#ea580c 58%,#f1b56f);
+  background: linear-gradient(135deg,#18181b,#ea580c 58%,#f1b56f);
   box-shadow: 0 5px 10px rgba(62,74,50,.17);
   animation-duration: 1.8s;
   animation-iteration-count: infinite;
@@ -166,7 +166,7 @@ const elementAnimationPreviewStyles = `
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: #5d6b4d;
+  background: #18181b;
   color: white;
 }
 [data-element-animation="fade"] .ppt-element-animation-object { animation-name: pptElementFade; }
@@ -415,7 +415,7 @@ export function ElementAnimationPicker({ disabled = false }: { disabled?: boolea
                   disabled={disabledState || !animation}
                   className={`rounded-full px-2 py-1 text-[10px] font-bold ${
                     triggerBucket === trigger
-                      ? 'bg-[#5d6b4d] text-white'
+                      ? 'bg-[#18181b] text-white'
                       : 'bg-[#ffffff] text-[#617253] hover:bg-[#e5eedb]'
                   }`}
                   onClick={() => {
@@ -505,7 +505,7 @@ export function ElementAnimationPicker({ disabled = false }: { disabled?: boolea
                   disabled={typeLocked}
                   className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
                     category === item
-                      ? 'bg-[#5d6b4d] text-white'
+                      ? 'bg-[#18181b] text-white'
                       : 'bg-[#efe8da] text-[#617253] hover:bg-[#e3ecd9]'
                   } disabled:cursor-not-allowed disabled:opacity-50`}
                   onClick={() => setCategory(item)}

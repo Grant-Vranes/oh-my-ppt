@@ -63,7 +63,7 @@ export function HtmlEditorTextInspector({
   return (
     <InspectorSection
       title={t('sessionDetail.textContent')}
-      icon={<Type className="h-3.5 w-3.5 text-[#7a875f]" />}
+      icon={<Type className="h-3.5 w-3.5 text-[#71717a]" />}
     >
       <RichTextBox
         value={draft.html}
@@ -138,7 +138,7 @@ export function HtmlEditorInspectorPanel({
       <div className="relative mx-2 mt-2 overflow-hidden rounded-lg border border-[#e4e4e7]/58 bg-[#ffffff]/68 px-2.5 py-2 shadow-[0_2px_8px_rgba(77,61,43,0.05)]">
         <div className="relative flex items-center justify-between">
           <div>
-            <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#7a875f]/90">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#71717a]/90">
               {t('sessionDetail.elementInspector')}
             </div>
             {selection ? (
@@ -150,7 +150,7 @@ export function HtmlEditorInspectorPanel({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[#667257] transition-colors hover:bg-[#fff7ed]/70 hover:text-[#34402c]"
+            className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[#667257] transition-colors hover:bg-[#fff7ed]/70 hover:text-[#18181b]"
             aria-label={t('sessionDetail.closeInspector')}
             title={t('sessionDetail.closeInspector')}
           >

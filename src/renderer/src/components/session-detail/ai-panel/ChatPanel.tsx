@@ -209,16 +209,16 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
       <div className="relative mx-2.5 mt-2.5 overflow-hidden rounded-[1.35rem] border border-[#e4e4e7]/72 bg-[#ffffff]/78 px-3 pb-2.5 pt-3 shadow-[0_4px_12px_rgba(77,61,43,0.06)]">
         <div className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] bg-[#fff7ed]/12" />
         <div className="relative flex flex-col gap-2">
-          <h3 className="text-sm font-semibold tracking-[0.04em] text-[#34402c]">
+          <h3 className="text-sm font-semibold tracking-[0.04em] text-[#18181b]">
             {t('sessionDetail.messageTitle')}
           </h3>
-          <div className="flex items-center justify-between gap-2 text-xs text-[#6d604d]">
+          <div className="flex items-center justify-between gap-2 text-xs text-[#52525b]">
             <span>{t('sessionDetail.context')}</span>
             <Select
               value={chatType}
               onValueChange={(value) => setChatType(value === 'page' ? 'page' : 'main')}
             >
-              <SelectTrigger className="h-8 w-[132px] rounded-full border-[#e4e4e7]/70 bg-[#ffffff]/82 px-3 py-1 text-xs text-[#3e4a32] shadow-none">
+              <SelectTrigger className="h-8 w-[132px] rounded-full border-[#e4e4e7]/70 bg-[#ffffff]/82 px-3 py-1 text-xs text-[#18181b] shadow-none">
                 <SelectValue placeholder={t('sessionDetail.contextPlaceholder')} />
               </SelectTrigger>
               <SelectContent>
@@ -253,7 +253,7 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
               </div>
             )}
             {(isPageEditing || isDeckEditing) && (
-              <div className="flex items-center gap-2 rounded-[1.15rem] border border-[#fff7ed]/70 bg-[#edf5e5]/76 px-3 py-2 text-sm text-[#4f6340]">
+              <div className="flex items-center gap-2 rounded-[1.15rem] border border-[#fff7ed]/70 bg-[#edf5e5]/76 px-3 py-2 text-sm text-[#52525b]">
                 <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
                 <span className="min-w-0 flex-1 break-words">
                   {progress?.label || t('sessionDetail.activityProcessing')}
@@ -278,7 +278,7 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
               </div>
             )}
             {isPlanningPageEdit && (
-              <div className="flex items-center gap-2 rounded-lg border border-[#fff7ed]/70 bg-[#edf5e5]/76 px-3 py-2 text-sm text-[#4f6340]" aria-live="polite">
+              <div className="flex items-center gap-2 rounded-lg border border-[#fff7ed]/70 bg-[#edf5e5]/76 px-3 py-2 text-sm text-[#52525b]" aria-live="polite">
                 <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
                 <span>{t('sessionDetail.pageEditPlanning')}</span>
               </div>
@@ -354,7 +354,7 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
       >
         {selectedSelector && (
           <div className="mb-2 flex items-center gap-2 rounded-[1rem] border border-[#e4e4e7]/65 bg-[#f4ebdc]/70 px-2 py-1.5">
-            <span className="shrink-0 rounded-full bg-[#dcebcf]/82 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-[#4f6340]">
+            <span className="shrink-0 rounded-full bg-[#dcebcf]/82 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-[#52525b]">
               {t('sessionDetail.selectorBadge')}
             </span>
             <Tooltip>
@@ -382,7 +382,7 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
             <button
               type="button"
               onClick={clearSelectedElement}
-              className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[#64735a] transition-colors hover:bg-[#fff7ed]/78 hover:text-[#3e4a32]"
+              className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[#64735a] transition-colors hover:bg-[#fff7ed]/78 hover:text-[#18181b]"
               aria-label={t('sessionDetail.clearSelector')}
               title={t('sessionDetail.clearSelector')}
             >
@@ -498,7 +498,7 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
           }}
           disabled={isGenerating}
           rows={4}
-          className="min-h-[96px] resize-none rounded-[1.15rem] border border-[#e4e4e7]/72 bg-[#ffffff]/88 px-3 py-2 text-[13px] leading-5 text-[#3f4b35] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#9bb98a] focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="min-h-[96px] resize-none rounded-[1.15rem] border border-[#e4e4e7]/72 bg-[#ffffff]/88 px-3 py-2 text-[13px] leading-5 text-[#27272a] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#a1a1aa] focus-visible:ring-0 focus-visible:ring-offset-0"
         />
         <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
           <div className="flex min-w-0 items-center gap-2">
@@ -533,7 +533,7 @@ export function ChatPanel({ sessionId }: { sessionId: string }): React.JSX.Eleme
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <div className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-xs leading-5 text-[#6d604d]">
+            <div className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-xs leading-5 text-[#52525b]">
               {contextHint}
             </div>
           </div>

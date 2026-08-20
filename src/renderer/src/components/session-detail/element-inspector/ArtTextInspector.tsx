@@ -35,18 +35,18 @@ export function ArtTextInspector({
   return (
     <InspectorSection
       title={t('editMode.artText')}
-      icon={<Sparkles className="h-3.5 w-3.5 text-[#7a875f]" />}
+      icon={<Sparkles className="h-3.5 w-3.5 text-[#71717a]" />}
     >
       <div className="space-y-2.5">
         <div className="rounded-[1rem] border border-[#e4e4e7]/60 bg-[#ffffff]/70 px-3 py-2">
           <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a806b]">
             {t('editMode.artTextEffect')}
           </div>
-          <div className="mt-1 text-xs font-semibold text-[#3f4b35]">{templateLabel}</div>
+          <div className="mt-1 text-xs font-semibold text-[#27272a]">{templateLabel}</div>
         </div>
 
         <label className="block space-y-1.5">
-          <span className="text-[11px] font-medium text-[#7a875f]">
+          <span className="text-[11px] font-medium text-[#71717a]">
             {t('editMode.artTextContent')}
           </span>
           <Input
@@ -54,12 +54,12 @@ export function ArtTextInspector({
             onChange={(event) => updateText(event.target.value)}
             onBlur={(event) => updateText(event.target.value, true)}
             disabled={!canEditText}
-            className="h-8 rounded-full border border-[#e4e4e7]/72 bg-[#ffffff]/88 px-2.5 text-xs text-[#3f4b35] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#9bb98a] focus-visible:ring-0 focus-visible:ring-offset-0"
+            className="h-8 rounded-full border border-[#e4e4e7]/72 bg-[#ffffff]/88 px-2.5 text-xs text-[#27272a] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#a1a1aa] focus-visible:ring-0 focus-visible:ring-offset-0"
           />
         </label>
 
         <label className="block space-y-1.5">
-          <span className="text-[11px] font-medium text-[#7a875f]">
+          <span className="text-[11px] font-medium text-[#71717a]">
             {t('editMode.artTextFontSize')}
           </span>
           <Input
@@ -74,7 +74,7 @@ export function ArtTextInspector({
                 { commit: true, fields: ['fontSize'] }
               )
             }
-            className="h-8 rounded-full border border-[#e4e4e7]/72 bg-[#ffffff]/88 px-2.5 text-xs text-[#3f4b35] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#9bb98a] focus-visible:ring-0 focus-visible:ring-offset-0"
+            className="h-8 rounded-full border border-[#e4e4e7]/72 bg-[#ffffff]/88 px-2.5 text-xs text-[#27272a] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#a1a1aa] focus-visible:ring-0 focus-visible:ring-offset-0"
           />
         </label>
       </div>

@@ -419,7 +419,7 @@ export function SessionsPage(): React.JSX.Element {
         </p>
         <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <h1 className="organic-serif text-[32px] font-semibold leading-none text-[#3e4a32]">
+            <h1 className="organic-serif text-[32px] font-semibold leading-none text-[#18181b]">
               {t('sessions.title')}
             </h1>
           </div>
@@ -444,7 +444,7 @@ export function SessionsPage(): React.JSX.Element {
                     variant="ghost"
                     size="sm"
                     aria-label={t('sessions.clearSearch')}
-                    className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 p-0 text-[#829071] hover:text-[#3e4a32]"
+                    className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 p-0 text-[#829071] hover:text-[#18181b]"
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={() => {
                       setSearchQuery('')
@@ -507,12 +507,12 @@ export function SessionsPage(): React.JSX.Element {
             <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-lg border border-[#d7cab1] bg-[#ffffff] text-[#617052] shadow-[0_6px_16px_rgba(78,88,62,0.08)]">
               <FolderOpen className="h-8 w-8" />
             </div>
-            <h3 className="text-xl font-semibold text-[#3e4a32]">{t('sessions.emptyTitle')}</h3>
+            <h3 className="text-xl font-semibold text-[#18181b]">{t('sessions.emptyTitle')}</h3>
             <p className="mt-2 text-sm leading-6 text-[#7b705f]">
               {t('sessions.emptyDescription')}
             </p>
             <Button
-              className="mt-6 min-w-[148px] bg-[#5d6b4d] text-white hover:bg-[#4b593d]"
+              className="mt-6 min-w-[148px] bg-[#18181b] text-white hover:bg-[#4b593d]"
               onClick={() => navigate('/')}
             >
               <FolderOpen className="mr-2 h-4 w-4" />
@@ -594,7 +594,7 @@ export function SessionsPage(): React.JSX.Element {
                 : isPartialComplete
                   ? 'border-[#b5c9a8]/80 bg-[#eef5e8] text-[#4f7b3f]'
                   : isContinuable
-                    ? 'border-[#d6c08d]/80 bg-[#fff3cf] text-[#7a5a19] shadow-[0_0_0_1px_rgba(214,192,141,0.14)]'
+                    ? 'border-[#a1a1aa]/80 bg-[#fff3cf] text-[#7a5a19] shadow-[0_0_0_1px_rgba(214,192,141,0.14)]'
                     : 'border-[#d7b5ae]/70 bg-[#fbf1ee] text-[#93564f]'
             return (
               <Card
@@ -627,14 +627,14 @@ export function SessionsPage(): React.JSX.Element {
                     />
                   )}
                   <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/45 via-black/10 to-transparent" />
-                  <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-lg bg-[#ffffff]/92 px-2.5 py-1 text-xs font-semibold text-[#3e4a32] shadow-[0_4px_12px_rgba(31,38,29,0.16)] backdrop-blur-sm">
+                  <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-lg bg-[#ffffff]/92 px-2.5 py-1 text-xs font-semibold text-[#18181b] shadow-[0_4px_12px_rgba(31,38,29,0.16)] backdrop-blur-sm">
                     <MessageSquare className="h-3 w-3" />
                     {actionText}
                   </span>
                 </div>
 
                 <div className="min-w-0 flex-1 p-4">
-                  <CardTitle className="line-clamp-2 min-h-10 text-base leading-5 text-[#3e4a32]">
+                  <CardTitle className="line-clamp-2 min-h-10 text-base leading-5 text-[#18181b]">
                     {session.title}
                   </CardTitle>
                   <p className="mt-1.5 text-xs text-[#847866]">
@@ -651,7 +651,7 @@ export function SessionsPage(): React.JSX.Element {
                       <SourceIcon className={`h-3.5 w-3.5 ${sourceTag.iconClassName}`} />
                       {sourceTag.label}
                     </span>
-                    <span className="rounded-lg border border-[#e1d1b7]/80 bg-[#ffffff]/75 px-2 py-1 text-[#7c6a4c]">
+                    <span className="rounded-lg border border-[#e1d1b7]/80 bg-[#ffffff]/75 px-2 py-1 text-[#52525b]">
                       {t('sessions.pagesCount', {
                         generated: displayGeneratedCount,
                         total: displayTotalCount
@@ -749,7 +749,7 @@ export function SessionsPage(): React.JSX.Element {
           >
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
-                <h2 className="text-base font-semibold text-[#3e4a32]">
+                <h2 className="text-base font-semibold text-[#18181b]">
                   {t('sessions.editTitle')}
                 </h2>
                 <p className="mt-1 text-xs text-muted-foreground">

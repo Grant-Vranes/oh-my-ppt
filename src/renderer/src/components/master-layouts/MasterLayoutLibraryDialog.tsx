@@ -53,7 +53,7 @@ const intentLabelKeys: Record<
 
 function LayoutPreview({ preview }: { preview: LayoutMasterTemplate['preview'] }): React.JSX.Element {
   const title = (
-    <span className="absolute left-[11%] top-[13%] h-[8%] w-[36%] rounded-sm bg-[#3e4a32]" />
+    <span className="absolute left-[11%] top-[13%] h-[8%] w-[36%] rounded-sm bg-[#18181b]" />
   )
   const muted = 'bg-[#a8b892]'
   const light = 'bg-[#dfe7d4]'

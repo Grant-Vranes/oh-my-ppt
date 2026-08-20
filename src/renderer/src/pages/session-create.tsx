@@ -559,13 +559,13 @@ export function SessionCreatePage(): ReactElement {
   return (
     <div className="session-create-page mx-auto flex min-h-full w-full max-w-7xl flex-col gap-4 px-5 py-4 sm:px-6">
       <div className="flex max-w-4xl flex-col items-start gap-1.5 border-b border-[#e4e4e7] px-1 pb-4">
-        <p className="rounded bg-[#fff7ed]/78 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#3e4a32]">
+        <p className="rounded bg-[#fff7ed]/78 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#18181b]">
           {t('home.eyebrow')}
         </p>
-        <h1 className="organic-serif text-[32px] font-semibold leading-tight text-[#3e4a32]">
+        <h1 className="organic-serif text-[32px] font-semibold leading-tight text-[#18181b]">
           {t('home.title')}
         </h1>
-        <p className="text-sm leading-6 text-[#5d6b4d]">{t('home.description')}</p>
+        <p className="text-sm leading-6 text-[#18181b]">{t('home.description')}</p>
       </div>
 
       <div>
@@ -588,7 +588,7 @@ export function SessionCreatePage(): ReactElement {
           data-session-create-workspace
           className="session-create-workspace overflow-hidden rounded-2xl border border-[#ded8cb] shadow-[0_12px_28px_rgba(86,73,54,0.06)]"
         >
-          <CardContent className="grid p-0 lg:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.85fr)] [&_label]:text-[13px] [&_label]:font-semibold [&_label]:text-[#3e4a32]">
+          <CardContent className="grid p-0 lg:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.85fr)] [&_label]:text-[13px] [&_label]:font-semibold [&_label]:text-[#18181b]">
             <main
               data-session-create-main
               className="flex min-w-0 flex-col gap-5 bg-transparent p-5 lg:p-6"
@@ -613,8 +613,8 @@ export function SessionCreatePage(): ReactElement {
                       onClick={() => setBriefMode('edit')}
                       className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium transition-colors ${
                         briefMode === 'edit'
-                          ? 'bg-[#ea580c] text-[#3e4a32]'
-                          : 'text-[#5d6b4d] hover:bg-[#fff7ed]/70 hover:text-[#3e4a32]'
+                          ? 'bg-[#ea580c] text-[#18181b]'
+                          : 'text-[#18181b] hover:bg-[#fff7ed]/70 hover:text-[#18181b]'
                       }`}
                     >
                       <Pencil className="h-3.5 w-3.5" />
@@ -625,8 +625,8 @@ export function SessionCreatePage(): ReactElement {
                       onClick={() => setBriefMode('preview')}
                       className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium transition-colors ${
                         briefMode === 'preview'
-                          ? 'bg-[#ea580c] text-[#3e4a32]'
-                          : 'text-[#5d6b4d] hover:bg-[#fff7ed]/70 hover:text-[#3e4a32]'
+                          ? 'bg-[#ea580c] text-[#18181b]'
+                          : 'text-[#18181b] hover:bg-[#fff7ed]/70 hover:text-[#18181b]'
                       }`}
                     >
                       <Eye className="h-3.5 w-3.5" />
@@ -709,7 +709,7 @@ export function SessionCreatePage(): ReactElement {
                         className={`inline-flex h-8 max-w-full items-center gap-1.5 rounded-lg border px-2.5 text-[11px] ${
                           pendingImageReference
                             ? 'border-[#e7a19a]/80 bg-[#fff1ef] text-[#9a3f35]'
-                            : 'border-[#fff7ed] bg-[#ffffff]/84 text-[#5d6b4d]'
+                            : 'border-[#fff7ed] bg-[#ffffff]/84 text-[#18181b]'
                         }`}
                         title={
                           pendingImageReference
@@ -774,7 +774,7 @@ export function SessionCreatePage(): ReactElement {
                                   void handleChooseReferenceClick()
                                 }}
                                 disabled={parsingDocument}
-                                className="h-8 shrink-0 rounded-lg border border-[#e4e4e7] bg-[#ffffff]/84 px-3 text-xs font-medium text-[#5d6b4d] shadow-none hover:bg-[#fff7ed]/65 hover:text-[#3e4a32]"
+                                className="h-8 shrink-0 rounded-lg border border-[#e4e4e7] bg-[#ffffff]/84 px-3 text-xs font-medium text-[#18181b] shadow-none hover:bg-[#fff7ed]/65 hover:text-[#18181b]"
                               >
                                 {parsingDocument ? (
                                   <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
@@ -810,8 +810,8 @@ export function SessionCreatePage(): ReactElement {
                                 tone="primary"
                                 dropdownAlign="end"
                                 className="box-border h-8 rounded-lg border-0 bg-[#ea580c] shadow-[0_6px_14px_rgba(113,134,95,0.15)]"
-                                mainClassName="h-full bg-transparent px-2.5 text-xs text-[#3e4a32] shadow-none hover:bg-white/10 hover:text-[#3e4a32] hover:shadow-none"
-                                triggerClassName="h-full w-8 px-0 text-[#3e4a32] hover:text-[#3e4a32]"
+                                mainClassName="h-full bg-transparent px-2.5 text-xs text-[#18181b] shadow-none hover:bg-white/10 hover:text-[#18181b] hover:shadow-none"
+                                triggerClassName="h-full w-8 px-0 text-[#18181b] hover:text-[#18181b]"
                                 onRun={handleAnalyzeReference}
                               />
                             </span>

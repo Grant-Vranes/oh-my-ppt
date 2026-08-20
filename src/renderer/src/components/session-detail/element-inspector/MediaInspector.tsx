@@ -21,7 +21,7 @@ function ToggleRow({
         type="checkbox"
         checked={checked}
         onChange={(event) => onChange(event.target.checked)}
-        className="h-4 w-4 accent-[#7a875f]"
+        className="h-4 w-4 accent-[#71717a]"
       />
     </label>
   )
@@ -45,12 +45,12 @@ export function MediaInspector({
   return (
     <InspectorSection
       title={t('sessionDetail.media')}
-      icon={<Image className="h-3.5 w-3.5 text-[#7a875f]" />}
+      icon={<Image className="h-3.5 w-3.5 text-[#71717a]" />}
     >
       <div className="space-y-2.5">
         {!isVideo && (
           <label className="block space-y-1.5">
-            <span className="text-[11px] font-medium text-[#7a875f]">
+            <span className="text-[11px] font-medium text-[#71717a]">
               {t('sessionDetail.objectFit')}
             </span>
             <Select
@@ -62,7 +62,7 @@ export function MediaInspector({
                 )
               }
             >
-              <SelectTrigger className="h-8 rounded-full border-[#e4e4e7]/72 bg-[#ffffff]/88 px-2.5 text-xs text-[#3f4b35] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#9bb98a]">
+              <SelectTrigger className="h-8 rounded-full border-[#e4e4e7]/72 bg-[#ffffff]/88 px-2.5 text-xs text-[#27272a] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#a1a1aa]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -77,7 +77,7 @@ export function MediaInspector({
         )}
         {!isVideo && (
           <label className="block space-y-1.5">
-            <span className="text-[11px] font-medium text-[#7a875f]">{t('sessionDetail.alt')}</span>
+            <span className="text-[11px] font-medium text-[#71717a]">{t('sessionDetail.alt')}</span>
             <Input
               value={draft.alt}
               onChange={(event) => onDraftChange({ ...draft, alt: event.target.value })}
@@ -87,7 +87,7 @@ export function MediaInspector({
                   { commit: true, fields: ['alt'] }
                 )
               }
-              className="h-8 rounded-full border border-[#e4e4e7]/72 bg-[#ffffff]/88 px-2.5 text-xs text-[#3f4b35] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#9bb98a] focus-visible:ring-0 focus-visible:ring-offset-0"
+              className="h-8 rounded-full border border-[#e4e4e7]/72 bg-[#ffffff]/88 px-2.5 text-xs text-[#27272a] shadow-[inset_0_1px_2px_rgba(74,59,42,0.05)] focus-visible:border-[#a1a1aa] focus-visible:ring-0 focus-visible:ring-offset-0"
             />
           </label>
         )}

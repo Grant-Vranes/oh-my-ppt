@@ -70,7 +70,7 @@ export function PageTitleEditDialog({ sessionId }: PageTitleEditDialogProps): Re
           <DialogDescription>{t('pageManagement.editPageTitleDescription')}</DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
-          <label className="text-xs font-medium text-[#5d6b4d]" htmlFor="page-title-input">
+          <label className="text-xs font-medium text-[#18181b]" htmlFor="page-title-input">
             {t('pageManagement.pageTitleLabel')}
           </label>
           <Input

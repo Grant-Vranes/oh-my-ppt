@@ -68,7 +68,7 @@ export function ImageModelSettingsTab({
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   {config.active && <CheckCircle2 className="h-4 w-4 text-[#5d7b4d]" />}
-                  <p className="font-medium text-[#33402a]">{config.name}</p>
+                  <p className="font-medium text-[#18181b]">{config.name}</p>
                   <span className="rounded-full bg-[#e9efde] px-2 py-0.5 text-[11px] uppercase text-[#506141]">
                     {config.provider}
                   </span>

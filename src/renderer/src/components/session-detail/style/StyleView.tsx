@@ -141,7 +141,7 @@ export function StyleView({ sessionId }: { sessionId: string }): React.JSX.Eleme
 
   if (loading) {
     return (
-      <div className="flex flex-1 items-center justify-center text-sm text-[#8a9a7b]">
+      <div className="flex flex-1 items-center justify-center text-sm text-[#a1a1aa]">
         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         {t('sessionDetail.styleLoading')}
       </div>
@@ -152,7 +152,7 @@ export function StyleView({ sessionId }: { sessionId: string }): React.JSX.Eleme
     <ScrollArea className="flex-1">
       <div className="p-6">
         <div className="mb-4">
-          <h2 className="text-lg font-semibold text-[#3e4a32]">{t('sessionDetail.styleTitle')}</h2>
+          <h2 className="text-lg font-semibold text-[#18181b]">{t('sessionDetail.styleTitle')}</h2>
           <p className="mt-1 text-xs text-[#718064]">{t('sessionDetail.styleDescription')}</p>
         </div>
         <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">
@@ -210,7 +210,7 @@ export function StyleView({ sessionId }: { sessionId: string }): React.JSX.Eleme
                       title={`${style.label} preview`}
                     />
                   ) : (
-                    <div className="flex h-full items-center justify-center text-[#8a9a7b]">
+                    <div className="flex h-full items-center justify-center text-[#a1a1aa]">
                       <Palette className="h-8 w-8" />
                     </div>
                   )}
@@ -220,7 +220,7 @@ export function StyleView({ sessionId }: { sessionId: string }): React.JSX.Eleme
                     aria-hidden="true"
                     className={`absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-md border-2 shadow-[0_3px_10px_rgba(40,48,34,0.22)] transition-colors ${
                       isCurrent || isSwitching
-                        ? 'border-[#5d6b4d] bg-[#5d6b4d] text-white'
+                        ? 'border-[#18181b] bg-[#18181b] text-white'
                         : 'border-[#718064] bg-white/95 text-transparent'
                     }`}
                   >
@@ -234,13 +234,13 @@ export function StyleView({ sessionId }: { sessionId: string }): React.JSX.Eleme
                 <div className="p-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-[#3e4a32]">{style.label}</p>
+                      <p className="truncate text-sm font-semibold text-[#18181b]">{style.label}</p>
                       <p className="mt-0.5 text-[10px] font-medium text-[#718064]">
                         {style.category} · {style.source || 'builtin'}
                       </p>
                     </div>
                   </div>
-                  <p className="mt-2 line-clamp-2 text-xs leading-5 text-[#6f6658]">
+                  <p className="mt-2 line-clamp-2 text-xs leading-5 text-[#71717a]">
                     {style.description || style.id}
                   </p>
                   {style.styleCase && (

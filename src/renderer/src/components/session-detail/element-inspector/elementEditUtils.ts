@@ -7,7 +7,7 @@ import type { ElementEditDraft } from './types'
 export const EMPTY_ELEMENT_DRAFT: ElementEditDraft = {
   html: '',
   text: '',
-  color: '#34402c',
+  color: '#18181b',
   fontSize: '',
   fontWeight: '400',
   textAlign: 'left',
@@ -36,9 +36,9 @@ export const EMPTY_ELEMENT_DRAFT: ElementEditDraft = {
   chartLabels: '',
   chartValues: '',
   chartDataJson: '',
-  chartPrimaryColor: '#5d6b4d',
+  chartPrimaryColor: '#18181b',
   chartAccentColor: '#ea580c',
-  chartTextColor: '#2f3b28',
+  chartTextColor: '#18181b',
   chartSmooth: true,
   chartHorizontal: false,
   chartStacked: false,
@@ -54,7 +54,7 @@ export function rgbToHex(value: string | undefined): string {
   const text = String(value || '').trim()
   if (/^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(text)) return text
   const match = text.match(/^rgba?\(\s*(\d{1,3})[\s,]+(\d{1,3})[\s,]+(\d{1,3})/i)
-  if (!match) return '#34402c'
+  if (!match) return '#18181b'
   const toHex = (part: string): string =>
     Math.max(0, Math.min(255, Number(part) || 0))
       .toString(16)

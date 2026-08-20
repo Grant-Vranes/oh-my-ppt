@@ -53,7 +53,7 @@ export function ModelConfigDialog({
     >
       <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg border border-[#e4e4e7]/85 bg-[#ffffff] shadow-[0_24px_70px_rgba(53,44,32,0.28)]">
         <div className="flex items-center justify-between border-b border-[#e3d8c5] px-5 py-3.5">
-          <h2 className="flex items-center gap-1.5 text-base font-semibold text-[#33402a]">
+          <h2 className="flex items-center gap-1.5 text-base font-semibold text-[#18181b]">
             {form.id ? t('settings.editModel') : t('settings.addModel')}
             <Popover>
               <PopoverTrigger asChild>
@@ -64,7 +64,7 @@ export function ModelConfigDialog({
                 align="start"
                 className="w-auto max-w-xs border-[#e4e4e7]/80 bg-[#ffffff] p-3"
               >
-                <p className="mb-2 text-xs font-semibold text-[#3e4a32]">
+                <p className="mb-2 text-xs font-semibold text-[#18181b]">
                   {t('settings.modelHelpTitle')}
                 </p>
                 <div className="flex flex-wrap gap-1.5">
@@ -74,7 +74,7 @@ export function ModelConfigDialog({
                       href={item.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="rounded-md border border-[#e4e4e7]/80 bg-[#f5efe2]/60 px-2 py-1 text-xs text-[#5b6b4d] transition-colors hover:border-[#96b77f]/60 hover:bg-[#e8f0de] hover:text-[#3e4a32]"
+                      className="rounded-md border border-[#e4e4e7]/80 bg-[#f5efe2]/60 px-2 py-1 text-xs text-[#5b6b4d] transition-colors hover:border-[#96b77f]/60 hover:bg-[#e8f0de] hover:text-[#18181b]"
                     >
                       {item.label}
                     </a>

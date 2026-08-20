@@ -29,7 +29,7 @@ import { HtmlEditorMediaInsertDialog } from './HtmlEditorMediaInsertDialog'
 type Insertion = ReturnType<typeof useHtmlElementInsertion>
 
 const triggerBtnClass =
-  'flex h-9 w-9 items-center justify-center rounded-md text-[#5d6b4d] transition-colors hover:bg-[#ece5d6] disabled:pointer-events-none disabled:opacity-40'
+  'flex h-9 w-9 items-center justify-center rounded-md text-[#18181b] transition-colors hover:bg-[#ece5d6] disabled:pointer-events-none disabled:opacity-40'
 
 const shapeLabelKey: Record<InsertShapeType, I18nKey> = {
   rect: 'editMode.shapeRect',
@@ -158,7 +158,7 @@ export function HtmlEditorInsertRibbon({
             key={icon.id}
             type="button"
             title={icon.label}
-            className="flex h-12 items-center justify-center rounded-lg border border-transparent text-[#3e4a32] transition-colors hover:border-[#ea580c] hover:bg-white"
+            className="flex h-12 items-center justify-center rounded-lg border border-transparent text-[#18181b] transition-colors hover:border-[#ea580c] hover:bg-white"
             onClick={() => void insertion.addIcon(icon.id)}
           >
             <svg
@@ -222,7 +222,7 @@ export function HtmlEditorInsertRibbon({
             <button
               key={def.type}
               type="button"
-              className="flex min-h-[68px] flex-col items-center justify-center gap-1 rounded-lg border border-[#e4e4e7]/70 bg-white/70 px-2 py-2 text-[10px] font-bold text-[#3e4a32] transition-colors hover:border-[#ea580c] hover:bg-white"
+              className="flex min-h-[68px] flex-col items-center justify-center gap-1 rounded-lg border border-[#e4e4e7]/70 bg-white/70 px-2 py-2 text-[10px] font-bold text-[#18181b] transition-colors hover:border-[#ea580c] hover:bg-white"
               onClick={() => void insertion.addShape(def.type)}
             >
               <svg
@@ -246,13 +246,13 @@ export function HtmlEditorInsertRibbon({
       <HoverInsertButton icon={Smile} label={t('editMode.addIcon')} disabled={disabled}>
         <div className="max-h-[360px] w-[390px] space-y-2 overflow-y-auto pr-1">
           <div>
-            <div className="mb-1 px-1 text-[10px] font-bold uppercase tracking-wide text-[#7a875f]">
+            <div className="mb-1 px-1 text-[10px] font-bold uppercase tracking-wide text-[#71717a]">
               {t('editMode.iconSectionIcons')}
             </div>
             {iconGrid(strokeIcons)}
           </div>
           <div>
-            <div className="mb-1 px-1 text-[10px] font-bold uppercase tracking-wide text-[#7a875f]">
+            <div className="mb-1 px-1 text-[10px] font-bold uppercase tracking-wide text-[#71717a]">
               {t('editMode.iconSectionNumbers')}
             </div>
             {iconGrid(badgeIcons)}
@@ -268,10 +268,10 @@ export function HtmlEditorInsertRibbon({
               <button
                 key={item.type}
                 type="button"
-                className="flex min-h-[60px] flex-col items-center justify-center gap-1 rounded-lg border border-[#e4e4e7]/70 bg-white/70 px-2 py-2 text-[10px] font-bold text-[#3e4a32] transition-colors hover:border-[#ea580c] hover:bg-white"
+                className="flex min-h-[60px] flex-col items-center justify-center gap-1 rounded-lg border border-[#e4e4e7]/70 bg-white/70 px-2 py-2 text-[10px] font-bold text-[#18181b] transition-colors hover:border-[#ea580c] hover:bg-white"
                 onClick={() => void insertion.addChart(item.type)}
               >
-                <Icon className="h-5 w-5 text-[#5d6b4d]" />
+                <Icon className="h-5 w-5 text-[#18181b]" />
                 <span>{t(item.labelKey as I18nKey)}</span>
               </button>
             )

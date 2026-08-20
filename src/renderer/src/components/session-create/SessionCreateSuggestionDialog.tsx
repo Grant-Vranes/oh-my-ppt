@@ -188,7 +188,7 @@ export function SessionCreateSuggestionDialog({
               <DialogTitle className="text-sm">{t('home.analysisSuggestionTitle')}</DialogTitle>
               {attachedReferenceFile && (
                 <span
-                  className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full border border-[#e4e4e7]/72 bg-[#ffffff]/86 px-2 py-1 text-[11px] font-medium text-[#5d6b4d]"
+                  className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full border border-[#e4e4e7]/72 bg-[#ffffff]/86 px-2 py-1 text-[11px] font-medium text-[#18181b]"
                   title={attachedReferenceFile.path}
                 >
                   <FileText className="h-3 w-3 shrink-0" />
@@ -252,7 +252,7 @@ export function SessionCreateSuggestionDialog({
                         className="h-8 border-[#cddfbe] bg-white text-xs text-[#405333]"
                       />
                     ) : (
-                      <p className="whitespace-pre-wrap text-sm font-medium leading-5 text-[#34402c]">
+                      <p className="whitespace-pre-wrap text-sm font-medium leading-5 text-[#18181b]">
                         {suggestionDraft.topic || t('home.emptyValue')}
                       </p>
                     )}
@@ -299,7 +299,7 @@ export function SessionCreateSuggestionDialog({
                                       {t('home.outlineItemTitle')}
                                     </p>
                                   ) : (
-                                    <h4 className="min-w-0 break-words text-sm font-semibold leading-5 text-[#34402c]">
+                                    <h4 className="min-w-0 break-words text-sm font-semibold leading-5 text-[#18181b]">
                                       {item.title || t('home.emptyValue')}
                                     </h4>
                                   )}
@@ -351,7 +351,7 @@ export function SessionCreateSuggestionDialog({
                                       title: event.target.value
                                     })
                                   }
-                                  className="h-7 min-w-0 border-[#cddfbe] bg-white px-2 text-xs font-semibold text-[#34402c]"
+                                  className="h-7 min-w-0 border-[#cddfbe] bg-white px-2 text-xs font-semibold text-[#18181b]"
                                 />
                                 <p className="text-[10px] font-medium text-[#6a8054]">
                                   {t('home.outlineItemContent')}
@@ -363,12 +363,12 @@ export function SessionCreateSuggestionDialog({
                                       reason: event.target.value
                                     })
                                   }
-                                  className="max-h-24 min-h-14 resize-y border-[#d7e8cc] bg-white px-2 py-1.5 text-[11px] leading-5 text-[#6d604d]"
+                                  className="max-h-24 min-h-14 resize-y border-[#d7e8cc] bg-white px-2 py-1.5 text-[11px] leading-5 text-[#52525b]"
                                 />
                               </div>
                             ) : (
                               <div className="mt-2">
-                                <p className="line-clamp-4 whitespace-pre-wrap break-words text-xs leading-5 text-[#6d604d]">
+                                <p className="line-clamp-4 whitespace-pre-wrap break-words text-xs leading-5 text-[#52525b]">
                                   {item.reason || t('home.emptyValue')}
                                 </p>
                               </div>
@@ -397,7 +397,7 @@ export function SessionCreateSuggestionDialog({
                         onChange={(event) => setApplyPageCountSuggestion(event.target.checked)}
                         className="h-4 w-4 accent-[#6f8f64]"
                       />
-                      <span className="text-sm font-semibold text-[#34402c]">
+                      <span className="text-sm font-semibold text-[#18181b]">
                         {t('home.pageCount')}
                       </span>
                     </label>
@@ -444,7 +444,7 @@ export function SessionCreateSuggestionDialog({
                           className="h-8 border-[#cddfbe] bg-white text-xs text-[#405333]"
                         />
                       ) : (
-                        <p className="text-sm font-semibold leading-5 text-[#34402c]">
+                        <p className="text-sm font-semibold leading-5 text-[#18181b]">
                           {suggestionDraft.pageCount || t('home.emptyValue')}
                         </p>
                       )}
@@ -469,7 +469,7 @@ export function SessionCreateSuggestionDialog({
                         onChange={(event) => setApplyBriefSuggestion(event.target.checked)}
                         className="h-4 w-4 accent-[#6f8f64]"
                       />
-                      <span className="truncate text-sm font-semibold text-[#34402c]">
+                      <span className="truncate text-sm font-semibold text-[#18181b]">
                         {t('home.brief')}
                       </span>
                     </label>

@@ -73,7 +73,7 @@ const transitionPreviewStyles = `
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: #5d6b4d;
+  background: #18181b;
   color: #fff;
 }
 .ppt-index-transition-stage {
@@ -95,7 +95,7 @@ const transitionPreviewStyles = `
   inset: 7px 14px;
   border-radius: 5px;
   border: 1px solid rgba(80,69,52,0.16);
-  background: linear-gradient(135deg, #5d6b4d 0%, #ea580c 44%, #f1b56f 100%);
+  background: linear-gradient(135deg, #18181b 0%, #ea580c 44%, #f1b56f 100%);
   box-shadow: 0 6px 12px rgba(62,74,50,0.16);
   transform-origin: center;
 }

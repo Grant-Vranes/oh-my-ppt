@@ -87,7 +87,7 @@ export function TokenUsageDashboard(): React.JSX.Element {
       icon: Coins,
       bg: 'bg-[#fff7ed]',
       border: 'border-[#fff7ed]',
-      iconBg: 'bg-[#5d6b4d]',
+      iconBg: 'bg-[#18181b]',
       blob: 'bg-[#ea580c]/30'
     },
     {
@@ -114,8 +114,8 @@ export function TokenUsageDashboard(): React.JSX.Element {
       icon: Activity,
       bg: 'bg-[#fff7ed]',
       border: 'border-[#a9bd97]',
-      iconBg: 'bg-[#3e4a32]',
-      blob: 'bg-[#5d6b4d]/22'
+      iconBg: 'bg-[#18181b]',
+      blob: 'bg-[#18181b]/22'
     }
   ]
 
@@ -444,10 +444,10 @@ export function TokenUsageDashboard(): React.JSX.Element {
                 </div>
               </div>
               <div className="relative mt-4">
-                <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-[#5d6b4d]">
+                <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-[#18181b]">
                   {card.label}
                 </p>
-                <p className="organic-serif mt-1.5 text-[24px] font-semibold leading-none text-[#3e4a32]">
+                <p className="organic-serif mt-1.5 text-[24px] font-semibold leading-none text-[#18181b]">
                   {card.value.toLocaleString()}
                 </p>
               </div>

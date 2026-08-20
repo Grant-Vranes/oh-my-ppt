@@ -87,7 +87,7 @@ export function HtmlEditorHistoryDialog({
                 className="flex items-center gap-2 rounded-md border border-[#e2dccf] bg-[#f4f4f5] px-3 py-2"
               >
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium text-[#3e4a32]">{v.message}</div>
+                  <div className="text-sm font-medium text-[#18181b]">{v.message}</div>
                   <div className="text-[11px] text-[#8a8676]">
                     {fmtTime(v.createdAt)} · {v.commitSha.slice(0, 7)}
                   </div>
@@ -96,7 +96,7 @@ export function HtmlEditorHistoryDialog({
                   type="button"
                   onClick={() => void handleRestore(v.id)}
                   disabled={restoring !== null}
-                  className="flex items-center gap-1 rounded-md border border-[#c9c0ad] px-2 py-1 text-[11px] text-[#3e4a32] hover:bg-[#ece5d6] disabled:opacity-50"
+                  className="flex items-center gap-1 rounded-md border border-[#c9c0ad] px-2 py-1 text-[11px] text-[#18181b] hover:bg-[#ece5d6] disabled:opacity-50"
                 >
                   {restoring === v.id ? (
                     <Loader2 className="h-3 w-3 animate-spin" />

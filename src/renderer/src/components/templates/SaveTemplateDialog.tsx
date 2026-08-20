@@ -71,13 +71,13 @@ export function SaveTemplateDialog({
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-[#5f6b50]">
+            <label className="mb-1 block text-xs font-medium text-[#52525b]">
               {t('templateDialog.nameLabel')}
             </label>
             <Input value={name} maxLength={120} onChange={(event) => setName(event.target.value)} />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-[#5f6b50]">
+            <label className="mb-1 block text-xs font-medium text-[#52525b]">
               {t('templateDialog.descriptionLabel')}
             </label>
             <textarea
@@ -89,7 +89,7 @@ export function SaveTemplateDialog({
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-[#5f6b50]">
+            <label className="mb-1 block text-xs font-medium text-[#52525b]">
               {t('templateDialog.tagsLabel')}
             </label>
             <Input

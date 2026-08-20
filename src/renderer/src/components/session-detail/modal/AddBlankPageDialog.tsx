@@ -67,7 +67,7 @@ export function AddBlankPageDialog({
         <h3 className="mb-2 text-base font-semibold text-[#2f3a2a]">
           {t('sessionDetail.addBlankPage')}
         </h3>
-        <p className="mb-4 text-xs leading-5 text-[#8a9a7b]">
+        <p className="mb-4 text-xs leading-5 text-[#a1a1aa]">
           {t('sessionDetail.addBlankPageHint')}
         </p>
         <div className="mb-4 max-h-[320px] space-y-2 overflow-y-auto pr-1">
@@ -79,10 +79,10 @@ export function AddBlankPageDialog({
               className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left transition-colors ${
                 sourcePageId === page.id
                   ? 'border-[#8eaa70] bg-[#eef6e7] text-[#2f3a2a]'
-                  : 'border-[#fff7ed]/60 bg-[#f8f6f0] text-[#5d6b4d] hover:bg-[#f0ece3]'
+                  : 'border-[#fff7ed]/60 bg-[#f8f6f0] text-[#18181b] hover:bg-[#f0ece3]'
               }`}
             >
-              <span className="shrink-0 rounded-md bg-[#fff7ed]/70 px-2 py-1 text-[11px] font-semibold text-[#3e4a32]">
+              <span className="shrink-0 rounded-md bg-[#fff7ed]/70 px-2 py-1 text-[11px] font-semibold text-[#18181b]">
                 P{page.pageNumber}
               </span>
               <span className="min-w-0 flex-1 truncate text-sm font-medium">
@@ -95,7 +95,7 @@ export function AddBlankPageDialog({
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="cursor-pointer rounded-xl px-4 py-2 text-sm font-medium text-[#5d6b4d] transition-colors hover:bg-[#f0ece3]"
+            className="cursor-pointer rounded-xl px-4 py-2 text-sm font-medium text-[#18181b] transition-colors hover:bg-[#f0ece3]"
           >
             {t('sessionDetail.addPageCancel')}
           </button>
@@ -103,7 +103,7 @@ export function AddBlankPageDialog({
             type="button"
             disabled={!sourcePageId}
             onClick={() => void handleCreateBlankPage()}
-            className="cursor-pointer rounded-xl bg-[#5d6b4d] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3e4a32] disabled:cursor-not-allowed disabled:opacity-40"
+            className="cursor-pointer rounded-xl bg-[#18181b] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#18181b] disabled:cursor-not-allowed disabled:opacity-40"
           >
             {t('sessionDetail.addBlankPageCreate')}
           </button>

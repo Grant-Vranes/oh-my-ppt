@@ -317,7 +317,7 @@ export function MergeTemplatePagesDialog({
               </div>
               <ScrollArea className="min-h-0 flex-1" viewportClassName="pr-2">
                 {loadingTemplates ? (
-                  <div className="flex h-32 items-center justify-center text-[#7a875f]">
+                  <div className="flex h-32 items-center justify-center text-[#71717a]">
                     <Loader2 className="h-5 w-5 animate-spin" />
                   </div>
                 ) : filteredTemplates.length === 0 ? (
@@ -363,11 +363,11 @@ export function MergeTemplatePagesDialog({
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-1.5">
-                              <span className="truncate text-sm font-semibold text-[#3e4a32]">
+                              <span className="truncate text-sm font-semibold text-[#18181b]">
                                 {template.title || t('sessionDetail.mergeTemplateUntitled')}
                               </span>
                               {template.isSource ? (
-                                <span className="shrink-0 rounded bg-[#5d6b4d] px-1 py-0.5 text-[9px] font-bold text-white">
+                                <span className="shrink-0 rounded bg-[#18181b] px-1 py-0.5 text-[9px] font-bold text-white">
                                   {t('sessionDetail.mergeTemplateSourceBadge')}
                                 </span>
                               ) : null}
@@ -394,7 +394,7 @@ export function MergeTemplatePagesDialog({
             <div className="flex min-h-0 flex-col bg-[#ffffff]/75 p-4">
               <div className="mb-3 flex min-h-9 items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="truncate text-sm font-semibold text-[#3e4a32]">
+                  <div className="truncate text-sm font-semibold text-[#18181b]">
                     {selectedTemplate
                       ? selectedTemplate.title || t('sessionDetail.mergeTemplateUntitled')
                       : t('sessionDetail.mergeTemplateSelectTemplate')}
@@ -409,7 +409,7 @@ export function MergeTemplatePagesDialog({
                   ) : null}
                 </div>
                 {selectedTemplate && sourcePages.length > 0 ? (
-                  <label className="flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-[#5d6b4d] hover:bg-[#f4f4f5]/70">
+                  <label className="flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-[#18181b] hover:bg-[#f4f4f5]/70">
                     <Checkbox
                       checked={allSelectablePagesSelected}
                       disabled={submitting || selectablePageIds.length === 0}
@@ -431,7 +431,7 @@ export function MergeTemplatePagesDialog({
                 onViewportScroll={schedulePreviewWindowUpdate}
               >
                 {loadingPages ? (
-                  <div className="flex h-full min-h-56 items-center justify-center text-[#7a875f]">
+                  <div className="flex h-full min-h-56 items-center justify-center text-[#71717a]">
                     <Loader2 className="h-6 w-6 animate-spin" />
                   </div>
                 ) : loadError ? (

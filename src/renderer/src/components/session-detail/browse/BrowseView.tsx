@@ -76,7 +76,7 @@ const BrowseCard = memo(function BrowseCard({
         <div className="relative max-h-full max-w-full overflow-hidden" style={thumbnailFitStyle}>
           {isGeneratingPlaceholder ? (
             <div
-              className="flex h-full w-full items-center justify-center bg-[#f8f4eb] text-[#5d6b4d]"
+              className="flex h-full w-full items-center justify-center bg-[#f8f4eb] text-[#18181b]"
               aria-live="polite"
             >
               <Loader2 className="h-5 w-5 animate-spin" />
@@ -93,7 +93,7 @@ const BrowseCard = memo(function BrowseCard({
               thumbnail
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8a9a7b]">
+            <div className="flex h-full w-full items-center justify-center text-[11px] font-semibold uppercase tracking-[0.12em] text-[#a1a1aa]">
               P{page.pageNumber}
             </div>
           )}
@@ -204,7 +204,7 @@ function SortableBrowseCard({
           ref={setActivatorNodeRef}
           disabled={structureDisabled}
           onClick={(event) => event.stopPropagation()}
-          className={`inline-flex h-8 w-8 items-center justify-center rounded bg-white/90 p-1 text-[#5d6b4d] shadow-sm transition-colors hover:bg-[#f4f4f5] hover:text-[#3e4a32] disabled:cursor-not-allowed disabled:opacity-50 ${
+          className={`inline-flex h-8 w-8 items-center justify-center rounded bg-white/90 p-1 text-[#18181b] shadow-sm transition-colors hover:bg-[#f4f4f5] hover:text-[#18181b] disabled:cursor-not-allowed disabled:opacity-50 ${
             isDragging ? 'cursor-grabbing' : 'cursor-grab'
           }`}
           aria-label={dragHandleLabel}
@@ -224,7 +224,7 @@ function SortableBrowseCard({
                       type="button"
                       disabled={disabled || isExportingPptx}
                       onClick={(event) => event.stopPropagation()}
-                      className="rounded bg-white/90 p-1 text-[#5d6b4d] shadow-sm transition-colors hover:bg-[#f4f4f5] hover:text-[#3e4a32] disabled:cursor-not-allowed disabled:opacity-50"
+                      className="rounded bg-white/90 p-1 text-[#18181b] shadow-sm transition-colors hover:bg-[#f4f4f5] hover:text-[#18181b] disabled:cursor-not-allowed disabled:opacity-50"
                       aria-label={exportLabel}
                     >
                       <Presentation className="h-3.5 w-3.5" />
@@ -240,11 +240,11 @@ function SortableBrowseCard({
                 onClick={(event) => event.stopPropagation()}
               >
                 <DropdownMenuItem onSelect={() => onExportPagePptx(page)}>
-                  <Presentation className="h-3.5 w-3.5 shrink-0 text-[#5f6b50]" />
+                  <Presentation className="h-3.5 w-3.5 shrink-0 text-[#52525b]" />
                   <span className="whitespace-nowrap">{exportEditableLabel}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => onExportPagePptx(page, { imageOnly: true })}>
-                  <ImageIcon className="h-3.5 w-3.5 shrink-0 text-[#7c6a4c]" />
+                  <ImageIcon className="h-3.5 w-3.5 shrink-0 text-[#52525b]" />
                   <span className="whitespace-nowrap">{exportImageOnlyLabel}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -257,7 +257,7 @@ function SortableBrowseCard({
               event.stopPropagation()
               onRenamePage(page)
             }}
-            className="rounded bg-white/90 p-1 text-[#5d6b4d] shadow-sm transition-colors hover:bg-[#f4f4f5] hover:text-[#3e4a32] disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded bg-white/90 p-1 text-[#18181b] shadow-sm transition-colors hover:bg-[#f4f4f5] hover:text-[#18181b] disabled:cursor-not-allowed disabled:opacity-50"
             aria-label={renameLabel}
             title={renameLabel}
           >
@@ -270,7 +270,7 @@ function SortableBrowseCard({
               event.stopPropagation()
               onDuplicatePage(page)
             }}
-            className="rounded bg-white/90 p-1 text-[#5d6b4d] shadow-sm transition-colors hover:bg-[#f4f4f5] hover:text-[#3e4a32] disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded bg-white/90 p-1 text-[#18181b] shadow-sm transition-colors hover:bg-[#f4f4f5] hover:text-[#18181b] disabled:cursor-not-allowed disabled:opacity-50"
             aria-label={duplicateLabel}
             title={duplicateLabel}
           >
@@ -429,7 +429,7 @@ export function BrowseView(props: { sessionId: string }): React.JSX.Element {
   if (pages.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-[#8a9a7b]">{t('sessionDetail.pagesEmpty')}</p>
+        <p className="text-sm text-[#a1a1aa]">{t('sessionDetail.pagesEmpty')}</p>
       </div>
     )
   }

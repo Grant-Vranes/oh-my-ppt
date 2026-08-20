@@ -149,7 +149,7 @@ export function EditHtmlPage(): ReactElement {
           type="button"
           onClick={() => void useHtmlEditorStore.getState().openDocument(id || '')}
           disabled={importing || !id}
-          className="inline-flex items-center gap-1.5 rounded-md border border-[#c9c0ad] px-3 py-1.5 text-[#3e4a32] hover:bg-[#ece5d6] disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-md border border-[#c9c0ad] px-3 py-1.5 text-[#18181b] hover:bg-[#ece5d6] disabled:opacity-50"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           {t('htmlEditor.retry')}
@@ -229,7 +229,7 @@ export function EditHtmlPage(): ReactElement {
                   type="button"
                   onClick={() => void insertion.copyElement()}
                   title={t('sessionDetail.copyElement')}
-                  className="rounded-md p-1.5 text-[#5d6b4d] hover:bg-[#ece5d6]"
+                  className="rounded-md p-1.5 text-[#18181b] hover:bg-[#ece5d6]"
                 >
                   <Copy className="h-3.5 w-3.5" />
                 </button>

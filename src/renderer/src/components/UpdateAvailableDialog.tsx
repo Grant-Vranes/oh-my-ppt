@@ -42,11 +42,11 @@ export function UpdateAvailableDialog({
 
         {update && (
           <div className="flex flex-wrap gap-2 rounded-lg border border-[#e4e4e7]/80 bg-[#f4f4f5]/55 p-4">
-            <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[#e4e4e7] bg-[#ffffff] px-3 text-xs font-medium text-[#6f6658]">
+            <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[#e4e4e7] bg-[#ffffff] px-3 text-xs font-medium text-[#71717a]">
               <span>{t('app.currentVersion')}</span>
-              <span className="text-[#3e4a32]">{update.currentVersion}</span>
+              <span className="text-[#18181b]">{update.currentVersion}</span>
             </span>
-            <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[#ea580c]/25 bg-[#eaf2df] px-3 text-xs font-semibold text-[#3e4a32]">
+            <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[#ea580c]/25 bg-[#eaf2df] px-3 text-xs font-semibold text-[#18181b]">
               <span>{t('app.latestVersion')}</span>
               <span>{update.latestVersion}</span>
             </span>

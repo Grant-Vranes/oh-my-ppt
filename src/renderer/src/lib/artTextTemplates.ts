@@ -80,7 +80,7 @@ function buildBaseStyle(layout: ArtTextLayout): string {
     'font-family:inherit',
     'font-size:54px',
     'font-weight:800',
-    'color:#34402c'
+    'color:#18181b'
   ])
 }
 
@@ -182,7 +182,7 @@ ${scope} .ppt-art-text {
     case 'wave-text':
       return `${base}
 ${scope} .ppt-art-text {
-  color: #34402c;
+  color: #18181b;
   text-shadow: 0 2px 8px rgba(52, 64, 44, 0.18);
 }
 ${scope} .ppt-art-wave-char {
@@ -214,7 +214,7 @@ ${scope} .ppt-art-text {
   overflow: hidden;
   white-space: nowrap;
   border-right: 3px solid #f0f;
-  color: #34402c;
+  color: #18181b;
   text-shadow: 0 2px 8px rgba(52, 64, 44, 0.18);
   animation: pptArtTyping 3s steps(20, end) infinite, pptArtBlinkCursor 0.75s step-end infinite;
 }
@@ -354,7 +354,7 @@ ${scope} .ppt-art-text {
 ${scope} .ppt-art-text {
   animation: pptArtTextBounce 1.2s ease infinite;
   transform-origin: center;
-  color: #34402c;
+  color: #18181b;
   text-shadow: 0 2px 8px rgba(52, 64, 44, 0.18);
 }
 @keyframes pptArtTextBounce {
@@ -365,7 +365,7 @@ ${scope} .ppt-art-text {
     case 'float-shadow':
       return `${base}
 ${scope} .ppt-art-text {
-  color: #34402c;
+  color: #18181b;
   animation: pptArtFloatUp 2.6s infinite alternate;
   text-shadow: 0 10px 15px rgba(52, 64, 44, 0.22);
 }

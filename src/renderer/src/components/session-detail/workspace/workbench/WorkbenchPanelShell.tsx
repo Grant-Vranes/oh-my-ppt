@@ -11,7 +11,7 @@ export function WorkbenchPanelShell({
   return (
     <div className={workbenchPanelClass}>
       <div className="relative mx-2 mt-2 overflow-hidden rounded-[0.85rem] border border-[#e4e4e7]/58 bg-[#ffffff]/68 px-2.5 py-2 shadow-[0_2px_8px_rgba(77,61,43,0.05)]">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#7a875f]/90">
+        <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#71717a]/90">
           {title}
         </div>
       </div>

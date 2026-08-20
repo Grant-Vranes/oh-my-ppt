@@ -55,7 +55,7 @@ export function SaveAsNewSessionDialog({
           }}
         >
           <div>
-            <label className="mb-1 block text-xs font-medium text-[#5f6b50]">
+            <label className="mb-1 block text-xs font-medium text-[#52525b]">
               {t('sessionDetail.saveAsNewSessionNameLabel')}
             </label>
             <Input

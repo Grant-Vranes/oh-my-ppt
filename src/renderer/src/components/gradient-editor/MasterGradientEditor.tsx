@@ -334,7 +334,7 @@ export function MasterGradientEditor(): React.JSX.Element {
               <button
                 type="button"
                 aria-label={t('sessionDetail.masterGradientConfigure')}
-                className="block h-12 w-full cursor-pointer overflow-hidden rounded-md border border-[#e4e4e7]/75 shadow-[inset_0_1px_2px_rgba(74,59,42,0.08)] transition-shadow hover:shadow-[inset_0_0_0_1px_rgba(80,102,66,0.72)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5d6b4d]"
+                className="block h-12 w-full cursor-pointer overflow-hidden rounded-md border border-[#e4e4e7]/75 shadow-[inset_0_1px_2px_rgba(74,59,42,0.08)] transition-shadow hover:shadow-[inset_0_0_0_1px_rgba(80,102,66,0.72)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#18181b]"
                 style={{ background: buildMasterGradientCss(config.backgroundGradient) }}
                 onClick={openGradientEditor}
               />
@@ -464,7 +464,7 @@ export function MasterGradientEditor(): React.JSX.Element {
                           type="button"
                           aria-label={`${t('sessionDetail.masterGradientAngle')} ${angle}°`}
                           title={`${t('sessionDetail.masterGradientAngle')} ${angle}°`}
-                          className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md text-[#667257] transition-colors hover:bg-[#f4f4f5] hover:text-[#3e4a32] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5d6b4d]"
+                          className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md text-[#667257] transition-colors hover:bg-[#f4f4f5] hover:text-[#18181b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#18181b]"
                           onClick={() => updateAngle(angle)}
                         >
                           <Icon className="h-3.5 w-3.5" />
@@ -479,7 +479,7 @@ export function MasterGradientEditor(): React.JSX.Element {
                       max={359}
                       value={gradient.angle}
                       aria-label={t('sessionDetail.masterGradientAngle')}
-                      className="h-2 w-full cursor-pointer accent-[#5d6b4d]"
+                      className="h-2 w-full cursor-pointer accent-[#18181b]"
                       onChange={(event) => updateAngle(Number(event.target.value))}
                     />
                     <Input
@@ -519,7 +519,7 @@ export function MasterGradientEditor(): React.JSX.Element {
                     type="button"
                     aria-label={t('sessionDetail.masterGradientStop', { position: stop.position })}
                     title={t('sessionDetail.masterGradientStop', { position: stop.position })}
-                    className="absolute top-1/2 z-10 h-9 w-4 -translate-y-1/2 cursor-grab rounded-full border-2 border-white shadow-[0_0_0_1px_rgba(62,74,50,0.54)] active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5d6b4d]"
+                    className="absolute top-1/2 z-10 h-9 w-4 -translate-y-1/2 cursor-grab rounded-full border-2 border-white shadow-[0_0_0_1px_rgba(62,74,50,0.54)] active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#18181b]"
                     style={{
                       backgroundColor: stop.color,
                       left: `calc(${stop.position}% - 8px)`,
@@ -549,7 +549,7 @@ export function MasterGradientEditor(): React.JSX.Element {
                   aria-label={t('sessionDetail.masterGradientStop', {
                     position: selectedStop.position
                   })}
-                  className="h-2 w-full cursor-pointer accent-[#5d6b4d]"
+                  className="h-2 w-full cursor-pointer accent-[#18181b]"
                   onChange={(event) => updateSelectedStop({ position: Number(event.target.value) })}
                 />
                 <Input
@@ -593,7 +593,7 @@ export function MasterGradientEditor(): React.JSX.Element {
                     type="button"
                     aria-label={t('sessionDetail.masterGradientPresets')}
                     title={colors.join(' → ')}
-                    className="h-7 cursor-pointer rounded-md border border-[#e4e4e7]/70 transition-transform hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5d6b4d]"
+                    className="h-7 cursor-pointer rounded-md border border-[#e4e4e7]/70 transition-transform hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#18181b]"
                     style={{ background: `linear-gradient(135deg, ${colors.join(', ')})` }}
                     onClick={() => applyPreset(colors)}
                   />

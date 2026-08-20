@@ -1092,7 +1092,7 @@ export function SessionDetailPage(): React.JSX.Element {
       'margin:0',
       'padding:0',
       `z-index:${zIdx}`,
-      'color:#34402c',
+      'color:#18181b',
       'font-size:40px',
       'font-weight:700',
       'line-height:1.18',

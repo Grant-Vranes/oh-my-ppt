@@ -22,7 +22,7 @@ export interface ShapeRenderContext {
 }
 
 const DEFAULT_FILL = '#fff7ed'
-const DEFAULT_STROKE = '#7a875f'
+const DEFAULT_STROKE = '#71717a'
 
 function round(n: number): number {
   return Math.round(n * 100) / 100

@@ -145,14 +145,14 @@ export function SpeechScriptDrawer({ sessionId }: { sessionId: string }): React.
       <div className="relative mx-2 mt-2 overflow-hidden rounded-[0.85rem] border border-[#e4e4e7]/58 bg-[#ffffff]/68 px-2.5 py-2 shadow-[0_2px_8px_rgba(77,61,43,0.05)]">
         <div className="pointer-events-none absolute -right-8 -top-10 h-20 w-20 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] bg-[#fff7ed]/10" />
         <div className="relative flex items-center justify-between">
-          <h3 className="text-[12px] font-semibold tracking-[0.03em] text-[#34402c]">
+          <h3 className="text-[12px] font-semibold tracking-[0.03em] text-[#18181b]">
             {t('sessionDetail.speechScriptDialogTitle')}
           </h3>
           <button
             type="button"
             aria-label={t('sessionDetail.closeSpeechDrawer')}
             onClick={close}
-            className="rounded-md p-0.5 text-[#9a8f80] transition-colors hover:bg-[#f4f4f5]/80 hover:text-[#3e4a32]"
+            className="rounded-md p-0.5 text-[#9a8f80] transition-colors hover:bg-[#f4f4f5]/80 hover:text-[#18181b]"
           >
             <X className="h-3 w-3" />
           </button>
@@ -168,7 +168,7 @@ export function SpeechScriptDrawer({ sessionId }: { sessionId: string }): React.
               className={cn(
                 'flex-1 rounded-[0.55rem] py-1 text-[11px] font-medium transition-all',
                 speechConfig.scope === s
-                  ? 'bg-[#ffffff] text-[#3e4a32] shadow-[0_1px_3px_rgba(74,59,42,0.08)]'
+                  ? 'bg-[#ffffff] text-[#18181b] shadow-[0_1px_3px_rgba(74,59,42,0.08)]'
                   : 'text-[#9a8f80] hover:text-[#5a6b4a]'
               )}
             >
@@ -191,7 +191,7 @@ export function SpeechScriptDrawer({ sessionId }: { sessionId: string }): React.
       <div className="mx-2 mt-1.5 shrink-0 overflow-hidden rounded-[0.8rem] border border-[#e4e4e7]/58 bg-[#ffffff]/68 shadow-[0_2px_8px_rgba(77,61,43,0.05)]">
         {/* Style row */}
         <div className="flex items-center gap-2 border-b border-[#ede5d6]/50 px-2.5 py-1.5">
-          <span className="shrink-0 text-[10px] font-semibold tracking-[0.05em] text-[#7a875f]">
+          <span className="shrink-0 text-[10px] font-semibold tracking-[0.05em] text-[#71717a]">
             {t('sessionDetail.speechScriptStyle')}
           </span>
           <Select
@@ -218,7 +218,7 @@ export function SpeechScriptDrawer({ sessionId }: { sessionId: string }): React.
         {speechConfig.style === 'custom' && (
           <div className="border-b border-[#ede5d6]/50 px-2.5 py-1.5">
             <textarea
-              className="w-full resize-none rounded-lg border border-[#e4e4e7]/80 bg-[#ffffff]/88 px-2.5 py-1.5 text-[11px] text-[#3f4b35] placeholder:text-[#b0a898] focus:border-[#9bb98a] focus:outline-none"
+              className="w-full resize-none rounded-lg border border-[#e4e4e7]/80 bg-[#ffffff]/88 px-2.5 py-1.5 text-[11px] text-[#27272a] placeholder:text-[#b0a898] focus:border-[#a1a1aa] focus:outline-none"
               rows={2}
               placeholder={t('sessionDetail.speechScriptStyleCustomPlaceholder')}
               value={speechConfig.customStyle ?? ''}
@@ -229,7 +229,7 @@ export function SpeechScriptDrawer({ sessionId }: { sessionId: string }): React.
 
         {/* Length row */}
         <div className="flex items-center gap-2 px-2.5 py-1.5">
-          <span className="shrink-0 text-[10px] font-semibold tracking-[0.05em] text-[#7a875f]">
+          <span className="shrink-0 text-[10px] font-semibold tracking-[0.05em] text-[#71717a]">
             {t('sessionDetail.speechScriptLength')}
           </span>
           <Select
@@ -282,7 +282,7 @@ export function SpeechScriptDrawer({ sessionId }: { sessionId: string }): React.
       ) : visibleScript ? (
         <div className="flex min-h-0 flex-1 flex-col gap-2 px-2.5 pb-3">
           <div className="min-h-0 flex-1 overflow-y-auto rounded-[1.15rem] border border-[#e4e4e7]/72 bg-[#ffffff]/78 px-3 py-3 shadow-[0_4px_12px_rgba(77,61,43,0.06)]">
-            <pre className="whitespace-pre-wrap font-sans text-[12px] leading-relaxed text-[#3f4b35]">
+            <pre className="whitespace-pre-wrap font-sans text-[12px] leading-relaxed text-[#27272a]">
               {visibleScript}
             </pre>
           </div>

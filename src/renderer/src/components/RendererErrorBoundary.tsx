@@ -26,15 +26,15 @@ export class RendererErrorBoundary extends Component<
     if (!this.state.error) return this.props.children
 
     return (
-      <main className="flex h-full min-h-screen items-center justify-center bg-[#f4eddf] p-6 text-[#3e4a32]">
+      <main className="flex h-full min-h-screen items-center justify-center bg-[#f4eddf] p-6 text-[#18181b]">
         <section className="w-full max-w-md rounded-2xl border border-[#e4e4e7] bg-white/85 p-6 text-center shadow-lg">
           <h1 className="organic-serif text-2xl font-semibold">页面遇到错误</h1>
-          <p className="mt-3 text-sm leading-6 text-[#6f6658]">
+          <p className="mt-3 text-sm leading-6 text-[#71717a]">
             当前页面无法继续运行，刷新应用即可恢复。
           </p>
           <button
             type="button"
-            className="mt-5 rounded-lg bg-[#5d6b4d] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4d5a40]"
+            className="mt-5 rounded-lg bg-[#18181b] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4d5a40]"
             onClick={() => window.location.reload()}
           >
             刷新应用

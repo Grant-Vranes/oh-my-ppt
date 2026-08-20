@@ -40,7 +40,7 @@ export function TextInspector({ draft, onDraftChange }: ElementEditorProps): Rea
     <>
       <InspectorSection
         title={t('sessionDetail.textContent')}
-        icon={<Type className="h-3.5 w-3.5 text-[#7a875f]" />}
+        icon={<Type className="h-3.5 w-3.5 text-[#71717a]" />}
       >
         <RichTextBox
           value={draft.html}

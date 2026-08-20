@@ -29,8 +29,8 @@ export function PrimaryActions({
             className={cn(
               'inline-flex h-6 shrink-0 items-center justify-center rounded-full px-2.5 text-[10px] font-bold leading-none transition-colors disabled:pointer-events-none disabled:opacity-45',
               hasPendingEdits
-                ? 'bg-[#5d6b4d] text-white shadow-[0_4px_10px_rgba(62,74,50,0.15)] hover:bg-[#3e4a32]'
-                : 'bg-[#ffffff]/72 text-[#8a9a7b] shadow-[inset_0_1px_0_rgba(255,255,255,0.54)]'
+                ? 'bg-[#18181b] text-white shadow-[0_4px_10px_rgba(62,74,50,0.15)] hover:bg-[#18181b]'
+                : 'bg-[#ffffff]/72 text-[#a1a1aa] shadow-[inset_0_1px_0_rgba(255,255,255,0.54)]'
             )}
             onClick={() => actions?.onSaveCurrentPage()}
             disabled={disabled || !hasPendingEdits}
@@ -70,7 +70,7 @@ export function PrimaryActions({
           <TooltipTrigger asChild>
             <button
               type="button"
-              className="inline-flex h-[22px] w-[22px] items-center justify-center rounded-full text-[#5d6b4d] transition-colors hover:bg-[#fff7ed]/64 hover:text-[#3e4a32] disabled:pointer-events-none disabled:text-[#a4aa9a] disabled:opacity-45"
+              className="inline-flex h-[22px] w-[22px] items-center justify-center rounded-full text-[#18181b] transition-colors hover:bg-[#fff7ed]/64 hover:text-[#18181b] disabled:pointer-events-none disabled:text-[#a4aa9a] disabled:opacity-45"
               onClick={() => actions?.onUndo()}
               disabled={disabled || !canUndo}
               aria-label={t('sessionDetail.undoCurrentPageTooltip')}
@@ -84,7 +84,7 @@ export function PrimaryActions({
           <TooltipTrigger asChild>
             <button
               type="button"
-              className="inline-flex h-[22px] w-[22px] items-center justify-center rounded-full text-[#5d6b4d] transition-colors hover:bg-[#fff7ed]/64 hover:text-[#3e4a32] disabled:pointer-events-none disabled:text-[#a4aa9a] disabled:opacity-45"
+              className="inline-flex h-[22px] w-[22px] items-center justify-center rounded-full text-[#18181b] transition-colors hover:bg-[#fff7ed]/64 hover:text-[#18181b] disabled:pointer-events-none disabled:text-[#a4aa9a] disabled:opacity-45"
               onClick={() => actions?.onRedo()}
               disabled={disabled || !canRedo}
               aria-label={t('sessionDetail.redoCurrentPageTooltip')}

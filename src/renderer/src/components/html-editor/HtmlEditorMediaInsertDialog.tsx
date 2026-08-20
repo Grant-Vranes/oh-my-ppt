@@ -198,7 +198,7 @@ export function HtmlEditorMediaInsertDialog({
               }}
               className={`flex h-9 items-center justify-center gap-1.5 rounded text-sm transition-colors ${
                 source === value
-                  ? 'bg-white font-medium text-[#3e4a32] shadow-sm'
+                  ? 'bg-white font-medium text-[#18181b] shadow-sm'
                   : 'text-[#766d5e] hover:bg-white/60'
               }`}
             >
@@ -211,12 +211,12 @@ export function HtmlEditorMediaInsertDialog({
         {source === 'library' ? (
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-3">
-              <p className="text-sm leading-5 text-[#6f6658]">{t('htmlEditor.localMediaHint')}</p>
+              <p className="text-sm leading-5 text-[#71717a]">{t('htmlEditor.localMediaHint')}</p>
               <button
                 type="button"
                 disabled={uploading || inserting || !docId}
                 onClick={() => void chooseLocalFile()}
-                className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md bg-[#5d6b4d] px-3 text-sm font-medium text-white hover:bg-[#4b593d] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md bg-[#18181b] px-3 text-sm font-medium text-white hover:bg-[#4b593d] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Upload className="h-3.5 w-3.5" />
                 {t('htmlEditor.chooseMediaFile')}
@@ -224,11 +224,11 @@ export function HtmlEditorMediaInsertDialog({
             </div>
 
             {loadingAssets ? (
-              <div className="flex h-48 items-center justify-center text-sm text-[#6f6658]">
+              <div className="flex h-48 items-center justify-center text-sm text-[#71717a]">
                 {t('common.loading')}
               </div>
             ) : assets.length === 0 ? (
-              <div className="flex h-48 flex-col items-center justify-center gap-2 rounded-md border border-dashed border-[#cfc2aa] bg-[#fffdf7] text-sm text-[#6f6658]">
+              <div className="flex h-48 flex-col items-center justify-center gap-2 rounded-md border border-dashed border-[#cfc2aa] bg-[#fffdf7] text-sm text-[#71717a]">
                 <Icon className="h-6 w-6 text-[#ea580c]" />
                 {t('htmlEditor.mediaLibraryEmpty')}
               </div>
@@ -271,7 +271,7 @@ export function HtmlEditorMediaInsertDialog({
                                 className="absolute inset-0 flex items-center justify-center bg-black/15 transition-colors hover:bg-black/25"
                               >
                                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/80 shadow backdrop-blur-sm">
-                                  <Play className="h-4 w-4 translate-x-px text-[#3e4a32]" />
+                                  <Play className="h-4 w-4 translate-x-px text-[#18181b]" />
                                 </span>
                               </button>
                             </>
@@ -295,7 +295,7 @@ export function HtmlEditorMediaInsertDialog({
                           <CheckIcon checked={selected} />
                         </button>
                       </div>
-                      <div className="truncate bg-[#faf6ef] px-1.5 py-1 text-[10px] text-[#6f6658]">
+                      <div className="truncate bg-[#faf6ef] px-1.5 py-1 text-[10px] text-[#71717a]">
                         {asset.fileName}
                       </div>
                     </div>
@@ -322,7 +322,7 @@ export function HtmlEditorMediaInsertDialog({
                 if (event.key === 'Enter') void insertExternalUrl()
               }}
               placeholder={t('htmlEditor.mediaUrlPlaceholder')}
-              className={`h-10 w-full rounded-md border bg-white px-3 text-sm text-[#3e4a32] outline-none placeholder:text-[#9a907f] focus:ring-2 focus:ring-[#ea580c]/50 ${
+              className={`h-10 w-full rounded-md border bg-white px-3 text-sm text-[#18181b] outline-none placeholder:text-[#9a907f] focus:ring-2 focus:ring-[#ea580c]/50 ${
                 urlError ? 'border-[#b65c50]' : 'border-[#cfc2aa]'
               }`}
             />
@@ -338,7 +338,7 @@ export function HtmlEditorMediaInsertDialog({
               type="button"
               disabled={!selectedAssetPath || inserting}
               onClick={() => void insertSelectedAsset()}
-              className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[#5d6b4d] px-3 text-sm font-medium text-white hover:bg-[#4b593d] disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[#18181b] px-3 text-sm font-medium text-white hover:bg-[#4b593d] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Icon className="h-3.5 w-3.5" />
               {t('htmlEditor.insertMedia')}
@@ -350,7 +350,7 @@ export function HtmlEditorMediaInsertDialog({
               type="button"
               disabled={inserting}
               onClick={() => void insertExternalUrl()}
-              className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[#5d6b4d] px-3 text-sm font-medium text-white hover:bg-[#4b593d]"
+              className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[#18181b] px-3 text-sm font-medium text-white hover:bg-[#4b593d]"
             >
               <Icon className="h-3.5 w-3.5" />
               {t('htmlEditor.insertMedia')}

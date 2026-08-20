@@ -319,7 +319,7 @@ export function MergeSessionPagesDialog({
               </div>
               <ScrollArea className="min-h-0 flex-1" viewportClassName="pr-2">
                 {loadingSessions ? (
-                  <div className="flex h-32 items-center justify-center text-[#7a875f]">
+                  <div className="flex h-32 items-center justify-center text-[#71717a]">
                     <Loader2 className="h-5 w-5 animate-spin" />
                   </div>
                 ) : filteredSessions.length === 0 ? (
@@ -342,7 +342,7 @@ export function MergeSessionPagesDialog({
                               : 'border-[#ddd4c4] bg-[#ffffff]/80 hover:bg-white'
                           } disabled:cursor-not-allowed disabled:opacity-55`}
                         >
-                          <div className="truncate text-sm font-semibold text-[#3e4a32]">
+                          <div className="truncate text-sm font-semibold text-[#18181b]">
                             {sourceSession.title || t('sessionDetail.mergeUntitledSession')}
                           </div>
                           <div className="mt-1 flex items-center justify-between gap-2 text-[11px] text-[#817766]">
@@ -371,7 +371,7 @@ export function MergeSessionPagesDialog({
             <div className="flex min-h-0 flex-col bg-[#ffffff]/75 p-4">
               <div className="mb-3 flex min-h-9 items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="truncate text-sm font-semibold text-[#3e4a32]">
+                  <div className="truncate text-sm font-semibold text-[#18181b]">
                     {selectedSourceSession
                       ? selectedSourceSession.title || t('sessionDetail.mergeUntitledSession')
                       : t('sessionDetail.mergeSelectSession')}
@@ -386,7 +386,7 @@ export function MergeSessionPagesDialog({
                   ) : null}
                 </div>
                 {selectedSourceSession && sourcePages.length > 0 ? (
-                  <label className="flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-[#5d6b4d] hover:bg-[#f4f4f5]/70">
+                  <label className="flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-[#18181b] hover:bg-[#f4f4f5]/70">
                     <Checkbox
                       checked={allSelectablePagesSelected}
                       disabled={submitting || selectablePageIds.length === 0}
@@ -406,7 +406,7 @@ export function MergeSessionPagesDialog({
                 onViewportScroll={schedulePreviewWindowUpdate}
               >
                 {loadingPages ? (
-                  <div className="flex h-full min-h-56 items-center justify-center text-[#7a875f]">
+                  <div className="flex h-full min-h-56 items-center justify-center text-[#71717a]">
                     <Loader2 className="h-6 w-6 animate-spin" />
                   </div>
                 ) : loadError ? (

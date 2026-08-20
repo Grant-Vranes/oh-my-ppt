@@ -329,12 +329,12 @@ export function ThinkingDetailPage(): ReactElement {
             <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
               {t('thinking.eyebrow')}
             </p>
-            <h1 className="organic-serif mt-2 flex min-w-0 items-baseline gap-3 text-[32px] font-semibold leading-none text-[#3e4a32]">
+            <h1 className="organic-serif mt-2 flex min-w-0 items-baseline gap-3 text-[32px] font-semibold leading-none text-[#18181b]">
               <span className="truncate">{t('thinking.title')}</span>
               {thinkingId && (
                 <button
                   type="button"
-                  className="min-w-0 rounded-full px-2 py-0.5 font-mono text-[11px] font-normal leading-none text-[#7a806c] transition-colors hover:bg-[#fff7ed] hover:text-[#3e4a32]"
+                  className="min-w-0 rounded-full px-2 py-0.5 font-mono text-[11px] font-normal leading-none text-[#7a806c] transition-colors hover:bg-[#fff7ed] hover:text-[#18181b]"
                   onClick={() => void handleRevealWorkspace()}
                   title={t('thinking.revealWorkspace')}
                 >
@@ -351,12 +351,12 @@ export function ThinkingDetailPage(): ReactElement {
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-[#e4e4e7] bg-[#ffffff]/95 px-4 text-[13px] font-semibold text-[#3e4a32] shadow-[0_10px_22px_rgba(86,73,54,0.12)] transition-colors hover:bg-[#f4f4f5]"
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-[#e4e4e7] bg-[#ffffff]/95 px-4 text-[13px] font-semibold text-[#18181b] shadow-[0_10px_22px_rgba(86,73,54,0.12)] transition-colors hover:bg-[#f4f4f5]"
                 >
                   {historyLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin text-[#7a806c]" />
                   ) : (
-                    <History className="h-4 w-4 text-[#5d6b4d]" />
+                    <History className="h-4 w-4 text-[#18181b]" />
                   )}
                   {t('thinking.historyTitle')}
                 </button>
@@ -369,8 +369,8 @@ export function ThinkingDetailPage(): ReactElement {
               >
                 <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#eee4d4] px-4 py-3">
                   <div className="flex min-w-0 items-center gap-2">
-                    <History className="h-4 w-4 shrink-0 text-[#5d6b4d]" />
-                    <h2 className="truncate text-[13px] font-semibold text-[#3e4a32]">
+                    <History className="h-4 w-4 shrink-0 text-[#18181b]" />
+                    <h2 className="truncate text-[13px] font-semibold text-[#18181b]">
                       {t('thinking.historyTitle')}
                     </h2>
                   </div>
@@ -389,8 +389,8 @@ export function ThinkingDetailPage(): ReactElement {
                             key={item.thinkingId}
                             className={`group flex w-full items-start gap-1.5 rounded-[1.25rem] border p-2 transition-colors ${
                               active
-                                ? 'border-[#9eb88a] bg-[#fff7ed] text-[#2f3b28]'
-                                : 'border-transparent bg-[#f4f4f5]/76 text-[#3e4a32] hover:border-[#e4e4e7] hover:bg-[#fafafa]'
+                                ? 'border-[#9eb88a] bg-[#fff7ed] text-[#18181b]'
+                                : 'border-transparent bg-[#f4f4f5]/76 text-[#18181b] hover:border-[#e4e4e7] hover:bg-[#fafafa]'
                             }`}
                           >
                             <button
@@ -416,7 +416,7 @@ export function ThinkingDetailPage(): ReactElement {
                                   </div>
                                 </div>
                               </div>
-                              <div className="mt-2 inline-flex rounded-full bg-[#ffffff]/72 px-2 py-0.5 text-[10px] font-semibold text-[#5d6b4d]">
+                              <div className="mt-2 inline-flex rounded-full bg-[#ffffff]/72 px-2 py-0.5 text-[10px] font-semibold text-[#18181b]">
                                 {t(stageKeyByStage[item.stage])}
                               </div>
                             </button>
@@ -442,7 +442,7 @@ export function ThinkingDetailPage(): ReactElement {
                     </div>
                   ) : (
                     <div className="flex h-full min-h-[180px] flex-col items-center justify-center px-4 text-center">
-                      <p className="text-[13px] font-semibold text-[#3e4a32]">
+                      <p className="text-[13px] font-semibold text-[#18181b]">
                         {t('thinking.historyEmptyTitle')}
                       </p>
                       <p className="mt-2 text-[12px] leading-relaxed text-[#7a806c]">
@@ -457,7 +457,7 @@ export function ThinkingDetailPage(): ReactElement {
               type="button"
               onClick={() => void handleCreateWorkspace()}
               disabled={creatingWorkspace}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[#3e4a32] px-4 text-[13px] font-semibold text-white shadow-[0_10px_22px_rgba(62,74,50,0.18)] transition-colors hover:bg-[#5d6b4d] disabled:cursor-not-allowed disabled:opacity-65"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[#18181b] px-4 text-[13px] font-semibold text-white shadow-[0_10px_22px_rgba(62,74,50,0.18)] transition-colors hover:bg-[#18181b] disabled:cursor-not-allowed disabled:opacity-65"
             >
               {creatingWorkspace ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -491,20 +491,20 @@ export function ThinkingDetailPage(): ReactElement {
             />
           ) : (
             <div className="flex h-full min-h-[360px] flex-col items-center justify-center px-8 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-[10%_90%_16%_84%/78%_22%_78%_22%] bg-[#fff7ed] text-[#3e4a32]">
+              <div className="flex h-14 w-14 items-center justify-center rounded-[10%_90%_16%_84%/78%_22%_78%_22%] bg-[#fff7ed] text-[#18181b]">
                 <History className="h-6 w-6" />
               </div>
-              <h2 className="organic-serif mt-5 text-[28px] font-semibold leading-none text-[#3e4a32]">
+              <h2 className="organic-serif mt-5 text-[28px] font-semibold leading-none text-[#18181b]">
                 {t('thinking.emptyWorkspaceTitle')}
               </h2>
-              <p className="mt-3 max-w-md text-[13px] leading-relaxed text-[#5d6b4d]">
+              <p className="mt-3 max-w-md text-[13px] leading-relaxed text-[#18181b]">
                 {t('thinking.emptyWorkspaceDescription')}
               </p>
               <button
                 type="button"
                 onClick={() => void handleCreateWorkspace()}
                 disabled={creatingWorkspace}
-                className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#3e4a32] px-5 text-[13px] font-semibold text-white shadow-[0_10px_22px_rgba(62,74,50,0.18)] transition-colors hover:bg-[#5d6b4d] disabled:cursor-not-allowed disabled:opacity-65"
+                className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#18181b] px-5 text-[13px] font-semibold text-white shadow-[0_10px_22px_rgba(62,74,50,0.18)] transition-colors hover:bg-[#18181b] disabled:cursor-not-allowed disabled:opacity-65"
               >
                 {creatingWorkspace ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

@@ -10,7 +10,7 @@ export function TokenUsagePage(): React.JSX.Element {
         <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
           {t('settings.usagePageEyebrow')}
         </p>
-        <h1 className="organic-serif mt-2 text-[32px] font-semibold leading-none text-[#3e4a32]">
+        <h1 className="organic-serif mt-2 text-[32px] font-semibold leading-none text-[#18181b]">
           {t('settings.usagePageTitle')}
         </h1>
         <p className="mt-2 text-[12px] text-muted-foreground">

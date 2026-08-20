@@ -40,10 +40,10 @@ export const PageThumbnail = memo(function PageThumbnail({
   const pageInfoTooltip = (
     <TooltipContent side="right" align="start">
       <div className="max-w-[240px]">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#7a875f]">
+        <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#71717a]">
           {t('sessionDetail.pageNumber', { pageNumber: page.pageNumber })}
         </div>
-        <div className="mt-0.5 text-sm font-medium text-[#3e4a32]">{page.title}</div>
+        <div className="mt-0.5 text-sm font-medium text-[#18181b]">{page.title}</div>
       </div>
     </TooltipContent>
   )
@@ -84,7 +84,7 @@ export const PageThumbnail = memo(function PageThumbnail({
         <div className="relative max-h-full max-w-full overflow-hidden" style={thumbnailFitStyle}>
           {isGeneratingPlaceholder ? (
             <div
-              className="flex h-full w-full flex-col items-center justify-center gap-2 bg-[#f8f4eb] text-[#5d6b4d]"
+              className="flex h-full w-full flex-col items-center justify-center gap-2 bg-[#f8f4eb] text-[#18181b]"
               aria-live="polite"
             >
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -104,7 +104,7 @@ export const PageThumbnail = memo(function PageThumbnail({
               thumbnail
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-[#eee7d9]/78 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a9a7b]">
+            <div className="flex h-full w-full items-center justify-center bg-[#eee7d9]/78 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#a1a1aa]">
               P{page.pageNumber}
             </div>
           )}
@@ -119,7 +119,7 @@ export const PageThumbnail = memo(function PageThumbnail({
                 P{page.pageNumber}
               </span>
               {isSelected ? (
-                <span className="rounded-full bg-[#5d6b4d] px-1.5 py-0.5 text-[9px] font-semibold text-white shadow-[0_3px_8px_rgba(62,74,50,0.18)]">
+                <span className="rounded-full bg-[#18181b] px-1.5 py-0.5 text-[9px] font-semibold text-white shadow-[0_3px_8px_rgba(62,74,50,0.18)]">
                   {t('sessionDetail.current')}
                 </span>
               ) : null}

@@ -111,7 +111,7 @@ export function buildIconElementHtml(options: BuildIconOptions): string {
     throw new Error(`buildInsertElementHtml: unknown iconId "${options.iconId}"`)
   }
   const def = getIconDefinition(options.iconId)!
-  const color = resolveColor(options.color, '#3f4b35')
+  const color = resolveColor(options.color, '#27272a')
   // color lives on the outer div so currentColor (used by the svg stroke / badge fill) can
   // be updated later by editing the div's inline style only.
   const style = outerStyle(options, [`color:${color}`])

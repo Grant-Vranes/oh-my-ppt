@@ -242,13 +242,13 @@ export function TemplatesPage(): React.JSX.Element {
         <p className="text-xs uppercase tracking-[0.22em] text-[#8a7e6c]">{t('templates.eyebrow')}</p>
         <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <h1 className="organic-serif text-[32px] font-semibold leading-none text-[#3e4a32]">{t('templates.title')}</h1>
+            <h1 className="organic-serif text-[32px] font-semibold leading-none text-[#18181b]">{t('templates.title')}</h1>
             <p className="mt-2 text-[12px] text-muted-foreground">
               {t('templates.description')}
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <span className="rounded-md border border-[#d6c08d]/70 bg-[#ffffff] px-2.5 py-1.5 text-xs font-medium text-[#7c6a4c]">
+            <span className="rounded-md border border-[#a1a1aa]/70 bg-[#ffffff] px-2.5 py-1.5 text-xs font-medium text-[#52525b]">
               {t('templates.count', { count: templates.length })}
             </span>
             <ModelSplitButton
@@ -296,11 +296,11 @@ export function TemplatesPage(): React.JSX.Element {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2d261f]/28 backdrop-blur-[2px]">
           <div className="w-[min(360px,calc(100vw-32px))] rounded-xl border border-[#e4e4e7]/80 bg-[#ffffff] px-5 py-4 shadow-[0_18px_45px_rgba(57,47,36,0.22)]">
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#eef3e7] text-[#5f6b50]">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#eef3e7] text-[#52525b]">
                 <Loader2 className="h-4 w-4 animate-spin" />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-medium text-[#34402c]">{t('templates.creatingEditable')}</p>
+                <p className="text-sm font-medium text-[#18181b]">{t('templates.creatingEditable')}</p>
                 <p className="mt-1 truncate text-xs text-muted-foreground">{directCreatingTemplate.name}</p>
               </div>
             </div>
@@ -312,11 +312,11 @@ export function TemplatesPage(): React.JSX.Element {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2d261f]/28 backdrop-blur-[2px]">
           <div className="w-[min(380px,calc(100vw-32px))] rounded-xl border border-[#e4e4e7]/80 bg-[#ffffff] px-5 py-4 shadow-[0_18px_45px_rgba(57,47,36,0.22)]">
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#eef3e7] text-[#5f6b50]">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#eef3e7] text-[#52525b]">
                 <Loader2 className="h-4 w-4 animate-spin" />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-medium text-[#34402c]">{t('templates.importingPptxTemplate')}</p>
+                <p className="text-sm font-medium text-[#18181b]">{t('templates.importingPptxTemplate')}</p>
                 <p className="mt-1 truncate text-xs text-muted-foreground">
                   {pptxTemplateProgress || t('templates.pptxTemplatePreparing')}
                 </p>
@@ -372,10 +372,10 @@ export function TemplatesPage(): React.JSX.Element {
                       />
                     </div>
                     <div className="flex min-w-0 items-center gap-2 border-t border-[#eee4d2]/80 px-2.5 py-2">
-                      <span className="shrink-0 rounded-md bg-[#e8f0df] px-1.5 py-0.5 text-[11px] font-semibold text-[#4f6340]">
+                      <span className="shrink-0 rounded-md bg-[#e8f0df] px-1.5 py-0.5 text-[11px] font-semibold text-[#52525b]">
                         P{page.pageNumber}
                       </span>
-                      <span className="min-w-0 flex-1 truncate text-xs text-[#5f6b50]">
+                      <span className="min-w-0 flex-1 truncate text-xs text-[#52525b]">
                         {page.title || t('templates.pageFallback', { pageNumber: page.pageNumber })}
                       </span>
                     </div>

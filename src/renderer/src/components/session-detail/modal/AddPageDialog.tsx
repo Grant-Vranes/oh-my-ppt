@@ -107,12 +107,12 @@ export function AddPageDialog({ sessionId }: AddPageDialogProps): React.JSX.Elem
         <h3 className="mb-3 text-base font-semibold text-[#2f3a2a]">
           {t('sessionDetail.addPage')}
         </h3>
-        <p className="mb-3 text-xs text-[#8a9a7b]">{t('sessionDetail.addPageHint')}</p>
+        <p className="mb-3 text-xs text-[#a1a1aa]">{t('sessionDetail.addPageHint')}</p>
         <textarea
           value={value}
           onChange={(event) => setValue(event.target.value)}
           placeholder={t('sessionDetail.addPageDescription')}
-          className="mb-4 h-40 w-full resize-none rounded-xl border border-[#fff7ed]/60 bg-[#f8f6f0] px-4 py-3 text-sm leading-relaxed text-[#2f3a2a] placeholder:text-[#8a9a7b] focus:border-[#5d6b4d] focus:outline-none"
+          className="mb-4 h-40 w-full resize-none rounded-xl border border-[#fff7ed]/60 bg-[#f8f6f0] px-4 py-3 text-sm leading-relaxed text-[#2f3a2a] placeholder:text-[#a1a1aa] focus:border-[#18181b] focus:outline-none"
           autoFocus
           onKeyDown={(event) => {
             if (
@@ -133,7 +133,7 @@ export function AddPageDialog({ sessionId }: AddPageDialogProps): React.JSX.Elem
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="cursor-pointer rounded-xl px-4 py-2 text-sm font-medium text-[#5d6b4d] transition-colors hover:bg-[#f0ece3]"
+            className="cursor-pointer rounded-xl px-4 py-2 text-sm font-medium text-[#18181b] transition-colors hover:bg-[#f0ece3]"
           >
             {t('sessionDetail.addPageCancel')}
           </button>

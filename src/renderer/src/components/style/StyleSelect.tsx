@@ -116,7 +116,7 @@ export function StyleSelect({
                   <Star className="h-3.5 w-3.5 shrink-0 fill-[#d6a942] text-[#d6a942]" />
                 )}
                 {selected.styleCase && !compact && (
-                  <span className="hidden shrink-0 truncate rounded-md border border-[#d6c08d]/80 bg-[#ffffff] px-1.5 py-px text-[10px] font-medium leading-tight text-[#7c6a4c] sm:inline-block">
+                  <span className="hidden shrink-0 truncate rounded-md border border-[#a1a1aa]/80 bg-[#ffffff] px-1.5 py-px text-[10px] font-medium leading-tight text-[#52525b] sm:inline-block">
                     {parseStyleCases(selected.styleCase)[0]}
                   </span>
                 )}
@@ -139,7 +139,7 @@ export function StyleSelect({
       >
         <div className="border-b border-[#e5ddc8]/80 p-2">
           <div className="flex items-center gap-1.5 rounded-md border border-[#e4e4e7]/80 bg-white/80 px-2 py-1">
-            <Search className="h-3.5 w-3.5 shrink-0 text-[#7c6a4c]/60" />
+            <Search className="h-3.5 w-3.5 shrink-0 text-[#52525b]/60" />
             <input
               type="text"
               value={query}
@@ -151,7 +151,7 @@ export function StyleSelect({
               <button
                 type="button"
                 onClick={() => setQuery('')}
-                className="shrink-0 text-[#7c6a4c]/60 transition-colors hover:text-[#7c6a4c]"
+                className="shrink-0 text-[#52525b]/60 transition-colors hover:text-[#52525b]"
                 aria-label={t('styles.clearSearch')}
               >
                 <X className="h-3.5 w-3.5" />
@@ -175,7 +175,7 @@ export function StyleSelect({
                   onClick={() => handlePick(option.id)}
                   className={cn(
                     'relative flex w-full items-stretch gap-2.5 rounded-md px-2.5 py-2 text-left outline-none transition-colors hover:bg-[#fafafa]/70 focus-visible:bg-[#fafafa]/70',
-                    isSelected && 'bg-[#fff7ed] text-[#2f3b28]',
+                    isSelected && 'bg-[#fff7ed] text-[#18181b]',
                     compact && 'py-1.5'
                   )}
                 >
@@ -195,7 +195,7 @@ export function StyleSelect({
                         {option.label}
                       </span>
                       {option.styleCase && (
-                        <span className="shrink-0 truncate rounded-md border border-[#d6c08d]/80 bg-[#ffffff] px-1.5 py-px text-[10px] font-medium leading-tight text-[#7c6a4c]">
+                        <span className="shrink-0 truncate rounded-md border border-[#a1a1aa]/80 bg-[#ffffff] px-1.5 py-px text-[10px] font-medium leading-tight text-[#52525b]">
                           {option.styleCase}
                         </span>
                       )}

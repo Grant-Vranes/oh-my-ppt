@@ -98,11 +98,11 @@ export function AssetPickerDialog({
         </DialogHeader>
 
         {loading ? (
-          <div className="flex h-48 items-center justify-center text-sm text-[#6f6658]">
+          <div className="flex h-48 items-center justify-center text-sm text-[#71717a]">
             {t('editMode.loadingAssets')}
           </div>
         ) : assets.length === 0 ? (
-          <div className="flex h-48 items-center justify-center text-sm text-[#6f6658]">
+          <div className="flex h-48 items-center justify-center text-sm text-[#71717a]">
             {t('editMode.noAssets')}
           </div>
         ) : (
@@ -147,7 +147,7 @@ export function AssetPickerDialog({
                             className="absolute inset-0 flex items-center justify-center bg-black/15 transition-opacity hover:bg-black/25"
                           >
                             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/80 shadow backdrop-blur-sm">
-                              <Play className="h-4 w-4 translate-x-[1px] text-[#3e4a32]" />
+                              <Play className="h-4 w-4 translate-x-[1px] text-[#18181b]" />
                             </div>
                           </button>
                         </>
@@ -170,7 +170,7 @@ export function AssetPickerDialog({
                       <CheckIcon checked={checked} />
                     </button>
                   </div>
-                  <div className="bg-[#faf6ef] px-1.5 py-1 text-[10px] text-[#6f6658] truncate">
+                  <div className="bg-[#faf6ef] px-1.5 py-1 text-[10px] text-[#71717a] truncate">
                     {asset.fileName}
                   </div>
                 </div>

@@ -20,8 +20,8 @@ export function MessagePanel({ sessionId }: { sessionId: string }): React.JSX.El
           className={cn(
             'inline-flex h-7 items-center justify-center gap-1.5 rounded-[0.8rem] text-[11px] font-medium transition-colors',
             aiPanelMode === 'chat'
-              ? 'bg-[#fff7ed] text-[#2f3b28] shadow-sm'
-              : 'text-[#6d604d] hover:bg-[#f4ebdc]'
+              ? 'bg-[#fff7ed] text-[#18181b] shadow-sm'
+              : 'text-[#52525b] hover:bg-[#f4ebdc]'
           )}
         >
           <MessageCircle className="h-3.5 w-3.5" />
@@ -33,8 +33,8 @@ export function MessagePanel({ sessionId }: { sessionId: string }): React.JSX.El
           className={cn(
             'inline-flex h-7 items-center justify-center gap-1.5 rounded-[0.8rem] text-[11px] font-medium transition-colors',
             aiPanelMode === 'image'
-              ? 'bg-[#fff7ed] text-[#2f3b28] shadow-sm'
-              : 'text-[#6d604d] hover:bg-[#f4ebdc]'
+              ? 'bg-[#fff7ed] text-[#18181b] shadow-sm'
+              : 'text-[#52525b] hover:bg-[#f4ebdc]'
           )}
         >
           <Sparkles className="h-3.5 w-3.5" />

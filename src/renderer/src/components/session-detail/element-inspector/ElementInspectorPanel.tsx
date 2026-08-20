@@ -39,7 +39,7 @@ export function ElementInspectorPanel({
         <div className="pointer-events-none absolute -right-8 -top-10 h-20 w-20 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] bg-[#fff7ed]/10" />
         <div className="relative flex items-center justify-between">
           <div>
-            <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#7a875f]/90">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#71717a]/90">
               {t('sessionDetail.elementInspector')}
             </div>
             {selection && (
@@ -51,7 +51,7 @@ export function ElementInspectorPanel({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[#667257] transition-colors hover:bg-[#fff7ed]/70 hover:text-[#34402c]"
+            className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[#667257] transition-colors hover:bg-[#fff7ed]/70 hover:text-[#18181b]"
             aria-label={t('sessionDetail.closeInspector')}
             title={t('sessionDetail.closeInspector')}
           >

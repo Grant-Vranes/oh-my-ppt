@@ -334,7 +334,7 @@ export function StyleEditorPage(): React.JSX.Element {
         <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">{t('styleEditor.eyebrow')}</p>
         <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <h1 className="organic-serif text-[28px] font-semibold leading-none text-[#3e4a32]">{currentStyleName}</h1>
+            <h1 className="organic-serif text-[28px] font-semibold leading-none text-[#18181b]">{currentStyleName}</h1>
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
             <Button size="sm" variant="secondary" className="min-w-[112px]" onClick={() => navigate('/styles')}>
@@ -423,7 +423,7 @@ export function StyleEditorPage(): React.JSX.Element {
                     <CircleHelp className="ml-1 inline h-3.5 w-3.5 cursor-pointer text-[#5d6f4d]/60 hover:text-[#5d6f4d]" />
                   </PopoverTrigger>
                   <PopoverContent align="start" side="bottom" className="w-80 border-[#e4e4e7]/80 bg-[#ffffff] p-3">
-                    <p className="mb-1.5 text-[11px] font-semibold text-[#3e4a32]">
+                    <p className="mb-1.5 text-[11px] font-semibold text-[#18181b]">
                       {t('styleEditor.promptReferenceTitle')}
                       <span className="ml-1 font-normal text-[#5b6b4d]/70">{t('styleEditor.promptReferenceSubtitle')}</span>
                     </p>

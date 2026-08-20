@@ -36,7 +36,7 @@ function HtmlEditorAiMessageBubble({
       <div
         className={`max-w-[280px] whitespace-pre-wrap break-words rounded-2xl border px-3 py-2 text-[13px] leading-5 shadow-sm ${
           isUser
-            ? 'border-[#fff7ed]/80 bg-[#e6f1dc]/85 text-[#34402c]'
+            ? 'border-[#fff7ed]/80 bg-[#e6f1dc]/85 text-[#18181b]'
             : 'border-[#e4e4e7]/80 bg-[#ffffff]/90 text-[#3f372b]'
         }`}
       >
@@ -233,9 +233,9 @@ export function HtmlEditorAiPanel(): ReactElement {
   return (
     <aside className="flex h-full w-[360px] shrink-0 flex-col border-l border-[#e2dccf] bg-[#f4f4f5]">
       <div className="flex shrink-0 items-center gap-2 border-b border-[#e2dccf] px-3 py-2.5">
-        <Sparkles className="h-4 w-4 text-[#5d6b4d]" />
+        <Sparkles className="h-4 w-4 text-[#18181b]" />
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-semibold text-[#34402c]">{t('htmlEditor.aiMode')}</div>
+          <div className="text-sm font-semibold text-[#18181b]">{t('htmlEditor.aiMode')}</div>
           <div className="text-[10px] text-[#7a806e]">{t('htmlEditor.aiInspectHint')}</div>
         </div>
         <button
@@ -244,7 +244,7 @@ export function HtmlEditorAiPanel(): ReactElement {
             useHtmlEditorAiStore.getState().setEnabled(false)
             useHtmlEditorUiStore.getState().clearSelectedElement()
           }}
-          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[#6d604d] transition-colors hover:bg-[#ece5d6]"
+          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[#52525b] transition-colors hover:bg-[#ece5d6]"
           title={t('htmlEditor.closeAiMode')}
           aria-label={t('htmlEditor.closeAiMode')}
         >
@@ -287,7 +287,7 @@ export function HtmlEditorAiPanel(): ReactElement {
         {selectedSelector ? (
           <div className="mb-2 rounded-xl border border-[#fff7ed]/70 bg-[#e6f1dc]/70 px-2.5 py-2">
             <div className="mb-1 flex items-center justify-between gap-2">
-              <span className="text-[10px] font-semibold tracking-wide text-[#4f6340]">
+              <span className="text-[10px] font-semibold tracking-wide text-[#52525b]">
                 {t('htmlEditor.selectedElement')}
               </span>
               <button
@@ -336,7 +336,7 @@ export function HtmlEditorAiPanel(): ReactElement {
           placeholder={t('htmlEditor.aiPlaceholder')}
           disabled={isSending}
           rows={4}
-          className="min-h-[96px] resize-none rounded-xl border-[#e4e4e7]/75 bg-[#ffffff]/90 text-[13px] leading-5 focus-visible:border-[#9bb98a] focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="min-h-[96px] resize-none rounded-xl border-[#e4e4e7]/75 bg-[#ffffff]/90 text-[13px] leading-5 focus-visible:border-[#a1a1aa] focus-visible:ring-0 focus-visible:ring-offset-0"
         />
         <div className="mt-2 flex items-center justify-between gap-2">
           <span className="min-w-0 truncate text-[10px] text-[#827662]">
@@ -364,7 +364,7 @@ export function HtmlEditorAiPanel(): ReactElement {
           variant="ghost"
           size="sm"
           onClick={() => void handleClearConversation()}
-          className="mt-1 h-7 px-1 text-[11px] text-[#827662] hover:bg-transparent hover:text-[#4f6340]"
+          className="mt-1 h-7 px-1 text-[11px] text-[#827662] hover:bg-transparent hover:text-[#52525b]"
         >
           {t('htmlEditor.aiClearConversation')}
         </Button>

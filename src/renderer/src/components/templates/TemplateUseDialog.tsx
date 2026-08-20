@@ -334,13 +334,13 @@ export function TemplateUseDialog({
           <div className="space-y-3">
             <div className="flex flex-col gap-3 sm:flex-row">
               <div className="min-w-0 flex-1">
-                <label className="mb-1 block text-xs font-medium text-[#5f6b50]">
+                <label className="mb-1 block text-xs font-medium text-[#52525b]">
                   {t('templates.sessionTitleLabel')}
                 </label>
                 <Input value={title} onChange={(event) => setTitle(event.target.value)} />
               </div>
               <div className="w-full sm:w-28">
-                <label className="mb-1 block text-xs font-medium text-[#5f6b50]">
+                <label className="mb-1 block text-xs font-medium text-[#52525b]">
                   {t('templates.pageCountLabel')}
                 </label>
                 <Input
@@ -355,12 +355,12 @@ export function TemplateUseDialog({
             </div>
             <div>
               <div className="mb-2 flex items-center justify-between gap-2">
-                <label className="block text-xs font-medium text-[#5f6b50]">
+                <label className="block text-xs font-medium text-[#52525b]">
                   {t('templates.briefLabel')}
                 </label>
                 <div className="flex items-center gap-2">
                   {hasParsedSource && !parsingDocument ? (
-                    <span className="rounded-full bg-[#e8f0df] px-2 py-0.5 text-[11px] text-[#4f6340]">
+                    <span className="rounded-full bg-[#e8f0df] px-2 py-0.5 text-[11px] text-[#52525b]">
                       {t('templates.parsed')}
                     </span>
                   ) : null}
@@ -491,7 +491,7 @@ export function TemplateUseDialog({
                         size="sm"
                         onClick={() => void handleChooseDocumentClick()}
                         disabled={parsingDocument || creating}
-                        className="h-8 shrink-0 rounded-lg border border-[#e4e4e7]/80 bg-[#ffffff]/76 px-2.5 text-xs font-medium text-[#405333] shadow-none hover:bg-[#f3f7ed] hover:text-[#2f3b28]"
+                        className="h-8 shrink-0 rounded-lg border border-[#e4e4e7]/80 bg-[#ffffff]/76 px-2.5 text-xs font-medium text-[#405333] shadow-none hover:bg-[#f3f7ed] hover:text-[#18181b]"
                       >
                         {parsingDocument ? (
                           <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />

@@ -119,12 +119,12 @@ export function HistoryDialog({ sessionId }: HistoryDialogProps): React.JSX.Elem
             <h3 className="text-base font-semibold text-[#2f3a2a]">
               {t('sessionDetail.historyTitle')}
             </h3>
-            <p className="mt-1 text-xs text-[#8a9a7b]">{t('sessionDetail.historyRecent')}</p>
+            <p className="mt-1 text-xs text-[#a1a1aa]">{t('sessionDetail.historyRecent')}</p>
           </div>
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="rounded-lg px-2 py-1 text-sm text-[#6f7d62] hover:bg-[#f2efe7]"
+            className="rounded-lg px-2 py-1 text-sm text-[#71717a] hover:bg-[#f2efe7]"
             disabled={Boolean(rollbackId)}
           >
             {t('common.cancel')}
@@ -132,15 +132,15 @@ export function HistoryDialog({ sessionId }: HistoryDialogProps): React.JSX.Elem
         </div>
         <div className="min-h-0 overflow-y-auto px-5 py-4">
           {loading ? (
-            <div className="flex min-h-[220px] items-center justify-center text-sm text-[#8a9a7b]">
+            <div className="flex min-h-[220px] items-center justify-center text-sm text-[#a1a1aa]">
               {t('sessionDetail.historyLoading')}
             </div>
           ) : versions.length === 0 ? (
             <div className="flex min-h-[220px] flex-col items-center justify-center text-center">
-              <p className="text-sm font-medium text-[#3e4a32]">
+              <p className="text-sm font-medium text-[#18181b]">
                 {t('sessionDetail.historyEmptyTitle')}
               </p>
-              <p className="mt-2 text-xs text-[#8a9a7b]">
+              <p className="mt-2 text-xs text-[#a1a1aa]">
                 {t('sessionDetail.historyEmptyDescription')}
               </p>
             </div>
@@ -164,15 +164,15 @@ export function HistoryDialog({ sessionId }: HistoryDialogProps): React.JSX.Elem
                             {version.title}
                           </p>
                           {version.isCurrent && (
-                            <span className="rounded-full bg-[#fff7ed] px-2 py-0.5 text-[10px] font-medium text-[#3e4a32]">
+                            <span className="rounded-full bg-[#fff7ed] px-2 py-0.5 text-[10px] font-medium text-[#18181b]">
                               {t('sessionDetail.historyCurrent')}
                             </span>
                           )}
                         </div>
-                        <p className="mt-1 text-xs text-[#8a9a7b]">
+                        <p className="mt-1 text-xs text-[#a1a1aa]">
                           {formatHistoryTime(version.createdAt)}
                         </p>
-                        <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-[#5d6b4d]">
+                        <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-[#18181b]">
                           {version.description}
                         </p>
                         {version.changedPages.length > 0 && (
@@ -188,7 +188,7 @@ export function HistoryDialog({ sessionId }: HistoryDialogProps): React.JSX.Elem
                           type="button"
                           disabled={rollbackDisabled}
                           onClick={() => requestRollbackHistory(version)}
-                          className="shrink-0 rounded-lg bg-[#3e4a32] px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-[#2f3a2a] disabled:cursor-not-allowed disabled:bg-[#c8c0b3]"
+                          className="shrink-0 rounded-lg bg-[#18181b] px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-[#2f3a2a] disabled:cursor-not-allowed disabled:bg-[#c8c0b3]"
                         >
                           {rollbackId === version.id
                             ? t('sessionDetail.historyRollingBack')

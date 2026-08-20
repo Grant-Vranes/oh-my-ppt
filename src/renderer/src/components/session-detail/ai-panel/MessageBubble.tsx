@@ -38,7 +38,7 @@ export function MessageBubble({ message }: { message: Message }): React.JSX.Elem
           'min-w-0 overflow-hidden rounded-[1.15rem] border px-3 py-2 shadow-[0_6px_14px_rgba(74,59,42,0.08)]',
           selectorText ? 'w-full max-w-[238px]' : 'w-fit max-w-[238px]',
           isUser
-            ? 'border-[#d6e3c8]/78 bg-[#fbfef6]/90 text-[#34402c]'
+            ? 'border-[#d6e3c8]/78 bg-[#fbfef6]/90 text-[#18181b]'
             : 'border-[#e4e4e7]/78 bg-[#ffffff]/88 text-[#3f372b]'
         )}
       >

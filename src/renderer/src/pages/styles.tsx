@@ -260,7 +260,7 @@ export function StylesPage(): React.JSX.Element {
         <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">{t('styles.eyebrow')}</p>
         <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <h1 className="organic-serif text-[32px] font-semibold leading-none text-[#3e4a32]">{t('styles.title')}</h1>
+            <h1 className="organic-serif text-[32px] font-semibold leading-none text-[#18181b]">{t('styles.title')}</h1>
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
             <DropdownMenu>
@@ -337,7 +337,7 @@ export function StylesPage(): React.JSX.Element {
       <div className="mb-5 rounded-lg border border-[#e4e4e7]/75 bg-[#ffffff]/76 p-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-h-9 flex-1 items-center gap-2 rounded-md border border-[#e4e4e7]/80 bg-white/80 px-2.5">
-            <Search className="h-4 w-4 shrink-0 text-[#7c6a4c]/60" />
+            <Search className="h-4 w-4 shrink-0 text-[#52525b]/60" />
             <input
               type="text"
               value={query}
@@ -349,7 +349,7 @@ export function StylesPage(): React.JSX.Element {
               <button
                 type="button"
                 onClick={() => setQuery('')}
-                className="shrink-0 text-[#7c6a4c]/60 transition-colors hover:text-[#7c6a4c]"
+                className="shrink-0 text-[#52525b]/60 transition-colors hover:text-[#52525b]"
                 aria-label={t('styles.clearSearch')}
                 title={t('styles.clearSearch')}
               >
@@ -363,8 +363,8 @@ export function StylesPage(): React.JSX.Element {
             className={cn(
               'inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-md border px-3 text-xs font-medium transition-colors',
               favoriteOnly
-                ? 'border-[#97aa7c] bg-[#fff7ed] text-[#2f3b28]'
-                : 'border-[#d6c08d]/80 bg-white/70 text-[#7c6a4c] hover:bg-[#fff3d8]'
+                ? 'border-[#97aa7c] bg-[#fff7ed] text-[#18181b]'
+                : 'border-[#a1a1aa]/80 bg-white/70 text-[#52525b] hover:bg-[#fff3d8]'
             )}
             aria-pressed={favoriteOnly}
           >
@@ -411,7 +411,7 @@ export function StylesPage(): React.JSX.Element {
                     title={`${style.label} preview`}
                   />
                 ) : (
-                  <div className="flex h-full items-center justify-center text-[#8a9a7b]">
+                  <div className="flex h-full items-center justify-center text-[#a1a1aa]">
                     {generatingPreviewStyleId === style.id ? (
                       <Loader2 className="h-8 w-8 animate-spin" />
                     ) : (
@@ -468,7 +468,7 @@ export function StylesPage(): React.JSX.Element {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-8 w-8 rounded-md bg-white/95 p-0 text-[#3e4a32] shadow-[0_3px_10px_rgba(40,48,34,0.16)]"
+                          className="h-8 w-8 rounded-md bg-white/95 p-0 text-[#18181b] shadow-[0_3px_10px_rgba(40,48,34,0.16)]"
                           disabled={Boolean(generatingPreviewStyleId)}
                           onClick={() => void handleGeneratePreview(style)}
                           aria-label={
@@ -501,7 +501,7 @@ export function StylesPage(): React.JSX.Element {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-8 w-8 rounded-md bg-white/95 p-0 text-[#3e4a32] shadow-[0_3px_10px_rgba(40,48,34,0.16)]"
+                        className="h-8 w-8 rounded-md bg-white/95 p-0 text-[#18181b] shadow-[0_3px_10px_rgba(40,48,34,0.16)]"
                         onClick={() => navigate(`/styles/${style.id}`)}
                         aria-label={t('common.edit')}
                         title={t('styles.editTooltip')}
@@ -518,7 +518,7 @@ export function StylesPage(): React.JSX.Element {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-8 w-8 rounded-md bg-white/95 p-0 text-[#3e4a32] shadow-[0_3px_10px_rgba(40,48,34,0.16)]"
+                        className="h-8 w-8 rounded-md bg-white/95 p-0 text-[#18181b] shadow-[0_3px_10px_rgba(40,48,34,0.16)]"
                         disabled={exportingStyleId === style.id}
                         onClick={() => void handleExportPackage(style)}
                         aria-label={t('styles.exportPackage')}
@@ -557,13 +557,13 @@ export function StylesPage(): React.JSX.Element {
               <div className="p-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-[#3e4a32]">{style.label}</p>
+                    <p className="truncate text-sm font-semibold text-[#18181b]">{style.label}</p>
                     <p className="mt-0.5 text-[10px] font-medium text-[#718064]">
                       {style.category} · {style.source || t('styles.sourceBuiltin')}
                     </p>
                   </div>
                 </div>
-                <p className="mt-2 line-clamp-2 text-xs leading-5 text-[#6f6658]">
+                <p className="mt-2 line-clamp-2 text-xs leading-5 text-[#71717a]">
                   {style.description || style.id}
                 </p>
                 {style.styleCase && (
@@ -571,7 +571,7 @@ export function StylesPage(): React.JSX.Element {
                     {parseStyleCases(style.styleCase).map((styleCase) => (
                       <span
                         key={styleCase}
-                        className="rounded-md border border-[#d6c08d]/80 bg-[#ffffff] px-1.5 py-0.5 text-[11px] font-medium leading-4 text-[#8a7048]"
+                        className="rounded-md border border-[#a1a1aa]/80 bg-[#ffffff] px-1.5 py-0.5 text-[11px] font-medium leading-4 text-[#8a7048]"
                       >
                         {styleCase}
                       </span>

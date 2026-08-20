@@ -283,7 +283,7 @@ export const PreviewStage = forwardRef<
           >
             {isGeneratingPlaceholder ? (
               <div
-                className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#f8f4eb] text-center text-[#4f6340]"
+                className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#f8f4eb] text-center text-[#52525b]"
                 aria-live="polite"
               >
                 <Loader2 className="h-7 w-7 animate-spin" />
@@ -351,7 +351,7 @@ export const PreviewStage = forwardRef<
             )}
             {isStyleSwitchPageRunning && (
               <div
-                className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-[#f4f4f5]/72 text-center text-[#4f6340] backdrop-blur-[1px]"
+                className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-[#f4f4f5]/72 text-center text-[#52525b] backdrop-blur-[1px]"
                 aria-live="polite"
               >
                 <Loader2 className="h-7 w-7 animate-spin" />
@@ -362,7 +362,7 @@ export const PreviewStage = forwardRef<
             )}
             {pageEditJob && isPageEditing && (
               <div
-                className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-[#f4f4f5]/72 text-center text-[#4f6340] backdrop-blur-[1px]"
+                className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-[#f4f4f5]/72 text-center text-[#52525b] backdrop-blur-[1px]"
                 aria-live="polite"
               >
                 <Loader2 className="h-7 w-7 animate-spin" />
@@ -376,7 +376,7 @@ export const PreviewStage = forwardRef<
             )}
             {pageBeautifyJob && isPageBeautifying && (
               <div
-                className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-[#f4f4f5]/72 text-center text-[#4f6340] backdrop-blur-[1px]"
+                className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-[#f4f4f5]/72 text-center text-[#52525b] backdrop-blur-[1px]"
                 aria-live="polite"
               >
                 <Loader2 className="h-7 w-7 animate-spin" />
@@ -395,10 +395,10 @@ export const PreviewStage = forwardRef<
             )}
           </div>
         ) : (
-          <div className="relative flex h-full min-h-[420px] flex-col items-center justify-center gap-4 rounded-[1.55rem] bg-[#f4f4f5]/84 text-center text-[#5d6b4d] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.32)]">
+          <div className="relative flex h-full min-h-[420px] flex-col items-center justify-center gap-4 rounded-[1.55rem] bg-[#f4f4f5]/84 text-center text-[#18181b] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.32)]">
             <Sparkles className="h-7 w-7 text-[#ea580c]" />
             <div className="space-y-1">
-              <p className="text-base font-medium text-[#3e4a32]">
+              <p className="text-base font-medium text-[#18181b]">
                 {t('sessionDetail.emptyPreviewTitle')}
               </p>
               <p className="text-sm">{t('sessionDetail.briefHint')}</p>

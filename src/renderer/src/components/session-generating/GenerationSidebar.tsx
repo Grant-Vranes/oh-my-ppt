@@ -35,14 +35,14 @@ export function GenerationSidebar({
           <button
             type="button"
             onClick={onBackHome}
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[#e4e4e7]/80 bg-[#ffffff] text-[#5d6b4d] transition-colors hover:bg-[#f4ecd9] hover:text-[#34402c]"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[#e4e4e7]/80 bg-[#ffffff] text-[#18181b] transition-colors hover:bg-[#f4ecd9] hover:text-[#18181b]"
             aria-label={backHomeLabel}
             title={backHomeLabel}
           >
             <Home className="h-4 w-4" />
           </button>
           <div className="flex min-h-8 min-w-0 flex-1 items-center">
-            <h1 className="truncate text-[15px] font-semibold leading-5 text-[#2f3b28]" title={title}>
+            <h1 className="truncate text-[15px] font-semibold leading-5 text-[#18181b]" title={title}>
               {title}
             </h1>
           </div>

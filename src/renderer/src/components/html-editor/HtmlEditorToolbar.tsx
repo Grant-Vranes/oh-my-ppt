@@ -22,7 +22,7 @@ import { useHtmlEditorUiStore } from '../../store/htmlEditorUiStore'
 import { useToastStore } from '../../store/toastStore'
 
 const iconBtnClass =
-  'app-no-drag rounded-md p-1.5 text-[#5d6b4d] transition-colors hover:bg-[#ece5d6] disabled:pointer-events-none disabled:opacity-40'
+  'app-no-drag rounded-md p-1.5 text-[#18181b] transition-colors hover:bg-[#ece5d6] disabled:pointer-events-none disabled:opacity-40'
 
 /** HTML 编辑器顶部工具条（全图标，tooltip 标注）。 */
 export function HtmlEditorToolbar({ onOpenHistory }: { onOpenHistory: () => void }): ReactElement {
@@ -127,7 +127,7 @@ export function HtmlEditorToolbar({ onOpenHistory }: { onOpenHistory: () => void
             <button
               type="button"
               onClick={() => navigate('/edit-html')}
-              className="app-no-drag inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] bg-[#f4f4f5]/72 text-[#3e4a32] shadow-[0_4px_10px_rgba(86,72,53,0.08)] transition-colors hover:bg-[#fff7ed]/78"
+              className="app-no-drag inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] bg-[#f4f4f5]/72 text-[#18181b] shadow-[0_4px_10px_rgba(86,72,53,0.08)] transition-colors hover:bg-[#fff7ed]/78"
             >
               <Home className="h-3.5 w-3.5" />
             </button>
@@ -139,7 +139,7 @@ export function HtmlEditorToolbar({ onOpenHistory }: { onOpenHistory: () => void
         <Tooltip>
           <TooltipTrigger asChild>
             <div className="flex w-[150px] shrink-0 items-center gap-2 rounded-[10px] bg-[#f4f4f5]/60 px-3 py-1">
-              <div className="min-w-0 flex-1 truncate text-[12px] font-medium text-[#3e4a32]">
+              <div className="min-w-0 flex-1 truncate text-[12px] font-medium text-[#18181b]">
                 {displayName}
               </div>
             </div>
@@ -184,7 +184,7 @@ export function HtmlEditorToolbar({ onOpenHistory }: { onOpenHistory: () => void
           onClick={() => void handleToggleAiMode()}
           disabled={!docId || isSavingEdits}
           className={`app-no-drag ml-1 rounded-md px-2 py-1 text-[12px] font-medium transition-colors disabled:pointer-events-none disabled:opacity-40 ${
-            aiModeEnabled ? 'bg-[#fff7ed] text-[#2f3b28]' : 'text-[#5d6b4d] hover:bg-[#ece5d6]'
+            aiModeEnabled ? 'bg-[#fff7ed] text-[#18181b]' : 'text-[#18181b] hover:bg-[#ece5d6]'
           }`}
           title={t('htmlEditor.aiModeButton')}
         >

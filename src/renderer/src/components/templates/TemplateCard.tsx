@@ -70,8 +70,8 @@ export function TemplateCard({
       </button>
       <CardHeader className="pb-2">
         <CardTitle className="flex items-start justify-between gap-3 text-base">
-          <span className="min-w-0 truncate text-[#3e4a32]">{template.name}</span>
-          <span className="shrink-0 rounded-md border border-[#d6c08d]/80 bg-[#ffffff] px-2 py-1 text-[11px] font-medium text-[#7c6a4c]">
+          <span className="min-w-0 truncate text-[#18181b]">{template.name}</span>
+          <span className="shrink-0 rounded-md border border-[#a1a1aa]/80 bg-[#ffffff] px-2 py-1 text-[11px] font-medium text-[#52525b]">
             {t('templates.pageCount', { count: template.pageCount })}
           </span>
         </CardTitle>
@@ -85,7 +85,7 @@ export function TemplateCard({
             {template.tags.slice(0, 4).map((tag) => (
               <span
                 key={tag}
-                className="rounded-md border border-[#d6c08d]/80 bg-[#ffffff] px-1.5 py-0.5 text-[11px] text-[#7c6a4c]"
+                className="rounded-md border border-[#a1a1aa]/80 bg-[#ffffff] px-1.5 py-0.5 text-[11px] text-[#52525b]"
               >
                 {tag}
               </span>
@@ -102,7 +102,7 @@ export function TemplateCard({
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-7 w-7 rounded-[6px] p-0 text-[#5f6b50]"
+                  className="h-7 w-7 rounded-[6px] p-0 text-[#52525b]"
                   onClick={() => onPreview(template)}
                   title={t('common.preview')}
                   aria-label={t('common.preview')}
@@ -113,7 +113,7 @@ export function TemplateCard({
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-7 w-7 rounded-[6px] p-0 text-[#5f6b50]"
+                className="h-7 w-7 rounded-[6px] p-0 text-[#52525b]"
                 onClick={() => onEdit(template)}
                 title={t('common.edit')}
                 aria-label={t('common.edit')}
@@ -135,7 +135,7 @@ export function TemplateCard({
               <DropdownMenuTrigger asChild>
                 <Button
                   size="sm"
-                  className="h-8 rounded-md bg-[#5d6b4d] px-3 text-white shadow-none hover:bg-[#ea580c]"
+                  className="h-8 rounded-md bg-[#18181b] px-3 text-white shadow-none hover:bg-[#ea580c]"
                   disabled={directCreating}
                 >
                   <LayoutTemplate className="mr-1.5 h-3.5 w-3.5" />
@@ -178,7 +178,7 @@ export function TemplateEmptyState(): React.JSX.Element {
         <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-lg border border-[#d7cab1] bg-[#ffffff] text-[#617052] shadow-[0_6px_16px_rgba(78,88,62,0.08)]">
           <LayoutTemplate className="h-8 w-8" />
         </div>
-        <h3 className="text-xl font-semibold text-[#3e4a32]">{t('templates.emptyTitle')}</h3>
+        <h3 className="text-xl font-semibold text-[#18181b]">{t('templates.emptyTitle')}</h3>
         <p className="mt-2 text-sm leading-6 text-[#7b705f]">{t('templates.emptyDescription')}</p>
         <p className="mt-1 text-xs leading-5 text-[#95866f]">{t('templates.emptyHint')}</p>
       </div>

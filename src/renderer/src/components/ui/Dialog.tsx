@@ -15,7 +15,7 @@ const DialogOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Overlay
     ref={ref}
-    className={cn('fixed inset-0 z-50 bg-[#1f261d]/38 backdrop-blur-sm', className)}
+    className={cn('fixed inset-0 z-50 bg-[#27272a]/40', className)}
     {...props}
   />
 ))
@@ -31,14 +31,14 @@ const DialogContent = React.forwardRef<
       ref={ref}
       onInteractOutside={(e) => e.preventDefault()}
       className={cn(
-        'fixed left-1/2 top-1/2 z-50 grid w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl border border-[#d8cfbc]/80 bg-[#fffaf0] p-5 shadow-[0_24px_60px_rgba(64,52,38,0.28)]',
+        'fixed left-1/2 top-1/2 z-50 grid w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl border border-[#e4e4e7] bg-[#ffffff] p-5 shadow-[0_4px_12px_rgba(0,0,0,0.08)]',
         className
       )}
       {...props}
     >
       {children}
       {showClose && (
-        <DialogPrimitive.Close className="absolute right-4 top-4 rounded-lg p-1 text-[#6f7d62] transition-colors hover:bg-[#ebe4d6]/80 hover:text-[#3e4a32] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <DialogPrimitive.Close className="absolute right-4 top-4 rounded-lg p-1 text-[#71717a] transition-colors hover:bg-[#f4f4f5] hover:text-[#18181b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
           <X className="h-4 w-4" />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>
@@ -68,7 +68,7 @@ const DialogTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Title
     ref={ref}
-    className={cn('text-base font-semibold text-[#3e4a32]', className)}
+    className={cn('text-base font-semibold text-[#18181b]', className)}
     {...props}
   />
 ))
@@ -80,7 +80,7 @@ const DialogDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Description
     ref={ref}
-    className={cn('text-sm leading-6 text-[#6f6658]', className)}
+    className={cn('text-sm leading-6 text-[#71717a]', className)}
     {...props}
   />
 ))

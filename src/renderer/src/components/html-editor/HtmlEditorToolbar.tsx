@@ -105,7 +105,7 @@ export function HtmlEditorToolbar({ onOpenHistory }: { onOpenHistory: () => void
           onClick={onClick}
           disabled={disabled}
           aria-label={label}
-          className={`${iconBtnClass} ${danger ? 'text-[#8e5a53] hover:bg-[#f3e6e2]' : ''}`}
+          className={`${iconBtnClass} ${danger ? 'text-[#dc2626] hover:bg-[#f3e6e2]' : ''}`}
         >
           <Icon className="h-4 w-4" />
         </button>

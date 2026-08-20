@@ -275,7 +275,7 @@ export function HtmlEditorAiPanel(): ReactElement {
             </div>
           ) : null}
           {error ? (
-            <div className="rounded-xl bg-[#f3e6e2] px-3 py-2 text-xs leading-5 text-[#8e5a53]">
+            <div className="rounded-xl bg-[#f3e6e2] px-3 py-2 text-xs leading-5 text-[#dc2626]">
               {error}
             </div>
           ) : null}

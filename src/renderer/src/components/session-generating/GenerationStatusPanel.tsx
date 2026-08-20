@@ -59,7 +59,7 @@ export function GenerationStatusPanel({
         <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-center gap-2.5">
             <CircleAlert className="h-4 w-4 shrink-0" />
-            <span className="shrink-0 rounded-md border border-[#d7b5ae]/70 bg-[#fff8f4]/75 px-2 py-1 text-xs font-semibold text-[#8e5a53]">
+            <span className="shrink-0 rounded-md border border-[#d7b5ae]/70 bg-[#fff8f4]/75 px-2 py-1 text-xs font-semibold text-[#dc2626]">
               {interruptedLabel}
             </span>
             <span className="min-w-0 truncate text-xs text-[#9b6b63]">{error}</span>

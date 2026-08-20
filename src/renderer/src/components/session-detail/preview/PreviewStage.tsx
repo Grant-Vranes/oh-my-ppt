@@ -389,7 +389,7 @@ export const PreviewStage = forwardRef<
               </div>
             )}
             {selectedPage.status === 'failed' && (
-              <div className="absolute bottom-5 left-5 z-20 max-w-[520px] rounded-[1rem] bg-[#fff4ef]/92 px-3 py-2 text-xs text-[#8e5a53] shadow-[0_10px_24px_rgba(142,90,83,0.12)] backdrop-blur-sm">
+              <div className="absolute bottom-5 left-5 z-20 max-w-[520px] rounded-[1rem] bg-[#fff4ef]/92 px-3 py-2 text-xs text-[#dc2626] shadow-[0_10px_24px_rgba(142,90,83,0.12)] backdrop-blur-sm">
                 {t('sessionDetail.failedPageHint')}
               </div>
             )}

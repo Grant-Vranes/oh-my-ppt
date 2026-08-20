@@ -144,7 +144,7 @@ export function EditHtmlPage(): ReactElement {
   if (!docId && loadError) {
     return (
       <div className="flex h-screen w-screen flex-col items-center justify-center gap-3 bg-[#f4f4f5] text-sm text-[#8a8676]">
-        <p className="max-w-md text-center text-[#8e5a53]">{loadError}</p>
+        <p className="max-w-md text-center text-[#dc2626]">{loadError}</p>
         <button
           type="button"
           onClick={() => void useHtmlEditorStore.getState().openDocument(id || '')}
@@ -237,7 +237,7 @@ export function EditHtmlPage(): ReactElement {
                   type="button"
                   onClick={() => useHtmlEditStore.getState().deleteSelected()}
                   title={t('htmlEditor.delete')}
-                  className="rounded-md p-1.5 text-[#8e5a53] hover:bg-[#f3e6e2]"
+                  className="rounded-md p-1.5 text-[#dc2626] hover:bg-[#f3e6e2]"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>

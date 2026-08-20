@@ -206,7 +206,7 @@ export function HtmlEditorInsertRibbon({
             <button
               key={tpl.id}
               type="button"
-              className="flex min-h-[90px] flex-col items-center justify-center gap-2 rounded-lg border border-[#e4e4e7]/78 bg-[#1f261d] px-2 py-3 text-center transition-colors hover:border-[#ea580c]"
+              className="flex min-h-[90px] flex-col items-center justify-center gap-2 rounded-lg border border-[#e4e4e7]/78 bg-[#27272a] px-2 py-3 text-center transition-colors hover:border-[#ea580c]"
               onClick={() => void insertion.addArtText(tpl.id as ArtTextTemplateId)}
             >
               <span className="text-[18px] font-extrabold text-white">{tpl.defaultText}</span>

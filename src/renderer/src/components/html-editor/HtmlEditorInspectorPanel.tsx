@@ -162,7 +162,7 @@ export function HtmlEditorInspectorPanel({
       <div className="flex-1 space-y-2.5 overflow-y-auto px-2 py-2">
         {!selection || !snapshot ? (
           <div className="rounded-lg border border-[#e8c8c6]/62 bg-[#fdf0ef]/76 px-3 py-3 text-center shadow-[0_4px_10px_rgba(74,59,42,0.06)]">
-            <p className="whitespace-pre-line text-[11px] leading-5 text-[#8e5a53]">
+            <p className="whitespace-pre-line text-[11px] leading-5 text-[#dc2626]">
               {t('sessionDetail.inspectorUnavailable')}
             </p>
           </div>

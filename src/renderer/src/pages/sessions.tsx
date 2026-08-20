@@ -740,7 +740,7 @@ export function SessionsPage(): React.JSX.Element {
       )}
       {renameSession ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[#1f261d]/35 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#27272a]/35 p-4 backdrop-blur-sm"
           onClick={closeRenameDialog}
         >
           <div

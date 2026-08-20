@@ -21,14 +21,14 @@ export function Button({
         '[&_svg]:shrink-0',
         'cursor-pointer',
         {
-          'bg-gradient-to-r from-[#6f8159] to-[#4f613f] text-white shadow-lg shadow-[#5d6b4d]/30 hover:shadow-xl hover:shadow-[#5d6b4d]/40':
+          'bg-[#ea580c] text-white shadow-sm hover:bg-[#c2410c]':
             variant === 'default',
-          'bg-gradient-to-r from-[#8fbc8f] to-[#6f8f64] text-[#2f3b28] shadow-lg shadow-[#7da77f]/30 hover:shadow-xl hover:shadow-[#7da77f]/40':
+          'bg-[#18181b] text-white shadow-sm hover:bg-[#27272a]':
             variant === 'secondary',
-          'bg-gradient-to-r from-[#c97a64] to-[#b15a58] text-white shadow-lg shadow-[#b15a58]/30 hover:shadow-xl hover:shadow-[#b15a58]/40':
+          'bg-[#dc2626] text-white shadow-sm hover:bg-[#b91c1c]':
             variant === 'destructive',
           'soft-btn text-foreground': variant === 'outline',
-          'bg-transparent text-muted-foreground hover:bg-[#ebe4d6]/80 hover:text-accent-foreground shadow-none':
+          'bg-transparent text-muted-foreground hover:bg-[#f4f4f5] hover:text-accent-foreground shadow-none':
             variant === 'ghost'
         },
         {

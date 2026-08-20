@@ -43,9 +43,9 @@ body {
 
 /* Global scrollbar theme (Windows + macOS + Firefox) */
 :root {
-  --scrollbar-thumb: rgba(116, 136, 90, 0.72);
-  --scrollbar-thumb-hover: rgba(99, 120, 73, 0.86);
-  --scrollbar-track: rgba(232, 223, 205, 0.62);
+  --scrollbar-thumb: #d4d4d8;
+  --scrollbar-thumb-hover: #a1a1aa;
+  --scrollbar-track: #f4f4f5;
 }
 
 * {
@@ -64,8 +64,8 @@ body {
 }
 
 *::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgba(128, 149, 101, 0.9), rgba(106, 127, 80, 0.9));
-  border: 2px solid rgba(242, 233, 217, 0.78);
+  background: #d4d4d8;
+  border: 2px solid #f4f4f5;
   border-radius: 999px;
 }
 
@@ -116,10 +116,10 @@ body {
 }
 
 .soft-card {
-  background: linear-gradient(165deg, rgba(255, 252, 247, 0.93), rgba(244, 238, 225, 0.88));
-  box-shadow: 0 14px 34px rgba(88, 75, 56, 0.12), 0 2px 8px rgba(79, 66, 49, 0.08);
-  border: 1px solid rgba(173, 154, 123, 0.35);
-  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e4e4e7;
+  border-radius: 4px;
 }
 
 .soft-card-hover {
@@ -127,111 +127,87 @@ body {
 }
 
 .soft-card-hover:hover {
-  box-shadow: 0 18px 36px rgba(92, 78, 57, 0.16), 0 4px 12px rgba(83, 70, 52, 0.1);
-  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+  border-color: #d4d4d8;
 }
 
 .soft-btn {
-  background: linear-gradient(145deg, rgba(255, 250, 242, 0.98), rgba(238, 227, 206, 0.95));
-  box-shadow: 0 8px 20px rgba(86, 72, 53, 0.13), 0 2px 6px rgba(86, 72, 53, 0.08);
-  border: 1px solid rgba(168, 148, 116, 0.36);
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  border: 1px solid #d4d4d8;
+  border-radius: 3px;
 }
 
 .soft-btn:hover {
-  box-shadow: 0 11px 24px rgba(86, 72, 53, 0.18), 0 3px 8px rgba(86, 72, 53, 0.1);
-  transform: translateY(-2px);
+  background: #fafafa;
+  border-color: #a1a1aa;
 }
 
 .soft-btn:active {
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
-  transform: translateY(0);
+  background: #f4f4f5;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 .soft-input {
-  background: rgba(255, 251, 245, 0.8);
-  box-shadow: inset 0 2px 6px rgba(73, 61, 44, 0.08);
-  border: 1px solid rgba(148, 128, 94, 0.24);
+  background: #ffffff;
+  border: 1px solid #d4d4d8;
+  border-radius: 3px;
 }
 
 .soft-input:focus {
-  background: rgba(255, 252, 248, 0.97);
-  border-color: #8fbc8f;
-  box-shadow: 0 0 0 3px rgba(143, 188, 143, 0.24);
+  border-color: #ea580c;
+  box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.15);
 }
 
 .soft-surface,
 .soft-surface-subtle,
 .soft-titlebar {
-  background: rgba(255, 251, 244, 0.78);
-  box-shadow: 0 10px 28px rgba(86, 73, 54, 0.13), 0 2px 6px rgba(86, 73, 54, 0.08);
-  border: 1px solid rgba(166, 145, 110, 0.3);
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e4e4e7;
 }
 
 .soft-inset {
-  background: rgba(247, 240, 226, 0.75);
-  box-shadow: inset 0 2px 6px rgba(85, 70, 50, 0.09);
-  border: 1px solid rgba(155, 134, 98, 0.28);
+  background: #fafafa;
+  border: 1px solid #e4e4e7;
 }
 
 .soft-pill {
-  background: rgba(249, 244, 233, 0.9);
-  border: 1px solid rgba(166, 145, 110, 0.33);
-  box-shadow: 0 6px 14px rgba(85, 71, 51, 0.12), 0 1px 3px rgba(85, 71, 51, 0.06);
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #ea580c;
 }
 
 .soft-panel-edge {
-  border: 1px solid rgba(166, 145, 110, 0.3);
+  border: 1px solid #e4e4e7;
 }
 
 .organic-serif {
-  font-family: "Elms Sans", "SF Pro Text", "Segoe UI", system-ui, sans-serif;
-  letter-spacing: 0.01em;
+  /* inherits body font-family */
 }
 
-.organic-shape {
-  border-radius: 12px;
-}
-
-.leaf-shape {
-  border-radius: 12px;
-}
-
-/* App-wide radius scale: keep the UI soft, but avoid overly pill-like controls. */
+/* App-wide radius scale: industrial sharp edges */
 .rounded-sm {
-  border-radius: 3px !important;
+  border-radius: 2px !important;
 }
 
 .rounded,
 .rounded-md {
-  border-radius: 5px !important;
+  border-radius: 3px !important;
 }
 
 .rounded-lg {
-  border-radius: 8px !important;
+  border-radius: 4px !important;
 }
 
 .rounded-xl {
-  border-radius: 10px !important;
+  border-radius: 4px !important;
 }
 
 .rounded-2xl,
 .rounded-3xl,
-[class*="rounded-[1rem]"],
-[class*="rounded-[1.15rem]"],
-[class*="rounded-[1.25rem]"],
-[class*="rounded-[1.35rem]"],
-[class*="rounded-[1.4rem]"],
-[class*="rounded-[1.5rem]"],
-[class*="rounded-[1.55rem]"],
-[class*="rounded-[2rem]"] {
-  border-radius: 12px !important;
-}
-
-.rounded-full,
-[class*="rounded-[30%"],
-[class*="rounded-[38%"],
-[class*="rounded-[5%"] {
-  border-radius: 10px !important;
+.rounded-full {
+  border-radius: 4px !important;
 }
 
 .session-create-workspace {
@@ -251,8 +227,8 @@ body {
 
 .gen-grid {
   background-image:
-    linear-gradient(rgba(132, 141, 102, 0.16) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(132, 141, 102, 0.16) 1px, transparent 1px);
+    linear-gradient(rgba(120, 120, 120, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(120, 120, 120, 0.12) 1px, transparent 1px);
   background-size: 36px 36px;
   animation: gen-grid-pan 18s linear infinite;
 }

@@ -41,7 +41,7 @@ export function UpdateAvailableDialog({
         </DialogHeader>
 
         {update && (
-          <div className="flex flex-wrap gap-2 rounded-lg border border-[#e4e4e7]/80 bg-[#f4f4f5]/55 p-4">
+          <div className="flex flex-wrap gap-2 rounded-lg border border-[#e4e4e7]/80 bg-[#ffffff]/55 p-4">
             <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[#e4e4e7] bg-[#ffffff] px-3 text-xs font-medium text-[#71717a]">
               <span>{t('app.currentVersion')}</span>
               <span className="text-[#18181b]">{update.currentVersion}</span>

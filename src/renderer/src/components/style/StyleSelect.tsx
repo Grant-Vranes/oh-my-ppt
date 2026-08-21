@@ -187,7 +187,7 @@ export function StyleSelect({
                       className="h-11 w-[78px] shrink-0 rounded-[3px] border border-black/5 object-cover"
                     />
                   ) : (
-                    <span className="h-11 w-[78px] shrink-0 rounded-[3px] border border-[#e5ddc8] bg-[#f4f4f5]" />
+                    <span className="h-11 w-[78px] shrink-0 rounded-[3px] border border-[#e5ddc8] bg-[#ffffff]" />
                   )}
                   <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 py-0.5">
                     <span className="flex min-w-0 items-center gap-1.5">

@@ -1557,13 +1557,13 @@ export function SessionDetailPage(): React.JSX.Element {
   })
 
   if (!id || !slideSize) {
-    return <div className="h-full bg-[#f4f4f5]" />
+    return <div className="h-full bg-[#ffffff]" />
   }
 
   return (
     <TooltipProvider delayDuration={180}>
-      <div className="flex h-full min-h-0 flex-col bg-[#f4f4f5] text-foreground outline-none">
-        <header className="app-drag-region app-titlebar relative shrink-0 bg-[#f4f4f5]/95 shadow-[0_10px_26px_rgba(0,0,0,0.04)]">
+      <div className="flex h-full min-h-0 flex-col bg-[#ffffff] text-foreground outline-none">
+        <header className="app-drag-region app-titlebar relative shrink-0 bg-[#ffffff]/95 shadow-[0_10px_26px_rgba(0,0,0,0.04)]">
           <div
             className={`relative flex h-full items-center ${
               isMac ? '' : 'pr-[calc(var(--app-titlebar-control-safe-area)+16px)]'
@@ -1575,7 +1575,7 @@ export function SessionDetailPage(): React.JSX.Element {
           </div>
         </header>
 
-        <div className="flex min-h-0 flex-1 flex-col bg-[#f4f4f5]">
+        <div className="flex min-h-0 flex-1 flex-col bg-[#ffffff]">
           <WorkspaceRibbon isSavingEdits={isSavingEdits} />
           <StyleSwitchJobBar sessionId={id} />
 

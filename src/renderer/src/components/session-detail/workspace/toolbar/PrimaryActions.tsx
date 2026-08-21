@@ -21,7 +21,7 @@ export function PrimaryActions({
   const actions = useSessionDetailRuntimeStore((state) => state.workspaceRibbonActions)
 
   return (
-    <div className="flex shrink-0 items-center gap-1 rounded-[0.95rem] bg-[#f4f4f5]/54 px-1 py-0.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.42)]">
+    <div className="flex shrink-0 items-center gap-1 rounded-[0.95rem] bg-[#ffffff]/54 px-1 py-0.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.42)]">
       <Tooltip>
         <TooltipTrigger asChild>
           <button
@@ -65,7 +65,7 @@ export function PrimaryActions({
         </TooltipTrigger>
         <TooltipContent side="bottom">{t('sessionDetail.discardAllEditsTooltip')}</TooltipContent>
       </Tooltip>
-      <div className="ml-0.5 flex items-center gap-0.5 rounded-full bg-[#f4f4f5]/48 p-0.5 shadow-[inset_0_1px_3px_rgba(0,0,0,0.03)]">
+      <div className="ml-0.5 flex items-center gap-0.5 rounded-full bg-[#ffffff]/48 p-0.5 shadow-[inset_0_1px_3px_rgba(0,0,0,0.03)]">
         <Tooltip>
           <TooltipTrigger asChild>
             <button

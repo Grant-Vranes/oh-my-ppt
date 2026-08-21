@@ -605,7 +605,7 @@ export function SessionsPage(): React.JSX.Element {
                 onClick={() => navigate(getSessionRoute(session))}
               >
                 <div
-                  className="relative flex h-[230px] w-full shrink-0 items-center justify-center overflow-hidden bg-[#f4f4f5]"
+                  className="relative flex h-[230px] w-full shrink-0 items-center justify-center overflow-hidden bg-[#ffffff]"
                   data-session-thumbnail-frame
                 >
                   {thumbnailPath ? (

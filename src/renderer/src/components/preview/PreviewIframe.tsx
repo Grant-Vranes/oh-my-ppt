@@ -1481,7 +1481,7 @@ export const PreviewIframe = forwardRef<
   return (
     <div
       ref={containerRef}
-      className="relative h-full w-full overflow-hidden rounded-[inherit] bg-[#f4f4f5]"
+      className="relative h-full w-full overflow-hidden rounded-[inherit] bg-[#ffffff]"
     >
       {webviewSrc ? (
         <webview

@@ -178,7 +178,7 @@ export function HtmlEditorInsertRibbon({
   )
 
   return (
-    <aside className="flex w-12 flex-col items-center gap-1 border-r border-[#e2dccf] bg-[#f4f4f5] py-3">
+    <aside className="flex w-12 flex-col items-center gap-1 border-r border-[#e2dccf] bg-[#ffffff] py-3">
       <DirectButton
         icon={Type}
         label={t('editMode.addText')}

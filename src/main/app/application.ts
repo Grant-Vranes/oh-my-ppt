@@ -121,6 +121,10 @@ export class MainApplication {
       })
     setSkillsRuntime({ installedSkillsPath, ready: skillsReadyPromise })
 
+    app.on('browser-window-created', (_, createdWindow) => {
+      optimizer.watchWindowShortcuts(createdWindow)
+    })
+
     this.agentManager = new AgentManager()
     const window = this.createWindow()
     window.webContents.on('did-finish-load', () => {
@@ -153,9 +157,6 @@ export class MainApplication {
       })
     }
 
-    app.on('browser-window-created', (_, createdWindow) => {
-      optimizer.watchWindowShortcuts(createdWindow)
-    })
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) this.createWindow()
     })

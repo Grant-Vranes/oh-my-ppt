@@ -231,7 +231,7 @@ export function HtmlEditorAiPanel(): ReactElement {
   }
 
   return (
-    <aside className="flex h-full w-[360px] shrink-0 flex-col border-l border-[#e2dccf] bg-[#f4f4f5]">
+    <aside className="flex h-full w-[360px] shrink-0 flex-col border-l border-[#e2dccf] bg-[#ffffff]">
       <div className="flex shrink-0 items-center gap-2 border-b border-[#e2dccf] px-3 py-2.5">
         <Sparkles className="h-4 w-4 text-[#18181b]" />
         <div className="min-w-0 flex-1">

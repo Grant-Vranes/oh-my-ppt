@@ -6,7 +6,7 @@ interface ScrollAreaProps extends React.ComponentPropsWithoutRef<typeof ScrollAr
   viewportClassName?: string
   viewportRef?: React.Ref<HTMLDivElement>
   onViewportScroll?: React.UIEventHandler<HTMLDivElement>
-  scrollbars?: 'vertical' | 'horizontal' | 'both'
+  scrollbars?: 'vertical' | 'horizontal' | 'both' | 'none'
 }
 
 export function ScrollArea({
@@ -23,7 +23,11 @@ export function ScrollArea({
       <ScrollAreaPrimitive.Viewport
         ref={viewportRef}
         onScroll={onViewportScroll}
-        className={cn('h-full w-full rounded-[inherit]', viewportClassName)}
+        className={cn(
+          'h-full w-full rounded-[inherit]',
+          scrollbars === 'none' && '[&::-webkit-scrollbar]:hidden [scrollbar-width:none] overflow-y-auto',
+          viewportClassName
+        )}
       >
         {children}
       </ScrollAreaPrimitive.Viewport>

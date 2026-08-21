@@ -85,10 +85,10 @@ function parsePageCards(thinkingMd: string): PageCard[] {
 }
 
 const STAGE_COLORS: Record<ThinkingStage, { bg: string; text: string; border: string }> = {
-  collect: { bg: 'bg-[#f4f4f5]', text: 'text-[#18181b]', border: 'border-[#c8b89e]' },
-  outline: { bg: 'bg-[#f4f4f5]', text: 'text-[#18181b]', border: 'border-[#e4e4e7]' },
-  draft: { bg: 'bg-[#f4f4f5]', text: 'text-[#18181b]', border: 'border-[#c8b89e]' },
-  refine: { bg: 'bg-[#f4f4f5]', text: 'text-[#18181b]', border: 'border-[#e4e4e7]' },
+  collect: { bg: 'bg-[#ffffff]', text: 'text-[#18181b]', border: 'border-[#c8b89e]' },
+  outline: { bg: 'bg-[#ffffff]', text: 'text-[#18181b]', border: 'border-[#e4e4e7]' },
+  draft: { bg: 'bg-[#ffffff]', text: 'text-[#18181b]', border: 'border-[#c8b89e]' },
+  refine: { bg: 'bg-[#ffffff]', text: 'text-[#18181b]', border: 'border-[#e4e4e7]' },
   ready: { bg: 'bg-[#ea580c]', text: 'text-[#18181b]', border: 'border-[#ea580c]' }
 }
 
@@ -194,7 +194,7 @@ export function ThinkingPageCards({
             {t(STAGE_I18N_KEYS[stage] as Parameters<typeof t>[0])}
           </span>
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-1 rounded-full border border-[#fff7ed] bg-[#f4f4f5]/70 p-1">
+        <div className="mt-4 grid grid-cols-2 gap-1 rounded-full border border-[#fff7ed] bg-[#ffffff]/70 p-1">
           <button
             type="button"
             onClick={() => setViewMode('outline')}
@@ -286,7 +286,7 @@ export function ThinkingPageCards({
               </div>
             </div>
           ) : (
-            <div className="flex min-h-[260px] flex-col items-center justify-center rounded-[2rem] border border-dashed border-[#fff7ed] bg-[#f4f4f5]/72 px-6 text-center">
+            <div className="flex min-h-[260px] flex-col items-center justify-center rounded-[2rem] border border-dashed border-[#fff7ed] bg-[#ffffff]/72 px-6 text-center">
               <div className="flex h-12 w-12 items-center justify-center rounded-[5%_95%_10%_90%/85%_15%_85%_15%] bg-[#ea580c] text-white">
                 <FileText className="h-5 w-5" />
               </div>
@@ -296,7 +296,7 @@ export function ThinkingPageCards({
             </div>
           )
         ) : cards.length === 0 ? (
-          <div className="flex min-h-[260px] flex-col items-center justify-center rounded-[2rem] border border-dashed border-[#fff7ed] bg-[#f4f4f5]/72 px-6 text-center">
+          <div className="flex min-h-[260px] flex-col items-center justify-center rounded-[2rem] border border-dashed border-[#fff7ed] bg-[#ffffff]/72 px-6 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-[5%_95%_10%_90%/85%_15%_85%_15%] bg-[#ea580c] text-white">
               <FileText className="h-5 w-5" />
             </div>
@@ -309,7 +309,7 @@ export function ThinkingPageCards({
             {cards.map((card) => (
               <div
                 key={card.pageNumber}
-                className="group rounded-[1.5rem] border border-[#fff7ed] bg-[#f4f4f5] px-3 py-3 shadow-sm transition-colors hover:border-[#ea580c]"
+                className="group rounded-[1.5rem] border border-[#fff7ed] bg-[#ffffff] px-3 py-3 shadow-sm transition-colors hover:border-[#ea580c]"
               >
                 <div className="flex items-start gap-3">
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ea580c] text-[11px] font-bold text-[#18181b]">

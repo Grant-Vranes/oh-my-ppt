@@ -360,7 +360,7 @@ export const PageSidebar = memo(function PageSidebar({
 
   return (
     <aside
-      className={`relative flex min-h-0 shrink-0 flex-col overflow-hidden bg-[#f4f4f5] pb-3 pt-3 shadow-[inset_-16px_0_30px_rgba(0,0,0,0.03)] transition-[width] duration-300 ${
+      className={`relative flex min-h-0 shrink-0 flex-col overflow-hidden border-r border-[#e4e4e7] bg-white pb-3 pt-3 transition-[width] duration-300 ${
         collapsed ? 'w-[48px] min-w-[48px] max-w-[48px]' : 'w-[220px] min-w-[220px] max-w-[220px]'
       }`}
     >
@@ -381,7 +381,7 @@ export const PageSidebar = memo(function PageSidebar({
                     type="button"
                     data-page-id={page.id}
                     onClick={() => requestSelectPage(page.id)}
-                    className={`flex h-8 w-full items-center justify-center rounded-xl text-xs font-semibold transition-all ${selectedPageId === page.id ? 'bg-[#fff7ed]/86 text-[#18181b] shadow-[0_4px_12px_rgba(0,0,0,0.10)]' : 'text-[#5c6c47] hover:bg-[#f4f4f5]/50'}`}
+                    className={`flex h-8 w-full items-center justify-center rounded-xl text-xs font-semibold transition-all ${selectedPageId === page.id ? 'bg-[#fff7ed] text-[#ea580c] ring-1 ring-[#ea580c] shadow-[0_2px_8px_rgba(234,88,12,0.15)]' : 'text-[#5c6c47] hover:bg-[#f4f4f5]/50'}`}
                   >
                     P{page.pageNumber}
                   </button>
@@ -437,7 +437,7 @@ export const PageSidebar = memo(function PageSidebar({
                   <button
                     type="button"
                     onClick={onToggleCollapsed}
-                    className="flex h-8 w-full items-center justify-center rounded-xl text-[#71717a] transition-colors hover:bg-[#f4f4f5]/50 hover:text-[#18181b] cursor-pointer"
+                    className="flex h-8 w-full items-center justify-center rounded text-[#71717a] transition-colors hover:bg-[#f4f4f5] hover:text-[#18181b] cursor-pointer"
                     aria-label={t('sessionDetail.expandSidebar')}
                   >
                     <PanelRight className="h-4 w-4" />
@@ -450,14 +450,14 @@ export const PageSidebar = memo(function PageSidebar({
         ) : (
           // Expanded: full sidebar
           <>
-            <div className="mx-1 mb-2 grid grid-cols-2 rounded-lg bg-[#f4f4f5]/38 p-0.5 text-[10.5px] font-medium text-[#6a705d]">
+            <div className="mx-1 mb-2 grid grid-cols-2 rounded border border-[#e4e4e7] p-0.5 text-[10.5px] font-medium text-[#71717a]">
               <button
                 type="button"
                 onClick={() => setActiveView('pages')}
-                className={`h-6 rounded-md transition-all ${
+                className={`h-6 rounded-sm transition-all ${
                   activeView === 'pages'
-                    ? 'bg-[#ffffff]/86 text-[#18181b] shadow-[0_1px_4px_rgba(0,0,0,0.06)]'
-                    : 'hover:bg-[#ffffff]/36 hover:text-[#52525b]'
+                    ? 'bg-[#18181b] text-white'
+                    : 'hover:bg-[#f4f4f5] hover:text-[#18181b]'
                 }`}
               >
                 {t('sessionDetail.pageTab')}
@@ -465,10 +465,10 @@ export const PageSidebar = memo(function PageSidebar({
               <button
                 type="button"
                 onClick={() => setActiveView('outline')}
-                className={`h-6 rounded-md transition-all ${
+                className={`h-6 rounded-sm transition-all ${
                   activeView === 'outline'
-                    ? 'bg-[#ffffff]/86 text-[#18181b] shadow-[0_1px_4px_rgba(0,0,0,0.06)]'
-                    : 'hover:bg-[#ffffff]/36 hover:text-[#52525b]'
+                    ? 'bg-[#18181b] text-white'
+                    : 'hover:bg-[#f4f4f5] hover:text-[#18181b]'
                 }`}
               >
                 {t('sessionDetail.outlineTab')}
@@ -479,7 +479,7 @@ export const PageSidebar = memo(function PageSidebar({
                 type="button"
                 disabled={pages.length === 0 || !onDownloadAllOutlines}
                 onClick={handleDownloadAllOutlines}
-                className="mx-1 mb-2 flex h-7 items-center justify-center gap-1.5 rounded-lg border border-[#b5c4a1]/50 bg-[#ffffff]/72 px-2 text-[11px] font-medium text-[#18181b] shadow-[0_3px_8px_rgba(0,0,0,0.04)] transition-colors hover:bg-[#fff7ed]/45 hover:text-[#18181b] disabled:cursor-not-allowed disabled:opacity-45"
+                className="mx-1 mb-2 flex h-7 items-center justify-center gap-1.5 rounded border border-[#e4e4e7] px-2 text-[11px] font-medium text-[#52525b] transition-colors hover:bg-[#f4f4f5] hover:text-[#18181b] disabled:cursor-not-allowed disabled:opacity-45"
               >
                 <Download className="h-3.5 w-3.5" />
                 {t('sessionDetail.downloadAllOutlines')}
@@ -487,16 +487,15 @@ export const PageSidebar = memo(function PageSidebar({
             ) : null}
 
             {/* Middle: page list */}
-            <ScrollArea
-              className="min-h-0 min-w-0 flex-1"
-              viewportClassName="overflow-x-hidden px-0.5 pb-2"
-              viewportRef={viewportRef}
-              onViewportScroll={
+            <div
+              ref={viewportRef}
+              onScroll={
                 activeView === 'pages' ? scheduleThumbnailPreviewWindowUpdate : undefined
               }
+              className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-0.5 pb-2 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
             >
               {pages.length === 0 ? (
-                <div className="flex min-h-[96px] items-center justify-center rounded-[1.25rem] bg-[#f4f4f5]/54 text-xs text-[#a1a1aa]">
+                <div className="flex min-h-[96px] items-center justify-center rounded border border-[#e4e4e7] text-xs text-[#a1a1aa]">
                   {t('sessionDetail.pagesEmpty')}
                 </div>
               ) : activeView === 'outline' ? (
@@ -514,14 +513,14 @@ export const PageSidebar = memo(function PageSidebar({
                         key={page.id}
                         data-page-id={page.id}
                         title={outlineText || page.title}
-                        className={`group relative block w-full min-w-0 max-w-full whitespace-normal rounded-[1.25rem] p-1.5 text-left transition-all ${
+                        className={`group relative block w-full min-w-0 max-w-full whitespace-normal rounded p-1 text-left transition-all ${
                           selected
-                            ? 'bg-[#fff7ed]/86 shadow-[0_14px_26px_rgba(0,0,0,0.12)]'
-                            : 'bg-[#f4f4f5]/34 hover:bg-[#f4f4f5]/68 hover:shadow-[0_8px_18px_rgba(0,0,0,0.06)]'
+                            ? 'bg-[#fff7ed] ring-2 ring-[#ea580c] ring-offset-1 shadow-[0_2px_8px_rgba(234,88,12,0.15)]'
+                            : 'hover:bg-[#f4f4f5]/60'
                         } ${pageActionDisabled ? 'opacity-45' : ''}`}
                       >
                         {editing ? (
-                          <div className="block min-w-0 max-w-full overflow-hidden rounded-[1rem] bg-[#ffffff]/72 px-2.5 py-2 shadow-[0_5px_14px_rgba(0,0,0,0.06)]">
+                          <div className="block min-w-0 max-w-full overflow-hidden rounded border border-[#e4e4e7] bg-white px-2.5 py-2">
                             <p className="mb-1 whitespace-normal break-words text-[12px] font-semibold leading-5 text-[#18181b] [overflow-wrap:anywhere]">
                               {page.title || t('sessionDetail.untitledPage')}
                             </p>
@@ -541,7 +540,7 @@ export const PageSidebar = memo(function PageSidebar({
                                   event.stopPropagation()
                                   handleCancelEditOutline()
                                 }}
-                                className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#f1e7d6] text-[#756955] transition-colors hover:bg-[#e8ddca] disabled:opacity-50"
+                                className="inline-flex h-6 w-6 items-center justify-center rounded border border-[#e4e4e7] bg-white text-[#71717a] transition-colors hover:bg-[#f4f4f5] disabled:opacity-50"
                                 aria-label={t('common.cancel')}
                                 title={t('common.cancel')}
                               >
@@ -554,7 +553,7 @@ export const PageSidebar = memo(function PageSidebar({
                                   event.stopPropagation()
                                   void handleSaveOutline(page)
                                 }}
-                                className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#18181b] text-white shadow-[0_4px_10px_rgba(0,0,0,0.12)] transition-colors hover:bg-[#4d5a40] disabled:opacity-50"
+                                className="inline-flex h-6 w-6 items-center justify-center rounded bg-[#ea580c] text-white transition-colors hover:bg-[#c2410c] disabled:opacity-50"
                                 aria-label={t('pageManagement.savePageOutline')}
                                 title={t('pageManagement.savePageOutline')}
                               >
@@ -578,11 +577,11 @@ export const PageSidebar = memo(function PageSidebar({
                               disabled ? 'cursor-not-allowed' : 'cursor-pointer'
                             }`}
                           >
-                            <span className="relative block min-w-0 max-w-full overflow-hidden rounded-[1rem] bg-[#ffffff]/72 px-2.5 py-2 shadow-[0_5px_14px_rgba(0,0,0,0.06)]">
+                            <span className="relative block min-w-0 max-w-full overflow-hidden rounded border border-[#e4e4e7] bg-white px-2.5 py-2">
                               <span className="block whitespace-normal break-words pr-14 text-[12px] font-semibold leading-5 text-[#18181b] [overflow-wrap:anywhere]">
                                 {page.title || t('sessionDetail.untitledPage')}
                               </span>
-                              <span className="mt-1 block whitespace-normal break-words text-[11px] leading-4 text-[#716654] [overflow-wrap:anywhere]">
+                          <span className="mt-1 block whitespace-normal break-words text-[11px] leading-4 text-[#71717a] [overflow-wrap:anywhere]">
                                 {outlineDisplayText || t('sessionDetail.outlineEmpty')}
                               </span>
                               {!editing ? (
@@ -643,11 +642,11 @@ export const PageSidebar = memo(function PageSidebar({
                           </div>
                         )}
                         <span className="relative mt-1.5 flex items-center justify-between gap-1 px-0.5">
-                          <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#5c6c47]">
+                          <span className={`text-[10px] font-semibold uppercase tracking-[0.08em] ${selected ? 'text-[#ea580c]' : 'text-[#71717a]'}`}>
                             P{page.pageNumber}
                           </span>
                           {selected ? (
-                            <span className="rounded-full bg-[#18181b] px-1.5 py-0.5 text-[9px] font-semibold text-white shadow-[0_3px_8px_rgba(0,0,0,0.12)]">
+                            <span className="rounded bg-[#ea580c] px-1.5 py-0.5 text-[9px] font-semibold text-white">
                               {t('sessionDetail.current')}
                             </span>
                           ) : null}
@@ -699,7 +698,7 @@ export const PageSidebar = memo(function PageSidebar({
                                           event.stopPropagation()
                                           if (requestSelectPage(page.id)) onRetryFailedPage(page)
                                         }}
-                                        className="absolute inset-x-2 bottom-2 z-10 flex h-8 items-center justify-center gap-1.5 rounded-[0.7rem] border border-red-600 bg-red-500 px-2 text-[10px] font-semibold text-white shadow-[0_4px_12px_rgba(239,68,68,0.28)] transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-45"
+                                        className="absolute inset-x-2 bottom-2 z-10 flex h-8 items-center justify-center gap-1.5 rounded border border-red-600 bg-red-500 px-2 text-[10px] font-semibold text-white transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-45"
                                       >
                                         <RotateCcw className="h-3 w-3" />
                                         {t('sessionDetail.retryFailedPage')}
@@ -837,7 +836,7 @@ export const PageSidebar = memo(function PageSidebar({
                   </SortableContext>
                 </DndContext>
               )}
-            </ScrollArea>
+            </div>
 
             {/* Bottom: add page + collapse */}
             <div className="mt-2 flex items-center gap-1.5">
@@ -846,7 +845,7 @@ export const PageSidebar = memo(function PageSidebar({
                   <button
                     type="button"
                     disabled={disabled || pageManagementDisabled}
-                    className="flex flex-1 items-center justify-center gap-1 rounded-[1rem] border border-dashed border-[#b5c4a1]/60 bg-[#fff7ed]/30 px-2 py-1.5 text-[11px] font-medium text-[#18181b] transition-colors hover:bg-[#fff7ed]/50 hover:text-[#18181b] disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+                    className="flex flex-1 items-center justify-center gap-1 rounded border border-dashed border-[#d4d4d8] px-2 py-1.5 text-[11px] font-medium text-[#52525b] transition-colors hover:bg-[#f4f4f5]/60 hover:text-[#18181b] disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
                   >
                     <Plus className="h-3 w-3" />
                     {t('sessionDetail.addPage')}

@@ -34,7 +34,7 @@ import { SaveAsNewSessionDialog } from './SaveAsNewSessionDialog'
 import { useSessionToolbarController } from './useSessionToolbarController'
 
 const btnClass =
-  'app-no-drag h-7 rounded-[8px] border-transparent bg-[#f4f4f5]/72 px-2.5 text-[11px] text-[#18181b] shadow-[0_4px_10px_rgba(0,0,0,0.06)] hover:bg-[#fff7ed]/78'
+  'app-no-drag h-7 rounded-[8px] border-transparent bg-[#ffffff]/72 px-2.5 text-[11px] text-[#18181b] shadow-[0_4px_10px_rgba(0,0,0,0.06)] hover:bg-[#fff7ed]/78'
 const iconClass = 'mr-1.5 h-3.5 w-3.5'
 const dropIconClass = 'mr-2 h-3.5 w-3.5 text-[#6b7280]'
 
@@ -103,7 +103,7 @@ export function SessionToolbar({
           <TooltipTrigger asChild>
             <button
               type="button"
-              className="app-no-drag inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] bg-[#f4f4f5]/72 text-[#18181b] shadow-[0_4px_10px_rgba(0,0,0,0.06)] transition-colors hover:bg-[#fff7ed]/78 disabled:pointer-events-none disabled:opacity-45 disabled:grayscale"
+              className="app-no-drag inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] bg-[#ffffff]/72 text-[#18181b] shadow-[0_4px_10px_rgba(0,0,0,0.06)] transition-colors hover:bg-[#fff7ed]/78 disabled:pointer-events-none disabled:opacity-45 disabled:grayscale"
               onClick={() => ribbonActions?.onBackToSessions()}
               disabled={homeDisabled}
             >
@@ -116,7 +116,7 @@ export function SessionToolbar({
         {/* Title */}
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="flex w-[150px] shrink-0 items-center gap-2 rounded-[10px] bg-[#f4f4f5]/60 px-3 py-1">
+            <div className="flex w-[150px] shrink-0 items-center gap-2 rounded-[10px] bg-[#ffffff]/60 px-3 py-1">
               <div className="min-w-0 flex-1 truncate text-[12px] font-medium text-[#18181b]">
                 {sessionTitle}
               </div>

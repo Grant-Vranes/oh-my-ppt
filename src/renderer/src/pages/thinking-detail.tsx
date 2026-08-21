@@ -322,8 +322,8 @@ export function ThinkingDetailPage(): ReactElement {
   })
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col bg-[#f4f4f5] text-foreground">
-      <div className="relative z-50 shrink-0 border-b border-[#e4e4e7] bg-[#f4f4f5]/90 px-6 py-4">
+    <div className="relative flex h-full min-h-0 flex-col bg-[#ffffff] text-foreground">
+      <div className="relative z-50 shrink-0 border-b border-[#e4e4e7] bg-[#ffffff]/90 px-6 py-4">
         <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
@@ -390,7 +390,7 @@ export function ThinkingDetailPage(): ReactElement {
                             className={`group flex w-full items-start gap-1.5 rounded-[1.25rem] border p-2 transition-colors ${
                               active
                                 ? 'border-[#9eb88a] bg-[#fff7ed] text-[#18181b]'
-                                : 'border-transparent bg-[#f4f4f5]/76 text-[#18181b] hover:border-[#e4e4e7] hover:bg-[#fafafa]'
+                                : 'border-transparent bg-[#ffffff]/76 text-[#18181b] hover:border-[#e4e4e7] hover:bg-[#fafafa]'
                             }`}
                           >
                             <button

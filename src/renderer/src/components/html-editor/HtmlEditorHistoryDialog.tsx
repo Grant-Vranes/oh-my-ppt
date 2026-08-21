@@ -84,7 +84,7 @@ export function HtmlEditorHistoryDialog({
             {versions.map((v) => (
               <li
                 key={v.id}
-                className="flex items-center gap-2 rounded-md border border-[#e2dccf] bg-[#f4f4f5] px-3 py-2"
+                className="flex items-center gap-2 rounded-md border border-[#e2dccf] bg-[#ffffff] px-3 py-2"
               >
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-medium text-[#18181b]">{v.message}</div>

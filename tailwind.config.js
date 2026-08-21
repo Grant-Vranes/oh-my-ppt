@@ -9,11 +9,11 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: '#f4f4f5',
+        background: '#ffffff',
         foreground: '#18181b',
         card: { DEFAULT: '#ffffff', foreground: '#18181b' },
         primary: { DEFAULT: '#18181b', foreground: '#ffffff' },
-        secondary: { DEFAULT: '#f4f4f5', foreground: '#18181b' },
+        secondary: { DEFAULT: '#ffffff', foreground: '#18181b' },
         muted: { DEFAULT: '#fafafa', foreground: '#71717a' },
         accent: { DEFAULT: '#ea580c', foreground: '#ffffff' },
         destructive: '#dc2626',

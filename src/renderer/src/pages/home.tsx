@@ -157,7 +157,7 @@ export function HomePage(): ReactElement {
         <button
           type="button"
           onClick={() => void handleQuickCreate()}
-          className="group relative flex min-h-[240px] flex-col overflow-hidden rounded-[2rem] border border-[#e4e4e7] bg-[#f4f4f5] p-7 text-left shadow-[0_14px_34px_rgba(0,0,0,0.08)] transition-colors hover:border-[#c8b89e] hover:bg-[#e5dccb] disabled:cursor-not-allowed disabled:opacity-65"
+          className="group relative flex min-h-[240px] flex-col overflow-hidden rounded-[2rem] border border-[#e4e4e7] bg-[#ffffff] p-7 text-left shadow-[0_14px_34px_rgba(0,0,0,0.08)] transition-colors hover:border-[#c8b89e] hover:bg-[#e5dccb] disabled:cursor-not-allowed disabled:opacity-65"
         >
           <div className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] bg-[#fff7ed]/70 transition-transform group-hover:scale-110" />
           <div className="pointer-events-none absolute -bottom-14 left-10 h-28 w-40 rounded-[8%_92%_12%_88%/78%_22%_78%_22%] bg-[#c8b89e]/35" />
@@ -194,7 +194,7 @@ export function HomePage(): ReactElement {
           className="group relative flex min-h-[240px] flex-col overflow-hidden rounded-[2rem] border border-[#fff7ed] bg-[#fff7ed] p-7 text-left shadow-[0_14px_34px_rgba(0,0,0,0.08)] transition-colors hover:border-[#a9bd97] hover:bg-[#cedfb8]"
         >
           <div className="pointer-events-none absolute -bottom-12 -left-10 h-36 w-36 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] bg-[#ea580c]/28 transition-transform group-hover:scale-110" />
-          <div className="pointer-events-none absolute right-8 top-9 h-24 w-32 rounded-[8%_92%_12%_88%/78%_22%_78%_22%] bg-[#f4f4f5]/55" />
+          <div className="pointer-events-none absolute right-8 top-9 h-24 w-32 rounded-[8%_92%_12%_88%/78%_22%_78%_22%] bg-[#ffffff]/55" />
 
           <div className="relative flex items-start justify-between gap-4">
             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[10%_90%_16%_84%/78%_22%_78%_22%] bg-[#18181b] text-white shadow-[0_10px_22px_rgba(0,0,0,0.12)]">
@@ -226,7 +226,7 @@ export function HomePage(): ReactElement {
           type="button"
           onClick={() => void handleImportPptxClick()}
           disabled={importingPptx}
-          className="group relative flex min-h-[240px] flex-col overflow-hidden rounded-[2rem] border border-[#e4e4e7] bg-[#f4f4f5] p-7 text-left shadow-[0_14px_34px_rgba(0,0,0,0.07)] transition-colors hover:border-[#c8b89e] hover:bg-[#fafafa] disabled:cursor-not-allowed disabled:opacity-65"
+          className="group relative flex min-h-[240px] flex-col overflow-hidden rounded-[2rem] border border-[#e4e4e7] bg-[#ffffff] p-7 text-left shadow-[0_14px_34px_rgba(0,0,0,0.07)] transition-colors hover:border-[#c8b89e] hover:bg-[#fafafa] disabled:cursor-not-allowed disabled:opacity-65"
         >
           <div className="pointer-events-none absolute -right-14 -bottom-12 h-36 w-36 rounded-[30%_70%_70%_30%/30%_30%_70%_70%] bg-[#c8b89e]/30 transition-transform group-hover:scale-110" />
           <div className="pointer-events-none absolute left-8 top-9 h-24 w-32 rounded-[8%_92%_12%_88%/78%_22%_78%_22%] bg-[#fff7ed]/45" />

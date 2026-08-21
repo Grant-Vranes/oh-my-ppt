@@ -236,7 +236,7 @@ export function EditHtmlListPage(): ReactElement {
                     onClick={() => enterDoc(document.id)}
                   >
                     <div
-                      className="relative aspect-video overflow-hidden bg-[#f4f4f5]"
+                      className="relative aspect-video overflow-hidden bg-[#ffffff]"
                       data-html-document-thumbnail-frame
                     >
                       {document.thumbnailPath ? (

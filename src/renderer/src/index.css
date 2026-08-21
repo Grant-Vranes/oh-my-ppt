@@ -5,13 +5,13 @@
 
 /* Custom theme */
 @theme {
-  --color-background: #f4f4f5;
+  --color-background: #ffffff;
   --color-foreground: #18181b;
   --color-card: #ffffff;
   --color-card-foreground: #18181b;
   --color-primary: #18181b;
   --color-primary-foreground: #ffffff;
-  --color-secondary: #f4f4f5;
+  --color-secondary: #ffffff;
   --color-secondary-foreground: #18181b;
   --color-muted: #fafafa;
   --color-muted-foreground: #71717a;
@@ -45,7 +45,7 @@ body {
 :root {
   --scrollbar-thumb: #d4d4d8;
   --scrollbar-thumb-hover: #a1a1aa;
-  --scrollbar-track: #f4f4f5;
+  --scrollbar-track: #ffffff;
 }
 
 * {
@@ -65,7 +65,7 @@ body {
 
 *::-webkit-scrollbar-thumb {
   background: #d4d4d8;
-  border: 2px solid #f4f4f5;
+  border: 2px solid #ffffff;
   border-radius: 999px;
 }
 
@@ -144,7 +144,7 @@ body {
 }
 
 .soft-btn:active {
-  background: #f4f4f5;
+  background: #ffffff;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 

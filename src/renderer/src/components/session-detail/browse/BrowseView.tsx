@@ -59,7 +59,7 @@ const BrowseCard = memo(function BrowseCard({
   if (!slideSize) {
     return (
       <div className="group overflow-hidden rounded-[4px] bg-white/60 shadow-[0_4px_16px_rgba(0,0,0,0.06)]">
-        <div className="relative flex h-[220px] w-full items-center justify-center overflow-hidden rounded-t-[4px] bg-[#f4f4f5]/88" />
+        <div className="relative flex h-[220px] w-full items-center justify-center overflow-hidden rounded-t-[4px] bg-[#ffffff]/88" />
       </div>
     )
   }
@@ -70,7 +70,7 @@ const BrowseCard = memo(function BrowseCard({
   return (
     <div className="group overflow-hidden rounded-[4px] bg-white/60 shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-shadow hover:shadow-[0_8px_24px_rgba(0,0,0,0.10)]">
       <div
-        className="relative flex h-[220px] w-full items-center justify-center overflow-hidden rounded-t-[4px] bg-[#f4f4f5]/88"
+        className="relative flex h-[220px] w-full items-center justify-center overflow-hidden rounded-t-[4px] bg-[#ffffff]/88"
         style={{ contain: 'paint' }}
       >
         <div className="relative max-h-full max-w-full overflow-hidden" style={thumbnailFitStyle}>

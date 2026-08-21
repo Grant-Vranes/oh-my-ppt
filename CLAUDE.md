@@ -2,7 +2,7 @@
 
 ## Project
 
-Oh My PPT — 本地优先的 AI 幻灯片生成与编辑工具。Electron + React + TypeScript。
+ChatPPT — 本地优先的 AI 幻灯片生成与编辑工具。Electron + React + TypeScript。
 
 ## Commands
 

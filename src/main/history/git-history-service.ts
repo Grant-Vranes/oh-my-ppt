@@ -285,8 +285,8 @@ export class GitHistoryService {
         dir: projectDir,
         message: this.buildCommitMessage(args, changedPages),
         author: {
-          name: 'Oh My PPT',
-          email: 'history@oh-my-ppt.local'
+          name: 'ChatPPT',
+          email: 'history@chatppt.local'
         }
       })
       committedAfter = afterCommit
@@ -662,12 +662,12 @@ export class GitHistoryService {
     const gitDir = path.join(projectDir, '.git')
     if (!fs.existsSync(gitDir)) {
       await git.init({ fs, dir: projectDir, defaultBranch: 'main' })
-      await git.setConfig({ fs, dir: projectDir, path: 'user.name', value: 'Oh My PPT' })
+      await git.setConfig({ fs, dir: projectDir, path: 'user.name', value: 'ChatPPT' })
       await git.setConfig({
         fs,
         dir: projectDir,
         path: 'user.email',
-        value: 'history@oh-my-ppt.local'
+        value: 'history@chatppt.local'
       })
     }
     const gitignorePath = path.join(projectDir, '.gitignore')

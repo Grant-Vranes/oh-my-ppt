@@ -1,4 +1,4 @@
-# Oh My PPT Layout — Structural Self-check
+# ChatPPT Layout — Structural Self-check
 
 Run this list against the page before delivering. Items come from the project hard rules and the failure signs across SKILL.md and `catalog.md` — they are structural, not aesthetic. Visual taste is the current style's job; this list only guards structure, budget, and readability.
 

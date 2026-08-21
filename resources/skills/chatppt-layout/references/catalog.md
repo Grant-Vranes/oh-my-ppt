@@ -1,4 +1,4 @@
-# Oh My PPT Layout — Pattern Catalog
+# ChatPPT Layout — Pattern Catalog
 
 > **This catalog is advisory.** Every layout pattern is a *structure choice*, not a template. It describes how information is organized — module count, primary/secondary hierarchy, reading path, and height budget. It does **not** prescribe colors, rounded corners, shadows, gradients, fonts, or any decorative look. Any pattern can be re-visualized by whatever style the user has chosen; the structure stays the same while the current style owns the visual language.
 >

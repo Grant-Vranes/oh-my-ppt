@@ -12,7 +12,7 @@ const readProjectFile = (filePath: string) =>
 describe('layout prompt budget guardrails', () => {
   it('keeps fullscreen backgrounds separate from conservative content budget', () => {
     const sharedPrompt = buildCanvasConstraints(resolveSlideSize({ id: 'wide-16-9' }))
-    const layoutSkill = readProjectFile('resources/skills/oh-my-ppt-layout/SKILL.md')
+    const layoutSkill = readProjectFile('resources/skills/chatppt-layout/SKILL.md')
 
     expect(sharedPrompt).toContain('背景可铺满 1600×900')
     expect(sharedPrompt).toContain('四边留 24-40px')
@@ -21,9 +21,9 @@ describe('layout prompt budget guardrails', () => {
   })
 
   it('prevents overpacked chart slides with two-row support grids', () => {
-    const layoutSkill = readProjectFile('resources/skills/oh-my-ppt-layout/SKILL.md')
-    const chartSkill = readProjectFile('resources/skills/oh-my-ppt-chart/SKILL.md')
-    const chartReference = readProjectFile('resources/skills/oh-my-ppt-chart/references/chart.md')
+    const layoutSkill = readProjectFile('resources/skills/chatppt-layout/SKILL.md')
+    const chartSkill = readProjectFile('resources/skills/chatppt-chart/SKILL.md')
+    const chartReference = readProjectFile('resources/skills/chatppt-chart/references/chart.md')
 
     expect(layoutSkill).toContain('Overpacked chart slide guardrails')
     expect(layoutSkill).toContain('Do not create two-row bottom card grids below a tall chart')
@@ -35,9 +35,9 @@ describe('layout prompt budget guardrails', () => {
   })
 
   it('budgets axis-heavy charts instead of squeezing labels into nearby modules', () => {
-    const chartSkill = readProjectFile('resources/skills/oh-my-ppt-chart/SKILL.md')
-    const chartReference = readProjectFile('resources/skills/oh-my-ppt-chart/references/chart.md')
-    const checklist = readProjectFile('resources/skills/oh-my-ppt-layout/references/checklist.md')
+    const chartSkill = readProjectFile('resources/skills/chatppt-chart/SKILL.md')
+    const chartReference = readProjectFile('resources/skills/chatppt-chart/references/chart.md')
+    const checklist = readProjectFile('resources/skills/chatppt-layout/references/checklist.md')
     const combined = [chartSkill, chartReference, checklist].join('\n')
 
     expect(combined).toContain('Axis-heavy')
@@ -49,8 +49,8 @@ describe('layout prompt budget guardrails', () => {
   })
 
   it('keeps chart data semantically valid and interpreted', () => {
-    const chartSkill = readProjectFile('resources/skills/oh-my-ppt-chart/SKILL.md')
-    const chartReference = readProjectFile('resources/skills/oh-my-ppt-chart/references/chart.md')
+    const chartSkill = readProjectFile('resources/skills/chatppt-chart/SKILL.md')
+    const chartReference = readProjectFile('resources/skills/chatppt-chart/references/chart.md')
     const combined = [chartSkill, chartReference].join('\n')
 
     expect(combined).toContain('one value axis = one unit/meaning')
@@ -63,7 +63,7 @@ describe('layout prompt budget guardrails', () => {
   })
 
   it('checklist gates the slide thesis at delivery time', () => {
-    const checklist = readProjectFile('resources/skills/oh-my-ppt-layout/references/checklist.md')
+    const checklist = readProjectFile('resources/skills/chatppt-layout/references/checklist.md')
     // Soul delivery gate: the self-check asks for the one memorable sentence,
     // so the thesis decided at planning is re-tested before the page ships.
     expect(checklist).toContain('single memorable message')
@@ -111,9 +111,9 @@ const editSystem = readProjectFile('src/main/agent-runtime/prompt/composers/edit
   it('keeps layout guidance density-driven and requires a pre-write size self-check', () => {
     const sharedPrompt = readProjectFile('src/main/agent-runtime/prompt/composers/shared.ts')
     const scenarioPrompt = readProjectFile('src/main/agent-runtime/prompt/composers/canvas-scenario.ts')
-    const layoutSkill = readProjectFile('resources/skills/oh-my-ppt-layout/SKILL.md')
-    const chartSkill = readProjectFile('resources/skills/oh-my-ppt-chart/SKILL.md')
-    const chartReference = readProjectFile('resources/skills/oh-my-ppt-chart/references/chart.md')
+    const layoutSkill = readProjectFile('resources/skills/chatppt-layout/SKILL.md')
+    const chartSkill = readProjectFile('resources/skills/chatppt-chart/SKILL.md')
+    const chartReference = readProjectFile('resources/skills/chatppt-chart/references/chart.md')
 
     expect(layoutSkill).toContain('Self-check width/height')
     expect(layoutSkill).toContain('Width must fit 1600px and height must fit 900px')
@@ -164,8 +164,8 @@ const editSystem = readProjectFile('src/main/agent-runtime/prompt/composers/edit
   })
 
   it('chart skill avoids tiny charts without forcing dense support content', () => {
-    const chartSkill = readProjectFile('resources/skills/oh-my-ppt-chart/SKILL.md')
-    const chartReference = readProjectFile('resources/skills/oh-my-ppt-chart/references/chart.md')
+    const chartSkill = readProjectFile('resources/skills/chatppt-chart/SKILL.md')
+    const chartReference = readProjectFile('resources/skills/chatppt-chart/references/chart.md')
     const combined = [chartSkill, chartReference].join('\n')
     // The old calc told the model to cap the chart at the role range and
     // "leave the spare space empty" — that is what produced half-empty chart
@@ -192,8 +192,8 @@ const editSystem = readProjectFile('src/main/agent-runtime/prompt/composers/edit
 
   it('keeps body and heading font floors semantic while exempting auxiliary text', () => {
     const sharedPrompt = readProjectFile('src/main/agent-runtime/prompt/composers/shared.ts')
-    const layoutSkill = readProjectFile('resources/skills/oh-my-ppt-layout/SKILL.md')
-    const checklist = readProjectFile('resources/skills/oh-my-ppt-layout/references/checklist.md')
+    const layoutSkill = readProjectFile('resources/skills/chatppt-layout/SKILL.md')
+    const checklist = readProjectFile('resources/skills/chatppt-layout/references/checklist.md')
     const combined = [sharedPrompt, layoutSkill, checklist].join('\n')
 
     expect(combined).toContain('text-lg')
@@ -211,8 +211,8 @@ const editSystem = readProjectFile('src/main/agent-runtime/prompt/composers/edit
   })
 
   it('every canonical copy-this chart example carries @ppt-chart-height matching its h-[Npx]', () => {
-    const chartSkill = readProjectFile('resources/skills/oh-my-ppt-chart/SKILL.md')
-    const chartReference = readProjectFile('resources/skills/oh-my-ppt-chart/references/chart.md')
+    const chartSkill = readProjectFile('resources/skills/chatppt-chart/SKILL.md')
+    const chartReference = readProjectFile('resources/skills/chatppt-chart/references/chart.md')
 
     // The model copies these examples verbatim, so a canonical example that omits
     // the marker (or whose marker disagrees with the class) silently breaks the

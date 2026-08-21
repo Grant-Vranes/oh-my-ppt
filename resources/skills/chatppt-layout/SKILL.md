@@ -1,9 +1,9 @@
 ---
-name: oh-my-ppt-layout
-description: Must be read before creating, relaying out, or repairing Oh My PPT slide layouts. Defines the per-page decision path, the named layout pattern catalog, canvas budgeting, collision avoidance, chart overpack guardrails, and title readability rules.
+name: chatppt-layout
+description: Must be read before creating, relaying out, or repairing ChatPPT slide layouts. Defines the per-page decision path, the named layout pattern catalog, canvas budgeting, collision avoidance, chart overpack guardrails, and title readability rules.
 ---
 
-# Oh My PPT Layout
+# ChatPPT Layout
 
 This skill is the decision backbone for slide structure. Deep examples live in the references:
 
@@ -177,7 +177,7 @@ Across a deck, vary the structure so consecutive slides feel different, not like
 
 ## 9. Style coordination (boundary and priority)
 
-Oh My PPT separates two concerns:
+ChatPPT separates two concerns:
 
 - **Structure** (this skill): information organization, reading path, spatial budget, chart/body load-bearing relationship, and structural failure avoidance.
 - **Visual language** (the user's chosen style): color, typography feel, decoration, corners, shadows, gradients, and overall aesthetic.

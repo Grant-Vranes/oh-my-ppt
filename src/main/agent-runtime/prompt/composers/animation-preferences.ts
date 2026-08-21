@@ -47,7 +47,7 @@ export function formatAnimationPreferencesForPageWriting(
 
   return [
     '## Animation preferences for page writing only',
-    '- Follow the oh-my-ppt-data-anim skill. Use exportable data-anim attributes on slide elements.',
+    '- Follow the chatppt-data-anim skill. Use exportable data-anim attributes on slide elements.',
     '- Do not change slide outline, page count, slide titles, source facts, or content structure solely to satisfy animation.',
     '- Animation is downstream only: follow the already-decided page form, content enrichment, source grounding, and layout density. Never reduce, skip, or reshape warranted content enrichment to satisfy an animation preference.',
     '- Prefer subtle reading-order entrance animations.',

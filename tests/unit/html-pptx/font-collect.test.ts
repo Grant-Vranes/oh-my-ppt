@@ -26,7 +26,7 @@ afterEach(async () => {
 
 describe('PPTX font embedding', () => {
   it('embeds only the user font faces actually used by exported text', async () => {
-    const projectDir = await mkdtemp(path.join(os.tmpdir(), 'oh-my-ppt-font-'))
+    const projectDir = await mkdtemp(path.join(os.tmpdir(), 'chatppt-font-'))
     tempDirectories.push(projectDir)
     const userFontsDir = path.join(projectDir, 'assets', 'fonts', 'user-fonts')
     const titleDir = path.join(userFontsDir, 'title-font')

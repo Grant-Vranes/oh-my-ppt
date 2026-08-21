@@ -1,9 +1,9 @@
 ---
-name: oh-my-ppt-chart
-description: Must be read before adding or modifying Oh My PPT slide charts. Defines product-safe Chart.js usage, canvas layout constraints, axis label rules, and retry fixes.
+name: chatppt-chart
+description: Must be read before adding or modifying ChatPPT slide charts. Defines product-safe Chart.js usage, canvas layout constraints, axis label rules, and retry fixes.
 ---
 
-# Oh My PPT Chart
+# ChatPPT Chart
 
 For deeper examples (chart frame height guide, category axis patterns, layout integration tips), read `references/chart.md`.
 

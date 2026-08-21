@@ -56,7 +56,7 @@ describe('page beautify prompt', () => {
       layoutSkillName: resolveLayoutSkillName({ id: 'wide-16-9', width: 1600, height: 900, label: '16:9' })
     })
 
-    expect(prompt).toContain('oh-my-ppt-layout')
+    expect(prompt).toContain('chatppt-layout')
     expect(prompt).toMatch(/read_file/)
     expect(prompt).toMatch(/references\/catalog\.md/)
     expect(prompt).toMatch(/Re-layout is the goal/)

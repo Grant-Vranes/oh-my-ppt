@@ -1,9 +1,9 @@
 ---
-name: oh-my-ppt-data-anim
-description: Must be read before adding or modifying Oh My PPT slide animations. Defines exportable data-anim usage, trigger decisions, and how to replace unsupported scripted/anime.js animation.
+name: chatppt-data-anim
+description: Must be read before adding or modifying ChatPPT slide animations. Defines exportable data-anim usage, trigger decisions, and how to replace unsupported scripted/anime.js animation.
 ---
 
-# Oh My PPT Data Anim
+# ChatPPT Data Anim
 
 For deeper examples (trigger choice guide, scripted animation patterns, timing tips), read `references/data-anim.md`.
 

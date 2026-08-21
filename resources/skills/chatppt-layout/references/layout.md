@@ -1,4 +1,4 @@
-# Oh My PPT Layout — Supplementary Reference
+# ChatPPT Layout — Supplementary Reference
 
 Deep-dive examples: collision-avoidance code comparisons and height-budget walkthroughs. The core rules are in SKILL.md; the named layout patterns and composition techniques are in `catalog.md`.
 

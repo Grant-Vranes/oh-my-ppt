@@ -400,7 +400,7 @@ describe('source-grounded prompt rules', () => {
   it('requires source inspection before source-backed slide generation', () => {
     const sharedSource = readSource('src/main/agent-runtime/prompt/composers/shared.ts')
     const source = readSource('src/main/agent-runtime/prompt/composers/generation-user.ts')
-    const sourceReadingSkill = readSource('resources/skills/oh-my-ppt-source-reading/SKILL.md')
+    const sourceReadingSkill = readSource('resources/skills/chatppt-source-reading/SKILL.md')
 
     expect(sharedSource).toContain('SOURCE_READING_SKILL_NAME')
     expect(sharedSource).toContain('Before using source documents')
@@ -433,7 +433,7 @@ describe('source-grounded prompt rules', () => {
   })
 
   it('source-reading skill expands thin pages instead of over-suppressing into sparse slides', () => {
-    const sourceReadingSkill = readSource('resources/skills/oh-my-ppt-source-reading/SKILL.md')
+    const sourceReadingSkill = readSource('resources/skills/chatppt-source-reading/SKILL.md')
 
     // The old wording ("build ONLY from inspected passages" / "do not fill gaps")
     // over-suppressed: with a reference doc present the model rendered bare source

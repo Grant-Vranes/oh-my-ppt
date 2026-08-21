@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="thumb.png" alt="Oh My PPT" width="200" />
+  <img src="thumb.png" alt="ChatPPT" width="200" />
   <br/>
   <br/>
 
@@ -12,7 +12,7 @@
 ![React](https://img.shields.io/badge/React-App-61dafb)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6)
 
-**Oh My PPT - 本地优先的 AI PPT、配图生成与编辑工具**
+**ChatPPT - 本地优先的 AI PPT、配图生成与编辑工具**
 
 [English](./README_EN.md) | [为什么做这个](#why) • [能做什么](#features) • [使用流程](#workflow) • [更新日志](./CHANGELOG.md) • [使用问题](#usage-notes)
 
@@ -25,7 +25,7 @@
 
    [官网](https://www.ohmyppt.cc) | [下载安装包](https://github.com/arcsin1/oh-my-ppt/releases)
 
-  <img src="https://arcsin1.github.io/ppt2.gif" alt="Oh My PPT" width="600" />
+  <img src="https://arcsin1.github.io/ppt2.gif" alt="ChatPPT" width="600" />
 
 </div>
 
@@ -76,14 +76,14 @@
 
 已有的 PPTX 模板、历史汇报或客户文件，可以直接导入客户端继续编辑。常规 PPTX 导入后可实现接近 **100%** 的视觉与结构还原，并转换为应用内可继续拖拽、调整、AI 修改和版本管理的页面；导入时还会提取原文件风格，供后续创建和复用。
 
-PPTX 解析与结构化编辑数据转换均由 Oh My PPT **纯自研**。复杂形状、图表、表格、动画、文本混排与极端排版仍在持续优化，实际效果会受原文件的 PowerPoint 特性、字体和素材复杂度影响。
+PPTX 解析与结构化编辑数据转换均由 ChatPPT **纯自研**。复杂形状、图表、表格、动画、文本混排与极端排版仍在持续优化，实际效果会受原文件的 PowerPoint 特性、字体和素材复杂度影响。
 
 <a id="pptx-export"></a>
 ## 📤 客户端导出为可编辑 PPTX，接近 100% 还原
 
 在客户端完成创作或编辑后，可直接导出为 PowerPoint / Keynote 中继续修改的真实 PPTX。常规场景下，导出文件的视觉与结构还原度接近 **100%**，并尽量保留文字、图片、颜色、公式和基础布局。
 
-HTML 到可编辑 PPTX 的生成与排版处理由 Oh My PPT **纯自研**。文字重叠、混排、复杂图表、表格、形状和动画仍在持续优化。
+HTML 到可编辑 PPTX 的生成与排版处理由 ChatPPT **纯自研**。文字重叠、混排、复杂图表、表格、形状和动画仍在持续优化。
 
 <a id="features"></a>
 ## ✅ 能做什么
@@ -100,7 +100,7 @@ HTML 到可编辑 PPTX 的生成与排版处理由 Oh My PPT **纯自研**。文
 - 🖼️ **AI 生图与智能配图** — 创建时可开启自动配图，AI 会根据当前页内容、版式留白和所选风格按需生成插画、背景与视觉素材；不会为了配图而机械地给每页塞图
 - ✨ **编辑页生图工作台** — 可根据当前页标题和大纲生成提示词，指定补充描述与图片尺寸后生图；结果可预览、插入画布或一键设为页面背景
 - 🏷️ **支持生图的风格筛选** — 风格库会标识可生图的风格，可筛选后使用与页面视觉方向一致的配图
-- 🔒 **本地优先** — 会话、源文档、素材和生成结果保存在自己的电脑；不需要 Oh My PPT 账号或平台云端。调用你配置的 AI / 生图服务时，相关请求会发送给该服务商
+- 🔒 **本地优先** — 会话、源文档、素材和生成结果保存在自己的电脑；不需要 ChatPPT 账号或平台云端。调用你配置的 AI / 生图服务时，相关请求会发送给该服务商
 - 🔤 **字体管理** — 内置 14 款精选 Google 字体（含中文），支持上传本地字体，创建时可分别指定标题和正文字体，也可交给 AI 自动匹配
 - 🎨 **内置 90+ 风格SKILL** — 极简白、赛博霓虹、包豪斯、日式简约、小红书白… 也支持自定义风格
 - ✏️ **对话式修改** — 对着某一页说"标题换个颜色""加个数据图表"，精准修改不用重做
@@ -122,9 +122,9 @@ HTML 到可编辑 PPTX 的生成与排版处理由 Oh My PPT **纯自研**。文
 - 💾 **会话生成的创意PPT导入导出** — 编辑页面一键导出会话生成的创意 PPT，另一台电脑导入后可继续二次编辑，跨设备协作无缝衔接
 
 <p>
-<img width="30%" alt="Oh My PPT - 9" src="https://arcsin1.github.io/imgs/home.webp" />
-<img width="30%" alt="Oh My PPT - 10" src="https://arcsin1.github.io/imgs/exp.webp" />
-<img width="30%" alt="Oh My PPT - 11" src="https://arcsin1.github.io/imgs/anime.webp" />
+<img width="30%" alt="ChatPPT - 9" src="https://arcsin1.github.io/imgs/home.webp" />
+<img width="30%" alt="ChatPPT - 10" src="https://arcsin1.github.io/imgs/exp.webp" />
+<img width="30%" alt="ChatPPT - 11" src="https://arcsin1.github.io/imgs/anime.webp" />
 </p>
 
 <img width="600"  src="https://arcsin1.github.io/imgs/chat.webp" />
@@ -156,9 +156,9 @@ HTML 到可编辑 PPTX 的生成与排版处理由 Oh My PPT **纯自研**。文
 <a id="style-skills"></a>
 ## 🎨 内置 90+ 风格 Skill
 
-想制作自己的风格 Skill，可以使用官方风格生成包：[arcsin1/style-generate-skill](https://github.com/arcsin1/style-generate-skill)。它适合把参考设计、配色和排版要求整理成可导入 Oh My PPT 的风格包。
+想制作自己的风格 Skill，可以使用官方风格生成包：[arcsin1/style-generate-skill](https://github.com/arcsin1/style-generate-skill)。它适合把参考设计、配色和排版要求整理成可导入 ChatPPT 的风格包。
 
-<img src="./docs/images/4.webp" alt="Oh My PPT" width="500" />
+<img src="./docs/images/4.webp" alt="ChatPPT" width="500" />
 
 <a id="image-generation"></a>
 ## 🖼️ AI 生图与智能配图
@@ -183,14 +183,14 @@ HTML 到可编辑 PPTX 的生成与排版处理由 Oh My PPT **纯自研**。文
 
 创建演示稿时，可以分别指定**标题字体**和**正文字体**，也可以交给 AI 根据演示主题和风格自动匹配最合适的字体组合。导出 PPTX 时，已使用的字体会自动嵌入到文件中，确保在其他电脑上打开时字体显示一致。
 
-<img src="./docs/images/font.webp" alt="Oh My PPT" width="500" />
+<img src="./docs/images/font.webp" alt="ChatPPT" width="500" />
 
 
 
 <a id="animations"></a>
 ## 🎬 动画支持
 
-Oh My PPT 的页面是 HTML 幻灯片，支持 16+ 种页面切换动画，并内置本地 **Anime.js v4** 动画运行时。生成或编辑页面时，可以让 AI 为标题、数据卡片、图片、图表容器、步骤模块等整块元素添加演示动画。
+ChatPPT 的页面是 HTML 幻灯片，支持 16+ 种页面切换动画，并内置本地 **Anime.js v4** 动画运行时。生成或编辑页面时，可以让 AI 为标题、数据卡片、图片、图表容器、步骤模块等整块元素添加演示动画。
 
 除了由 AI 自动添加动画，也可以在编辑模式中直接选中单个元素，为它设置入场、强调或退出效果，并调整自动播放或点击触发、动画时长和进入方向。
 
@@ -207,8 +207,8 @@ Oh My PPT 的页面是 HTML 幻灯片，支持 16+ 种页面切换动画，并�
 更推荐使用“整个元素”的动画，而不是把文字拆成很多碎片逐字乱动。这样画面更稳、可读性更好，也更适合导出和二次编辑。动画主要用于引导视线和表达层级，不建议做复杂时间线、高频闪烁、无限循环或大幅抖动。
 
 <p></>
-<img src="https://arcsin1.github.io/anime.gif" alt="Oh My PPT animation demo" width="40%" />
-<img src="./docs/images/anime.gif" alt="Oh My PPT animation demo" width="40%" />
+<img src="https://arcsin1.github.io/anime.gif" alt="ChatPPT animation demo" width="40%" />
+<img src="./docs/images/anime.gif" alt="ChatPPT animation demo" width="40%" />
 </p>
 
 <a id="ollama"></a>
@@ -242,7 +242,7 @@ Oh My PPT 的页面是 HTML 幻灯片，支持 16+ 种页面切换动画，并�
 
   若要使用 AI 生图或自动配图，再到「设置 → 生图模型」添加对应 Provider 的完整 JSON 配置并点击「验证」。验证会实际生成一张测试图片；验证成功后才能保存该生图模型，随后即可在创建页和编辑页中选择使用。
 
-  <img src="./docs/images/3.png" alt="Oh My PPT" width="500" />
+  <img src="./docs/images/3.png" alt="ChatPPT" width="500" />
 
 
 
@@ -251,16 +251,16 @@ Oh My PPT 的页面是 HTML 幻灯片，支持 16+ 种页面切换动画，并�
 
    本地图片和视频会复制到当前会话的本地素材目录。编辑页既可以从素材库或本地文件插入，也可以打开生图面板：让 AI 根据当前页内容补全提示词，或输入自己的描述，生成后插入画布或设为背景。
 
-   注：Oh My PPT 不会把本地素材上传到自己的云端；但主动调用 AI 生图时，请求会发送到你配置的生图服务商。
+   注：ChatPPT 不会把本地素材上传到自己的云端；但主动调用 AI 生图时，请求会发送到你配置的生图服务商。
  
-  <img src="./docs/images/edit.webp" alt="Oh My PPT" width="500" />
+  <img src="./docs/images/edit.webp" alt="ChatPPT" width="500" />
 
 <a id="preview"></a>
 ### 关于预览模式
    
    支持键盘（左右键）切换，支持演示模式，全屏演示模式，ESC退出演示模式
   
-  <img src="./docs/images/2.png" alt="Oh My PPT" width="500" />
+  <img src="./docs/images/2.png" alt="ChatPPT" width="500" />
 
 <a id="export"></a>
 ### 关于导出
@@ -341,7 +341,7 @@ Windows 可能会因为安装包未签名而触发 SmartScreen 提示，例如�
 <a id="sponsor"></a>
 ## 赞助支持
 
-目前主要由我一人开发和维护，如果您觉得 Oh My PPT 对您有所帮助，可以赞助支持一下（不要超过 ¥5，以及备注好你的 GitHub ID），谢谢。
+目前主要由我一人开发和维护，如果您觉得 ChatPPT 对您有所帮助，可以赞助支持一下（不要超过 ¥5，以及备注好你的 GitHub ID），谢谢。
 
 <p>
 <img src="https://arcsin1.github.io/v-s.jpg" alt="WeChat Pay" width="200" />
@@ -352,16 +352,16 @@ Windows 可能会因为安装包未签名而触发 SmartScreen 提示，例如�
 <a id="references"></a>
 ## 参考
 
-- [@arcsin1/pptx2json](https://www.npmjs.com/package/@arcsin1/pptx2json) — Oh My PPT 纯自研的可编辑 PPTX 导入底层，用于解析 PPTX 并转换为可继续编辑的结构化真实数据；后续会持续完善复杂形状、图表、表格、动画等还原能力。
-- [@arcsin1/html2pptx](https://www.npmjs.com/package/@arcsin1/html2pptx) — Oh My PPT 纯自研的可编辑 PPTX 导出底层，用于将 HTML 转换为可继续编辑的真实 PPTX 文件；后续会持续完善复杂形状、图表、表格、动画等还原能力。
-- [arcsin1/style-generate-skill](https://github.com/arcsin1/style-generate-skill) — Oh My PPT 官方风格生成 Skill，用于把参考设计、配色、排版和场景要求整理成可导入应用的风格包。
+- [@arcsin1/pptx2json](https://www.npmjs.com/package/@arcsin1/pptx2json) — ChatPPT 纯自研的可编辑 PPTX 导入底层，用于解析 PPTX 并转换为可继续编辑的结构化真实数据；后续会持续完善复杂形状、图表、表格、动画等还原能力。
+- [@arcsin1/html2pptx](https://www.npmjs.com/package/@arcsin1/html2pptx) — ChatPPT 纯自研的可编辑 PPTX 导出底层，用于将 HTML 转换为可继续编辑的真实 PPTX 文件；后续会持续完善复杂形状、图表、表格、动画等还原能力。
+- [arcsin1/style-generate-skill](https://github.com/arcsin1/style-generate-skill) — ChatPPT 官方风格生成 Skill，用于把参考设计、配色、排版和场景要求整理成可导入应用的风格包。
 - [ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)
 - [html-ppt-skill](https://github.com/lewislulu/html-ppt-skill)
 
 <a id="sponsors"></a>
 ## 💖 赞助者
 
-特别感谢每一位支持过 Oh My PPT 的朋友！你们的鼓励和赞助是持续迭代的最大动力。
+特别感谢每一位支持过 ChatPPT 的朋友！你们的鼓励和赞助是持续迭代的最大动力。
 
 查看 [SponsorsList.md](./SponsorsList.md) 获取完整赞助者列表。
 

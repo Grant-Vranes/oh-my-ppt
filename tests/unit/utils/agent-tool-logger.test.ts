@@ -16,7 +16,7 @@ describe('logAgentToolEvents', () => {
 
   it('logs a dedicated event when read_file opens a product skill file', async () => {
     const { logAgentToolEvents } = await import('../../../src/main/utils/agent-tool-logger')
-    const path = `${PRODUCT_SKILLS_ROUTE}system/oh-my-ppt-data-anim/SKILL.md`
+    const path = `${PRODUCT_SKILLS_ROUTE}system/chatppt-data-anim/SKILL.md`
 
     logAgentToolEvents(
       {
@@ -48,7 +48,7 @@ describe('logAgentToolEvents', () => {
         source: 'updates',
         toolName: 'read_file',
         toolCallId: 'call_1',
-        skillName: 'oh-my-ppt-data-anim',
+        skillName: 'chatppt-data-anim',
         path,
       })
     )

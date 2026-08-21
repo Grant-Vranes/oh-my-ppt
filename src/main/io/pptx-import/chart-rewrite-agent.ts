@@ -32,7 +32,7 @@ let cachedChartSkillDocs: ChartSkillDocs | null = null
 
 const readChartSkillDocs = async (): Promise<ChartSkillDocs> => {
   if (cachedChartSkillDocs) return cachedChartSkillDocs
-  const skillRoot = path.join(resolveBuiltinSkillsSourcePath(), 'oh-my-ppt-chart')
+  const skillRoot = path.join(resolveBuiltinSkillsSourcePath(), 'chatppt-chart')
   const [skill, reference] = await Promise.all([
     fs.promises.readFile(path.join(skillRoot, 'SKILL.md'), 'utf-8'),
     fs.promises.readFile(path.join(skillRoot, 'references', 'chart.md'), 'utf-8').catch(() => '')
@@ -66,19 +66,19 @@ const summarizeChartElement = (request: PptxChartRewriteRequest): Record<string,
   }
 }
 
-export const buildPptxChartRewriteSystemPrompt = (docs: ChartSkillDocs): string => `You are the dedicated PPTX chart parsing agent for Oh My PPT.
+export const buildPptxChartRewriteSystemPrompt = (docs: ChartSkillDocs): string => `You are the dedicated PPTX chart parsing agent for ChatPPT.
 
 You convert one unsupported PPTX chart element into a safe Chart.js config for the existing importer.
 
 You MUST follow the bundled product skill below.
 
-<oh-my-ppt-chart/SKILL.md>
+<chatppt-chart/SKILL.md>
 ${docs.skill}
-</oh-my-ppt-chart/SKILL.md>
+</chatppt-chart/SKILL.md>
 
-<oh-my-ppt-chart/references/chart.md>
+<chatppt-chart/references/chart.md>
 ${docs.reference}
-</oh-my-ppt-chart/references/chart.md>
+</chatppt-chart/references/chart.md>
 
 Importer-specific override:
 - The PPTX importer owns the HTML frame and MUST preserve its original absolute-positioned style.

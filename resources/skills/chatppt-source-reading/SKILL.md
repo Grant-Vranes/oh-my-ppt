@@ -1,9 +1,9 @@
 ---
-name: oh-my-ppt-source-reading
-description: Source-document reading workflow for Oh My PPT. Read before generating slides from reference documents or retrieved snippets.
+name: chatppt-source-reading
+description: Source-document reading workflow for ChatPPT. Read before generating slides from reference documents or retrieved snippets.
 ---
 
-# Oh My PPT Source Reading
+# ChatPPT Source Reading
 
 ## Boundary
 

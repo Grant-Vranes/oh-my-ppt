@@ -26,7 +26,7 @@ interface LangContextValue {
   t: (key: I18nKey, params?: TranslationParams) => string
 }
 
-const LANG_STORAGE_KEY = 'oh-my-ppt:lang'
+const LANG_STORAGE_KEY = 'chatppt:lang'
 const messages = { zh, en } as const
 
 const LangContext = createContext<LangContextValue | null>(null)

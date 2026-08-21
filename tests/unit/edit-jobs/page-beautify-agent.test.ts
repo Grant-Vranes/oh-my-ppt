@@ -94,7 +94,7 @@ describe('page beautify Agent', () => {
       styleSkillPrompt: 'Use an editorial hierarchy.',
       styleCase: '',
       slideSize: { id: 'wide-16-9', label: '16:9', width: 1600, height: 900 },
-      layoutSkillName: 'oh-my-ppt-layout',
+      layoutSkillName: 'chatppt-layout',
       layoutAudit: 'Canvas: 1600px x 900px.\nMeasured defects:\n- [text-overflow] <p>: text needs 86px more width',
       targetPageId: 'page-1',
       targetPageNumber: 1,
@@ -129,9 +129,9 @@ describe('page beautify Agent', () => {
     )
     const skillCall = attachProductSkillsBackendMock.mock.calls[0]
     expect(skillCall[1]).toBe('page-beautify')
-    expect(skillCall[2]).toEqual(['oh-my-ppt-layout'])
+    expect(skillCall[2]).toEqual(['chatppt-layout'])
     // The prompt tells the model to read the layout skill before re-layouting.
-    expect(agentOptions?.systemPrompt).toMatch(/oh-my-ppt-layout/)
+    expect(agentOptions?.systemPrompt).toMatch(/chatppt-layout/)
     expect(agentOptions?.systemPrompt).toMatch(/read_file/)
     expect(agentOptions?.systemPrompt).toContain('creative version upgrade within the selected style')
     expect(agentOptions?.systemPrompt).toContain('text needs 86px more width')
@@ -182,7 +182,7 @@ describe('page beautify Agent', () => {
         styleSkillPrompt: 'Use an editorial hierarchy.',
         styleCase: '',
         slideSize: { id: 'wide-16-9', label: '16:9', width: 1600, height: 900 },
-      layoutSkillName: 'oh-my-ppt-layout',
+      layoutSkillName: 'chatppt-layout',
         targetPageId: 'page-1',
         targetPageNumber: 1,
         targetHtmlPath
@@ -222,7 +222,7 @@ describe('page beautify Agent', () => {
         styleSkillPrompt: 'Use an editorial hierarchy.',
         styleCase: '',
         slideSize: { id: 'wide-16-9', label: '16:9', width: 1600, height: 900 },
-      layoutSkillName: 'oh-my-ppt-layout',
+      layoutSkillName: 'chatppt-layout',
         targetPageId: 'page-1',
         targetPageNumber: 1,
         targetHtmlPath
@@ -278,7 +278,7 @@ describe('page beautify Agent', () => {
       styleSkillPrompt: 'Use an editorial hierarchy.',
       styleCase: '',
       slideSize: { id: 'wide-16-9', label: '16:9', width: 1600, height: 900 },
-      layoutSkillName: 'oh-my-ppt-layout',
+      layoutSkillName: 'chatppt-layout',
       targetPageId: 'page-1',
       targetPageNumber: 1,
       targetHtmlPath,

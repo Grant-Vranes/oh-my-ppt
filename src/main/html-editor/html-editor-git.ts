@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import * as git from 'isomorphic-git'
 
-const AUTHOR = { name: 'Oh My PPT HTML Editor', email: 'html-editor@oh-my-ppt.local' }
+const AUTHOR = { name: 'ChatPPT HTML Editor', email: 'html-editor@chatppt.local' }
 
 /** 确保 dir 下有 git 仓库（内容版本由 git 管理）。 */
 export async function ensureHtmlRepo(dir: string): Promise<void> {

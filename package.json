@@ -1,7 +1,7 @@
 {
-  "name": "oh-my-ppt",
+  "name": "chatppt",
   "version": "2.2.0",
-  "description": "Oh My PPT - Local-first AI presentation workbench",
+  "description": "ChatPPT - Local-first AI presentation workbench",
   "main": "./out/main/index.js",
   "author": "arcsin1",
   "homepage": "https://github.com/arcsin1/oh-my-ppt",

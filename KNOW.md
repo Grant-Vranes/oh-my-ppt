@@ -1,8 +1,8 @@
-# Oh My PPT — 项目结构与模块分析
+# ChatPPT — 项目结构与模块分析
 
 ## 项目概述
 
-**Oh My PPT** (v2.2.0) 是一个 **本地优先的 AI 演示文稿工作台**——用 Electron 构建的桌面应用，核心是「AI 驱动的可编辑 HTML PPT」：AI 生成完整的 HTML 幻灯片，可在浏览器中预览、可视化编辑，并导出为 PPTX/PDF/PNG/MP4。
+**ChatPPT** (v2.2.0) 是一个 **本地优先的 AI 演示文稿工作台**——用 Electron 构建的桌面应用，核心是「AI 驱动的可编辑 HTML PPT」：AI 生成完整的 HTML 幻灯片，可在浏览器中预览、可视化编辑，并导出为 PPTX/PDF/PNG/MP4。
 
 ## 技术栈
 

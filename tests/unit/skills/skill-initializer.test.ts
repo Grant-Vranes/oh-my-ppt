@@ -47,7 +47,7 @@ describe('initializeSkills', () => {
     const tmp = await mkdtemp(path.join(os.tmpdir(), 'ohmyppt-skills-'))
     const bundled = path.join(tmp, 'bundled')
     const installed = path.join(tmp, 'installed')
-    await makeSkill(bundled, 'oh-my-ppt-data-anim', '1.0.0')
+    await makeSkill(bundled, 'chatppt-data-anim', '1.0.0')
 
     const result = await initializeSkills({
       builtinSourcePath: bundled,
@@ -63,12 +63,12 @@ describe('initializeSkills', () => {
     const manifest = JSON.parse(
       await readFile(path.join(installed, 'system', '.manifest.json'), 'utf8')
     )
-    expect(manifest.skills['oh-my-ppt-data-anim']).toMatchObject({
+    expect(manifest.skills['chatppt-data-anim']).toMatchObject({
       version: '1.0.0',
       source: 'builtin',
     })
     await expect(
-      readFile(path.join(installed, 'system', 'oh-my-ppt-data-anim', 'SKILL.md'), 'utf8')
+      readFile(path.join(installed, 'system', 'chatppt-data-anim', 'SKILL.md'), 'utf8')
     ).resolves.toContain('Test skill')
   })
 
@@ -76,8 +76,8 @@ describe('initializeSkills', () => {
     const tmp = await mkdtemp(path.join(os.tmpdir(), 'ohmyppt-skills-route-'))
     const bundled = path.join(tmp, 'bundled')
     const installed = path.join(tmp, 'installed')
-    await makeSkill(bundled, 'oh-my-ppt-data-anim', '1.0.0', '# Routed Skill\n')
-    await makeSkill(bundled, 'oh-my-ppt-chart', '1.0.0', '# Routed Chart Skill\n')
+    await makeSkill(bundled, 'chatppt-data-anim', '1.0.0', '# Routed Skill\n')
+    await makeSkill(bundled, 'chatppt-chart', '1.0.0', '# Routed Chart Skill\n')
     await initializeSkills({
       builtinSourcePath: bundled,
       installedRootPath: installed,
@@ -94,15 +94,15 @@ describe('initializeSkills', () => {
     )
 
     const skillSource = `${PRODUCT_SKILLS_ROUTE}${SYSTEM_SKILLS_SOURCE_PATH.replace(/^\//, '')}`
-    const dataAnimSkillPath = `${skillSource}oh-my-ppt-data-anim/SKILL.md`
-    const chartSkillPath = `${skillSource}oh-my-ppt-chart/SKILL.md`
+    const dataAnimSkillPath = `${skillSource}chatppt-data-anim/SKILL.md`
+    const chartSkillPath = `${skillSource}chatppt-chart/SKILL.md`
     const listed = await backend.ls(skillSource)
     expect(listed.error).toBeUndefined()
     expect(listed.files?.map((file) => file.path)).toContain(
-      `${skillSource}oh-my-ppt-data-anim/`
+      `${skillSource}chatppt-data-anim/`
     )
     expect(listed.files?.map((file) => file.path)).toContain(
-      `${skillSource}oh-my-ppt-chart/`
+      `${skillSource}chatppt-chart/`
     )
 
     const read = await backend.read(
@@ -125,7 +125,7 @@ describe('initializeSkills', () => {
     const tmp = await mkdtemp(path.join(os.tmpdir(), 'ohmyppt-skills-upgrade-'))
     const bundled = path.join(tmp, 'bundled')
     const installed = path.join(tmp, 'installed')
-    await makeSkill(bundled, 'oh-my-ppt-data-anim', '1.0.0', 'old body\n')
+    await makeSkill(bundled, 'chatppt-data-anim', '1.0.0', 'old body\n')
     await makeSkill(bundled, 'legacy-skill', '1.0.0', 'legacy body\n')
 
     await initializeSkills({
@@ -134,18 +134,18 @@ describe('initializeSkills', () => {
     })
 
     const upgradedBundled = path.join(tmp, 'bundled-upgraded')
-    await makeSkill(upgradedBundled, 'oh-my-ppt-data-anim', '1.10.0', 'new body\n')
+    await makeSkill(upgradedBundled, 'chatppt-data-anim', '1.10.0', 'new body\n')
     const upgraded = await initializeSkills({
       builtinSourcePath: upgradedBundled,
       installedRootPath: installed,
     })
 
     expect(upgraded.copiedCount).toBe(1)
-    expect(upgraded.manifest.skills['oh-my-ppt-data-anim']).toMatchObject({
+    expect(upgraded.manifest.skills['chatppt-data-anim']).toMatchObject({
       version: '1.10.0',
     })
     await expect(
-      readFile(path.join(installed, 'system', 'oh-my-ppt-data-anim', 'SKILL.md'), 'utf8')
+      readFile(path.join(installed, 'system', 'chatppt-data-anim', 'SKILL.md'), 'utf8')
     ).resolves.toContain('new body')
     expect(upgraded.manifest.skills['legacy-skill'].missingFromBundle).toBe(true)
   })

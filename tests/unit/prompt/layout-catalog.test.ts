@@ -7,7 +7,7 @@ const projectRoot = process.cwd()
 const readProjectFile = (filePath: string) =>
   readFileSync(path.join(projectRoot, filePath), 'utf-8')
 
-const layoutDir = 'resources/skills/oh-my-ppt-layout'
+const layoutDir = 'resources/skills/chatppt-layout'
 
 describe('layout skill catalog structure', () => {
   it('catalog.md declares itself advisory and style-agnostic', () => {

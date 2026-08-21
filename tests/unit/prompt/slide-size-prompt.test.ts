@@ -58,7 +58,7 @@ describe('slide size prompt', () => {
     expect(prompt).toContain('4:3')
     expect(prompt).not.toContain('1600×900')
     expect(prompt).toContain(STANDARD_4_3_LAYOUT_SKILL_NAME)
-    expect(prompt).not.toContain('oh-my-ppt-adaptive-layout')
+    expect(prompt).not.toContain('chatppt-adaptive-layout')
     expect(prompt).not.toContain(`skill ${LAYOUT_SKILL_NAME}`)
   })
 
@@ -112,7 +112,7 @@ describe('slide size prompt', () => {
       expect(buildPageSemanticStructure(slideSize)).toContain(`skill ${skillName}`)
       expect(buildLayoutCollisionRules(slideSize)).toContain(`skill ${skillName}`)
       expect(getRequiredProductSkillNamesForSlideSize(slideSize)[0]).toBe(skillName)
-      expect(buildCanvasConstraints(slideSize)).not.toContain('oh-my-ppt-adaptive-layout')
+      expect(buildCanvasConstraints(slideSize)).not.toContain('chatppt-adaptive-layout')
     }
   })
 

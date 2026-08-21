@@ -111,7 +111,7 @@ linux:
   vendor: arcsin1
   category: Office
   synopsis: Local-first AI presentation workbench
-  description: Oh My PPT is a local-first AI presentation generator and editor.
+  description: ChatPPT is a local-first AI presentation generator and editor.
 appImage:
   artifactName: ${name}-${version}-${arch}.${ext}
 deb:

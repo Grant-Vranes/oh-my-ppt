@@ -1,6 +1,6 @@
 ---
 name: square-1-1-layout-skill
-description: Must be read before creating, relaying out, or repairing 1:1 square Oh My PPT pages. Defines square-card layout, centered focal hierarchy, quadrant and orbit structures, balanced margins, data-card budgeting, plus catalog and checklist references for 1200x1200 canvases.
+description: Must be read before creating, relaying out, or repairing 1:1 square ChatPPT pages. Defines square-card layout, centered focal hierarchy, quadrant and orbit structures, balanced margins, data-card budgeting, plus catalog and checklist references for 1200x1200 canvases.
 ---
 
 # Square 1:1 Layout Skill

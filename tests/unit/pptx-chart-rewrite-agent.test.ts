@@ -43,7 +43,7 @@ describe('pptx chart rewrite agent', () => {
       reference: 'Chart.js examples'
     })
 
-    expect(prompt).toContain('oh-my-ppt-chart/SKILL.md')
+    expect(prompt).toContain('chatppt-chart/SKILL.md')
     expect(prompt).toContain('style="position:absolute; left:...; top:...; width:...; height:...; ..."')
     expect(prompt).toContain('Do not output HTML')
     expect(prompt).toContain('Return only a Chart.js config object')

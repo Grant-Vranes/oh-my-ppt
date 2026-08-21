@@ -3,15 +3,15 @@ import { requireSlideSize, type SlideSizePreset } from '@shared/slide-size'
 export const PRODUCT_SKILLS_ROUTE = '/.ohmyppt-skills/'
 export const SYSTEM_SKILLS_SOURCE_PATH = '/system/'
 
-export const LAYOUT_SKILL_NAME = 'oh-my-ppt-layout'
+export const LAYOUT_SKILL_NAME = 'chatppt-layout'
 export const VERTICAL_9_16_LAYOUT_SKILL_NAME = 'vertical-9-16-layout-skill'
 export const STANDARD_4_3_LAYOUT_SKILL_NAME = 'standard-4-3-layout-skill'
 export const SQUARE_1_1_LAYOUT_SKILL_NAME = 'square-1-1-layout-skill'
 export const VERTICAL_3_4_LAYOUT_SKILL_NAME = 'vertical-3-4-layout-skill'
 export const RED_LAYOUT_SKILL_NAME = 'red-layout-skill'
-export const DATA_ANIM_SKILL_NAME = 'oh-my-ppt-data-anim'
-export const CHART_SKILL_NAME = 'oh-my-ppt-chart'
-export const SOURCE_READING_SKILL_NAME = 'oh-my-ppt-source-reading'
+export const DATA_ANIM_SKILL_NAME = 'chatppt-data-anim'
+export const CHART_SKILL_NAME = 'chatppt-chart'
+export const SOURCE_READING_SKILL_NAME = 'chatppt-source-reading'
 
 export const REQUIRED_PRODUCT_SKILL_NAMES = [
   LAYOUT_SKILL_NAME,

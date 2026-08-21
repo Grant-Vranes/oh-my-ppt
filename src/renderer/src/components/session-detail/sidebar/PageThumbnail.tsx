@@ -40,7 +40,7 @@ export const PageThumbnail = memo(function PageThumbnail({
   const pageInfoTooltip = (
     <TooltipContent side="right" align="start">
       <div className="max-w-[240px]">
-        <div className="mt-0.5 text-sm font-medium text-[#18181b]">{page.title}</div>
+        <div className="mt-0.5 text-sm font-medium text-[#fafafa]">{page.title}</div>
       </div>
     </TooltipContent>
   )

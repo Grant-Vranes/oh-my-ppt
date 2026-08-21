@@ -1,6 +1,6 @@
 ---
 name: standard-4-3-layout-skill
-description: Must be read before creating, relaying out, or repairing standard 4:3 Oh My PPT pages. Defines square-ish presentation layout, two-zone and 2x2 structures, chart/table budgeting, column discipline, plus catalog and checklist references for 1600x1200 canvases.
+description: Must be read before creating, relaying out, or repairing standard 4:3 ChatPPT pages. Defines square-ish presentation layout, two-zone and 2x2 structures, chart/table budgeting, column discipline, plus catalog and checklist references for 1600x1200 canvases.
 ---
 
 # Standard 4:3 Layout Skill

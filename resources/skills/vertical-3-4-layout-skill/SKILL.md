@@ -1,6 +1,6 @@
 ---
 name: vertical-3-4-layout-skill
-description: Must be read before creating, relaying out, or repairing 3:4 vertical Oh My PPT pages. Defines poster-card layout, focal hierarchy, vertical section planning, evidence grouping, compact two-column pockets, chart/list budgeting, plus catalog and checklist references for 1200x1600 canvases.
+description: Must be read before creating, relaying out, or repairing 3:4 vertical ChatPPT pages. Defines poster-card layout, focal hierarchy, vertical section planning, evidence grouping, compact two-column pockets, chart/list budgeting, plus catalog and checklist references for 1200x1600 canvases.
 ---
 
 # Vertical 3:4 Layout Skill

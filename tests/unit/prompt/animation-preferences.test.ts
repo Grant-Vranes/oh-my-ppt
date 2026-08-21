@@ -29,7 +29,7 @@ describe('animation preferences prompt', () => {
       ids: ['fade-up', 'wipe', 'pulse-soft']
     })
 
-    expect(prompt).toContain('oh-my-ppt-data-anim')
+    expect(prompt).toContain('chatppt-data-anim')
     expect(prompt).toContain('Do not change slide outline, page count, slide titles')
     expect(prompt).toContain('data-anim="fade-up"')
     expect(prompt).toContain('data-anim="wipe"')

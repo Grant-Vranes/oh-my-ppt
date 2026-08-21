@@ -1,6 +1,6 @@
 # Chart Reference
 
-Deep-dive examples, layout integration patterns, and Chart.js options that work reliably in Oh My PPT.
+Deep-dive examples, layout integration patterns, and Chart.js options that work reliably in ChatPPT.
 
 ## Complete working example
 

@@ -69,7 +69,7 @@ interface SettingsStore {
 
 const readStoredLocale = (): 'zh' | 'en' => {
   if (typeof window === 'undefined') return 'zh'
-  return window.localStorage.getItem('oh-my-ppt:lang') === 'en' ? 'en' : 'zh'
+  return window.localStorage.getItem('chatppt:lang') === 'en' ? 'en' : 'zh'
 }
 
 const fallbackMessage = (zh: string, en: string): string => (readStoredLocale() === 'en' ? en : zh)

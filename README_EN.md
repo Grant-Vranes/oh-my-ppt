@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="thumb.png" alt="Oh My PPT" width="200" />
+  <img src="thumb.png" alt="ChatPPT" width="200" />
   <br/>
   <br/>
 
@@ -12,7 +12,7 @@
 ![React](https://img.shields.io/badge/React-App-61dafb)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6)
 
-**Oh My PPT - Local-first AI Slide Deck, Image Generation & Editing Workbench**
+**ChatPPT - Local-first AI Slide Deck, Image Generation & Editing Workbench**
 
 [中文](./README.md) | [Why](#why) • [Features](#features) • [Workflow](#workflow) • [Changelog](./CHANGELOG.md) • [Usage Notes](#usage-notes)
 
@@ -25,7 +25,7 @@
 
   [Website](https://www.ohmyppt.cc) | [Download](https://github.com/arcsin1/oh-my-ppt/releases)
 
-  <img src="https://arcsin1.github.io/ppt2.gif" alt="Oh My PPT" width="600" />
+  <img src="https://arcsin1.github.io/ppt2.gif" alt="ChatPPT" width="600" />
 
 </div>
 
@@ -76,14 +76,14 @@ Output is pure HTML slides: instant browser preview, no extra software, easy to 
 
 Bring existing PPTX templates, past reports, or client files into the desktop app and keep editing. Typical PPTX imports restore close to **100%** of the original visual and structural result, converting files into pages you can drag, adjust, modify with AI, and manage through version history. Imported files can also yield reusable styles for future work.
 
-PPTX parsing and conversion to structured editable data are **fully developed in-house** by Oh My PPT. Complex shapes, charts, tables, animations, mixed text, and extreme layouts continue to improve; actual fidelity varies with the source file's PowerPoint features, fonts, and asset complexity.
+PPTX parsing and conversion to structured editable data are **fully developed in-house** by ChatPPT. Complex shapes, charts, tables, animations, mixed text, and extreme layouts continue to improve; actual fidelity varies with the source file's PowerPoint features, fonts, and asset complexity.
 
 <a id="pptx-export"></a>
 ## 📤 Export Editable PPTX from the Desktop App, Close to 100% Fidelity
 
 After creating or editing in the desktop app, export a true PPTX that remains editable in PowerPoint / Keynote. In typical cases, the exported file preserves close to **100%** of its visual and structural result, including text, images, colors, formulas, and basic layout where possible.
 
-HTML-to-editable-PPTX generation and layout handling are **fully developed in-house** by Oh My PPT. Text overlap, mixed text, complex charts, tables, shapes, and animations are still being improved.
+HTML-to-editable-PPTX generation and layout handling are **fully developed in-house** by ChatPPT. Text overlap, mixed text, complex charts, tables, shapes, and animations are still being improved.
 
 <a id="features"></a>
 ## ✅ What It Can Do
@@ -99,7 +99,7 @@ HTML-to-editable-PPTX generation and layout handling are **fully developed in-ho
 - 🖼️ **AI image generation and smart visuals** — Enable automatic visuals while creating a deck. AI generates illustrations, backgrounds, and visual assets only where the current content, layout, and chosen style call for them, instead of forcing an image onto every slide
 - ✨ **In-editor image studio** — Generate a prompt from the current slide title and outline, add your own direction and image size, then preview the result, add it to the canvas, or make it the slide background
 - 🏷️ **Image-generation style filtering** — The style library marks styles that support image generation, so automatic visuals can follow the deck's visual direction
-- 🔒 **Local-first** — Sessions, source documents, assets, and generated results stay on your computer. No Oh My PPT account or platform cloud is required. Requests made to your configured AI or image service are sent to that provider
+- 🔒 **Local-first** — Sessions, source documents, assets, and generated results stay on your computer. No ChatPPT account or platform cloud is required. Requests made to your configured AI or image service are sent to that provider
 - 🔤 **Font management** — 14 curated Google Fonts built-in (including CJK), upload local fonts, pick title and body fonts separately or let AI auto-match
 - 🎨 **90+ built-in style skills** — Minimal White, Cyber Neon, Bauhaus, Japanese Minimal, Xiaohongshu White, and more, plus custom styles
 - ✏️ **Chat-based editing** — Tell it “change title color” or “add a data chart” on a specific page, without rebuilding everything  
@@ -122,9 +122,9 @@ HTML-to-editable-PPTX generation and layout handling are **fully developed in-ho
 
 
 <p>
-<img width="30%" alt="Oh My PPT - 9" src="https://arcsin1.github.io/imgs/home.webp" />
-<img width="30%" alt="Oh My PPT - 10" src="https://arcsin1.github.io/imgs/exp.webp" />
-<img width="30%" alt="Oh My PPT - 11" src="https://arcsin1.github.io/imgs/anime.webp" />
+<img width="30%" alt="ChatPPT - 9" src="https://arcsin1.github.io/imgs/home.webp" />
+<img width="30%" alt="ChatPPT - 10" src="https://arcsin1.github.io/imgs/exp.webp" />
+<img width="30%" alt="ChatPPT - 11" src="https://arcsin1.github.io/imgs/anime.webp" />
 </p>
 
 <img width="600"  src="https://arcsin1.github.io/imgs/chat.webp" />
@@ -156,9 +156,9 @@ After generation, you can enter preview or presentation mode, keep editing by dr
 <a id="style-skills"></a>
 ## 🎨 90+ Built-in Style Skills
 
-To create your own Style Skill, use the official style generation package: [arcsin1/style-generate-skill](https://github.com/arcsin1/style-generate-skill). It helps turn reference designs, palettes, and layout requirements into importable Oh My PPT style packages.
+To create your own Style Skill, use the official style generation package: [arcsin1/style-generate-skill](https://github.com/arcsin1/style-generate-skill). It helps turn reference designs, palettes, and layout requirements into importable ChatPPT style packages.
 
-<img src="./docs/images/4.webp" alt="Oh My PPT" width="500" />
+<img src="./docs/images/4.webp" alt="ChatPPT" width="500" />
 
 <a id="image-generation"></a>
 ## 🖼️ AI Image Generation & Smart Visuals
@@ -183,13 +183,13 @@ Automatic visuals retain the canvas format you selected and do not replace image
 
 When creating a deck, you can choose **title fonts** and **body fonts** separately, or let AI automatically match the best font pair based on the topic and style. When exporting to PPTX, used fonts are automatically embedded so the deck displays consistently on other computers.
 
-<img src="./docs/images/font.webp" alt="Oh My PPT" width="500" />
+<img src="./docs/images/font.webp" alt="ChatPPT" width="500" />
 
 
 <a id="animations"></a>
 ## 🎬 Animation Support
 
-Oh My PPT generates HTML slides with 16+ slide transition effects and a local **Anime.js v4** runtime. During generation or chat-based editing, the AI can add presentation motion to whole slide elements such as titles, metric cards, images, chart containers, and step blocks.
+ChatPPT generates HTML slides with 16+ slide transition effects and a local **Anime.js v4** runtime. During generation or chat-based editing, the AI can add presentation motion to whole slide elements such as titles, metric cards, images, chart containers, and step blocks.
 
 In addition to AI-generated motion, edit mode lets you select an individual element and configure its entrance, emphasis, or exit effect, together with automatic or click triggering, duration, and direction.
 
@@ -206,8 +206,8 @@ Common animation expressions include:
 Whole-element animation is preferred over splitting text into many tiny moving fragments. It keeps slides readable, stable, and easier to export or edit later. Animations are meant to guide attention and show hierarchy, so complex timelines, high-frequency flashing, infinite loops, and large shaking motion are not recommended.
 
 <p></>
-<img src="https://arcsin1.github.io/anime.gif" alt="Oh My PPT animation demo" width="40%" />
-<img src="./docs/images/anime.gif" alt="Oh My PPT animation demo" width="40%" />
+<img src="https://arcsin1.github.io/anime.gif" alt="ChatPPT animation demo" width="40%" />
+<img src="./docs/images/anime.gif" alt="ChatPPT animation demo" width="40%" />
 </p>
 
 <a id="ollama"></a>
@@ -241,7 +241,7 @@ Set up the model for creation, document parsing, and editing under **Settings �
 
 For AI image generation or automatic visuals, add the provider's full JSON configuration under **Settings → Image Models** and select **Verify**. Verification generates a real test image; it must succeed before the configuration can be saved, then it can be selected on the creation page and in the editor.
 
-<img src="./docs/images/3.png" alt="Oh My PPT" width="500" />
+<img src="./docs/images/3.png" alt="ChatPPT" width="500" />
 
 
 <a id="assets"></a>
@@ -249,9 +249,9 @@ For AI image generation or automatic visuals, add the provider's full JSON confi
 
 Local images and videos are copied into the current session's local asset directory. In the editor, insert them from the asset library or local files. You can also open the image-generation panel, let AI develop a prompt from the current page or write your own, and then add the result to the canvas or set it as the background.
 
-Oh My PPT does not upload local assets to its own cloud service. However, an image-generation request is sent to the image provider you configured.
+ChatPPT does not upload local assets to its own cloud service. However, an image-generation request is sent to the image provider you configured.
 
-<img src="./docs/images/edit.webp" alt="Oh My PPT" width="500" />
+<img src="./docs/images/edit.webp" alt="ChatPPT" width="500" />
 
 
 <a id="preview"></a>
@@ -259,12 +259,12 @@ Oh My PPT does not upload local assets to its own cloud service. However, an ima
 
 Supports keyboard navigation (Left/Right), presentation mode, fullscreen presentation mode, and `ESC` to exit presentation mode.
 
-<img src="./docs/images/2.png" alt="Oh My PPT" width="500" />
+<img src="./docs/images/2.png" alt="ChatPPT" width="500" />
 
 <a id="export"></a>
 ### About export
 
-Oh My PPT currently supports five export modes, plus standalone HTML packaging:
+ChatPPT currently supports five export modes, plus standalone HTML packaging:
 
 - **PDF**: best for sharing, archiving, and printing.
 - **PNG**: batch-export every slide as an image for docs, Notion, articles, or social posts.
@@ -337,7 +337,7 @@ I will keep following up and improving the experience.
 <a id="sponsor"></a>
 ## Sponsor Support
 
-Oh My PPT is currently mainly developed and maintained by one person. If it helps you, you can sponsor the project a little (please do not exceed ¥5, and include your GitHub ID in the note). Thank you.
+ChatPPT is currently mainly developed and maintained by one person. If it helps you, you can sponsor the project a little (please do not exceed ¥5, and include your GitHub ID in the note). Thank you.
 
 <p>
 <img src="https://arcsin1.github.io/vv.jpg" alt="WeChat Pay" width="200" />
@@ -348,16 +348,16 @@ Oh My PPT is currently mainly developed and maintained by one person. If it help
 <a id="references"></a>
 ## Reference
 
-- [@arcsin1/pptx2json](https://www.npmjs.com/package/@arcsin1/pptx2json) — Oh My PPT's fully in-house foundation for editable PPTX import, parsing PPTX files into editable structured data. Support for complex shapes, charts, tables, animations, and more will continue to improve.
-- [@arcsin1/html2pptx](https://www.npmjs.com/package/@arcsin1/html2pptx) — Oh My PPT's fully in-house foundation for editable PPTX export, converting HTML into true, editable PPTX files. Support for complex shapes, charts, tables, animations, and more will continue to improve.
-- [arcsin1/style-generate-skill](https://github.com/arcsin1/style-generate-skill) — the official Oh My PPT style-generation Skill for turning reference designs, palettes, layouts, and scenario requirements into importable style packages.
+- [@arcsin1/pptx2json](https://www.npmjs.com/package/@arcsin1/pptx2json) — ChatPPT's fully in-house foundation for editable PPTX import, parsing PPTX files into editable structured data. Support for complex shapes, charts, tables, animations, and more will continue to improve.
+- [@arcsin1/html2pptx](https://www.npmjs.com/package/@arcsin1/html2pptx) — ChatPPT's fully in-house foundation for editable PPTX export, converting HTML into true, editable PPTX files. Support for complex shapes, charts, tables, animations, and more will continue to improve.
+- [arcsin1/style-generate-skill](https://github.com/arcsin1/style-generate-skill) — the official ChatPPT style-generation Skill for turning reference designs, palettes, layouts, and scenario requirements into importable style packages.
 - [ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)
 - [html-ppt-skill](https://github.com/lewislulu/html-ppt-skill)
 
 <a id="sponsors"></a>
 ## 💖 Sponsors
 
-Special thanks to everyone who has supported this project! Your generosity keeps Oh My PPT alive and growing.
+Special thanks to everyone who has supported this project! Your generosity keeps ChatPPT alive and growing.
 
 See [SponsorsList.md](./SponsorsList.md) for the full list of sponsors.
 

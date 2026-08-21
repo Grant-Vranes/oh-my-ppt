@@ -1,6 +1,6 @@
 ---
 name: vertical-9-16-layout-skill
-description: Must be read before creating, relaying out, or repairing 9:16 vertical Oh My PPT pages. Defines mobile-story layout, top/middle/bottom zone planning, vertical flow patterns, height budgeting, readable chart/list composition, plus catalog and checklist references for 900x1600 canvases.
+description: Must be read before creating, relaying out, or repairing 9:16 vertical ChatPPT pages. Defines mobile-story layout, top/middle/bottom zone planning, vertical flow patterns, height budgeting, readable chart/list composition, plus catalog and checklist references for 900x1600 canvases.
 ---
 
 # Vertical 9:16 Layout Skill
